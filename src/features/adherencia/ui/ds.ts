@@ -60,11 +60,11 @@ export const ds = {
     overline: 'text-[10px] leading-[16px] font-semibold uppercase tracking-wider',
   },
 
-  // Contenedores - Radios y elevación modernos
-  card: 'bg-white dark:bg-[#1E1E2E] rounded-2xl shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] border border-[#E2E8F0] dark:border-[#334155]',
-  cardHover: 'hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] hover:-translate-y-0.5 transition-all duration-200',
+  // Contenedores - Radios y elevación modernos (look claro y elegante)
+  card: 'bg-white rounded-2xl shadow-sm border border-transparent',
+  cardHover: 'hover:shadow-md hover:-translate-y-0.5 transition-all duration-200',
   cardPad: 'p-6',
-  panel: 'bg-white dark:bg-[#1E1E2E] rounded-xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] border border-[#E2E8F0] dark:border-[#334155]',
+  panel: 'bg-white rounded-xl shadow-sm border border-transparent',
 
   // Badges - Diseño moderno con colores semánticos
   badge: {
@@ -90,9 +90,9 @@ export const ds = {
 
   // Tabs - Navegación moderna
   tabs: {
-    container: 'flex gap-2 border-b border-[#E2E8F0] dark:border-[#334155]',
-    item: 'flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F1F5F9] dark:hover:bg-[#2A2A3A] transition-all duration-200',
-    itemActive: 'bg-[#EEF2FF] dark:bg-[#312E81] text-[#6366F1] dark:text-[#818CF8] border border-[#6366F1] dark:border-[#818CF8]',
+    container: 'flex gap-2 border-b border-[#E2E8F0]',
+    item: 'flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-[#475569] hover:bg-[#F1F5F9] transition-all duration-200',
+    itemActive: 'bg-[#EEF2FF] text-[#6366F1] border border-[#EEF2FF]',
   },
 
   // Animaciones - Easing functions modernas

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Button } from '../../../components/componentsreutilizables';
+import { Card, Button, MetricCards } from '../../../components/componentsreutilizables';
 import { ProductoCard } from './ProductoCard';
 import { FiltrosProductos } from './FiltrosProductos';
 import { ProductoModal } from './ProductoModal';
@@ -154,18 +154,37 @@ export const CatalogoProductos: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Catálogo de Productos</h1>
-          <p className="text-gray-600">Gestiona el inventario de productos del gimnasio</p>
-        </div>
-        
+      {/* Toolbar superior */}
+      <div className="flex items-center justify-end">
         <Button onClick={handleCrearProducto}>
           <Plus size={20} className="mr-2" />
           Nuevo Producto
         </Button>
       </div>
+
+      {/* KPIs de catálogo */}
+      <MetricCards
+        data={[
+          {
+            id: 'total',
+            title: 'Total productos',
+            value: totalProductos,
+            color: 'info',
+          },
+          {
+            id: 'stock',
+            title: 'En stock',
+            value: productos.filter(p => p.stock > 0).length,
+            color: 'success',
+          },
+          {
+            id: 'featured',
+            title: 'Destacados',
+            value: productos.filter(p => p.destacado).length,
+            color: 'warning',
+          },
+        ]}
+      />
 
       {/* Filtros */}
       <FiltrosProductos
@@ -177,53 +196,49 @@ export const CatalogoProductos: React.FC = () => {
       />
 
       {/* Controles de vista y ordenamiento */}
-      <Card className="p-4">
-        <div className="flex justify-between items-center">
+      <Card className="p-4 bg-white shadow-sm">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
             {/* Selector de vista */}
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-gray-700">Vista:</span>
               <div className="flex border rounded-lg overflow-hidden">
-                <button
+                <Button
+                  variant={vista === 'grid' ? 'primary' : 'ghost'}
+                  size="sm"
                   onClick={() => setVista('grid')}
-                  className={`p-2 ${vista === 'grid' 
-                    ? 'bg-blue-500 text-white' 
-                    : 'bg-white text-gray-600 hover:bg-gray-50'
-                  }`}
+                  className="p-2 rounded-none"
                 >
                   <Grid3X3 size={16} />
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant={vista === 'list' ? 'primary' : 'ghost'}
+                  size="sm"
                   onClick={() => setVista('list')}
-                  className={`p-2 ${vista === 'list' 
-                    ? 'bg-blue-500 text-white' 
-                    : 'bg-white text-gray-600 hover:bg-gray-50'
-                  }`}
+                  className="p-2 rounded-none"
                 >
                   <List size={16} />
-                </button>
+                </Button>
               </div>
             </div>
 
             {/* Selector de ordenamiento */}
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-gray-700">Ordenar por:</span>
-              <div className="flex gap-1">
+              <div className="flex flex-wrap gap-1">
                 {opcionesOrden.map((opcion) => (
-                  <button
+                  <Button
                     key={opcion.campo}
+                    variant={orden.campo === opcion.campo ? 'secondary' : 'ghost'}
+                    size="sm"
                     onClick={() => handleCambiarOrden(opcion.campo)}
-                    className={`px-3 py-1 text-sm rounded-md flex items-center gap-1 ${
-                      orden.campo === opcion.campo
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }`}
+                    className="px-3 py-1 text-sm"
                   >
                     {opcion.label}
                     {orden.campo === opcion.campo && (
                       <ArrowUpDown size={12} className={orden.direccion === 'desc' ? 'rotate-180' : ''} />
                     )}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -238,12 +253,12 @@ export const CatalogoProductos: React.FC = () => {
 
       {/* Lista de productos */}
       {loading ? (
-        <Card className="p-8 text-center">
+        <Card className="p-8 text-center bg-white shadow-sm">
           <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
           <p className="text-gray-600">Cargando productos...</p>
         </Card>
       ) : productos.length === 0 ? (
-        <Card className="p-8 text-center">
+        <Card className="p-8 text-center bg-white shadow-sm">
           <Package size={48} className="mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay productos</h3>
           <p className="text-gray-600 mb-4">
@@ -289,7 +304,7 @@ export const CatalogoProductos: React.FC = () => {
 
       {/* Paginación */}
       {totalPaginas > 1 && (
-        <Card className="p-4">
+        <Card className="p-4 bg-white shadow-sm">
           <div className="flex justify-center items-center gap-2">
             <Button
               variant="ghost"

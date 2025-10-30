@@ -5,8 +5,6 @@ import { useProductos } from '../hooks/useProductos';
 import { 
   Plus, 
   Edit, 
-  Trash2, 
-  Tag, 
   Package,
   Eye,
   EyeOff,
@@ -109,13 +107,13 @@ interface CategoriaCardProps {
 }
 
 const CategoriaCard: React.FC<CategoriaCardProps> = ({ categoria, onEditar }) => {
-  const IconComponent = ({ name }: { name: string }) => {
+  const IconComponent = ({ name: _name }: { name: string }) => {
     // En una implementación real, aquí mapearías el nombre del icono al componente
     return <Package size={24} style={{ color: categoria.color }} />;
   };
 
   return (
-    <Card variant="hover" className="p-4">
+    <Card variant="hover" className="p-4 bg-white shadow-sm">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center">
           <div 

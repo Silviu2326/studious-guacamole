@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Button } from '../../../components/componentsreutilizables';
+import { Card, Button, Badge } from '../../../components/componentsreutilizables';
 import { Producto, Categoria } from '../types';
 import { 
   Edit, 
@@ -51,14 +51,14 @@ export const ProductoCard: React.FC<ProductoCardProps> = ({
   const estadoStock = getEstadoStock();
 
   return (
-    <Card variant="hover" className="h-full flex flex-col">
+    <Card variant="hover" className="h-full flex flex-col transition-shadow overflow-hidden">
       {/* Imagen del producto */}
-      <div className="relative h-48 bg-gray-100 rounded-t-xl overflow-hidden">
+      <div className="relative h-48 bg-gray-100 overflow-hidden">
         {producto.imagenes.length > 0 ? (
           <img
             src={producto.imagenes[0]}
             alt={producto.nombre}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-300 ease-out hover:scale-[1.03]"
             onError={(e) => {
               e.currentTarget.src = '/placeholder-product.svg';
             }}
@@ -72,24 +72,21 @@ export const ProductoCard: React.FC<ProductoCardProps> = ({
         {/* Badges superiores */}
         <div className="absolute top-2 left-2 flex flex-col gap-1">
           {producto.destacado && (
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-              <Star size={12} className="mr-1" />
-              Destacado
-            </span>
+            <Badge variant="yellow" leftIcon={<Star size={12} />}>Destacado</Badge>
           )}
           {!producto.activo && (
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-              Inactivo
-            </span>
+            <Badge variant="gray">Inactivo</Badge>
           )}
         </div>
 
         {/* Estado de stock */}
         <div className="absolute top-2 right-2">
-          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${estadoStock.bg} ${estadoStock.color}`}>
-            {sinStock && <AlertTriangle size={12} className="mr-1" />}
+          <Badge
+            variant={sinStock ? 'red' : stockBajo ? 'yellow' : 'green'}
+            leftIcon={sinStock ? <AlertTriangle size={12} /> : undefined}
+          >
             {estadoStock.texto}
-          </span>
+          </Badge>
         </div>
       </div>
 
@@ -178,7 +175,7 @@ export const ProductoCard: React.FC<ProductoCardProps> = ({
         )}
 
         {/* Acciones */}
-        <div className="flex gap-2 mt-auto">
+        <div className="flex gap-2 mt-auto pt-3 border-t border-gray-100">
           <Button
             variant="ghost"
             size="sm"

@@ -23,7 +23,7 @@ export const EstadisticasProductos: React.FC = () => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[...Array(4)].map((_, i) => (
-          <Card key={i} className="p-6 animate-pulse">
+          <Card key={i} className="p-6 animate-pulse bg-white shadow-sm">
             <div className="h-4 bg-gray-200 rounded mb-2"></div>
             <div className="h-8 bg-gray-200 rounded mb-2"></div>
             <div className="h-3 bg-gray-200 rounded"></div>
@@ -35,7 +35,7 @@ export const EstadisticasProductos: React.FC = () => {
 
   if (error || !estadisticas) {
     return (
-      <Card className="p-6 text-center">
+      <Card className="p-6 text-center bg-white shadow-sm">
         <AlertTriangle size={48} className="mx-auto text-red-500 mb-4" />
         <p className="text-gray-600">Error al cargar estadísticas</p>
       </Card>
@@ -121,7 +121,7 @@ export const EstadisticasProductos: React.FC = () => {
       {/* Métricas principales */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {metricas.map((metrica, index) => (
-          <Card key={index} className="p-6">
+          <Card key={index} className="p-6 bg-white shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 mb-1">
@@ -144,7 +144,7 @@ export const EstadisticasProductos: React.FC = () => {
 
       {/* Alertas de stock */}
       {alertas.length > 0 && (
-        <Card className="p-6">
+        <Card className="p-6 bg-white shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
               <AlertTriangle size={20} className="mr-2 text-yellow-500" />
@@ -228,7 +228,7 @@ export const EstadisticasProductos: React.FC = () => {
 
       {/* Movimientos recientes */}
       {estadisticas.movimientosRecientes.length > 0 && (
-        <Card className="p-6">
+        <Card className="p-6 bg-white shadow-sm">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
             <Clock size={20} className="mr-2" />
             Movimientos Recientes
@@ -289,7 +289,7 @@ export const EstadisticasProductos: React.FC = () => {
       )}
 
       {/* Resumen rápido */}
-      <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50">
+      <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Resumen del Catálogo
         </h3>

@@ -32,6 +32,8 @@ export type { TooltipProps } from './Tooltip';
 export { MetricCards } from './MetricCards';
 export type { MetricCardsProps, MetricCardData } from './MetricCards';
 
+export { Badge } from './Badge';
+
 // Export example pages
 export { ExamplePage } from './ExamplePage';
 export { ButtonShowcase } from './ButtonShowcase';

@@ -1,0 +1,222 @@
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { Login } from './components/Login';
+import { Dashboard } from './components/Dashboard';
+import AdherenciaCumplimientoEntrenoPage from './features/adherencia-cumplimiento-de-entreno/pages/adherencia-cumplimiento-de-entrenoPage';
+import { RestriccionesAlimentariasPage } from './features/restricciones-alimentarias/page';
+import BibliotecaEjerciciosPage from './features/biblioteca-de-ejercicios/pages/biblioteca-de-ejerciciosPage';
+import { CajaBancosPage } from './features/caja-bancos/pages/caja-bancosPage';
+import { CampanasOutreachPage } from './features/campanas-outreach/pages/campanas-outreachPage';
+import { CatalogoPage } from './features/catalogo-planes';
+import { CatalogoProductosPage } from './features/catalogo-productos';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { Layout } from './components/Layout';
+import { useState } from 'react';
+import { ExamplePage } from './components/componentsreutilizables';
+import AgendaPage from './features/agenda/page';
+import AgendaCalendarioPage from './features/agenda-calendario/pages/agenda-calendarioPage';
+import AlertasRestriccionesAlimentariasPage from './features/alertas-restricciones-alimentarias/pages/alertas-restricciones-alimentariasPage';
+import DisponibilidadTurnosStaffPage from './features/disponibilidad-turnos-staff/pages/disponibilidad-turnos-staffPage';
+import EditorDietaMealPlannerPage from './features/editor-de-dieta-meal-planner/pages/editor-de-dieta-meal-plannerPage';
+import EditorDeEntrenoPage from './features/editor-de-entreno/pages/editor-de-entrenoPage';
+import EncuestasSatisfaccinNPSCSATPage from './features/encuestas-satisfaccin-npscsat/pages/encuestas-satisfaccin-npscsatPage';
+import EventosRetosEspecialesPage from './features/eventos-retos-especiales';
+import { FacturacinCobrosPage } from './features/facturacin-cobros';
+import { GastosProveedoresPage } from './features/gastos-proveedores';
+import GestiónDeClientesPage from './features/gestión-de-clientes/pages/gestión-de-clientesPage';
+import InformeDeVentasRetailPage from './features/informe-de-ventas-retail/pages/informe-de-ventas-retailPage';
+import { InventarioStockPage } from './features/inventario-stock';
+import RecepcionesDeMaterialPage from './features/recepciones-de-material/pages/recepciones-de-materialPage';
+import LeadsPage from './features/leads/pages/leadsPage';
+import ListaEsperaAusenciasPage from './features/lista-de-espera-ausencias/pages/lista-de-espera-ausenciasPage';
+import ListaDeLaCompraSupermercadoPage from './features/lista-de-la-compra-supermercado/pages/lista-de-la-compra-supermercadoPage';
+import { ListasInteligentesSegmentosGuardadosPage } from './features/listas-inteligentes-segmentos-guardados';
+import { MantenimientoIncidenciasPage } from './features/mantenimiento-incidencias';
+import MembresiasActivasPage from './features/membresas-activas/pages/membresas-activasPage';
+import ObjetivosRendimientoPage from './features/objetivos-rendimiento/pages/objetivos-rendimientoPage';
+import PagosPendientesMorosidadPage from './features/pagos-pendientes-morosidad/pages/pagos-pendientes-morosidadPage';
+import PanelFinancieroOverviewPage from './features/panel-financiero-overview/pages/panel-financiero-overviewPage';
+import { PedidosTicketsPage } from './features/pedidos-tickets';
+import PipelineDeVentaKanbanPage from './features/pipeline-de-venta-kanban/pages/pipeline-de-venta-kanbanPage';
+import PlantillasDeDietaPage from './features/plantillas-de-dieta/pages/plantillas-de-dietaPage';
+import PlantillasDeEntrenamientoPage from './features/plantillas-de-entrenamiento/pages/plantillas-de-entrenamientoPage';
+import PortalDelClienteAutoservicioPage from './features/portal-del-cliente-autoservicio/pages/portal-del-cliente-autoservicioPage';
+import ProgramasDeEntrenoPage from './features/programas-de-entreno/pages/programas-de-entrenoPage';
+import TurnosHorariosDelStaffPage from './features/turnos-horarios-del-staff/pages/turnos-horarios-del-staffPage';
+import CheckInsDeEntrenoPage from './features/check-ins-de-entreno/pages/check-ins-de-entrenoPage';
+import CheckInsNutricionalesPage from './features/check-ins-nutricionales/pages/check-ins-nutricionalesPage';
+import ControlAccesoAforoTiempoRealPage from './features/control-de-acceso-aforo-en-tiempo-real/pages/control-de-acceso-aforo-en-tiempo-realPage';
+import DietasAsignadasPage from './features/dietas-asignadas/pages/dietas-asignadasPage';
+import RecetarioComidasGuardadasPage from './features/recetario-comidas-guardadas/pages/recetario-comidas-guardadasPage';
+import RecursosSalasMaterialPage from './features/recursos-salas-material/pages/recursos-salas-materialPage';
+import RenovacionesBajasPage from './features/renovaciones-bajas/pages/renovaciones-bajasPage';
+import ReservasOnlinePage from './features/reservas-online/pages/reservas-onlinePage';
+import ResumenGeneralPage from './features/resumen-general/pages/resumen-generalPage';
+import SuscripcionesCuotasRecurrentesPage from './features/suscripciones-cuotas-recurrentes/pages/suscripciones-cuotas-recurrentesPage';
+import TareasAlertasPage from './features/tareas-alertas/pages/tareas-alertasPage';
+import TiendaOnlineCheckoutOnlinePage from './features/tienda-online-checkout-online/pages/tienda-online-checkout-onlinePage';
+import AfiliadosReferidosPage from './features/afiliados-referidos/pages/afiliados-referidosPage';
+import AnaliticaDeAdquisicionPage from './features/analitica-de-adquisicion/pages/analitica-de-adquisicionPage';
+import CatalogoYPreciosPorSedePage from './features/catalogo-y-precios-por-sede/pages/catalogo-y-precios-por-sedePage';
+import ChecklistsOperativosAperturaCierreLimpiezaPage from './features/checklists-operativos-aperturacierrelimpieza/pages/checklists-operativos-aperturacierrelimpiezaPage';
+import { ClientesPerdidosBajasPage } from './features/clientes-perdidos-bajas';
+import ClientesEnRiesgoRetencionPage from './features/clientes-en-riesgo-retencion/pages/clientes-en-riesgo-retencionPage';
+import { Cliente360Page } from './features/cliente-360/pages/cliente-360Page';
+import ComparativaEntreSedesPage from './features/comparativa-entre-sedes/pages/comparativa-entre-sedesPage';
+import ResumenPorSedePage from './features/resumen-por-sede/pages/resumen-por-sedePage';
+import DocumentacionInternaYProtocolosPage from './features/documentacion-interna-y-protocolos/pages/documentacion-interna-y-protocolosPage';
+import EmbudosOfertasLandingPagesPage from './features/embudos-ofertas-landing-pages/pages/embudos-ofertas-landing-pagesPage';
+import EmpleadosActivosPage from './features/empleados-activos/pages/empleados-activosPage';
+import EmpresasConveniosPage from './features/empresas-convenios/pages/empresas-conveniosPage';
+import EquipoRolesPage from './features/equipo-roles/pages/equipo-rolesPage';
+import PortalEmpresaPage from './features/portal-empresa/pages/portal-empresaPage';
+import EvaluacionDeProveedoresPage from './features/evaluacion-de-proveedores/pages/evaluacion-de-proveedoresPage';
+import FacturacionAEmpresasPage from './features/facturacion-a-empresas/pages/facturacion-a-empresasPage';
+import FeedbackInternoYEvaluacionesDeRendimientoPage from './features/feedback-interno-y-evaluaciones-de-rendimiento/pages/feedback-interno-y-evaluaciones-de-rendimientoPage';
+import GeneralDelCentroMarcaPersonalPage from './features/general-del-centro-marca-personal/pages/general-del-centro-marca-personalPage';
+import HistoricoDeCostesDeCompraPage from './features/historico-de-costes-de-compra/pages/historico-de-costes-de-compraPage';
+import ImportadoresMigracionesPage from './features/importadores-migraciones/pages/importadores-migracionesPage';
+import ImpuestosExportContablePage from './features/impuestos-export-contable/pages/impuestos-export-contablePage';
+import InformesFinancierosAvanzadosPage from './features/informes-financieros-avanzados/pages/informes-financieros-avanzadosPage';
+import IntegracionesYAutomatizacionPage from './features/integraciones-y-automatizacion/pages/integraciones-y-automatizacionPage';
+import MonedaImpuestosSeriesDeFacturaPage from './features/moneda-impuestos-series-de-factura/pages/moneda-impuestos-series-de-facturaPage';
+import NormativaYPlantillasGlobalesPage from './features/normativa-y-plantillas-globales/pages/normativa-y-plantillas-globalesPage';
+import NominasVariablesPage from './features/nominas-variables/pages/nominas-variablesPage';
+import ObjetivosComisionesPage from './features/objetivos-comisiones/pages/objetivos-comisionesPage';
+import ParteHorariaFichajesPage from './features/parte-horaria-fichajes/pages/parte-horaria-fichajesPage';
+import RolesPermisosPage from './features/roles-permisos/pages/roles-permisosPage';
+import OrdenesDeCompraPage from './features/ordenes-de-compra/pages/ordenes-de-compraPage';
+import ServiciosTarifasPage from './features/servicios-tarifas/pages/servicios-tarifasPage';
+import WebhooksApiKeysPage from './features/webhooks-api-keys/pages/webhooks-api-keysPage';
+import PlantillasDeMensajesYContratosPage from './features/plantillas-de-mensajes-y-contratos/pages/plantillas-de-mensajes-y-contratosPage';
+import PoliticasTerminosPage from './features/politicas-terminos/pages/politicas-terminosPage';
+import PresupuestosForecastPage from './features/presupuestos-forecast/pages/presupuestos-forecastPage';
+import ProveedoresContratosPage from './features/proveedores-contratos/pages/proveedores-contratosPage';
+import TransferenciasEntreSedesPage from './features/transferencias-entre-sedes/pages/transferencias-entre-sedesPage';
+import UsoResultadosProgramasCorporativosPage from './features/uso-resultados-programas-corporativos/pages/uso-resultados-programas-corporativosPage';
+function ProtectedRoute() {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  return <Outlet />;
+}
+
+function RedirectIfAuthed() {
+  const { user } = useAuth();
+  if (user) return <Navigate to="/dashboard" replace />;
+  return <Login />;
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <Routes>
+        <Route path="/example" element={<ExamplePage />} />
+        <Route path="/login" element={<RedirectIfAuthed />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          {/** Envuelve las páginas con Layout para mostrar Sidebar */}
+          <Route element={<AppLayout />}>
+            <Route path="/adherencia" element={<AdherenciaCumplimientoEntrenoPage />} />
+            <Route path="/restricciones" element={<RestriccionesAlimentariasPage />} />
+            <Route path="/biblioteca-de-ejercicios" element={<BibliotecaEjerciciosPage />} />
+            <Route path="/catalogo-planes" element={<CatalogoPage />} />
+            <Route path="/catalogo-productos" element={<CatalogoProductosPage />} />
+            <Route path="/settings/services" element={<ServiciosTarifasPage />} />
+            <Route path="/agenda" element={<AgendaCalendarioPage />} />
+            <Route path="/caja-bancos" element={<CajaBancosPage />} />
+            <Route path="/campanas-outreach" element={<CampanasOutreachPage />} />
+            <Route path="/alertas-restricciones-alimentarias" element={<AlertasRestriccionesAlimentariasPage />} />
+            <Route path="/disponibilidad-turnos-staff" element={<DisponibilidadTurnosStaffPage />} />
+            <Route path="/editor-de-dieta-meal-planner" element={<EditorDietaMealPlannerPage />} />
+            <Route path="/editor-de-entreno" element={<EditorDeEntrenoPage />} />
+            <Route path="/encuestas-satisfaccin-npscsat" element={<EncuestasSatisfaccinNPSCSATPage />} />
+            <Route path="/eventos-retos-especiales" element={<EventosRetosEspecialesPage />} />
+            <Route path="/facturacin-cobros" element={<FacturacinCobrosPage />} />
+            <Route path="/gastos-proveedores" element={<GastosProveedoresPage />} />
+            <Route path="/ordenes-de-compra" element={<OrdenesDeCompraPage />} />
+            <Route path="/finanzas/compras/historico-costes" element={<HistoricoDeCostesDeCompraPage />} />
+            <Route path="/gestión-de-clientes" element={<GestiónDeClientesPage />} />
+            <Route path="/informe-de-ventas-retail" element={<InformeDeVentasRetailPage />} />
+            <Route path="/inventario-stock" element={<InventarioStockPage />} />
+            <Route path="/inventario/recepciones" element={<RecepcionesDeMaterialPage />} />
+            <Route path="/leads" element={<LeadsPage />} />
+            <Route path="/lista-de-espera-ausencias" element={<ListaEsperaAusenciasPage />} />
+            <Route path="/lista-de-la-compra-supermercado" element={<ListaDeLaCompraSupermercadoPage />} />
+            <Route path="/listas-inteligentes-segmentos-guardados" element={<ListasInteligentesSegmentosGuardadosPage />} />
+            <Route path="/mantenimiento-incidencias" element={<MantenimientoIncidenciasPage />} />
+            <Route path="/membresias-activas" element={<MembresiasActivasPage />} />
+            <Route path="/objetivos-rendimiento" element={<ObjetivosRendimientoPage />} />
+            <Route path="/pagos-pendientes-morosidad" element={<PagosPendientesMorosidadPage />} />
+            <Route path="/panel-financiero-overview" element={<PanelFinancieroOverviewPage />} />
+            <Route path="/pedidos-tickets" element={<PedidosTicketsPage />} />
+            <Route path="/pipeline-de-venta-kanban" element={<PipelineDeVentaKanbanPage />} />
+            <Route path="/plantillas-de-dieta" element={<PlantillasDeDietaPage />} />
+            <Route path="/plantillas-de-entrenamiento" element={<PlantillasDeEntrenamientoPage />} />
+            <Route path="/settings/templates" element={<PlantillasDeMensajesYContratosPage />} />
+            <Route path="/settings/policies" element={<PoliticasTerminosPage />} />
+            <Route path="/portal-del-cliente-autoservicio" element={<PortalDelClienteAutoservicioPage />} />
+            <Route path="/programas-de-entreno" element={<ProgramasDeEntrenoPage />} />
+            <Route path="/turnos-horarios-del-staff" element={<TurnosHorariosDelStaffPage />} />
+            <Route path="/check-ins-de-entreno" element={<CheckInsDeEntrenoPage />} />
+            <Route path="/check-ins-nutricionales" element={<CheckInsNutricionalesPage />} />
+            <Route path="/control-de-acceso-aforo" element={<ControlAccesoAforoTiempoRealPage />} />
+            <Route path="/dietas-asignadas" element={<DietasAsignadasPage />} />
+            <Route path="/recetario-comidas-guardadas" element={<RecetarioComidasGuardadasPage />} />
+            <Route path="/recursos-salas-material" element={<RecursosSalasMaterialPage />} />
+            <Route path="/renovaciones-bajas" element={<RenovacionesBajasPage />} />
+            <Route path="/reservas-online" element={<ReservasOnlinePage />} />
+            <Route path="/resumen-general" element={<ResumenGeneralPage />} />
+            <Route path="/suscripciones-cuotas-recurrentes" element={<SuscripcionesCuotasRecurrentesPage />} />
+            <Route path="/tareas-alertas" element={<TareasAlertasPage />} />
+            <Route path="/tienda-online-checkout-online" element={<TiendaOnlineCheckoutOnlinePage />} />
+            <Route path="/marketing/afiliados-y-referidos" element={<AfiliadosReferidosPage />} />
+            <Route path="/marketing/landing-pages" element={<EmbudosOfertasLandingPagesPage />} />
+            <Route path="/analytics/acquisition" element={<AnaliticaDeAdquisicionPage />} />
+            <Route path="/analytics/locations-summary" element={<ResumenPorSedePage />} />
+            <Route path="/analiticas/comparativa-sedes" element={<ComparativaEntreSedesPage />} />
+            <Route path="/multisede/transferencias" element={<TransferenciasEntreSedesPage />} />
+            <Route path="/catalogo-y-precios-por-sede" element={<CatalogoYPreciosPorSedePage />} />
+            <Route path="/operations/checklists" element={<ChecklistsOperativosAperturaCierreLimpiezaPage />} />
+            <Route path="/operations/documents" element={<DocumentacionInternaYProtocolosPage />} />
+            <Route path="/corporate/governance/templates" element={<NormativaYPlantillasGlobalesPage />} />
+            <Route path="/finanzas/impuestos-y-exportacion" element={<ImpuestosExportContablePage />} />
+            <Route path="/finanzas/informes-avanzados" element={<InformesFinancierosAvanzadosPage />} />
+            <Route path="/finanzas/presupuestos" element={<PresupuestosForecastPage />} />
+            <Route path="/crm/clientes/bajas" element={<ClientesPerdidosBajasPage />} />
+            <Route path="/crm/clientes-en-riesgo" element={<ClientesEnRiesgoRetencionPage />} />
+            <Route path="/crm/cliente-360/:clientId" element={<Cliente360Page />} />
+            <Route path="/corporate/companies/:companyId/employees" element={<EmpleadosActivosPage />} />
+            <Route path="/b2b/convenios" element={<EmpresasConveniosPage />} />
+            <Route path="/b2b/empresas-corporativas" element={<PortalEmpresaPage />} />
+            <Route path="/corporate/usage-results" element={<UsoResultadosProgramasCorporativosPage />} />
+            <Route path="/corporate/billing" element={<FacturacionAEmpresasPage />} />
+            <Route path="/settings/team" element={<EquipoRolesPage />} />
+            <Route path="/settings/general-profile" element={<GeneralDelCentroMarcaPersonalPage />} />
+            <Route path="/operaciones/proveedores/evaluaciones" element={<EvaluacionDeProveedoresPage />} />
+            <Route path="/admin/operaciones/proveedores" element={<ProveedoresContratosPage />} />
+            <Route path="/team/performance-reviews" element={<FeedbackInternoYEvaluacionesDeRendimientoPage />} />
+            <Route path="/settings/data/importers" element={<ImportadoresMigracionesPage />} />
+            <Route path="/settings/integrations" element={<IntegracionesYAutomatizacionPage />} />
+            <Route path="/settings/developer" element={<WebhooksApiKeysPage />} />
+            <Route path="/settings/financials" element={<MonedaImpuestosSeriesDeFacturaPage />} />
+            <Route path="/equipo/nominas" element={<NominasVariablesPage />} />
+            <Route path="/team/incentives" element={<ObjetivosComisionesPage />} />
+            <Route path="/team/time-tracking" element={<ParteHorariaFichajesPage />} />
+            <Route path="/configuracion/roles-y-permisos" element={<RolesPermisosPage />} />
+          </Route>
+        </Route>
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </AuthProvider>
+  );
+}
+
+export default App;
+
+function AppLayout() {
+  const [activeView, setActiveView] = useState<string | undefined>(undefined);
+  return (
+    <Layout activeView={activeView} onViewChange={setActiveView}>
+      <Outlet />
+    </Layout>
+  );
+}

@@ -299,7 +299,7 @@ export const FacturacionManager: React.FC = () => {
             aria-label="Secciones facturación"
             className="flex items-center gap-2 rounded-2xl bg-slate-100 p-1"
           >
-            {tabs.map(({ id, label, icon: Icon }) => {
+            {tabs.map(({ id, label, icon }) => {
               const activo = tabActiva === id;
               return (
                 <button
@@ -314,10 +314,9 @@ export const FacturacionManager: React.FC = () => {
                       : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
                   ].join(' ')}
                 >
-                  <Icon
-                    size={18}
-                    className={activo ? 'opacity-100' : 'opacity-70'}
-                  />
+                  <div className={activo ? 'opacity-100' : 'opacity-70'}>
+                    {icon}
+                  </div>
                   <span>{label}</span>
                 </button>
               );

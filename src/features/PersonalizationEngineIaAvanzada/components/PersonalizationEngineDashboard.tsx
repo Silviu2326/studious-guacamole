@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from '../../../components/componentsreutilizables';
+import { MetricCards, MetricCardData } from '../../../components/componentsreutilizables';
 import { getPersonalizationKPIs, PersonalizationKPI } from '../api/personalization';
-import { TrendingUp, CheckCircle, XCircle, Target, DollarSign, BookOpen } from 'lucide-react';
+import { TrendingUp, CheckCircle, Target, DollarSign, BookOpen, Loader2 } from 'lucide-react';
 
 interface PersonalizationEngineDashboardProps {
   isLoading?: boolean;
@@ -30,97 +30,68 @@ export const PersonalizationEngineDashboard: React.FC<PersonalizationEngineDashb
   if (isLoading || !kpiData) {
     return (
       <div className="flex items-center justify-center min-h-[300px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        <Loader2 size={48} className="text-blue-500 animate-spin" />
       </div>
     );
   }
 
+  const mainKPIs: MetricCardData[] = [
+    {
+      id: 'acceptance-rate',
+      title: 'Tasa de Aceptación',
+      value: `${kpiData.acceptanceRate.toFixed(1)}%`,
+      color: 'success',
+      icon: <CheckCircle size={20} />
+    },
+    {
+      id: 'adherence-impact',
+      title: 'Impacto Adherencia',
+      value: `+${kpiData.adherenceImpact.toFixed(1)}%`,
+      color: 'success',
+      icon: <TrendingUp size={20} />
+    },
+    {
+      id: 'prediction-accuracy',
+      title: 'Precisión Predicción',
+      value: `${kpiData.riskPredictionAccuracy.toFixed(1)}%`,
+      color: 'info',
+      icon: <Target size={20} />
+    },
+    {
+      id: 'offer-conversion',
+      title: 'Conversión Ofertas',
+      value: `${kpiData.offerConversionRate.toFixed(1)}%`,
+      color: 'info',
+      icon: <DollarSign size={20} />
+    }
+  ];
+
+  const additionalKPIs: MetricCardData[] = [
+    {
+      id: 'content-engagement',
+      title: 'Engagement Contenido',
+      value: `${kpiData.contentEngagementRate.toFixed(1)}%`,
+      subtitle: 'CTR en contenido recomendado',
+      color: 'info',
+      icon: <BookOpen size={20} />
+    },
+    {
+      id: 'churn-rate',
+      title: 'Churn Rate IA',
+      value: `${kpiData.churnRateIA.toFixed(1)}%`,
+      subtitle: 'vs grupo de control',
+      color: 'error',
+      icon: <Target size={20} />
+    }
+  ];
+
   return (
     <div className="space-y-6">
       {/* Main KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <Card className="p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-            </div>
-          </div>
-          <h3 className="text-sm font-medium text-gray-600 mb-1">Tasa de Aceptación</h3>
-          <p className="text-3xl font-bold text-gray-900">{kpiData.acceptanceRate.toFixed(1)}%</p>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <TrendingUp className="w-5 h-5 text-blue-600" />
-            </div>
-          </div>
-          <h3 className="text-sm font-medium text-gray-600 mb-1">Impacto Adherencia</h3>
-          <p className="text-3xl font-bold text-green-600">+{kpiData.adherenceImpact.toFixed(1)}%</p>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <Target className="w-5 h-5 text-red-600" />
-            </div>
-          </div>
-          <h3 className="text-sm font-medium text-gray-600 mb-1">Precisión Predicción</h3>
-          <p className="text-3xl font-bold text-gray-900">{kpiData.riskPredictionAccuracy.toFixed(1)}%</p>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <DollarSign className="w-5 h-5 text-purple-600" />
-            </div>
-          </div>
-          <h3 className="text-sm font-medium text-gray-600 mb-1">Conversión Ofertas</h3>
-          <p className="text-3xl font-bold text-gray-900">{kpiData.offerConversionRate.toFixed(1)}%</p>
-        </Card>
-      </div>
+      <MetricCards data={mainKPIs} columns={4} />
 
       {/* Additional Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <BookOpen className="w-5 h-5 text-blue-600" />
-            <h3 className="text-lg font-bold text-gray-900">Engagement Contenido</h3>
-          </div>
-          <p className="text-3xl font-bold text-blue-600">{kpiData.contentEngagementRate.toFixed(1)}%</p>
-          <p className="text-xs text-gray-600 mt-1">CTR en contenido recomendado</p>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Target className="w-5 h-5 text-red-600" />
-            <h3 className="text-lg font-bold text-gray-900">Churn Rate IA</h3>
-          </div>
-          <p className="text-3xl font-bold text-red-600">{kpiData.churnRateIA.toFixed(1)}%</p>
-          <p className="text-xs text-gray-600 mt-1">vs grupo de control</p>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <CheckCircle className="w-5 h-5 text-green-600" />
-            <h3 className="text-lg font-bold text-gray-900">Sugerencias</h3>
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">Generadas</span>
-              <span className="text-xl font-bold text-gray-900">{kpiData.totalSuggestionsGenerated}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">Aceptadas</span>
-              <span className="text-xl font-bold text-green-600">{kpiData.totalSuggestionsAccepted}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">Rechazadas</span>
-              <span className="text-xl font-bold text-red-600">{kpiData.totalSuggestionsRejected}</span>
-            </div>
-          </div>
-        </Card>
-      </div>
+      <MetricCards data={additionalKPIs} columns={3} />
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Funnel } from '../api/funnels';
 import { Globe, Edit, Trash2, BarChart3, Eye } from 'lucide-react';
+import { Card, Button, Badge } from '../../../components/componentsreutilizables';
 
 interface FunnelListProps {
   funnels: Funnel[];
@@ -18,77 +19,85 @@ export const FunnelList: React.FC<FunnelListProps> = ({
   onViewLive
 }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {funnels.map((funnel) => (
-        <div
+        <Card
           key={funnel.funnelId}
-          className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-6"
+          variant="hover"
+          className="h-full flex flex-col transition-shadow overflow-hidden"
+          padding="md"
         >
           <div className="flex items-start justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">{funnel.name}</h3>
-              <p className="text-sm text-gray-500 mt-1">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">{funnel.name}</h3>
+              <p className="text-sm text-gray-600">
                 {funnel.steps.length} {funnel.steps.length === 1 ? 'página' : 'páginas'}
               </p>
             </div>
-            <span
-              className={`px-2 py-1 text-xs font-medium rounded ${
+            <Badge
+              variant={
                 funnel.status === 'published'
-                  ? 'bg-green-100 text-green-800'
+                  ? 'green'
                   : funnel.status === 'draft'
-                  ? 'bg-yellow-100 text-yellow-800'
-                  : 'bg-gray-100 text-gray-800'
-              }`}
+                  ? 'yellow'
+                  : 'gray'
+              }
+              size="sm"
             >
               {funnel.status === 'published' ? 'Publicado' : funnel.status === 'draft' ? 'Borrador' : 'Archivado'}
-            </span>
+            </Badge>
           </div>
 
           <div className="flex flex-wrap gap-2 mb-4">
             {funnel.steps.map((step) => (
-              <span
-                key={step.pageId}
-                className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded"
-              >
+              <Badge key={step.pageId} variant="gray" size="sm">
                 {step.name}
-              </span>
+              </Badge>
             ))}
           </div>
 
-          <div className="flex items-center gap-2 pt-4 border-t border-gray-200">
-            <button
+          <div className="flex gap-2 mt-auto pt-3 border-t border-gray-100">
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => onEdit(funnel.funnelId)}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded transition"
+              leftIcon={<Edit size={16} />}
             >
-              <Edit className="w-4 h-4" />
               Editar
-            </button>
+            </Button>
             {funnel.status === 'published' && (
               <>
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => onViewLive(funnel.funnelId)}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-green-600 hover:bg-green-50 rounded transition"
+                  leftIcon={<Eye size={16} />}
+                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
                 >
-                  <Eye className="w-4 h-4" />
                   Ver
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => onViewAnalytics(funnel.funnelId)}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-purple-600 hover:bg-purple-50 rounded transition"
+                  leftIcon={<BarChart3 size={16} />}
+                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                 >
-                  <BarChart3 className="w-4 h-4" />
                   Analytics
-                </button>
+                </Button>
               </>
             )}
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => onDelete(funnel.funnelId)}
-              className="ml-auto flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded transition"
+              className="ml-auto text-red-600 hover:text-red-700 hover:bg-red-50"
+              leftIcon={<Trash2 size={16} />}
             >
-              <Trash2 className="w-4 h-4" />
-            </button>
+              Eliminar
+            </Button>
           </div>
-        </div>
+        </Card>
       ))}
     </div>
   );

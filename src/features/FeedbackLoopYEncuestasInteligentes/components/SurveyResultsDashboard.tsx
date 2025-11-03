@@ -1,6 +1,7 @@
 import React from 'react';
 import { SurveyResults } from '../api/surveys';
 import { TrendingUp, Users, MessageSquare, AlertTriangle } from 'lucide-react';
+import { Card } from '../../../components/componentsreutilizables';
 
 interface SurveyResultsDashboardProps {
   results: SurveyResults;
@@ -28,8 +29,8 @@ export const SurveyResultsDashboard: React.FC<SurveyResultsDashboardProps> = ({
   return (
     <div className="space-y-6">
       {/* KPIs principales */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="bg-white shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-600">Total Respuestas</span>
             <Users className="w-5 h-5 text-blue-500" />
@@ -38,10 +39,10 @@ export const SurveyResultsDashboard: React.FC<SurveyResultsDashboardProps> = ({
           <p className="text-xs text-gray-500 mt-1">
             {results.summary.responseRate}% tasa de respuesta
           </p>
-        </div>
+        </Card>
 
         {results.summary.nps !== undefined && (
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <Card className="bg-white shadow-sm">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-600">Net Promoter Score</span>
               <TrendingUp className="w-5 h-5 text-green-500" />
@@ -51,18 +52,18 @@ export const SurveyResultsDashboard: React.FC<SurveyResultsDashboardProps> = ({
               {results.summary.nps >= 50 ? 'Excelente' :
                results.summary.nps >= 0 ? 'Bueno' : 'Necesita mejora'}
             </p>
-          </div>
+          </Card>
         )}
 
         {results.summary.csat !== undefined && (
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <Card className="bg-white shadow-sm">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-600">CSAT</span>
-              <MessageSquare className="w-5 h-5 text-purple-500" />
+              <MessageSquare className="w-5 h-5 text-blue-500" />
             </div>
             <p className="text-2xl font-bold text-gray-900">{results.summary.csat.toFixed(1)}/5</p>
             <p className="text-xs text-gray-500 mt-1">Satisfacción del cliente</p>
-          </div>
+          </Card>
         )}
       </div>
 
@@ -72,7 +73,7 @@ export const SurveyResultsDashboard: React.FC<SurveyResultsDashboardProps> = ({
           const npsData = calculateNPSBreakdown(breakdown);
           
           return (
-            <div key={breakdown.questionId} className="bg-white rounded-lg border border-gray-200 p-6">
+            <Card key={breakdown.questionId} className="bg-white shadow-sm">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">{breakdown.text}</h3>
               
               {npsData ? (
@@ -109,7 +110,7 @@ export const SurveyResultsDashboard: React.FC<SurveyResultsDashboardProps> = ({
                             <span className="w-12 text-sm text-gray-600">{value}</span>
                             <div className="flex-1 bg-gray-200 rounded-full h-4">
                               <div
-                                className="bg-purple-600 h-4 rounded-full"
+                                className="bg-blue-600 h-4 rounded-full"
                                 style={{
                                   width: `${(Number(count) / results.summary.totalResponses) * 100}%`
                                 }}
@@ -124,14 +125,14 @@ export const SurveyResultsDashboard: React.FC<SurveyResultsDashboardProps> = ({
               ) : (
                 <p className="text-gray-500">Sin datos estadísticos disponibles</p>
               )}
-            </div>
+            </Card>
           );
         })}
       </div>
 
       {/* Respuestas individuales */}
       {results.individualResponses.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <Card className="bg-white shadow-sm">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Respuestas Individuales ({results.individualResponses.length})
           </h3>
@@ -146,8 +147,8 @@ export const SurveyResultsDashboard: React.FC<SurveyResultsDashboardProps> = ({
                       className="w-10 h-10 rounded-full"
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                      <span className="text-purple-600 font-semibold">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                      <span className="text-blue-600 font-semibold">
                         {response.clientName?.charAt(0) || '?'}
                       </span>
                     </div>
@@ -176,7 +177,7 @@ export const SurveyResultsDashboard: React.FC<SurveyResultsDashboardProps> = ({
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );

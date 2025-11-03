@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Mail, Send, CheckCircle, AlertCircle } from 'lucide-react';
+import { Button } from '../../../components/componentsreutilizables';
 import { requestConsent } from '../api/ugc';
 
 interface ConsentRequestModalProps {
@@ -68,8 +69,8 @@ Me encantaría obtener tu permiso para usar tu contenido en mis materiales de ma
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Mail className="w-5 h-5 text-purple-600" />
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Mail className="w-5 h-5 text-blue-600" />
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-900">
@@ -151,7 +152,7 @@ Me encantaría obtener tu permiso para usar tu contenido en mis materiales de ma
                   onChange={(e) => setCustomMessage(e.target.value)}
                   rows={8}
                   placeholder={defaultMessage}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-sm"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none text-sm"
                 />
                 <p className="text-xs text-gray-500 mt-2">
                   Deja este campo vacío para usar el mensaje por defecto, o personalízalo según tus necesidades.
@@ -193,30 +194,22 @@ Me encantaría obtener tu permiso para usar tu contenido en mis materiales de ma
 
               {/* Actions */}
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
                   onClick={handleClose}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                  type="button"
                 >
                   Cancelar
-                </button>
-                <button
-                  type="submit"
+                </Button>
+                <Button
+                  variant="primary"
                   disabled={isSending}
-                  className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  loading={isSending}
+                  leftIcon={<Send size={20} />}
+                  type="submit"
                 >
-                  {isSending ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Enviando...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4" />
-                      Enviar Solicitud
-                    </>
-                  )}
-                </button>
+                  Enviar Solicitud
+                </Button>
               </div>
             </form>
           </div>

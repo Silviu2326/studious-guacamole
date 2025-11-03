@@ -22,7 +22,7 @@ export const LandingPageCanvas: React.FC<LandingPageCanvasProps> = ({
   const maxWidth = viewMode === 'mobile' ? '375px' : '100%';
 
   const renderComponent = (component: PageComponent) => {
-    const baseClasses = "border-2 border-dashed border-gray-300 rounded p-4 mb-4 cursor-pointer hover:border-blue-400 transition-colors";
+    const baseClasses = "border-2 border-dashed border-gray-300 rounded-xl p-4 mb-4 cursor-pointer hover:border-blue-400 transition-all";
     
     switch (component.type) {
       case 'heading':
@@ -84,7 +84,7 @@ export const LandingPageCanvas: React.FC<LandingPageCanvasProps> = ({
               />
               <button
                 type="submit"
-                className="w-full bg-blue-500 text-white py-2 rounded"
+                className="w-full bg-blue-600 text-white py-2 rounded-xl font-medium transition-all"
                 disabled
               >
                 {component.props.buttonText || 'Enviar'}
@@ -100,7 +100,7 @@ export const LandingPageCanvas: React.FC<LandingPageCanvasProps> = ({
             className={baseClasses}
             onClick={() => onComponentSelect(component.id)}
           >
-            <button className="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold">
+            <button className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold transition-all hover:bg-blue-700">
               {component.props.text || 'Botón CTA'}
             </button>
           </div>
@@ -120,9 +120,9 @@ export const LandingPageCanvas: React.FC<LandingPageCanvasProps> = ({
   };
 
   return (
-    <div className="bg-gray-100 min-h-screen p-8">
+    <div className="bg-gray-50 min-h-screen p-8">
       <div
-        className="mx-auto bg-white shadow-lg rounded-lg overflow-hidden"
+        className="mx-auto bg-white shadow-sm rounded-2xl overflow-hidden ring-1 ring-gray-200/60"
         style={{ maxWidth }}
       >
         {/* Preview de la página */}
@@ -130,9 +130,9 @@ export const LandingPageCanvas: React.FC<LandingPageCanvasProps> = ({
           {pageData.jsonContent.components.length > 0 ? (
             pageData.jsonContent.components.map(renderComponent)
           ) : (
-            <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-gray-300 rounded text-gray-400">
-              <p className="mb-2">Página vacía</p>
-              <p className="text-sm">Arrastra componentes aquí para empezar</p>
+            <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-gray-300 rounded-xl text-gray-400">
+              <p className="mb-2 text-gray-600">Página vacía</p>
+              <p className="text-sm text-gray-500">Arrastra componentes aquí para empezar</p>
             </div>
           )}
         </div>

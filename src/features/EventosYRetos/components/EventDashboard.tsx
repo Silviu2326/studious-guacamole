@@ -10,8 +10,10 @@ import {
   Mail, 
   Calendar,
   Loader2,
-  BarChart3
+  BarChart3,
+  AlertCircle
 } from 'lucide-react';
+import { Card, MetricCards, type MetricCardData } from '../../../components/componentsreutilizables';
 
 interface EventDashboardProps {
   eventId: string;
@@ -29,25 +31,30 @@ export const EventDashboard: React.FC<EventDashboardProps> = ({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
-      </div>
+      <Card className="p-8 text-center bg-white shadow-sm">
+        <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+        <p className="text-gray-600">Cargando...</p>
+      </Card>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-        <p>Error: {error.message}</p>
-      </div>
+      <Card className="p-8 text-center">
+        <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Error al cargar</h3>
+        <p className="text-gray-600 mb-4">{error.message}</p>
+      </Card>
     );
   }
 
   if (!event) {
     return (
-      <div className="text-center py-12 text-gray-500">
-        <p>Evento no encontrado</p>
-      </div>
+      <Card className="p-8 text-center bg-white shadow-sm">
+        <AlertCircle size={48} className="mx-auto text-gray-400 mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Evento no encontrado</h3>
+        <p className="text-gray-600">No se pudo encontrar el evento solicitado.</p>
+      </Card>
     );
   }
 
@@ -59,9 +66,9 @@ export const EventDashboard: React.FC<EventDashboardProps> = ({
   return (
     <div className="space-y-6">
       {/* Header del Evento */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-6 text-white">
+      <Card className="bg-gradient-to-r from-blue-600 to-blue-600 p-6 text-white border-0">
         <h2 className="text-2xl font-bold mb-2">{event.name}</h2>
-        <p className="text-purple-100 mb-4">{event.description}</p>
+        <p className="text-blue-100 mb-4">{event.description}</p>
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-1">
             <Calendar className="w-4 h-4" />
@@ -74,51 +81,43 @@ export const EventDashboard: React.FC<EventDashboardProps> = ({
             {event.type}
           </span>
         </div>
-      </div>
+      </Card>
 
       {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">Participantes</span>
-            <Users className="w-5 h-5 text-blue-500" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{event.participantCount}</p>
-          {event.maxParticipants && (
-            <p className="text-xs text-gray-500 mt-1">
-              de {event.maxParticipants} plazas
-            </p>
-          )}
-        </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">Ingresos</span>
-            <DollarSign className="w-5 h-5 text-green-500" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">
-            {event.stats?.totalRevenue?.toLocaleString() || '0'}€
-          </p>
-        </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">Tasa Finalización</span>
-            <TrendingUp className="w-5 h-5 text-purple-500" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{completionRate}%</p>
-        </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">Engagement</span>
-            <BarChart3 className="w-5 h-5 text-orange-500" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">
-            {event.stats?.averageEngagement?.toFixed(1) || '0'}
-          </p>
-        </div>
-      </div>
+      <MetricCards
+        columns={4}
+        data={[
+          {
+            id: 'participants',
+            title: 'Participantes',
+            value: event.participantCount,
+            subtitle: event.maxParticipants ? `de ${event.maxParticipants} plazas` : undefined,
+            color: 'info',
+            icon: <Users size={20} />
+          },
+          {
+            id: 'revenue',
+            title: 'Ingresos',
+            value: `${event.stats?.totalRevenue?.toLocaleString() || '0'}€`,
+            color: 'success',
+            icon: <DollarSign size={20} />
+          },
+          {
+            id: 'completion',
+            title: 'Tasa Finalización',
+            value: `${completionRate}%`,
+            color: 'info',
+            icon: <TrendingUp size={20} />
+          },
+          {
+            id: 'engagement',
+            title: 'Engagement',
+            value: event.stats?.averageEngagement?.toFixed(1) || '0',
+            color: 'warning',
+            icon: <BarChart3 size={20} />
+          }
+        ] as MetricCardData[]}
+      />
 
       {/* Leaderboard y Participantes */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -130,7 +129,7 @@ export const EventDashboard: React.FC<EventDashboardProps> = ({
               <select
                 value={selectedMetric || primaryMetric?.id || ''}
                 onChange={(e) => setSelectedMetric(e.target.value)}
-                className="px-3 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-1 text-sm"
               >
                 {event.metrics.map(metric => (
                   <option key={metric.id} value={metric.id}>
@@ -146,17 +145,18 @@ export const EventDashboard: React.FC<EventDashboardProps> = ({
               metricName={leaderboard.metricName}
             />
           ) : (
-            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-              <Trophy className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-500">No hay datos de leaderboard disponibles</p>
-            </div>
+            <Card className="p-8 text-center bg-white shadow-sm">
+              <Trophy size={48} className="mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Sin datos disponibles</h3>
+              <p className="text-gray-600">No hay datos de leaderboard disponibles aún</p>
+            </Card>
           )}
         </div>
 
         {/* Lista de Participantes */}
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Participantes</h3>
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <Card className="bg-white shadow-sm overflow-hidden">
             <div className="max-h-96 overflow-y-auto">
               {participants.length > 0 ? (
                 <table className="w-full">
@@ -185,8 +185,8 @@ export const EventDashboard: React.FC<EventDashboardProps> = ({
                                 className="w-8 h-8 rounded-full"
                               />
                             ) : (
-                              <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-                                <span className="text-purple-600 font-semibold text-xs">
+                              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                <span className="text-blue-600 font-semibold text-xs">
                                   {participant.userName.charAt(0)}
                                 </span>
                               </div>
@@ -222,13 +222,14 @@ export const EventDashboard: React.FC<EventDashboardProps> = ({
                   </tbody>
                 </table>
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Users className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                  <p>No hay participantes inscritos todavía</p>
+                <div className="text-center py-8">
+                  <Users size={48} className="mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Sin participantes</h3>
+                  <p className="text-gray-600">No hay participantes inscritos todavía</p>
                 </div>
               )}
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>

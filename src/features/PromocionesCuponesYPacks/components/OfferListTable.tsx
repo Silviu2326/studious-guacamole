@@ -6,7 +6,8 @@ import {
   getOfferStatusColor,
   getDiscountTypeLabel
 } from '../api/offers';
-import { Edit, Eye, Trash2, Tag, Package } from 'lucide-react';
+import { Edit, Eye, Trash2, Tag, Package, Search } from 'lucide-react';
+import { Card } from '../../../components/componentsreutilizables';
 
 interface OfferListTableProps {
   offers: Offer[];
@@ -37,35 +38,44 @@ export const OfferListTable: React.FC<OfferListTableProps> = ({ offers, onEdit, 
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex gap-4">
-        <div className="flex-1">
-          <input
-            type="text"
-            value={filterTerm}
-            onChange={(e) => setFilterTerm(e.target.value)}
-            placeholder="Buscar por nombre o código..."
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-          />
+      <Card className="p-4 bg-white shadow-sm">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
+              <input
+                type="text"
+                value={filterTerm}
+                onChange={(e) => setFilterTerm(e.target.value)}
+                placeholder="Buscar por nombre o código..."
+                className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-10 pr-3 py-2.5"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Ordenar por:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5"
+            >
+              <option value="name">Nombre</option>
+              <option value="usage">Uso</option>
+              <option value="status">Estado</option>
+            </select>
+          </div>
         </div>
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as any)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-        >
-          <option value="name">Ordenar por nombre</option>
-          <option value="usage">Ordenar por uso</option>
-          <option value="status">Ordenar por estado</option>
-        </select>
-      </div>
+      </Card>
 
       {/* Table */}
       {sortedOffers.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-          <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-600">No hay ofertas</p>
-        </div>
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <Package size={48} className="mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay ofertas</h3>
+          <p className="text-gray-600">Comienza creando tu primera oferta</p>
+        </Card>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <Card className="p-0 bg-white shadow-sm overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
@@ -96,7 +106,7 @@ export const OfferListTable: React.FC<OfferListTableProps> = ({ offers, onEdit, 
                     <div>
                       <div className="flex items-center gap-2">
                         {offer.type === 'coupon' ? (
-                          <Tag className="w-4 h-4 text-purple-600" />
+                          <Tag className="w-4 h-4 text-blue-600" />
                         ) : (
                           <Package className="w-4 h-4 text-blue-600" />
                         )}
@@ -104,7 +114,7 @@ export const OfferListTable: React.FC<OfferListTableProps> = ({ offers, onEdit, 
                       </div>
                       {offer.code && (
                         <div className="text-sm text-gray-600 mt-1">
-                          Código: <span className="font-mono bg-gray-100 px-2 py-1 rounded">{offer.code}</span>
+                          Código: <span className="font-mono bg-slate-100 px-2 py-1 rounded">{offer.code}</span>
                         </div>
                       )}
                     </div>
@@ -166,7 +176,7 @@ export const OfferListTable: React.FC<OfferListTableProps> = ({ offers, onEdit, 
               ))}
             </tbody>
           </table>
-        </div>
+        </Card>
       )}
     </div>
   );

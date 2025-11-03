@@ -28,8 +28,8 @@ export const CompetitiveAnalysisYMarketIntelligencePage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 {/* Icono con contenedor */}
-                <div className="p-2 bg-purple-100 rounded-xl mr-4 ring-1 ring-purple-200/70">
-                  <TrendingUp size={24} className="text-purple-600" />
+                <div className="p-2 bg-blue-100 rounded-xl mr-4 ring-1 ring-blue-200/70">
+                  <TrendingUp size={24} className="text-blue-600" />
                 </div>
                 
                 {/* Título y descripción */}
@@ -50,10 +50,10 @@ export const CompetitiveAnalysisYMarketIntelligencePage: React.FC = () => {
       {/* Contenido principal */}
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
         {/* Información educativa */}
-        <div className="mb-6 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6">
+        <div className="mb-6 bg-gradient-to-r from-blue-50 to-slate-50 border border-blue-200 rounded-lg p-6">
           <div className="flex items-start gap-4">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Lightbulb className="w-5 h-5 text-purple-600" />
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Lightbulb className="w-5 h-5 text-blue-600" />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-gray-900 mb-2">

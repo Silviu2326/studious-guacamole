@@ -1,6 +1,7 @@
 import React from 'react';
 import { EmailCampaign } from '../api/campaigns';
 import { Mail, Calendar, Send, Edit, Trash2, BarChart3, Eye } from 'lucide-react';
+import { Card } from '../../../components/componentsreutilizables';
 
 interface CampaignListProps {
   campaigns: EmailCampaign[];
@@ -44,25 +45,27 @@ export const CampaignList: React.FC<CampaignListProps> = ({
 
   if (campaigns.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-        <Mail className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+      <Card className="p-8 text-center bg-white shadow-sm">
+        <Mail size={48} className="mx-auto text-gray-400 mb-4" />
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
           No tienes campañas creadas todavía
         </h3>
         <p className="text-gray-600">
           Crea tu primera campaña de email para empezar a comunicarte con tus clientes
         </p>
-      </div>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-4">
       {campaigns.map((campaign) => (
-        <div
+        <Card
           key={campaign.id}
-          className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow"
+          variant="hover"
+          className="h-full flex flex-col transition-shadow overflow-hidden"
         >
+          <div className="p-6">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
@@ -110,7 +113,7 @@ export const CampaignList: React.FC<CampaignListProps> = ({
               {campaign.status === 'sent' && (
                 <button
                   onClick={() => onViewAnalytics(campaign.id)}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-purple-600 hover:bg-purple-50 rounded transition"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded transition"
                   title="Ver Analíticas"
                 >
                   <BarChart3 className="w-4 h-4" />
@@ -148,7 +151,8 @@ export const CampaignList: React.FC<CampaignListProps> = ({
               )}
             </div>
           </div>
-        </div>
+          </div>
+        </Card>
       ))}
     </div>
   );

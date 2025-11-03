@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, Button } from '../../../components/componentsreutilizables';
 import { Group } from '../api/community';
-import { Image as ImageIcon, Video, X, Loader } from 'lucide-react';
+import { Image as ImageIcon, Video, X, Loader2, Users } from 'lucide-react';
 
 interface NewPostFormProps {
   availableGroups: Group[];
@@ -82,19 +82,20 @@ export const NewPostForm: React.FC<NewPostFormProps> = ({
   const isVideo = mediaFile?.type.startsWith('video/');
 
   return (
-    <Card className="p-6 mb-6">
+    <Card className="p-4 bg-white shadow-sm mb-6">
       <form onSubmit={handleSubmit}>
         <div className="space-y-4">
           {/* Selector de grupo */}
           {availableGroups.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                <Users size={16} className="inline mr-1" />
                 Publicar en
               </label>
               <select
                 value={selectedGroupId}
                 onChange={(e) => setSelectedGroupId(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5"
               >
                 <option value="">Feed General</option>
                 {availableGroups.map(group => (
@@ -113,7 +114,7 @@ export const NewPostForm: React.FC<NewPostFormProps> = ({
               onChange={(e) => setContent(e.target.value)}
               placeholder="¿Qué quieres compartir con la comunidad?"
               rows={4}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5 resize-none"
             />
           </div>
 
@@ -124,29 +125,29 @@ export const NewPostForm: React.FC<NewPostFormProps> = ({
                 <img 
                   src={mediaPreview} 
                   alt="Preview" 
-                  className="max-h-64 rounded-lg object-cover"
+                  className="max-h-64 rounded-xl object-cover"
                 />
               )}
               {isVideo && (
                 <video 
                   src={mediaPreview} 
                   controls 
-                  className="max-h-64 rounded-lg"
+                  className="max-h-64 rounded-xl"
                 />
               )}
               <button
                 type="button"
                 onClick={removeMedia}
-                className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
               >
-                <X className="w-4 h-4" />
+                <X size={16} />
               </button>
             </div>
           )}
 
           {/* Error message */}
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            <div className="p-3 bg-red-50 ring-1 ring-red-200 rounded-xl text-sm text-red-700">
               {error}
             </div>
           )}
@@ -155,7 +156,7 @@ export const NewPostForm: React.FC<NewPostFormProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex gap-2">
               {/* Upload image */}
-              <label className="cursor-pointer p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <label className="cursor-pointer p-2 hover:bg-slate-100 rounded-xl transition-all">
                 <input
                   type="file"
                   accept="image/*"
@@ -163,11 +164,11 @@ export const NewPostForm: React.FC<NewPostFormProps> = ({
                   className="hidden"
                   disabled={isSubmitting || !!mediaFile}
                 />
-                <ImageIcon className="w-5 h-5 text-gray-600" />
+                <ImageIcon size={20} className="text-slate-600" />
               </label>
 
               {/* Upload video */}
-              <label className="cursor-pointer p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <label className="cursor-pointer p-2 hover:bg-slate-100 rounded-xl transition-all">
                 <input
                   type="file"
                   accept="video/*"
@@ -175,7 +176,7 @@ export const NewPostForm: React.FC<NewPostFormProps> = ({
                   className="hidden"
                   disabled={isSubmitting || !!mediaFile}
                 />
-                <Video className="w-5 h-5 text-gray-600" />
+                <Video size={20} className="text-slate-600" />
               </label>
             </div>
 
@@ -186,7 +187,7 @@ export const NewPostForm: React.FC<NewPostFormProps> = ({
             >
               {isSubmitting ? (
                 <>
-                  <Loader className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 size={20} className="mr-2 animate-spin" />
                   Publicando...
                 </>
               ) : (

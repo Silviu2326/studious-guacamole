@@ -1,6 +1,8 @@
 import React from 'react';
 import { SurveySummary } from '../api/surveys';
-import { FileText, Archive, CheckCircle, Loader } from 'lucide-react';
+import { FileText, Archive, CheckCircle, Loader, Eye, BarChart3 } from 'lucide-react';
+import { Card } from '../../../components/componentsreutilizables';
+import { Button } from '../../../components/componentsreutilizables';
 
 interface SurveySummaryCardProps {
   survey: SurveySummary;
@@ -46,7 +48,7 @@ export const SurveySummaryCard: React.FC<SurveySummaryCardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
+    <Card variant="hover" className="h-full flex flex-col transition-shadow overflow-hidden">
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-gray-900 mb-1">{survey.title}</h3>
@@ -60,7 +62,7 @@ export const SurveySummaryCard: React.FC<SurveySummaryCardProps> = ({
       </div>
 
       {/* KPI Principal */}
-      <div className="mb-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+      <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-blue-50 rounded-lg border border-blue-200">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-600 mb-1">{survey.mainKpi.label}</p>
@@ -93,30 +95,35 @@ export const SurveySummaryCard: React.FC<SurveySummaryCardProps> = ({
       <div className="mb-4">
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div
-            className="bg-purple-600 h-2 rounded-full transition-all"
+            className="bg-blue-600 h-2 rounded-full transition-all"
             style={{ width: `${survey.responseRate}%` }}
           />
         </div>
       </div>
 
       {/* Acciones */}
-      <div className="flex items-center gap-2 pt-4 border-t border-gray-200">
-        <button
+      <div className="flex gap-2 mt-auto pt-3 border-t border-gray-100">
+        <Button
           onClick={() => onView(survey.id)}
-          className="flex-1 px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+          variant="primary"
+          size="sm"
+          fullWidth
+          leftIcon={<Eye size={16} />}
         >
           Ver Detalles
-        </button>
+        </Button>
         {survey.status === 'active' && survey.totalResponses && survey.totalResponses > 0 && onViewResults && (
-          <button
+          <Button
             onClick={() => onViewResults(survey.id)}
-            className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+            variant="secondary"
+            size="sm"
+            leftIcon={<BarChart3 size={16} />}
           >
             Resultados
-          </button>
+          </Button>
         )}
       </div>
-    </div>
+    </Card>
   );
 };
 

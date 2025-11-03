@@ -3,11 +3,13 @@ import {
   ProfilingSequence,
   Question,
   QuestionType,
+  QuestionOption,
   createProfilingSequence,
   updateProfilingSequence,
   getQuestionTypeLabel
 } from '../api/profiling';
-import { Plus, Trash2, GripVertical, Save, X, Eye } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Save, X, Eye, Loader2 } from 'lucide-react';
+import { Card, Button, Input } from '../../../components/componentsreutilizables';
 
 interface ProfilingSequenceBuilderProps {
   sequenceId: string | null;
@@ -117,71 +119,78 @@ export const ProfilingSequenceBuilder: React.FC<ProfilingSequenceBuilderProps> =
 
   if (isLoading && !sequenceName) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-      </div>
+      <Card className="p-8 text-center bg-white shadow-sm">
+        <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+        <p className="text-gray-600">Cargando...</p>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex-1 max-w-md">
-          <input
-            type="text"
-            value={sequenceName}
-            onChange={(e) => setSequenceName(e.target.value)}
-            placeholder="Nombre de la secuencia"
-            className="w-full text-2xl font-bold border-none bg-transparent focus:outline-none focus:ring-2 focus:ring-purple-500 rounded px-2"
-          />
-        </div>
-        <div className="flex gap-2">
-          {onCancel && (
-            <button
-              onClick={onCancel}
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+      <Card className="p-4 bg-white shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex-1 max-w-md">
+            <Input
+              type="text"
+              value={sequenceName}
+              onChange={(e) => setSequenceName(e.target.value)}
+              placeholder="Nombre de la secuencia"
+              className="text-2xl font-bold"
+            />
+          </div>
+          <div className="flex gap-2">
+            {onCancel && (
+              <Button
+                variant="secondary"
+                onClick={onCancel}
+                leftIcon={<X size={16} />}
+              >
+                Cancelar
+              </Button>
+            )}
+            <Button
+              variant="primary"
+              onClick={handleSave}
+              disabled={isLoading}
+              loading={isLoading}
+              leftIcon={<Save size={16} />}
             >
-              <X className="w-4 h-4 inline mr-2" />
-              Cancelar
-            </button>
-          )}
-          <button
-            onClick={handleSave}
-            disabled={isLoading}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50"
-          >
-            <Save className="w-4 h-4 inline mr-2" />
-            Guardar
-          </button>
+              Guardar
+            </Button>
+          </div>
         </div>
-      </div>
+      </Card>
 
       {/* Questions List */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Preguntas</h3>
-          <button
-            onClick={handleAddQuestion}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-          >
-            <Plus className="w-4 h-4" />
-            Añadir Pregunta
-          </button>
-        </div>
-
-        {questionsList.length === 0 ? (
-          <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
-            <Eye className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600">No hay preguntas. Crea tu primera pregunta.</p>
+      <Card className="p-4 bg-white shadow-sm">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">Preguntas</h3>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleAddQuestion}
+              leftIcon={<Plus size={16} />}
+            >
+              Añadir Pregunta
+            </Button>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {questionsList.map((question, idx) => (
-              <div
-                key={question.id}
-                className="border border-gray-200 rounded-lg p-4 hover:border-purple-500 transition"
-              >
+
+          {questionsList.length === 0 ? (
+            <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
+              <Eye size={48} className="mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-600">No hay preguntas. Crea tu primera pregunta.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {questionsList.map((question, idx) => (
+                <Card
+                  key={question.id}
+                  variant="hover"
+                  className="p-4"
+                >
                 <div className="flex items-start gap-3">
                   <button className="mt-2 cursor-move">
                     <GripVertical className="w-5 h-5 text-gray-400" />
@@ -189,7 +198,7 @@ export const ProfilingSequenceBuilder: React.FC<ProfilingSequenceBuilderProps> =
 
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <span className="text-sm font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded">
+                      <span className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
                         {idx + 1}
                       </span>
                       <span className="text-sm text-gray-600">
@@ -220,18 +229,19 @@ export const ProfilingSequenceBuilder: React.FC<ProfilingSequenceBuilderProps> =
                     )}
                   </div>
 
-                  <button
+                  <Button
+                    variant="destructive"
+                    size="sm"
                     onClick={() => handleRemoveQuestion(question.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded transition"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                    leftIcon={<Trash2 size={16} />}
+                  />
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </Card>
     </div>
   );
 };
@@ -277,12 +287,11 @@ const QuestionEditor: React.FC<{
   return (
     <div className="space-y-4">
       <div>
-        <input
+        <Input
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Escribe tu pregunta aquí..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
         />
       </div>
 
@@ -290,7 +299,7 @@ const QuestionEditor: React.FC<{
         <select
           value={type}
           onChange={(e) => setType(e.target.value as QuestionType)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+          className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5"
         >
           <option value="single_choice">Opción Única</option>
           <option value="multiple_choice">Múltiple Opción</option>
@@ -303,42 +312,44 @@ const QuestionEditor: React.FC<{
       {(type === 'single_choice' || type === 'multiple_choice') && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-gray-700">Opciones</label>
-            <button
+            <label className="block text-sm font-medium text-slate-700 mb-2">Opciones</label>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleAddOption}
-              className="text-sm text-purple-600 hover:text-purple-700"
+              leftIcon={<Plus size={16} />}
             >
-              + Añadir opción
-            </button>
+              Añadir opción
+            </Button>
           </div>
 
           {options.map((option, idx) => (
             <div key={idx} className="flex gap-2">
-              <input
+              <Input
                 type="text"
                 value={option.label}
                 onChange={(e) => handleUpdateOption(idx, { label: e.target.value })}
                 placeholder="Opción..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="flex-1"
               />
-              <button
+              <Button
+                variant="destructive"
+                size="sm"
                 onClick={() => handleRemoveOption(idx)}
-                className="px-3 py-2 text-red-600 hover:bg-red-50 rounded transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
+                leftIcon={<X size={16} />}
+              />
             </div>
           ))}
         </div>
       )}
 
       <div className="flex justify-end">
-        <button
+        <Button
+          variant="primary"
           onClick={handleSave}
-          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
         >
           Guardar Pregunta
-        </button>
+        </Button>
       </div>
     </div>
   );

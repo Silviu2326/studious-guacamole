@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { DynamicPricingRule, PricingCondition, PricingAction, TargetAudience } from '../api/pricingRules';
-import { X, Plus, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
+import { Modal } from '../../../components/componentsreutilizables';
+import { Button } from '../../../components/componentsreutilizables';
+import { Card } from '../../../components/componentsreutilizables';
 
 interface RuleBuilderFormProps {
   initialRuleData?: Partial<DynamicPricingRule>;
@@ -88,60 +91,66 @@ export const RuleBuilderForm: React.FC<RuleBuilderFormProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {initialRuleData?.id ? 'Editar Regla' : 'Nueva Regla de Precios Dinámicos'}
-          </h2>
-          <button
-            onClick={onCancel}
-            className="text-gray-400 hover:text-gray-600 transition"
+    <Modal
+      isOpen={true}
+      onClose={onCancel}
+      title={initialRuleData?.id ? 'Editar Regla' : 'Nueva Regla de Precios Dinámicos'}
+      size="xl"
+      className="max-h-[90vh] overflow-y-auto"
+      footer={
+        <div className="flex items-center justify-end gap-3">
+          <Button variant="secondary" onClick={onCancel}>
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form="rule-form"
+            disabled={isLoading}
+            loading={isLoading}
           >
-            <X className="w-6 h-6" />
-          </button>
+            Guardar Regla
+          </Button>
         </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+      }
+    >
+      <form id="rule-form" onSubmit={handleSubmit} className="space-y-6">
           {/* Nombre y Descripción */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Nombre de la Regla *
               </label>
               <input
                 type="text"
                 value={ruleName}
                 onChange={(e) => setRuleName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5"
                 placeholder="Ej: Descuento Horas Valle"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Prioridad (menor = mayor prioridad)
               </label>
               <input
                 type="number"
                 value={priority}
                 onChange={(e) => setPriority(Number(e.target.value))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5"
                 min="1"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
               Descripción
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5"
               rows={2}
               placeholder="Describe el objetivo de esta regla..."
             />
@@ -150,27 +159,28 @@ export const RuleBuilderForm: React.FC<RuleBuilderFormProps> = ({
           {/* Condiciones (SI...) */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-slate-700">
                 Condiciones (SI...)
               </label>
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={handleAddCondition}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm text-purple-600 hover:bg-purple-50 rounded transition"
+                leftIcon={<Plus size={16} />}
               >
-                <Plus className="w-4 h-4" />
                 Añadir Condición
-              </button>
+              </Button>
             </div>
             
             <div className="space-y-3">
               {conditions.map((condition, index) => (
-                <div key={index} className="p-4 border border-gray-200 rounded-lg">
+                <Card key={index} className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <select
                       value={condition.type}
                       onChange={(e) => handleUpdateCondition(index, { type: e.target.value as any })}
-                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      className="w-full rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2 text-sm"
                     >
                       <option value="time_of_day">Horario del Día</option>
                       <option value="day_of_week">Día de la Semana</option>
@@ -182,7 +192,7 @@ export const RuleBuilderForm: React.FC<RuleBuilderFormProps> = ({
                     <button
                       type="button"
                       onClick={() => handleRemoveCondition(index)}
-                      className="p-1 text-red-600 hover:bg-red-50 rounded"
+                      className="ml-2 p-2 text-red-600 hover:bg-red-50 rounded transition"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -195,17 +205,17 @@ export const RuleBuilderForm: React.FC<RuleBuilderFormProps> = ({
                         type="time"
                         value={condition.from || ''}
                         onChange={(e) => handleUpdateCondition(index, { from: e.target.value })}
-                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        className="rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2 text-sm"
                         placeholder="Desde"
                       />
                       <input
                         type="time"
                         value={condition.to || ''}
                         onChange={(e) => handleUpdateCondition(index, { to: e.target.value })}
-                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        className="rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2 text-sm"
                         placeholder="Hasta"
                       />
-                      <div className="text-sm text-gray-600 flex items-center">
+                      <div className="text-sm text-slate-600 flex items-center">
                         Días de la semana
                       </div>
                     </div>
@@ -216,7 +226,7 @@ export const RuleBuilderForm: React.FC<RuleBuilderFormProps> = ({
                       type="number"
                       value={condition.daysInactive || ''}
                       onChange={(e) => handleUpdateCondition(index, { daysInactive: Number(e.target.value) })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2 text-sm"
                       placeholder="Días de inactividad"
                     />
                   )}
@@ -225,7 +235,7 @@ export const RuleBuilderForm: React.FC<RuleBuilderFormProps> = ({
                     <select
                       value={condition.season || ''}
                       onChange={(e) => handleUpdateCondition(index, { season: e.target.value as any })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      className="w-full rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2 text-sm"
                     >
                       <option value="spring">Primavera</option>
                       <option value="summer">Verano</option>
@@ -233,11 +243,11 @@ export const RuleBuilderForm: React.FC<RuleBuilderFormProps> = ({
                       <option value="winter">Invierno</option>
                     </select>
                   )}
-                </div>
+                </Card>
               ))}
               
               {conditions.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-4">
+                <p className="text-sm text-slate-500 text-center py-4">
                   No hay condiciones añadidas. Haz clic en "Añadir Condición" para agregar una.
                 </p>
               )}
@@ -246,16 +256,16 @@ export const RuleBuilderForm: React.FC<RuleBuilderFormProps> = ({
 
           {/* Acción (ENTONCES...) */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
               Acción (ENTONCES...)
             </label>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Tipo de Acción</label>
+                <label className="block text-xs text-slate-600 mb-1">Tipo de Acción</label>
                 <select
                   value={action.type}
                   onChange={(e) => setAction({ ...action, type: e.target.value as any })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5"
                 >
                   <option value="percentage_discount">Descuento Porcentual</option>
                   <option value="fixed_discount">Descuento Fijo</option>
@@ -264,12 +274,12 @@ export const RuleBuilderForm: React.FC<RuleBuilderFormProps> = ({
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Valor</label>
+                <label className="block text-xs text-slate-600 mb-1">Valor</label>
                 <input
                   type="number"
                   value={action.value}
                   onChange={(e) => setAction({ ...action, value: Number(e.target.value) })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5"
                   min="0"
                   step="0.01"
                 />
@@ -279,47 +289,21 @@ export const RuleBuilderForm: React.FC<RuleBuilderFormProps> = ({
 
           {/* Audiencia Objetivo */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
               Audiencia Objetivo
             </label>
             <select
               value={targetAudience.type}
               onChange={(e) => setTargetAudience({ type: e.target.value as any })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5"
             >
               <option value="all">Todos los clientes</option>
               <option value="segment">Segmento específico</option>
               <option value="specific_clients">Clientes específicos</option>
             </select>
           </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Guardando...
-                </>
-              ) : (
-                'Guardar Regla'
-              )}
-            </button>
-          </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 };
 

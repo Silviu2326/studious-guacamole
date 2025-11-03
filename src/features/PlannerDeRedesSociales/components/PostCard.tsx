@@ -1,6 +1,7 @@
 import React from 'react';
 import { SocialPost, getPlatformIcon, getStatusColor, getStatusLabel } from '../api/social';
 import { Clock } from 'lucide-react';
+import { Card } from '../../../components/componentsreutilizables';
 
 interface PostCardProps {
   post: SocialPost;
@@ -13,13 +14,15 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onClick }) => {
   const statusColor = getStatusColor(post.status);
 
   return (
-    <div
+    <Card
+      variant="hover"
+      padding="sm"
       onClick={onClick}
-      className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-lg transition cursor-pointer"
+      className="h-full flex flex-col transition-shadow overflow-hidden cursor-pointer"
     >
       {/* Preview Image */}
       {post.mediaUrls && post.mediaUrls.length > 0 && (
-        <div className="relative w-full h-32 mb-2 rounded overflow-hidden bg-gray-100">
+        <div className="relative w-full h-48 mb-2 rounded overflow-hidden bg-gray-100">
           <img
             src={post.mediaUrls[0]}
             alt="Post preview"
@@ -66,7 +69,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onClick }) => {
           </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 };
 

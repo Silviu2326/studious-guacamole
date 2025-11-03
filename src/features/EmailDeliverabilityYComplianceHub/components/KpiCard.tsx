@@ -36,10 +36,10 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow shadow-sm">
       <div className="flex items-start justify-between mb-3">
         <div>
-          <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
+          <p className="text-sm font-medium text-slate-600 mb-1">{title}</p>
           <p className={`text-2xl font-bold ${textColor}`}>{value}</p>
         </div>
         <div className={`p-3 rounded-lg ${bgColor}`}>
@@ -63,7 +63,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       )}
       
       {tooltipText && (
-        <div className="mt-2 text-xs text-gray-500">
+        <div className="mt-2 text-xs text-slate-500">
           {tooltipText}
         </div>
       )}

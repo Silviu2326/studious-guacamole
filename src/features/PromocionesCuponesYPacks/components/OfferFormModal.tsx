@@ -5,7 +5,9 @@ import {
   DiscountType,
   OfferStatus
 } from '../api/offers';
-import { X, Save, Tag, Package, Zap } from 'lucide-react';
+import { Save, Tag, Package, Zap } from 'lucide-react';
+import { Modal } from '../../../components/componentsreutilizables';
+import { Button } from '../../../components/componentsreutilizables';
 
 interface OfferFormModalProps {
   isOpen: boolean;
@@ -90,31 +92,37 @@ export const OfferFormModal: React.FC<OfferFormModalProps> = ({
     });
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 p-6 z-10">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">
-              {initialData ? 'Editar Oferta' : 'Nueva Oferta'}
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={initialData ? 'Editar Oferta' : 'Nueva Oferta'}
+      size="lg"
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={onClose} type="button">
+            Cancelar
+          </Button>
+          <Button
+            variant="primary"
+            onClick={(e) => {
+              e.preventDefault();
+              const form = document.getElementById('offer-form') as HTMLFormElement;
+              if (form) {
+                form.requestSubmit();
+              }
+            }}
+            leftIcon={<Save size={16} />}
+          >
+            Guardar
+          </Button>
         </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+      }
+    >
+      <form id="offer-form" onSubmit={handleSubmit} className="space-y-6">
           {/* Type Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-sm font-medium text-slate-700 mb-3">
               Tipo de Oferta *
             </label>
             <div className="grid grid-cols-3 gap-4">
@@ -127,14 +135,14 @@ export const OfferFormModal: React.FC<OfferFormModalProps> = ({
                   key={value}
                   type="button"
                   onClick={() => handleInputChange('type', value)}
-                  className={`flex flex-col items-center gap-2 p-4 border-2 rounded-lg transition ${
+                  className={`flex flex-col items-center gap-2 p-4 border-2 rounded-xl transition-all ${
                     formData.type === value
-                      ? 'border-purple-600 bg-purple-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-blue-600 bg-blue-50 ring-2 ring-blue-200'
+                      : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                   }`}
                 >
-                  <Icon className="w-6 h-6" />
-                  <span className="text-sm font-medium">{label}</span>
+                  <Icon className={`w-6 h-6 ${formData.type === value ? 'text-blue-600' : 'text-slate-600'}`} />
+                  <span className={`text-sm font-medium ${formData.type === value ? 'text-blue-900' : 'text-slate-900'}`}>{label}</span>
                 </button>
               ))}
             </div>
@@ -143,14 +151,14 @@ export const OfferFormModal: React.FC<OfferFormModalProps> = ({
           {/* Basic Info */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Nombre *
               </label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5"
               />
               {formErrors.name && (
                 <p className="text-red-600 text-xs mt-1">{formErrors.name}</p>
@@ -159,7 +167,7 @@ export const OfferFormModal: React.FC<OfferFormModalProps> = ({
 
             {formData.type === 'coupon' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
                   Código *
                 </label>
                 <input
@@ -167,7 +175,7 @@ export const OfferFormModal: React.FC<OfferFormModalProps> = ({
                   value={formData.code}
                   onChange={(e) => handleInputChange('code', e.target.value.toUpperCase())}
                   placeholder="EJ: CUPON20"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 font-mono"
+                  className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5 font-mono"
                 />
                 {formErrors.code && (
                   <p className="text-red-600 text-xs mt-1">{formErrors.code}</p>
@@ -179,13 +187,13 @@ export const OfferFormModal: React.FC<OfferFormModalProps> = ({
           {/* Discount */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Tipo de Descuento *
               </label>
               <select
                 value={formData.discountType}
                 onChange={(e) => handleInputChange('discountType', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5"
               >
                 <option value="percentage">Porcentaje (%)</option>
                 <option value="fixed_amount">Cantidad Fija (€)</option>
@@ -193,14 +201,14 @@ export const OfferFormModal: React.FC<OfferFormModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Valor *
               </label>
               <input
                 type="number"
                 value={formData.discountValue}
                 onChange={(e) => handleInputChange('discountValue', parseFloat(e.target.value) || 0)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5"
               />
               {formErrors.discountValue && (
                 <p className="text-red-600 text-xs mt-1">{formErrors.discountValue}</p>
@@ -211,7 +219,7 @@ export const OfferFormModal: React.FC<OfferFormModalProps> = ({
           {/* Usage Limits */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Límite Total de Usos
               </label>
               <input
@@ -219,7 +227,7 @@ export const OfferFormModal: React.FC<OfferFormModalProps> = ({
                 value={formData.usageLimit}
                 onChange={(e) => handleInputChange('usageLimit', parseInt(e.target.value) || undefined)}
                 placeholder="Sin límite"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5"
               />
             </div>
           </div>
@@ -227,33 +235,33 @@ export const OfferFormModal: React.FC<OfferFormModalProps> = ({
           {/* Dates */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Fecha de Inicio *
               </label>
               <input
                 type="date"
                 value={formData.validFrom}
                 onChange={(e) => handleInputChange('validFrom', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Fecha de Fin
               </label>
               <input
                 type="date"
                 value={formData.validTo}
                 onChange={(e) => handleInputChange('validTo', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5"
               />
             </div>
           </div>
 
           {/* Applicable Services */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-sm font-medium text-slate-700 mb-3">
               Aplicable a Servicios
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -263,9 +271,9 @@ export const OfferFormModal: React.FC<OfferFormModalProps> = ({
                     type="checkbox"
                     checked={selectedServices.includes(service)}
                     onChange={() => handleToggleService(service)}
-                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
                   />
-                  <span className="text-sm text-gray-700">{service}</span>
+                  <span className="text-sm text-slate-700">{service}</span>
                 </label>
               ))}
             </div>
@@ -273,39 +281,18 @@ export const OfferFormModal: React.FC<OfferFormModalProps> = ({
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
               Descripción
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+              className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5"
             />
           </div>
-
-          {/* Footer */}
-          <div className="sticky bottom-0 bg-white border-t border-gray-200 -mx-6 -mb-6 p-6">
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-              >
-                <Save className="w-4 h-4" />
-                Guardar
-              </button>
-            </div>
-          </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 };
 

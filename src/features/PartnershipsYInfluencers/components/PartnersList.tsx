@@ -1,6 +1,7 @@
 import React from 'react';
 import { Partner, getPartnerTypeLabel, getPartnerStatusLabel, getPartnerStatusColor } from '../api/partnerships';
-import { ExternalLink, MoreVertical, TrendingUp, Users, DollarSign } from 'lucide-react';
+import { ExternalLink, MoreVertical, Users, Package } from 'lucide-react';
+import { Card, Button, Badge } from '../../../components/componentsreutilizables';
 
 interface PartnersListProps {
   partners: Partner[];
@@ -21,17 +22,19 @@ export const PartnersList: React.FC<PartnersListProps> = ({
   return (
     <div className="space-y-4">
       {partners.length === 0 ? (
-        <div className="text-center py-12">
-          <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-600">No hay partners registrados</p>
-        </div>
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <Package size={48} className="mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay partners registrados</h3>
+          <p className="text-gray-600">Comienza añadiendo tu primer partner o influencer</p>
+        </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {partners.map((partner) => (
-            <div
+            <Card
               key={partner.id}
+              variant="hover"
+              className="h-full flex flex-col transition-shadow overflow-hidden"
               onClick={() => onSelectPartner(partner.id)}
-              className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition cursor-pointer"
             >
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
@@ -41,10 +44,10 @@ export const PartnersList: React.FC<PartnersListProps> = ({
                     <p className="text-sm text-gray-600">{partner.specialty}</p>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium px-2 py-1 rounded bg-purple-100 text-purple-700">
+                <div className="flex flex-col items-end gap-2">
+                  <Badge variant="gray" leftIcon={<Users size={12} />}>
                     {getPartnerTypeLabel(partner.type)}
-                  </span>
+                  </Badge>
                   <span className={`text-xs font-medium px-2 py-1 rounded ${getPartnerStatusColor(partner.status)}`}>
                     {getPartnerStatusLabel(partner.status)}
                   </span>
@@ -54,17 +57,17 @@ export const PartnersList: React.FC<PartnersListProps> = ({
               {/* Stats */}
               {partner.stats && (
                 <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="text-center p-2 bg-blue-50 rounded">
+                  <div className="text-center p-2 bg-blue-50 rounded-xl">
                     <p className="text-xs text-gray-600 mb-1">Referidos</p>
                     <p className="text-xl font-bold text-blue-700">{partner.stats.totalReferrals}</p>
                   </div>
-                  <div className="text-center p-2 bg-green-50 rounded">
+                  <div className="text-center p-2 bg-green-50 rounded-xl">
                     <p className="text-xs text-gray-600 mb-1">Conversiones</p>
                     <p className="text-xl font-bold text-green-700">{partner.stats.totalConversions}</p>
                   </div>
-                  <div className="text-center p-2 bg-purple-50 rounded">
+                  <div className="text-center p-2 bg-blue-50 rounded-xl">
                     <p className="text-xs text-gray-600 mb-1">Tasa</p>
-                    <p className="text-xl font-bold text-purple-700">
+                    <p className="text-xl font-bold text-blue-700">
                       {partner.stats.conversionRate.toFixed(1)}%
                     </p>
                   </div>
@@ -72,7 +75,7 @@ export const PartnersList: React.FC<PartnersListProps> = ({
               )}
 
               {/* Commission Info */}
-              <div className="border-t border-gray-200 pt-4 mb-4">
+              <div className="border-t border-gray-100 pt-4 mb-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Comisión</span>
                   <span className="text-lg font-bold text-gray-900">
@@ -91,22 +94,30 @@ export const PartnersList: React.FC<PartnersListProps> = ({
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2">
-                <button
-                  onClick={(e) => handleGenerateLink(e, partner.id)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+              <div className="flex gap-2 mt-auto pt-3 border-t border-gray-100">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  fullWidth
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleGenerateLink(e, partner.id);
+                  }}
+                  leftIcon={<ExternalLink size={16} />}
                 >
-                  <ExternalLink className="w-4 h-4" />
                   Generar Link
-                </button>
-                <button
-                  onClick={() => onSelectPartner(partner.id)}
-                  className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-                >
-                  <MoreVertical className="w-5 h-5" />
-                </button>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectPartner(partner.id);
+                  }}
+                  leftIcon={<MoreVertical size={16} />}
+                />
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}

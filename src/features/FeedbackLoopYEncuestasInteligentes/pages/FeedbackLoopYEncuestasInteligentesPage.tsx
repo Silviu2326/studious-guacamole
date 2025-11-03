@@ -20,8 +20,11 @@ import {
   BarChart3,
   Trash2,
   ArrowRight,
-  X
+  X,
+  Package
 } from 'lucide-react';
+import { Card } from '../../../components/componentsreutilizables';
+import { Button } from '../../../components/componentsreutilizables';
 
 type ViewMode = 'list' | 'builder' | 'results';
 
@@ -116,20 +119,26 @@ export const FeedbackLoopYEncuestasInteligentesPage: React.FC = () => {
         <div className="border-b border-gray-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
           <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6">
             <div className="py-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => {
-                      setViewMode('list');
-                      setSelectedSurveyId(null);
-                    }}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition"
-                  >
-                    <ArrowRight className="w-5 h-5 text-gray-600 rotate-180" />
-                  </button>
-                  <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
+              <div className="flex items-center">
+                <button
+                  onClick={() => {
+                    setViewMode('list');
+                    setSelectedSurveyId(null);
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition mr-4"
+                >
+                  <ArrowRight className="w-5 h-5 text-gray-600 rotate-180" />
+                </button>
+                <div className="p-2 bg-blue-100 rounded-xl mr-4 ring-1 ring-blue-200/70">
+                  <BarChart3 size={24} className="text-blue-600" />
+                </div>
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
                     Resultados de la Encuesta
                   </h1>
+                  <p className="text-gray-600">
+                    Análisis detallado de las respuestas recibidas
+                  </p>
                 </div>
               </div>
             </div>
@@ -137,9 +146,10 @@ export const FeedbackLoopYEncuestasInteligentesPage: React.FC = () => {
         </div>
         <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
           {resultsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
-            </div>
+            <Card className="p-8 text-center bg-white shadow-sm">
+              <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+              <p className="text-gray-600">Cargando...</p>
+            </Card>
           ) : (
             <SurveyResultsDashboard results={results} />
           )}
@@ -157,8 +167,8 @@ export const FeedbackLoopYEncuestasInteligentesPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 {/* Icono con contenedor */}
-                <div className="p-2 bg-purple-100 rounded-xl mr-4 ring-1 ring-purple-200/70">
-                  <MessageSquare size={24} className="text-purple-600" />
+                <div className="p-2 bg-blue-100 rounded-xl mr-4 ring-1 ring-blue-200/70">
+                  <MessageSquare size={24} className="text-blue-600" />
                 </div>
                 
                 {/* Título y descripción */}
@@ -166,34 +176,34 @@ export const FeedbackLoopYEncuestasInteligentesPage: React.FC = () => {
                   <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
                     Feedback Loop & Encuestas
                   </h1>
-                  <p className="text-gray-600 mt-1">
+                  <p className="text-gray-600">
                     Captura feedback estructurado y automatizado para mejorar la experiencia del cliente
                   </p>
                 </div>
               </div>
               
-              <button
+              <Button
                 onClick={handleCreateSurvey}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                variant="primary"
+                leftIcon={<Plus size={20} />}
               >
-                <Plus className="w-5 h-5" />
                 Nueva Encuesta
-              </button>
+              </Button>
             </div>
           </div>
         </div>
       </div>
 
       {/* Contenido principal */}
-      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8 space-y-6">
         {/* Información educativa */}
-        <div className="mb-6 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6">
+        <Card className="bg-white shadow-sm">
           <div className="flex items-start gap-4">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Lightbulb className="w-5 h-5 text-purple-600" />
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Lightbulb className="w-5 h-5 text-blue-600" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 ¿Qué es Feedback Loop & Encuestas?
               </h3>
               <p className="text-sm text-gray-700 leading-relaxed">
@@ -205,30 +215,48 @@ export const FeedbackLoopYEncuestasInteligentesPage: React.FC = () => {
               </p>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Filtros */}
-        <div className="mb-6 bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center gap-4">
-            <Filter className="w-5 h-5 text-gray-400" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            >
-              <option value="all">Todas las encuestas</option>
-              <option value="draft">Borradores</option>
-              <option value="active">Activas</option>
-              <option value="archived">Archivadas</option>
-            </select>
+        <Card className="bg-white shadow-sm">
+          <div className="space-y-4">
+            <div className="rounded-2xl bg-slate-50 ring-1 ring-slate-200 p-3">
+              <div className="flex gap-4">
+                <div className="flex-1 relative">
+                  <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar encuestas..."
+                    className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-10 pr-3 py-2.5"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="block text-sm font-medium text-slate-700">
+                    <Filter size={16} className="inline mr-1" />
+                    Estado:
+                  </label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5"
+                  >
+                    <option value="all">Todas las encuestas</option>
+                    <option value="draft">Borradores</option>
+                    <option value="active">Activas</option>
+                    <option value="archived">Archivadas</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        </Card>
 
         {/* Lista de encuestas */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
-          </div>
+          <Card className="p-8 text-center bg-white shadow-sm">
+            <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+            <p className="text-gray-600">Cargando...</p>
+          </Card>
         ) : surveys.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {surveys.map((survey) => (
@@ -241,22 +269,22 @@ export const FeedbackLoopYEncuestasInteligentesPage: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-            <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <Card className="p-8 text-center bg-white shadow-sm">
+            <Package size={48} className="mx-auto text-gray-400 mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               No tienes encuestas creadas todavía
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 mb-4">
               Crea tu primera encuesta para empezar a capturar feedback estructurado de tus clientes
             </p>
-            <button
+            <Button
               onClick={handleCreateSurvey}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+              variant="primary"
+              leftIcon={<Plus size={20} />}
             >
-              <Plus className="w-5 h-5" />
               Crear Primera Encuesta
-            </button>
-          </div>
+            </Button>
+          </Card>
         )}
       </div>
     </div>

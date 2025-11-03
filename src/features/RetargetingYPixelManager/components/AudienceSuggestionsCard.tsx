@@ -1,5 +1,6 @@
 import React from 'react';
 import { AudienceSuggestion } from '../api/pixels';
+import { Card, Button } from '../../../components/componentsreutilizables';
 import { Lightbulb, ExternalLink } from 'lucide-react';
 
 interface AudienceSuggestionsCardProps {
@@ -8,10 +9,10 @@ interface AudienceSuggestionsCardProps {
 
 export const AudienceSuggestionsCard: React.FC<AudienceSuggestionsCardProps> = ({ suggestions }) => {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <div className="flex items-center gap-2 mb-6">
-        <Lightbulb className="w-5 h-5 text-yellow-600" />
-        <h3 className="text-xl font-bold text-gray-900">Audiencias Sugeridas</h3>
+    <Card className="bg-white shadow-sm p-4">
+      <div className="flex items-center gap-2 mb-4">
+        <Lightbulb size={18} className="text-yellow-600" />
+        <h3 className="text-lg font-semibold text-gray-900">Audiencias Sugeridas</h3>
       </div>
 
       {suggestions.length === 0 ? (
@@ -19,18 +20,17 @@ export const AudienceSuggestionsCard: React.FC<AudienceSuggestionsCardProps> = (
       ) : (
         <div className="space-y-4">
           {suggestions.map((suggestion) => (
-            <div key={suggestion.id} className="p-4 bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+            <div key={suggestion.id} className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 ring-1 ring-blue-200/70">
               <h4 className="font-semibold text-gray-900 mb-2">{suggestion.name}</h4>
               <p className="text-sm text-gray-600 mb-4">{suggestion.description}</p>
-              <button className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm">
+              <Button variant="primary" size="sm" leftIcon={<ExternalLink size={16} />}>
                 Crear Audiencia
-                <ExternalLink className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 };
 

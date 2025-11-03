@@ -15,7 +15,7 @@ import {
   getPriceComparisonData,
   MarketSummary 
 } from '../api/marketSummary';
-import { TrendingUp, Users, MapPin, DollarSign, Plus, Search, Lightbulb } from 'lucide-react';
+import { TrendingUp, Users, MapPin, DollarSign, Plus, Search, Lightbulb, Loader2, AlertCircle, Package } from 'lucide-react';
 
 interface MarketIntelligenceDashboardProps {
   userId: string;
@@ -89,30 +89,20 @@ export const MarketIntelligenceDashboard: React.FC<MarketIntelligenceDashboardPr
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando inteligencia de mercado...</p>
-        </div>
-      </div>
+      <Card className="p-8 text-center bg-white shadow-sm">
+        <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+        <p className="text-gray-600">Cargando...</p>
+      </Card>
     );
   }
 
   if (error) {
     return (
-      <Card className="p-6">
-        <div className="text-center text-red-600">
-          <p className="font-semibold mb-2">Error</p>
-          <p className="text-sm">{error}</p>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={loadDashboardData}
-            className="mt-4"
-          >
-            Reintentar
-          </Button>
-        </div>
+      <Card className="p-8 text-center bg-white shadow-sm">
+        <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Error al cargar</h3>
+        <p className="text-gray-600 mb-4">{error}</p>
+        <Button onClick={loadDashboardData}>Reintentar</Button>
       </Card>
     );
   }
@@ -160,43 +150,36 @@ export const MarketIntelligenceDashboard: React.FC<MarketIntelligenceDashboardPr
       )}
 
       {/* Acciones rápidas */}
-      <Card>
+      <Card className="p-0 bg-white shadow-sm">
         <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">Competidores Monitoreados</h2>
-              <p className="text-sm text-gray-600 mt-1">
-                Gestiona los competidores que estás analizando
-              </p>
-            </div>
+          <div className="flex items-center justify-end mb-4">
             <Button
               variant="primary"
               onClick={() => setIsAddModalOpen(true)}
             >
-              <Plus className="w-5 h-5 mr-2" />
+              <Plus size={20} className="mr-2" />
               Añadir Competidor
             </Button>
           </div>
 
           {/* Lista de competidores */}
           {competitorsList.length === 0 ? (
-            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-              <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 font-medium mb-2">No hay competidores monitoreados</p>
-              <p className="text-sm text-gray-500 mb-4">
+            <Card className="p-8 text-center bg-white shadow-sm">
+              <Users size={48} className="mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay competidores monitoreados</h3>
+              <p className="text-gray-600 mb-4">
                 Añade competidores para comenzar a analizar el mercado
               </p>
               <Button
                 variant="primary"
-                size="sm"
                 onClick={() => setIsAddModalOpen(true)}
               >
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus size={20} className="mr-2" />
                 Añadir Primer Competidor
               </Button>
-            </div>
+            </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {competitorsList.map(competitor => (
                 <CompetitorCard
                   key={competitor.id}
@@ -219,7 +202,7 @@ export const MarketIntelligenceDashboard: React.FC<MarketIntelligenceDashboardPr
       {marketSummary && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Servicios populares */}
-          <Card>
+          <Card className="bg-white shadow-sm">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Servicios Más Populares
@@ -227,7 +210,7 @@ export const MarketIntelligenceDashboard: React.FC<MarketIntelligenceDashboardPr
               <ul className="space-y-2">
                 {marketSummary.popularServices.map((service, index) => (
                   <li key={index} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
-                    <span className="flex items-center justify-center w-6 h-6 bg-purple-100 text-purple-600 rounded-full text-xs font-semibold">
+                    <span className="flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-600 rounded-full text-xs font-semibold">
                       {index + 1}
                     </span>
                     <span className="text-gray-700">{service}</span>
@@ -238,7 +221,7 @@ export const MarketIntelligenceDashboard: React.FC<MarketIntelligenceDashboardPr
           </Card>
 
           {/* Oportunidades de nicho */}
-          <Card>
+          <Card className="bg-white shadow-sm">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <Lightbulb className="w-5 h-5 text-yellow-500" />

@@ -21,11 +21,14 @@ export const StatisticalSignificanceIndicator: React.FC<StatisticalSignificanceI
     return 'Poco Confiable';
   };
 
+  const colors = getColor();
+  const colorClasses = colors.split(' ');
+
   return (
-    <div className="flex items-center gap-2">
-      <BarChart3 className={`w-4 h-4 ${getColor().split(' ')[0]}`} />
-      <div className="flex flex-col">
-        <span className={`text-xs font-medium ${getColor().split(' ')[0]}`}>
+    <div className="flex items-center gap-3">
+      <BarChart3 size={16} className={colorClasses[0]} />
+      <div className="flex flex-col min-w-0">
+        <span className={`text-xs font-medium ${colorClasses[0]}`}>
           {getLabel()}
         </span>
         <span className="text-xs text-gray-600">
@@ -34,7 +37,7 @@ export const StatisticalSignificanceIndicator: React.FC<StatisticalSignificanceI
       </div>
       <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
         <div 
-          className={`h-full ${getColor().split(' ')[1]}`}
+          className={`h-full ${colorClasses[1]}`}
           style={{ width: `${percentage}%` }}
         />
       </div>

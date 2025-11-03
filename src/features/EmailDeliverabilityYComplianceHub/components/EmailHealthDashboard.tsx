@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useEmailComplianceAPI } from '../hooks/useEmailComplianceAPI';
 import { KpiCard } from './KpiCard';
+import { Card } from '../../../components/componentsreutilizables';
 import { 
   Mail, 
   AlertTriangle, 
@@ -45,25 +46,30 @@ export const EmailHealthDashboard: React.FC<EmailHealthDashboardProps> = ({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
-      </div>
+      <Card className="p-8 text-center bg-white shadow-sm">
+        <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+        <p className="text-gray-600">Cargando...</p>
+      </Card>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-        <p>Error: {error.message}</p>
-      </div>
+      <Card className="p-8 text-center bg-white shadow-sm">
+        <AlertTriangle size={48} className="mx-auto text-red-500 mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Error al cargar</h3>
+        <p className="text-gray-600 mb-4">Error: {error.message}</p>
+      </Card>
     );
   }
 
   if (!stats) {
     return (
-      <div className="text-center py-12 text-gray-500">
-        <p>No hay datos disponibles</p>
-      </div>
+      <Card className="p-8 text-center bg-white shadow-sm">
+        <Mail size={48} className="mx-auto text-gray-400 mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay datos disponibles</h3>
+        <p className="text-gray-600">No se encontraron métricas para mostrar.</p>
+      </Card>
     );
   }
 
@@ -74,7 +80,7 @@ export const EmailHealthDashboard: React.FC<EmailHealthDashboardProps> = ({
         <select
           value={dateRange}
           onChange={(e) => setDateRange(e.target.value as any)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          className="rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5 text-sm font-medium"
         >
           <option value="last7days">Últimos 7 días</option>
           <option value="last30days">Últimos 30 días</option>
@@ -83,29 +89,31 @@ export const EmailHealthDashboard: React.FC<EmailHealthDashboardProps> = ({
       </div>
 
       {/* Health Score Principal */}
-      <div className={`${getHealthScoreBg(stats.healthScore)} rounded-lg border-2 border-current p-6`}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-medium text-gray-700 mb-1">Email Health Score</h3>
-            <p className={`text-4xl font-bold ${getHealthScoreColor(stats.healthScore)}`}>
-              {stats.healthScore}/100
-            </p>
-            <p className="text-sm text-gray-600 mt-2">
-              {stats.healthScore >= 90 
-                ? 'Excelente - Tu reputación de email está en muy buen estado' 
-                : stats.healthScore >= 80
-                ? 'Bueno - Monitorea las métricas para mantener tu reputación'
-                : 'Atención necesaria - Revisa las métricas para mejorar'}
-            </p>
-          </div>
-          <div className="p-4 bg-white rounded-lg">
-            <Shield className={`w-12 h-12 ${getHealthScoreColor(stats.healthScore)}`} />
+      <Card className="p-6 bg-white shadow-sm">
+        <div className={`${getHealthScoreBg(stats.healthScore)} rounded-lg p-6`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-slate-700 mb-1">Email Health Score</h3>
+              <p className={`text-4xl font-bold ${getHealthScoreColor(stats.healthScore)}`}>
+                {stats.healthScore}/100
+              </p>
+              <p className="text-sm text-gray-600 mt-2">
+                {stats.healthScore >= 90 
+                  ? 'Excelente - Tu reputación de email está en muy buen estado' 
+                  : stats.healthScore >= 80
+                  ? 'Bueno - Monitorea las métricas para mantener tu reputación'
+                  : 'Atención necesaria - Revisa las métricas para mejorar'}
+              </p>
+            </div>
+            <div className="p-4 bg-white rounded-lg">
+              <Shield className={`w-12 h-12 ${getHealthScoreColor(stats.healthScore)}`} />
+            </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* KPIs Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <KpiCard
           title="Tasa de Rebote Total"
           value={`${stats.bounceRate.total.toFixed(2)}%`}
@@ -149,22 +157,24 @@ export const EmailHealthDashboard: React.FC<EmailHealthDashboardProps> = ({
 
       {/* Tasa de Apertura si está disponible */}
       {stats.openRate !== undefined && (
-        <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Activity className="w-8 h-8 text-purple-600" />
-              <div>
-                <p className="text-sm font-medium text-gray-700">Tasa de Apertura Promedio</p>
-                <p className="text-2xl font-bold text-purple-600">{stats.openRate.toFixed(1)}%</p>
+        <Card className="p-4 bg-white shadow-sm">
+          <div className="bg-gradient-to-r from-blue-50 to-blue-50 border border-blue-200 rounded-2xl p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Activity className="w-8 h-8 text-blue-600" />
+                <div>
+                  <p className="text-sm font-medium text-slate-700">Tasa de Apertura Promedio</p>
+                  <p className="text-2xl font-bold text-blue-600">{stats.openRate.toFixed(1)}%</p>
+                </div>
               </div>
+              <TrendingUp className="w-6 h-6 text-green-600" />
             </div>
-            <TrendingUp className="w-6 h-6 text-green-600" />
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Gráfico de historial simple */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <Card className="p-6 bg-white shadow-sm">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Historial de Eventos</h3>
         <div className="space-y-2">
           {stats.history.slice(-7).map((point, index) => (
@@ -185,7 +195,7 @@ export const EmailHealthDashboard: React.FC<EmailHealthDashboardProps> = ({
             </div>
           ))}
         </div>
-      </div>
+      </Card>
     </div>
   );
 };

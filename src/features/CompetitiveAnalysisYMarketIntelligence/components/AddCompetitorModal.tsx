@@ -82,7 +82,7 @@ export const AddCompetitorModal: React.FC<AddCompetitorModalProps> = ({
       
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full">
+        <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900">
@@ -109,7 +109,8 @@ export const AddCompetitorModal: React.FC<AddCompetitorModalProps> = ({
             <div className="space-y-4">
               {/* URL del sitio web */}
               <div>
-                <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="url" className="block text-sm font-medium text-slate-700 mb-2">
+                  <ExternalLink size={16} className="inline mr-1" />
                   URL del sitio web o perfil social <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -120,19 +121,19 @@ export const AddCompetitorModal: React.FC<AddCompetitorModalProps> = ({
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     placeholder="https://ejemplo.com o https://instagram.com/perfil"
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-10 pr-3 py-2.5"
                     disabled={isSubmitting}
                     required
                   />
                 </div>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-slate-600">
                   Introduce la URL de la página web principal o perfil de Instagram/Facebook
                 </p>
               </div>
 
               {/* Handle de redes sociales (opcional) */}
               <div>
-                <label htmlFor="socialHandle" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="socialHandle" className="block text-sm font-medium text-slate-700 mb-2">
                   Handle de redes sociales (opcional)
                 </label>
                 <input
@@ -141,7 +142,7 @@ export const AddCompetitorModal: React.FC<AddCompetitorModalProps> = ({
                   value={socialMediaHandle}
                   onChange={(e) => setSocialMediaHandle(e.target.value)}
                   placeholder="@ejemplo"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5"
                   disabled={isSubmitting}
                 />
               </div>

@@ -7,6 +7,7 @@ import {
   BrandProfile
 } from '../api/generator';
 import { Sparkles, Loader2 } from 'lucide-react';
+import { Button } from '../../../components/componentsreutilizables';
 
 interface GenerationFormProps {
   templates: ContentTemplateOption[];
@@ -86,7 +87,7 @@ export const GenerationForm: React.FC<GenerationFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Selección de plantilla */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
+        <label className="block text-sm font-medium text-slate-700 mb-3">
           Tipo de Contenido
         </label>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -95,10 +96,10 @@ export const GenerationForm: React.FC<GenerationFormProps> = ({
               key={template.id}
               type="button"
               onClick={() => setSelectedTemplate(template)}
-              className={`p-4 rounded-lg border-2 transition-all text-left ${
+              className={`p-4 rounded-xl border-2 transition-all text-left ${
                 selectedTemplate?.id === template.id
-                  ? 'border-purple-500 bg-purple-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-200'
+                  : 'border-slate-200 hover:border-slate-300 bg-white'
               }`}
             >
               <div className="text-2xl mb-1">{template.icon || '📝'}</div>
@@ -111,14 +112,14 @@ export const GenerationForm: React.FC<GenerationFormProps> = ({
 
       {/* Campo de prompt */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-slate-700 mb-2">
           Tu Idea o Tema Principal *
         </label>
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Ej: Crear un post para Instagram sobre los beneficios del entrenamiento funcional para oficinistas..."
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-4 pr-3 py-2.5"
           rows={4}
           required
         />
@@ -132,17 +133,17 @@ export const GenerationForm: React.FC<GenerationFormProps> = ({
         <button
           type="button"
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+          className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900"
         >
           <span>Opciones Avanzadas</span>
           <span className="text-gray-400">{showAdvanced ? '−' : '+'}</span>
         </button>
 
         {showAdvanced && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-4 border border-gray-200">
+          <div className="mt-4 rounded-2xl bg-white ring-1 ring-slate-200 p-4 space-y-4">
             {/* Tono de voz */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Tono de Voz
               </label>
               <select
@@ -151,7 +152,7 @@ export const GenerationForm: React.FC<GenerationFormProps> = ({
                   ...prev, 
                   tone: e.target.value as ToneOfVoice 
                 }))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-4 pr-3 py-2.5"
               >
                 <option value="motivational">Motivacional</option>
                 <option value="educational">Educativo</option>
@@ -170,14 +171,14 @@ export const GenerationForm: React.FC<GenerationFormProps> = ({
                     customTone: e.target.value 
                   }))}
                   placeholder="Describe tu tono de voz..."
-                  className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="mt-2 w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-4 pr-3 py-2.5"
                 />
               )}
             </div>
 
             {/* Público objetivo */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Público Objetivo (opcional)
               </label>
               <input
@@ -188,13 +189,13 @@ export const GenerationForm: React.FC<GenerationFormProps> = ({
                   targetAudience: e.target.value 
                 }))}
                 placeholder="Ej: Mujeres de 30-45 años..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-4 pr-3 py-2.5"
               />
             </div>
 
             {/* Longitud */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Longitud del Texto
               </label>
               <select
@@ -203,7 +204,7 @@ export const GenerationForm: React.FC<GenerationFormProps> = ({
                   ...prev, 
                   length: e.target.value as 'short' | 'medium' | 'long' 
                 }))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-4 pr-3 py-2.5"
               >
                 <option value="short">Corto (100-200 palabras)</option>
                 <option value="medium">Medio (200-500 palabras)</option>
@@ -213,7 +214,7 @@ export const GenerationForm: React.FC<GenerationFormProps> = ({
 
             {/* Llamada a la acción */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Llamada a la Acción (opcional)
               </label>
               <input
@@ -224,7 +225,7 @@ export const GenerationForm: React.FC<GenerationFormProps> = ({
                   callToAction: e.target.value 
                 }))}
                 placeholder="Ej: Reserva tu sesión gratuita ahora"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-4 pr-3 py-2.5"
               />
             </div>
           </div>
@@ -232,23 +233,15 @@ export const GenerationForm: React.FC<GenerationFormProps> = ({
       </div>
 
       {/* Botón de envío */}
-      <button
+      <Button
         type="submit"
         disabled={isGenerating || !selectedTemplate || !prompt.trim()}
-        className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+        loading={isGenerating}
+        fullWidth
+        leftIcon={!isGenerating ? <Sparkles size={20} /> : undefined}
       >
-        {isGenerating ? (
-          <>
-            <Loader2 className="w-5 h-5 animate-spin" />
-            Generando...
-          </>
-        ) : (
-          <>
-            <Sparkles className="w-5 h-5" />
-            Generar Contenido
-          </>
-        )}
-      </button>
+        {isGenerating ? 'Generando...' : 'Generar Contenido'}
+      </Button>
     </form>
   );
 };

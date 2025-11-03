@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Layout } from '../../../components/layout';
 import { useAuth } from '../../../context/AuthContext';
 import { PreferenceCategoryRow } from '../components/PreferenceCategoryRow';
 import {
@@ -11,7 +10,8 @@ import {
   PreferenceCategoryInfo,
   CommunicationChannel
 } from '../api/preferences';
-import { Save, CheckCircle, AlertTriangle, Mail, Shield, Power } from 'lucide-react';
+import { Save, CheckCircle, AlertTriangle, Mail, Shield, Power, Loader2 } from 'lucide-react';
+import { Card, Button, Modal } from '../../../components/componentsreutilizables';
 
 export default function SmsemailPreferenceCenterPage() {
   const { user } = useAuth();
@@ -109,62 +109,75 @@ export default function SmsemailPreferenceCenterPage() {
 
   if (isLoading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+          <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
+            <Card padding="none" className="p-8 text-center bg-white shadow-sm">
+              <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+              <p className="text-gray-600">Cargando...</p>
+            </Card>
+          </div>
         </div>
-      </Layout>
     );
   }
 
   return (
-    <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-6 py-12">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-4">
-              <Mail className="w-8 h-8 text-purple-600" />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+        {/* Header */}
+        <div className="border-b border-gray-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+          <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6">
+            <div className="py-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-blue-100 rounded-xl mr-4 ring-1 ring-blue-200/70">
+                  <Mail size={24} className="text-blue-600" />
+                </div>
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
+                    Preferencias de Comunicación
+                  </h1>
+                  <p className="text-gray-600">
+                    Controla los tipos de mensajes que recibes y el canal preferido
+                  </p>
+                </div>
+              </div>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Preferencias de Comunicación
-            </h1>
-            <p className="text-gray-600 mb-1">
-              Hola, {clientName}
-            </p>
-            <p className="text-sm text-gray-500">
-              Controla los tipos de mensajes que recibes y el canal preferido
-            </p>
           </div>
+        </div>
+
+        {/* Contenido Principal */}
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-6 py-8">
 
           {/* Success Message */}
           {successMessage && (
-            <div className="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2">
-              <CheckCircle className="w-5 h-5" />
-              {successMessage}
-            </div>
+            <Card padding="none" className="mb-6 bg-green-100 border border-green-400 text-green-700 p-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle size={20} className="text-green-600" />
+                <span className="font-medium">{successMessage}</span>
+              </div>
+            </Card>
           )}
 
           {/* Error Message */}
           {error && (
-            <div className="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5" />
-              {error}
-            </div>
+            <Card padding="none" className="mb-6 bg-red-100 border border-red-400 text-red-700 p-4">
+              <div className="flex items-center gap-2">
+                <AlertTriangle size={20} className="text-red-600" />
+                <span className="font-medium">{error}</span>
+              </div>
+            </Card>
           )}
 
           {/* Info Card */}
-          <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <Card padding="none" className="mb-6 bg-blue-50 border border-blue-200 p-4">
             <div className="flex items-start gap-3">
-              <Shield className="w-6 h-6 text-blue-600 mt-0.5" />
+              <Shield size={20} className="text-blue-600 mt-0.5" />
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Tu privacidad es importante</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">Tu privacidad es importante</h3>
                 <p className="text-sm text-gray-700">
                   Puedes cambiar tus preferencias en cualquier momento. Solo recibirás los mensajes que selecciones.
                 </p>
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Preferences List */}
           <div className="space-y-4 mb-8">
@@ -189,22 +202,26 @@ export default function SmsemailPreferenceCenterPage() {
 
           {/* Footer Actions */}
           <div className="space-y-4">
-            <button
+            <Button
               onClick={handleSave}
               disabled={isSaving}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50"
+              loading={isSaving}
+              fullWidth
+              size="lg"
+              leftIcon={<Save size={20} />}
             >
-              <Save className="w-5 h-5" />
-              {isSaving ? 'Guardando...' : 'Guardar Preferencias'}
-            </button>
+              Guardar Preferencias
+            </Button>
 
-            <button
+            <Button
               onClick={() => setShowUnsubscribeConfirm(true)}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition"
+              variant="secondary"
+              fullWidth
+              size="lg"
+              leftIcon={<Power size={20} />}
             >
-              <Power className="w-5 h-5" />
               Anular Suscripción a Todo
-            </button>
+            </Button>
           </div>
 
           {/* Last Updated */}
@@ -216,34 +233,35 @@ export default function SmsemailPreferenceCenterPage() {
         </div>
 
         {/* Unsubscribe Confirmation Modal */}
-        {showUnsubscribeConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg max-w-md w-full mx-4 p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                ¿Anular todas las suscripciones?
-              </h2>
-              <p className="text-gray-700 mb-6">
-                Esto te dará de baja de todas las comunicaciones no esenciales. Las notificaciones importantes sobre tu cuenta y servicios continuarán llegando.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowUnsubscribeConfirm(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleUnsubscribeAll}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                >
-                  Confirmar
-                </button>
-              </div>
+        <Modal
+          isOpen={showUnsubscribeConfirm}
+          onClose={() => setShowUnsubscribeConfirm(false)}
+          title="¿Anular todas las suscripciones?"
+          size="sm"
+          footer={
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                onClick={() => setShowUnsubscribeConfirm(false)}
+                fullWidth
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleUnsubscribeAll}
+                fullWidth
+              >
+                Confirmar
+              </Button>
             </div>
-          </div>
-        )}
+          }
+        >
+          <p className="text-gray-600">
+            Esto te dará de baja de todas las comunicaciones no esenciales. Las notificaciones importantes sobre tu cuenta y servicios continuarán llegando.
+          </p>
+        </Modal>
       </div>
-    </Layout>
   );
 }
 

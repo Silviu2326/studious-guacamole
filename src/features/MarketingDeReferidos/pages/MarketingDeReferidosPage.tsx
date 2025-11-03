@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Layout } from '../../../components/layout';
 import { ReferralStatsDashboard } from '../components/ReferralStatsDashboard';
 import { CampaignStatusCard } from '../components/CampaignStatusCard';
 import { CampaignWizard } from '../components/CampaignWizard';
@@ -11,7 +10,8 @@ import {
   ReferralCampaign, 
   ReferralStats 
 } from '../api/referrals';
-import { Plus, BarChart3, Folder, AlertCircle } from 'lucide-react';
+import { Plus, Folder, AlertCircle, Loader2, Package, Users } from 'lucide-react';
+import { Card, Button } from '../../../components/componentsreutilizables';
 
 export default function MarketingDeReferidosPage() {
   const [campaigns, setCampaigns] = useState<ReferralCampaign[]>([]);
@@ -84,106 +84,115 @@ export default function MarketingDeReferidosPage() {
 
   if (error) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <p className="text-red-600 font-medium">{error}</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+          <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
+            <Card className="p-8 text-center bg-white shadow-sm">
+              <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Error al cargar</h3>
+              <p className="text-gray-600 mb-4">{error}</p>
+              <Button onClick={loadData}>Reintentar</Button>
+            </Card>
           </div>
         </div>
-      </Layout>
     );
   }
 
   return (
-    <Layout>
-      <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Marketing de Referidos</h1>
-            <p className="text-gray-600 mt-2">
-              Transforma tus clientes en embajadores de tu marca
-            </p>
+        <div className="border-b border-gray-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+          <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6">
+            <div className="py-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="p-2 bg-blue-100 rounded-xl mr-4 ring-1 ring-blue-200/70">
+                    <Users size={24} className="text-blue-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
+                      Marketing de Referidos
+                    </h1>
+                    <p className="text-gray-600">
+                      Transforma tus clientes en embajadores de tu marca
+                    </p>
+                  </div>
+                </div>
+                <Button onClick={() => setShowWizard(true)} leftIcon={<Plus size={20} />}>
+                  Nueva Campaña
+                </Button>
+              </div>
+            </div>
           </div>
-          <button
-            onClick={() => setShowWizard(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-          >
-            <Plus className="w-5 h-5" />
-            Nueva Campaña
-          </button>
         </div>
 
-        {/* Stats Dashboard */}
-        {stats && <ReferralStatsDashboard stats={stats} isLoading={isLoadingStats} />}
+        {/* Contenido Principal */}
+        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
+          <div className="space-y-6">
+            {/* Stats Dashboard */}
+            {stats && <ReferralStatsDashboard stats={stats} isLoading={isLoadingStats} />}
 
-        {/* Campaigns Section */}
-        <div>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Folder className="w-6 h-6" />
-              Campañas Activas
-            </h2>
+            {/* Campaigns Section */}
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <Folder className="w-5 h-5" />
+                  Campañas Activas
+                </h2>
 
-            {/* Filters */}
-            <div className="flex gap-2">
-              {[
-                { id: 'all', label: 'Todas' },
-                { id: 'active', label: 'Activas' },
-                { id: 'paused', label: 'Pausadas' },
-                { id: 'archived', label: 'Archivadas' }
-              ].map((filter) => (
-                <button
-                  key={filter.id}
-                  onClick={() => setFilterStatus(filter.id as any)}
-                  className={`px-4 py-2 rounded-lg transition ${
-                    filterStatus === filter.id
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {filter.label} ({getCampaignCount(filter.id as any)})
-                </button>
-              ))}
+                {/* Filters */}
+                <div className="flex gap-2">
+                  {[
+                    { id: 'all', label: 'Todas' },
+                    { id: 'active', label: 'Activas' },
+                    { id: 'paused', label: 'Pausadas' },
+                    { id: 'archived', label: 'Archivadas' }
+                  ].map((filter) => (
+                    <Button
+                      key={filter.id}
+                      variant={filterStatus === filter.id ? 'primary' : 'secondary'}
+                      size="sm"
+                      onClick={() => setFilterStatus(filter.id as any)}
+                    >
+                      {filter.label} ({getCampaignCount(filter.id as any)})
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Campaigns Grid */}
+              {isLoading ? (
+                <Card className="p-8 text-center bg-white shadow-sm">
+                  <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+                  <p className="text-gray-600">Cargando...</p>
+                </Card>
+              ) : filteredCampaigns.length === 0 ? (
+                <Card className="p-8 text-center bg-white shadow-sm">
+                  <Package size={48} className="mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay campañas</h3>
+                  <p className="text-gray-600 mb-4">
+                    {filterStatus === 'all' 
+                      ? 'Comienza creando tu primera campaña de referidos'
+                      : `No hay campañas ${filterStatus === 'active' ? 'activas' : filterStatus === 'paused' ? 'pausadas' : 'archivadas'}`
+                    }
+                  </p>
+                  <Button onClick={() => setShowWizard(true)} leftIcon={<Plus size={20} />}>
+                    Crear Campaña
+                  </Button>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredCampaigns.map((campaign) => (
+                    <CampaignStatusCard
+                      key={campaign.id}
+                      campaign={campaign}
+                      onViewDetails={handleViewDetails}
+                      onToggleStatus={handleToggleStatus}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-
-          {/* Campaigns Grid */}
-          {isLoading ? (
-            <div className="flex items-center justify-center min-h-[200px]">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-            </div>
-          ) : filteredCampaigns.length === 0 ? (
-            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-              <Folder className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay campañas</h3>
-              <p className="text-gray-600 mb-6">
-                {filterStatus === 'all' 
-                  ? 'Comienza creando tu primera campaña de referidos'
-                  : `No hay campañas ${filterStatus === 'active' ? 'activas' : filterStatus === 'paused' ? 'pausadas' : 'archivadas'}`
-                }
-              </p>
-              <button
-                onClick={() => setShowWizard(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-              >
-                <Plus className="w-5 h-5" />
-                Crear Campaña
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCampaigns.map((campaign) => (
-                <CampaignStatusCard
-                  key={campaign.id}
-                  campaign={campaign}
-                  onViewDetails={handleViewDetails}
-                  onToggleStatus={handleToggleStatus}
-                />
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Wizard Modal */}
@@ -194,7 +203,6 @@ export default function MarketingDeReferidosPage() {
           />
         )}
       </div>
-    </Layout>
   );
 }
 

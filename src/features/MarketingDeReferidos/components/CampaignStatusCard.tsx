@@ -1,6 +1,7 @@
 import React from 'react';
 import { ReferralCampaign, getStatusLabel, getStatusColor, getRewardTypeLabel } from '../api/referrals';
 import { MoreVertical, Play, Pause, Eye, Edit, Copy } from 'lucide-react';
+import { Card, Button } from '../../../components/componentsreutilizables';
 
 interface CampaignStatusCardProps {
   campaign: ReferralCampaign;
@@ -26,7 +27,7 @@ export const CampaignStatusCard: React.FC<CampaignStatusCardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition">
+    <Card variant="hover" className="h-full flex flex-col transition-shadow overflow-hidden">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
@@ -43,9 +44,9 @@ export const CampaignStatusCard: React.FC<CampaignStatusCardProps> = ({
 
         {/* Actions Menu */}
         <div className="relative">
-          <button className="p-1 text-gray-500 hover:bg-gray-100 rounded">
+          <Button variant="ghost" size="sm" className="p-1">
             <MoreVertical className="w-5 h-5" />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -98,60 +99,59 @@ export const CampaignStatusCard: React.FC<CampaignStatusCardProps> = ({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2">
-        <button
+      <div className="flex gap-2 mt-auto pt-3 border-t border-gray-100">
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={() => onViewDetails(campaign.id)}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+          className="flex-1"
+          leftIcon={<Eye size={16} />}
         >
-          <Eye className="w-4 h-4" />
           Ver Detalles
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={() => onToggleStatus(campaign.id)}
-          className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition ${
+          className={
             campaign.status === 'active'
               ? 'text-yellow-700 bg-yellow-50 hover:bg-yellow-100'
               : 'text-green-700 bg-green-50 hover:bg-green-100'
-          }`}
+          }
+          leftIcon={campaign.status === 'active' ? <Pause size={16} /> : <Play size={16} />}
         >
-          {campaign.status === 'active' ? (
-            <>
-              <Pause className="w-4 h-4" />
-              Pausar
-            </>
-          ) : (
-            <>
-              <Play className="w-4 h-4" />
-              Activar
-            </>
-          )}
-        </button>
+          {campaign.status === 'active' ? 'Pausar' : 'Activar'}
+        </Button>
       </div>
 
       {/* Additional Actions */}
       {(onEdit || onDuplicate) && (
         <div className="flex gap-2 mt-2">
           {onEdit && (
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => onEdit(campaign.id)}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+              className="flex-1"
+              leftIcon={<Edit size={16} />}
             >
-              <Edit className="w-4 h-4" />
               Editar
-            </button>
+            </Button>
           )}
           {onDuplicate && (
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => onDuplicate(campaign.id)}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+              className="flex-1"
+              leftIcon={<Copy size={16} />}
             >
-              <Copy className="w-4 h-4" />
               Duplicar
-            </button>
+            </Button>
           )}
         </div>
       )}
-    </div>
+    </Card>
   );
 };
 

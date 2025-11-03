@@ -1,6 +1,7 @@
 import React from 'react';
 import { PackageAnalytics } from '../api/contentPackages';
 import { Users, TrendingUp, DollarSign, AlertTriangle } from 'lucide-react';
+import { MetricCards, Card } from '../../../components/componentsreutilizables';
 
 interface PackageAnalyticsDashboardProps {
   analytics: PackageAnalytics;
@@ -15,50 +16,44 @@ export const PackageAnalyticsDashboard: React.FC<PackageAnalyticsDashboardProps>
   return (
     <div className="space-y-6">
       {/* KPIs principales */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">Total Inscritos</span>
-            <Users className="w-5 h-5 text-blue-500" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{analytics.totalEnrolled}</p>
-        </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">Usuarios Activos</span>
-            <TrendingUp className="w-5 h-5 text-green-500" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{analytics.activeUsers}</p>
-          <p className="text-xs text-gray-500 mt-1">
-            {(analytics.activeUsers / analytics.totalEnrolled * 100).toFixed(0)}% del total
-          </p>
-        </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">Tasa Finalización</span>
-            <TrendingUp className="w-5 h-5 text-purple-500" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">
-            {(analytics.completionRate * 100).toFixed(0)}%
-          </p>
-        </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">Progreso Promedio</span>
-            <DollarSign className="w-5 h-5 text-green-500" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">
-            {(analytics.averageProgress * 100).toFixed(0)}%
-          </p>
-        </div>
-      </div>
+      <MetricCards
+        data={[
+          {
+            id: 'inscritos',
+            title: 'Total Inscritos',
+            value: analytics.totalEnrolled,
+            color: 'info',
+            icon: <Users />
+          },
+          {
+            id: 'activos',
+            title: 'Usuarios Activos',
+            value: analytics.activeUsers,
+            subtitle: `${(analytics.activeUsers / analytics.totalEnrolled * 100).toFixed(0)}% del total`,
+            color: 'success',
+            icon: <TrendingUp />
+          },
+          {
+            id: 'finalizacion',
+            title: 'Tasa Finalización',
+            value: `${(analytics.completionRate * 100).toFixed(0)}%`,
+            color: 'primary',
+            icon: <TrendingUp />
+          },
+          {
+            id: 'progreso',
+            title: 'Progreso Promedio',
+            value: `${(analytics.averageProgress * 100).toFixed(0)}%`,
+            color: 'success',
+            icon: <DollarSign />
+          }
+        ]}
+        columns={4}
+      />
 
       {/* Puntos de abandono */}
       {analytics.dropoutPoints.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <Card className="p-6 bg-white shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <AlertTriangle className="w-5 h-5 text-orange-500" />
             <h3 className="text-lg font-semibold text-gray-900">Puntos de Abandono</h3>
@@ -81,12 +76,12 @@ export const PackageAnalyticsDashboard: React.FC<PackageAnalyticsDashboardProps>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Contenido más visto */}
       {analytics.topItems.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <Card className="p-6 bg-white shadow-sm">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Contenido Más Visto</h3>
           <div className="space-y-2">
             {analytics.topItems.map((item, index) => (
@@ -101,7 +96,7 @@ export const PackageAnalyticsDashboard: React.FC<PackageAnalyticsDashboardProps>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );

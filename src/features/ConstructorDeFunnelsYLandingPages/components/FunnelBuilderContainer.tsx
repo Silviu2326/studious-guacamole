@@ -88,22 +88,22 @@ export const FunnelBuilderContainer: React.FC<FunnelBuilderContainerProps> = ({
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Panel izquierdo - Lista de componentes disponibles */}
-      <div className="w-64 bg-white border-r border-gray-200 p-4">
+      <div className="w-64 bg-white border-r border-gray-200/60 p-4">
         <h3 className="text-sm font-semibold text-gray-900 mb-4">Componentes</h3>
         <div className="space-y-2">
-          <div className="p-3 border border-gray-200 rounded cursor-move hover:bg-gray-50">
+          <div className="p-3 border border-gray-200 rounded-xl cursor-move hover:bg-slate-50 transition-colors ring-1 ring-gray-200/50">
             Título
           </div>
-          <div className="p-3 border border-gray-200 rounded cursor-move hover:bg-gray-50">
+          <div className="p-3 border border-gray-200 rounded-xl cursor-move hover:bg-slate-50 transition-colors ring-1 ring-gray-200/50">
             Texto
           </div>
-          <div className="p-3 border border-gray-200 rounded cursor-move hover:bg-gray-50">
+          <div className="p-3 border border-gray-200 rounded-xl cursor-move hover:bg-slate-50 transition-colors ring-1 ring-gray-200/50">
             Imagen
           </div>
-          <div className="p-3 border border-gray-200 rounded cursor-move hover:bg-gray-50">
+          <div className="p-3 border border-gray-200 rounded-xl cursor-move hover:bg-slate-50 transition-colors ring-1 ring-gray-200/50">
             Formulario
           </div>
-          <div className="p-3 border border-gray-200 rounded cursor-move hover:bg-gray-50">
+          <div className="p-3 border border-gray-200 rounded-xl cursor-move hover:bg-slate-50 transition-colors ring-1 ring-gray-200/50">
             Botón
           </div>
         </div>
@@ -113,19 +113,27 @@ export const FunnelBuilderContainer: React.FC<FunnelBuilderContainerProps> = ({
       <div className="flex-1 overflow-auto">
         <div className="p-6">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-semibold">
+            <h2 className="text-xl font-bold text-gray-900">
               {activeFunnelData?.name || 'Nuevo Funnel'}
             </h2>
             <div className="flex gap-2">
               <button
                 onClick={() => setViewMode('desktop')}
-                className={`px-4 py-2 rounded ${viewMode === 'desktop' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                  viewMode === 'desktop'
+                    ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-200'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
               >
                 Desktop
               </button>
               <button
                 onClick={() => setViewMode('mobile')}
-                className={`px-4 py-2 rounded ${viewMode === 'mobile' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                  viewMode === 'mobile'
+                    ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-200'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
               >
                 Móvil
               </button>
@@ -140,7 +148,7 @@ export const FunnelBuilderContainer: React.FC<FunnelBuilderContainerProps> = ({
               viewMode={viewMode}
             />
           ) : (
-            <div className="flex items-center justify-center h-64 bg-white border-2 border-dashed border-gray-300 rounded">
+            <div className="flex items-center justify-center h-64 bg-white border-2 border-dashed border-gray-300 rounded-xl">
               <p className="text-gray-500">No hay página activa</p>
             </div>
           )}
@@ -148,7 +156,7 @@ export const FunnelBuilderContainer: React.FC<FunnelBuilderContainerProps> = ({
       </div>
 
       {/* Panel derecho - Configuración de componentes */}
-      <div className="w-80 bg-white border-l border-gray-200 p-4">
+      <div className="w-80 bg-white border-l border-gray-200/60 p-4">
         {selectedComponent ? (
           <ComponentSettingsPanel
             component={selectedComponent}

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from '../../../components/componentsreutilizables';
-import { PerformanceMetricsGrid } from './PerformanceMetricsGrid';
+import { Card, Button, MetricCards, MetricCardData } from '../../../components/componentsreutilizables';
 import { CampaignCreatorWizard } from './CampaignCreatorWizard';
 import {
   getCampaigns,
@@ -12,12 +11,13 @@ import {
   Plus,
   Play,
   Pause,
-  MoreVertical,
   Filter,
   Search,
   Facebook,
   Globe,
-  AlertCircle
+  AlertCircle,
+  Package,
+  Loader2
 } from 'lucide-react';
 
 export const CampaignsDashboardContainer: React.FC = () => {
@@ -117,38 +117,100 @@ export const CampaignsDashboardContainer: React.FC = () => {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 font-medium">{error}</p>
-          <button
-            onClick={loadDashboardData}
-            className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-          >
-            Reintentar
-          </button>
-        </div>
-      </div>
+      <Card className="p-8 text-center bg-white shadow-sm">
+        <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Error al cargar</h3>
+        <p className="text-gray-600 mb-4">{error}</p>
+        <Button onClick={loadDashboardData}>
+          Reintentar
+        </Button>
+      </Card>
     );
   }
 
-  const summaryMetrics = performanceMetrics
-    ? {
-        cpl: performanceMetrics.total.cpl,
-        roas: performanceMetrics.total.roas,
-        ctr: performanceMetrics.total.ctr,
-        spend: performanceMetrics.total.spend,
-        conversions: performanceMetrics.total.conversions,
-        clicks: performanceMetrics.total.clicks
-      }
-    : {
-        cpl: 0,
-        roas: 0,
-        ctr: '0%',
-        spend: 0,
-        conversions: 0,
-        clicks: 0
-      };
+  const metricCardsData: MetricCardData[] = performanceMetrics
+    ? [
+        {
+          id: 'spend',
+          title: 'Gasto Total',
+          value: `€${performanceMetrics.total.spend.toFixed(2)}`,
+          color: 'info',
+        },
+        {
+          id: 'cpl',
+          title: 'Coste por Lead (CPL)',
+          value: `€${performanceMetrics.total.cpl.toFixed(2)}`,
+          color: 'info',
+        },
+        {
+          id: 'roas',
+          title: 'Retorno (ROAS)',
+          value: `${performanceMetrics.total.roas.toFixed(1)}:1`,
+          color: 'success',
+        },
+        {
+          id: 'conversions',
+          title: 'Conversiones',
+          value: performanceMetrics.total.conversions.toString(),
+          color: 'success',
+        },
+        {
+          id: 'ctr',
+          title: 'Tasa de Clics (CTR)',
+          value: performanceMetrics.total.ctr,
+          color: 'info',
+        },
+        {
+          id: 'clicks',
+          title: 'Total Clics',
+          value: (performanceMetrics.total.clicks || 0).toString(),
+          color: 'info',
+        },
+      ]
+    : [
+        {
+          id: 'spend',
+          title: 'Gasto Total',
+          value: '€0.00',
+          color: 'info',
+          loading: isLoading,
+        },
+        {
+          id: 'cpl',
+          title: 'Coste por Lead (CPL)',
+          value: '€0.00',
+          color: 'info',
+          loading: isLoading,
+        },
+        {
+          id: 'roas',
+          title: 'Retorno (ROAS)',
+          value: '0:1',
+          color: 'success',
+          loading: isLoading,
+        },
+        {
+          id: 'conversions',
+          title: 'Conversiones',
+          value: '0',
+          color: 'success',
+          loading: isLoading,
+        },
+        {
+          id: 'ctr',
+          title: 'Tasa de Clics (CTR)',
+          value: '0%',
+          color: 'info',
+          loading: isLoading,
+        },
+        {
+          id: 'clicks',
+          title: 'Total Clics',
+          value: '0',
+          color: 'info',
+          loading: isLoading,
+        },
+      ];
 
   return (
     <div className="space-y-6">
@@ -157,140 +219,148 @@ export const CampaignsDashboardContainer: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">Métricas de Rendimiento</h2>
         </div>
-        <PerformanceMetricsGrid metrics={summaryMetrics} isLoading={isLoading} />
+        <MetricCards data={metricCardsData} columns={3} />
       </div>
 
       {/* Lista de Campañas */}
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Tus Campañas</h2>
-          <button
-            onClick={() => setIsWizardOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-          >
-            <Plus className="w-5 h-5" />
+        {/* Toolbar superior */}
+        <div className="flex items-center justify-end mb-6">
+          <Button onClick={() => setIsWizardOpen(true)} leftIcon={<Plus size={20} />}>
             Nueva Campaña
-          </button>
+          </Button>
         </div>
 
         {/* Filtros */}
-        <div className="flex items-center gap-4 mb-4">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-500" />
-            <select
-              value={selectedPlatform}
-              onChange={(e) => setSelectedPlatform(e.target.value)}
-              className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="all">Todas las plataformas</option>
-              <option value="meta">Meta</option>
-              <option value="google">Google</option>
-            </select>
+        <Card className="mb-6 bg-white shadow-sm">
+          <div className="space-y-4">
+            <div className="rounded-2xl bg-slate-50 ring-1 ring-slate-200 p-3">
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
+                    <input
+                      type="text"
+                      placeholder="Buscar campañas..."
+                      className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-10 pr-3 py-2.5"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-slate-600" />
+                  <select
+                    value={selectedPlatform}
+                    onChange={(e) => setSelectedPlatform(e.target.value)}
+                    className="px-3 py-2 rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                  >
+                    <option value="all">Todas las plataformas</option>
+                    <option value="meta">Meta</option>
+                    <option value="google">Google</option>
+                  </select>
+                </div>
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="px-3 py-2 rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                >
+                  <option value="all">Todos los estados</option>
+                  <option value="active">Activas</option>
+                  <option value="paused">Pausadas</option>
+                  <option value="pending_review">En Revisión</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-between items-center text-sm text-slate-600 border-t border-slate-200 pt-4">
+              <span>{filteredCampaigns.length} resultados encontrados</span>
+              <span>{[selectedPlatform, selectedStatus].filter(f => f !== 'all').length} filtros aplicados</span>
+            </div>
           </div>
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-          >
-            <option value="all">Todos los estados</option>
-            <option value="active">Activas</option>
-            <option value="paused">Pausadas</option>
-            <option value="pending_review">En Revisión</option>
-          </select>
-        </div>
+        </Card>
 
         {/* Grid de Campañas */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-1/2 mb-3"></div>
-                <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
-                <div className="space-y-2">
-                  <div className="h-3 bg-gray-200 rounded"></div>
-                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <Card className="p-8 text-center bg-white shadow-sm">
+            <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+            <p className="text-gray-600">Cargando...</p>
+          </Card>
         ) : filteredCampaigns.length === 0 ? (
-          <Card className="p-12 text-center">
-            <div className="max-w-md mx-auto">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Plus className="w-8 h-8 text-purple-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                No hay campañas aún
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Crea tu primera campaña publicitaria para empezar a captar clientes
-              </p>
-              <button
-                onClick={() => setIsWizardOpen(true)}
-                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-              >
-                Crear Campaña
-              </button>
-            </div>
+          <Card className="p-8 text-center bg-white shadow-sm">
+            <Package size={48} className="mx-auto text-gray-400 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              No hay campañas aún
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Crea tu primera campaña publicitaria para empezar a captar clientes
+            </p>
+            <Button onClick={() => setIsWizardOpen(true)}>
+              Crear Campaña
+            </Button>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredCampaigns.map((campaign) => (
               <Card
                 key={campaign.id}
-                className="p-6 hover:shadow-lg transition-shadow"
+                variant="hover"
+                className="h-full flex flex-col transition-shadow overflow-hidden bg-white shadow-sm"
               >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    {getPlatformIcon(campaign.platform)}
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{campaign.name}</h3>
-                      <p className="text-sm text-gray-500 capitalize">
-                        {campaign.platform}
-                      </p>
+                <div className="p-4 flex-1">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      {getPlatformIcon(campaign.platform)}
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{campaign.name}</h3>
+                        <p className="text-sm text-gray-500 capitalize">
+                          {campaign.platform}
+                        </p>
+                      </div>
+                    </div>
+                    {getStatusBadge(campaign.status)}
+                  </div>
+
+                  <div className="space-y-2 mb-4">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Gasto</span>
+                      <span className="font-semibold text-gray-900">
+                        €{campaign.summary.spend.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">CPL</span>
+                      <span className="font-semibold text-gray-900">
+                        €{campaign.summary.cpl.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Conversiones</span>
+                      <span className="font-semibold text-green-600">
+                        {campaign.summary.conversions}
+                      </span>
                     </div>
                   </div>
-                  {getStatusBadge(campaign.status)}
                 </div>
 
-                <div className="space-y-3 mb-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Gasto</span>
-                    <span className="font-semibold text-gray-900">
-                      €{campaign.summary.spend.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">CPL</span>
-                    <span className="font-semibold text-gray-900">
-                      €{campaign.summary.cpl.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Conversiones</span>
-                    <span className="font-semibold text-green-600">
-                      {campaign.summary.conversions}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 pt-4 border-t border-gray-200">
+                <div className="flex gap-2 mt-auto pt-3 border-t border-gray-100 px-4 pb-4">
                   {campaign.status === 'active' ? (
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handlePauseCampaign(campaign.id)}
-                      className="flex items-center gap-1 px-3 py-1 text-sm text-yellow-700 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition"
+                      className="text-yellow-700 hover:bg-yellow-50"
                     >
-                      <Pause className="w-4 h-4" />
+                      <Pause size={16} className="mr-1" />
                       Pausar
-                    </button>
+                    </Button>
                   ) : campaign.status === 'paused' ? (
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleResumeCampaign(campaign.id)}
-                      className="flex items-center gap-1 px-3 py-1 text-sm text-green-700 bg-green-50 rounded-lg hover:bg-green-100 transition"
+                      className="text-green-700 hover:bg-green-50"
                     >
-                      <Play className="w-4 h-4" />
+                      <Play size={16} className="mr-1" />
                       Reanudar
-                    </button>
+                    </Button>
                   ) : null}
                 </div>
               </Card>

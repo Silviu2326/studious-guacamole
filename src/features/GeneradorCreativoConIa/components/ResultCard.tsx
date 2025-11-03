@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { GenerationResult } from '../api/generator';
 import { Copy, Check, Save, X } from 'lucide-react';
+import { Card, Button } from '../../../components/componentsreutilizables';
 
 interface ResultCardProps {
   result: GenerationResult;
@@ -39,75 +40,65 @@ export const ResultCard: React.FC<ResultCardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-            <span className="text-purple-600 font-semibold text-sm">
-              {result.id.slice(-2)}
-            </span>
+    <Card variant="hover" padding="none" className="h-full flex flex-col transition-shadow overflow-hidden">
+      <div className="p-4 flex flex-col flex-1">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+              <span className="text-blue-600 font-semibold text-sm">
+                {result.id.slice(-2)}
+              </span>
+            </div>
+            <span className="text-sm font-medium text-gray-600">Variante</span>
           </div>
-          <span className="text-sm font-medium text-gray-600">Variante</span>
+          <div className="flex items-center gap-2">
+            {onDiscard && (
+              <button
+                onClick={onDiscard}
+                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
+                title="Descartar"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {onDiscard && (
-            <button
-              onClick={onDiscard}
-              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
-              title="Descartar"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-      </div>
 
-      {/* Contenido generado */}
-      <div className="mb-4">
-        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-          <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">
-            {result.text}
-          </p>
+        {/* Contenido generado */}
+        <div className="mb-4 flex-1">
+          <div className="bg-slate-50 rounded-xl p-4 ring-1 ring-slate-200">
+            <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">
+              {result.text}
+            </p>
+          </div>
+        </div>
+
+        {/* Acciones */}
+        <div className="flex items-center gap-2 mt-auto pt-3 border-t border-gray-100">
+          <Button
+            onClick={handleCopy}
+            variant={isCopied ? 'secondary' : 'primary'}
+            size="sm"
+            fullWidth
+            leftIcon={isCopied ? <Check size={16} /> : <Copy size={16} />}
+            className={isCopied ? 'bg-green-100 text-green-700 hover:bg-green-200' : ''}
+          >
+            {isCopied ? '¡Copiado!' : 'Copiar'}
+          </Button>
+          
+          <Button
+            onClick={handleSave}
+            disabled={isSaved}
+            variant="secondary"
+            size="sm"
+            leftIcon={<Save size={16} />}
+            className={isSaved ? 'bg-green-100 text-green-700 cursor-not-allowed' : ''}
+          >
+            {isSaved ? 'Guardado' : 'Guardar'}
+          </Button>
         </div>
       </div>
-
-      {/* Acciones */}
-      <div className="flex items-center gap-2 pt-4 border-t border-gray-200">
-        <button
-          onClick={handleCopy}
-          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition ${
-            isCopied
-              ? 'bg-green-100 text-green-700'
-              : 'bg-purple-600 text-white hover:bg-purple-700'
-          }`}
-        >
-          {isCopied ? (
-            <>
-              <Check className="w-4 h-4" />
-              ¡Copiado!
-            </>
-          ) : (
-            <>
-              <Copy className="w-4 h-4" />
-              Copiar
-            </>
-          )}
-        </button>
-        
-        <button
-          onClick={handleSave}
-          disabled={isSaved}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
-            isSaved
-              ? 'bg-green-100 text-green-700 cursor-not-allowed'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          <Save className="w-4 h-4" />
-          {isSaved ? 'Guardado' : 'Guardar'}
-        </button>
-      </div>
-    </div>
+    </Card>
   );
 };
 

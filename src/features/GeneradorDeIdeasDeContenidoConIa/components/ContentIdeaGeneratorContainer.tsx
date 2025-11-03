@@ -11,6 +11,7 @@ import {
   scheduleIdea
 } from '../api/contentIdeas';
 import { Lightbulb, AlertCircle, Loader2, Sparkles } from 'lucide-react';
+import { Card } from '../../../components/componentsreutilizables';
 
 /**
  * Componente principal que orquesta la lógica de la página.
@@ -94,9 +95,9 @@ export const ContentIdeaGeneratorContainer: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Formulario */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <Card className="bg-white shadow-sm" padding="md">
         <div className="flex items-center gap-2 mb-6">
-          <Sparkles className="w-6 h-6 text-purple-600" />
+          <Sparkles className="w-6 h-6 text-blue-600" />
           <h2 className="text-xl font-semibold text-gray-900">
             Generar Nuevas Ideas
           </h2>
@@ -108,30 +109,23 @@ export const ContentIdeaGeneratorContainer: React.FC = () => {
           onSubmit={handleSubmit}
           isLoading={isLoading}
         />
-      </div>
+      </Card>
 
       {/* Error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-red-600" />
-            <div>
-              <p className="text-sm font-medium text-red-900">Error al generar ideas</p>
-              <p className="text-xs text-red-700 mt-1">{error.message}</p>
-            </div>
-          </div>
-        </div>
+        <Card className="text-center bg-white shadow-sm" padding="lg">
+          <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error al cargar</h3>
+          <p className="text-gray-600 mb-4">{error.message}</p>
+        </Card>
       )}
 
       {/* Loading */}
       {isLoading && (
-        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-          <Loader2 className="w-8 h-8 text-purple-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Generando ideas de contenido con IA...</p>
-          <p className="text-sm text-gray-500 mt-2">
-            Esto puede tomar unos segundos
-          </p>
-        </div>
+        <Card className="text-center bg-white shadow-sm" padding="lg">
+          <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+          <p className="text-gray-600">Cargando...</p>
+        </Card>
       )}
 
       {/* Resultados */}
@@ -139,12 +133,12 @@ export const ContentIdeaGeneratorContainer: React.FC = () => {
         <div>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Lightbulb className="w-6 h-6 text-purple-600" />
+              <Lightbulb className="w-6 h-6 text-blue-600" />
               <h2 className="text-xl font-semibold text-gray-900">
                 Ideas Generadas ({data.ideas.length})
               </h2>
             </div>
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-slate-600">
               Créditos consumidos: {data.creditsConsumed}
             </div>
           </div>

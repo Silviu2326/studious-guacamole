@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Layout } from '../../../components/layout';
 import { AudienceCard } from '../components/AudienceCard';
+import { Card, MetricCards, Button } from '../../../components/componentsreutilizables';
 import {
   getAudiences,
   createAudience,
@@ -10,7 +10,7 @@ import {
   Audience,
   AudienceStats
 } from '../api/audiences';
-import { Plus, AlertCircle, Users, TrendingUp } from 'lucide-react';
+import { Plus, AlertCircle, Users, TrendingUp, Loader2, Package } from 'lucide-react';
 
 export default function SegmentacionDinamicaYAudienciasPage() {
   const [audiences, setAudiences] = useState<Audience[]>([]);
@@ -78,151 +78,179 @@ export default function SegmentacionDinamicaYAudienciasPage() {
     }
   };
 
+  // Preparar métricas para MetricCards
+  const metricas = stats ? [
+    {
+      id: 'total-audiences',
+      title: 'Total Audiencias',
+      value: stats.totalAudiences.toString(),
+      icon: <Users className="w-5 h-5" />,
+      color: 'info' as const,
+    },
+    {
+      id: 'total-members',
+      title: 'Total Miembros',
+      value: stats.totalMembers.toString(),
+      icon: <Users className="w-5 h-5" />,
+      color: 'primary' as const,
+    },
+    {
+      id: 'average-size',
+      title: 'Tamaño Promedio',
+      value: stats.averageAudienceSize.toFixed(0),
+      icon: <TrendingUp className="w-5 h-5" />,
+      color: 'success' as const,
+    },
+    {
+      id: 'segmentation-rate',
+      title: 'Tasa Segmentación',
+      value: `${stats.segmentationRate.toFixed(1)}%`,
+      icon: <TrendingUp className="w-5 h-5" />,
+      color: 'warning' as const,
+    }
+  ] : [];
+
   return (
-    <Layout>
-      <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Segmentación Dinámica & Audiencias
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Crea audiencias dinámicas para personalizar tu marketing y comunicación
-            </p>
+        <div className="border-b border-gray-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+          <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6">
+            <div className="py-6">
+              <div className="flex items-center">
+                {/* Icono con contenedor */}
+                <div className="p-2 bg-blue-100 rounded-xl mr-4 ring-1 ring-blue-200/70">
+                  <Users size={24} className="text-blue-600" />
+                </div>
+                
+                {/* Título y descripción */}
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
+                    Segmentación Dinámica & Audiencias
+                  </h1>
+                  <p className="text-gray-600">
+                    Crea audiencias dinámicas para personalizar tu marketing y comunicación
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
-          <button
-            onClick={handleCreateAudience}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-          >
-            <Plus className="w-5 h-5" />
-            Nueva Audiencia
-          </button>
         </div>
 
-        {/* Error Banner */}
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-            <strong className="font-bold">Error:</strong>
-            <span className="block sm:inline"> {error}</span>
-          </div>
-        )}
-
-        {/* Stats Dashboard */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
-                <div className="h-16 bg-gray-200 rounded"></div>
-              </div>
-            ))}
-          </div>
-        ) : stats ? (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Users className="w-5 h-5 text-purple-600" />
-                <h3 className="text-sm font-medium text-gray-600">Total Audiencias</h3>
-              </div>
-              <p className="text-3xl font-bold text-gray-900">{stats.totalAudiences}</p>
+        {/* Contenido principal */}
+        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
+          <div className="space-y-6">
+            {/* Toolbar superior */}
+            <div className="flex items-center justify-end">
+              <Button variant="primary" onClick={handleCreateAudience} leftIcon={<Plus size={20} />}>
+                Nueva Audiencia
+              </Button>
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Users className="w-5 h-5 text-blue-600" />
-                <h3 className="text-sm font-medium text-gray-600">Total Miembros</h3>
-              </div>
-              <p className="text-3xl font-bold text-gray-900">{stats.totalMembers}</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-5 h-5 text-green-600" />
-                <h3 className="text-sm font-medium text-gray-600">Tamaño Promedio</h3>
-              </div>
-              <p className="text-3xl font-bold text-gray-900">{stats.averageAudienceSize.toFixed(0)}</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-sm font-medium text-gray-600 mb-2">Tasa Segmentación</h3>
-              <p className="text-3xl font-bold text-gray-900">{stats.segmentationRate.toFixed(1)}%</p>
-            </div>
-          </div>
-        ) : null}
-
-        {/* Top Audiences */}
-        {stats && stats.topAudiencesBySize.length > 0 && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Audiencias Más Grandes</h3>
-            <div className="space-y-3">
-              {stats.topAudiencesBySize.map((audience, idx) => (
-                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 bg-purple-100 text-purple-700 rounded-full font-bold text-sm">
-                      {idx + 1}
-                    </div>
-                    <div>
-                      <div className="font-semibold text-gray-900">{audience.name}</div>
-                      <div className="text-sm text-gray-600">{audience.memberCount} miembros</div>
-                    </div>
+            {/* Error Banner */}
+            {error && (
+              <Card className="p-4 bg-white shadow-sm">
+                <div className="flex items-center gap-3">
+                  <AlertCircle size={20} className="text-red-500" />
+                  <div>
+                    <strong className="font-bold text-red-700">Error:</strong>
+                    <span className="ml-2 text-red-600">{error}</span>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              </Card>
+            )}
 
-        {/* Audiences List */}
-        {isLoading ? (
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-          </div>
-        ) : audiences.length === 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-            <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay audiencias</h3>
-            <p className="text-gray-600 mb-6">Crea tu primera audiencia para empezar a segmentar clientes</p>
-            <button
-              onClick={handleCreateAudience}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-            >
-              <Plus className="w-5 h-5" />
-              Crear Primera Audiencia
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {audiences.map((audience) => (
-              <AudienceCard
-                key={audience.id}
-                audience={audience}
-                onEdit={handleEditAudience}
-                onDelete={handleDeleteAudience}
-                onViewMembers={handleViewMembers}
-                onDuplicate={handleDuplicate}
+            {/* Métricas */}
+            {isLoading ? (
+              <MetricCards 
+                data={[
+                  { id: '1', title: '', value: '', loading: true },
+                  { id: '2', title: '', value: '', loading: true },
+                  { id: '3', title: '', value: '', loading: true },
+                  { id: '4', title: '', value: '', loading: true },
+                ]} 
+                columns={4} 
               />
-            ))}
-          </div>
-        )}
+            ) : stats ? (
+              <MetricCards data={metricas} columns={4} />
+            ) : null}
 
-        {/* Info Card */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-6 h-6 text-blue-600 mt-0.5" />
-            <div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
-                ¿Qué son las audiencias dinámicas?
-              </h3>
-              <p className="text-gray-700">
-                Las audiencias dinámicas se actualizan automáticamente en tiempo real basándose en las reglas que definas. 
-                Un cliente puede entrar y salir de una audiencia automáticamente cuando cumpla o deje de cumplir las condiciones. 
-                Utiliza estas audiencias para campañas de email, SMS, retargeting y automatizaciones personalizadas.
-              </p>
-            </div>
+            {/* Top Audiences */}
+            {stats && stats.topAudiencesBySize.length > 0 && (
+              <Card className="bg-white shadow-sm">
+                <div className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Audiencias Más Grandes</h3>
+                  <div className="space-y-3">
+                    {stats.topAudiencesBySize.map((audience, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-700 rounded-full font-bold text-sm">
+                            {idx + 1}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-gray-900">{audience.name}</div>
+                            <div className="text-sm text-gray-600">{audience.memberCount} miembros</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {/* Audiences List */}
+            {isLoading ? (
+              <Card className="p-8 text-center bg-white shadow-sm">
+                <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+                <p className="text-gray-600">Cargando audiencias...</p>
+              </Card>
+            ) : audiences.length === 0 ? (
+              <Card className="p-8 text-center bg-white shadow-sm">
+                <Package size={48} className="mx-auto text-gray-400 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay audiencias</h3>
+                <p className="text-gray-600 mb-4">Crea tu primera audiencia para empezar a segmentar clientes</p>
+                <Button variant="primary" onClick={handleCreateAudience} leftIcon={<Plus size={20} />}>
+                  Crear Primera Audiencia
+                </Button>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {audiences.map((audience) => (
+                  <AudienceCard
+                    key={audience.id}
+                    audience={audience}
+                    onEdit={handleEditAudience}
+                    onDelete={handleDeleteAudience}
+                    onViewMembers={handleViewMembers}
+                    onDuplicate={handleDuplicate}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Info Card */}
+            <Card className="bg-white shadow-sm">
+              <div className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <AlertCircle className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      ¿Qué son las audiencias dinámicas?
+                    </h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      Las audiencias dinámicas se actualizan automáticamente en tiempo real basándose en las reglas que definas. 
+                      Un cliente puede entrar y salir de una audiencia automáticamente cuando cumpla o deje de cumplir las condiciones. 
+                      Utiliza estas audiencias para campañas de email, SMS, retargeting y automatizaciones personalizadas.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Card>
           </div>
         </div>
       </div>
-    </Layout>
   );
 }
 

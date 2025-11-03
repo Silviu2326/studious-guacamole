@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Layout } from '../../../components/layout';
 import { useAuth } from '../../../context/AuthContext';
 import { PixelCard } from '../components/PixelCard';
 import { AddPixelModal } from '../components/AddPixelModal';
 import { AudienceSuggestionsCard } from '../components/AudienceSuggestionsCard';
+import { Button, Card } from '../../../components/componentsreutilizables';
 import {
   getPixels,
   createPixel,
@@ -13,7 +13,7 @@ import {
   getTopEvents,
   Pixel
 } from '../api/pixels';
-import { Plus, AlertCircle, Target } from 'lucide-react';
+import { Plus, AlertCircle, Target, Loader2 } from 'lucide-react';
 
 export default function RetargetingYPixelManagerPage() {
   const { user } = useAuth();
@@ -74,101 +74,125 @@ export default function RetargetingYPixelManagerPage() {
   };
 
   return (
-    <Layout>
-      <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Retargeting & Pixel Manager
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Gestiona tus píxeles de seguimiento y crea audiencias para retargeting
-            </p>
-          </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-          >
-            <Plus className="w-5 h-5" />
-            Añadir Pixel
-          </button>
-        </div>
-
-        {/* Error Banner */}
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-            <strong className="font-bold">Error:</strong>
-            <span className="block sm:inline"> {error}</span>
-          </div>
-        )}
-
-        {isLoading ? (
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-          </div>
-        ) : (
-          <>
-            {/* Pixels Grid */}
-            {pixels.length === 0 ? (
-              <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-                <Target className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay píxeles configurados</h3>
-                <p className="text-gray-600 mb-6">Añade tu primer pixel para empezar a rastrear visitantes</p>
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-                >
-                  <Plus className="w-5 h-5" />
-                  Añadir Primer Pixel
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {pixels.map((pixel) => (
-                  <PixelCard
-                    key={pixel.id}
-                    pixel={pixel}
-                    onToggleStatus={handleToggleStatus}
-                    onDelete={handleDeletePixel}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Audience Suggestions */}
-            <AudienceSuggestionsCard suggestions={audienceSuggestions} />
-
-            {/* Info Card */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-6 h-6 text-blue-600 mt-0.5" />
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">
-                    ¿Necesitas ayuda?
-                  </h3>
-                  <p className="text-gray-700 mb-3">
-                    TrainerERP instalará automáticamente tus píxeles en todas tus páginas públicas. 
-                    Asegúrate de tener un banner de consentimiento de cookies activo para cumplir con GDPR.
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Los datos recopilados te permitirán crear audiencias personalizadas en Facebook, 
-                    Google y otras plataformas publicitarias para tus campañas de retargeting.
-                  </p>
+        <div className="border-b border-gray-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+          <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6">
+            <div className="py-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="p-2 bg-blue-100 rounded-xl mr-4 ring-1 ring-blue-200/70">
+                    <Target size={24} className="text-blue-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
+                      Retargeting & Pixel Manager
+                    </h1>
+                    <p className="text-gray-600">
+                      Gestiona tus píxeles de seguimiento y crea audiencias para retargeting
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-          </>
-        )}
-      </div>
+          </div>
+        </div>
 
-      {/* Modal */}
-      <AddPixelModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleAddPixel}
-      />
-    </Layout>
+        {/* Contenedor Principal */}
+        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
+          <div className="space-y-6">
+            {/* Toolbar Superior */}
+            <div className="flex items-center justify-end">
+              <Button onClick={() => setIsModalOpen(true)}>
+                <Plus size={20} className="mr-2" />
+                Añadir Pixel
+              </Button>
+            </div>
+
+            {/* Estados de Error */}
+            {error && (
+              <Card className="p-8 text-center bg-white shadow-sm">
+                <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Error al cargar</h3>
+                <p className="text-gray-600 mb-4">{error}</p>
+                <Button onClick={loadData}>
+                  Reintentar
+                </Button>
+              </Card>
+            )}
+
+            {/* Estado de Carga */}
+            {isLoading && !error && (
+              <Card className="p-8 text-center bg-white shadow-sm">
+                <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+                <p className="text-gray-600">Cargando...</p>
+              </Card>
+            )}
+
+            {/* Contenido Principal */}
+            {!isLoading && !error && (
+              <>
+                {/* Estado Vacío */}
+                {pixels.length === 0 ? (
+                  <Card className="p-8 text-center bg-white shadow-sm">
+                    <Target size={48} className="mx-auto text-gray-400 mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay píxeles configurados</h3>
+                    <p className="text-gray-600 mb-4">Añade tu primer pixel para empezar a rastrear visitantes</p>
+                    <Button onClick={() => setIsModalOpen(true)}>
+                      <Plus size={20} className="mr-2" />
+                      Añadir Primer Pixel
+                    </Button>
+                  </Card>
+                ) : (
+                  <>
+                    {/* Grid de Pixels */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {pixels.map((pixel) => (
+                        <PixelCard
+                          key={pixel.id}
+                          pixel={pixel}
+                          onToggleStatus={handleToggleStatus}
+                          onDelete={handleDeletePixel}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Audience Suggestions */}
+                    <AudienceSuggestionsCard suggestions={audienceSuggestions} />
+
+                    {/* Info Card */}
+                    <Card className="bg-blue-50 border border-blue-200 shadow-sm p-4">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle size={20} className="text-blue-600 mt-0.5" />
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                            ¿Necesitas ayuda?
+                          </h3>
+                          <p className="text-gray-700 mb-3">
+                            TrainerERP instalará automáticamente tus píxeles en todas tus páginas públicas. 
+                            Asegúrate de tener un banner de consentimiento de cookies activo para cumplir con GDPR.
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Los datos recopilados te permitirán crear audiencias personalizadas en Facebook, 
+                            Google y otras plataformas publicitarias para tus campañas de retargeting.
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Modal */}
+        <AddPixelModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleAddPixel}
+        />
+      </div>
   );
 }
 

@@ -8,7 +8,8 @@ import {
   getContentPackage,
   updateContentPackage
 } from '../api/contentPackages';
-import { Plus, X, GripVertical, Save, Loader2, ArrowLeft, Video, FileText, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
+import { Plus, X, GripVertical, Save, Loader2, ArrowLeft, Video, FileText, Link as LinkIcon, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { Card } from '../../../components/componentsreutilizables';
 
 interface ContentBuilderProps {
   packageId: string | null;
@@ -186,63 +187,71 @@ export const ContentBuilder: React.FC<ContentBuilderProps> = ({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
-      </div>
+      <Card className="p-8 text-center bg-white shadow-sm">
+        <Loader2 size={48} className="mx-auto text-purple-600 animate-spin mb-4" />
+        <p className="text-gray-600">Cargando...</p>
+      </Card>
     );
   }
 
   if (!packageData) {
-    return <div>Error cargando paquete</div>;
+    return (
+      <Card className="p-8 text-center">
+        <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Error cargando paquete</h3>
+      </Card>
+    );
   }
 
   const currentModule = packageData.modules.find(m => m.id === selectedModule);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
-              {onCancel && (
-                <button
-                  onClick={onCancel}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition"
-                >
-                  <ArrowLeft className="w-5 h-5 text-gray-600" />
-                </button>
-              )}
-              <h2 className="text-xl font-semibold text-gray-900">
-                {packageId ? 'Editar Paquete' : 'Crear Nuevo Paquete'}
-              </h2>
+      <div className="border-b border-gray-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6">
+          <div className="py-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                {onCancel && (
+                  <button
+                    onClick={onCancel}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-gray-600" />
+                  </button>
+                )}
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
+                  {packageId ? 'Editar Paquete' : 'Crear Nuevo Paquete'}
+                </h1>
+              </div>
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 font-medium"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    <Save size={20} />
+                    Guardar
+                  </>
+                )}
+              </button>
             </div>
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Guardando...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  Guardar
-                </>
-              )}
-            </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Panel izquierdo - Configuración básica */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <Card className="p-6 bg-white shadow-sm">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Configuración</h3>
               
               <div className="space-y-4">
@@ -254,7 +263,7 @@ export const ContentBuilder: React.FC<ContentBuilderProps> = ({
                     type="text"
                     value={packageData.title}
                     onChange={(e) => setPackageData({ ...packageData, title: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                     placeholder="Ej: Programa de 12 Semanas"
                   />
                 </div>
@@ -266,7 +275,7 @@ export const ContentBuilder: React.FC<ContentBuilderProps> = ({
                   <textarea
                     value={packageData.description || ''}
                     onChange={(e) => setPackageData({ ...packageData, description: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                     rows={3}
                     placeholder="Describe el contenido de este paquete..."
                   />
@@ -281,7 +290,7 @@ export const ContentBuilder: React.FC<ContentBuilderProps> = ({
                       type="number"
                       value={packageData.price}
                       onChange={(e) => setPackageData({ ...packageData, price: Number(e.target.value) })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-4 py-2 rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                       min="0"
                       step="0.01"
                     />
@@ -293,7 +302,7 @@ export const ContentBuilder: React.FC<ContentBuilderProps> = ({
                     <select
                       value={packageData.accessType}
                       onChange={(e) => setPackageData({ ...packageData, accessType: e.target.value as any })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-4 py-2 rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                     >
                       <option value="one-time">Pago Único</option>
                       <option value="subscription">Suscripción</option>
@@ -314,10 +323,10 @@ export const ContentBuilder: React.FC<ContentBuilderProps> = ({
                   </label>
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Lista de módulos */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <Card className="p-6 bg-white shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">Módulos</h3>
                 <button
@@ -366,25 +375,25 @@ export const ContentBuilder: React.FC<ContentBuilderProps> = ({
                   </p>
                 )}
               </div>
-            </div>
+            </Card>
           </div>
 
           {/* Panel derecho - Editor de módulo seleccionado */}
           <div className="lg:col-span-2">
             {currentModule ? (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <Card className="p-6 bg-white shadow-sm">
                 <div className="mb-6">
                   <input
                     type="text"
                     value={currentModule.title}
                     onChange={(e) => handleUpdateModule(currentModule.id, { title: e.target.value })}
-                    className="w-full px-4 py-2 text-lg font-semibold border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 text-lg font-semibold rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                     placeholder="Título del módulo"
                   />
                   <textarea
                     value={currentModule.description || ''}
                     onChange={(e) => handleUpdateModule(currentModule.id, { description: e.target.value })}
-                    className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full mt-2 px-4 py-2 rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                     rows={2}
                     placeholder="Descripción del módulo..."
                   />
@@ -463,7 +472,7 @@ export const ContentBuilder: React.FC<ContentBuilderProps> = ({
                               type="text"
                               value={item.title}
                               onChange={(e) => handleUpdateItem(currentModule.id, item.id, { title: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              className="w-full px-3 py-2 rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                               placeholder="Título del item"
                             />
                             {item.type === 'video' && (
@@ -513,11 +522,11 @@ export const ContentBuilder: React.FC<ContentBuilderProps> = ({
                     )}
                   </div>
                 </div>
-              </div>
+              </Card>
             ) : (
-              <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+              <Card className="p-12 text-center bg-white shadow-sm">
                 <p className="text-gray-500">Selecciona un módulo para editar su contenido</p>
-              </div>
+              </Card>
             )}
           </div>
         </div>

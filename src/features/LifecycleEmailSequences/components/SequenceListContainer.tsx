@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from '../../../components/componentsreutilizables';
+import { Card, Button } from '../../../components/componentsreutilizables';
 import { SequenceCard } from './SequenceCard';
 import { getSequences, updateSequence, deleteSequence, EmailSequence } from '../api/sequences';
-import { Plus, Mail, AlertCircle, Loader, PlayCircle } from 'lucide-react';
+import { Plus, Mail, AlertCircle, Loader2 } from 'lucide-react';
 
 export const SequenceListContainer: React.FC = () => {
   const [sequences, setSequences] = useState<EmailSequence[]>([]);
@@ -64,60 +64,39 @@ export const SequenceListContainer: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Actions Bar */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Tus Secuencias</h2>
-          <p className="text-gray-600 mt-1">
-            {sequences.length} secuencia{sequences.length !== 1 ? 's' : ''} configurada{sequences.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
-          <Plus className="w-4 h-4" />
+      {/* Toolbar Superior */}
+      <div className="flex items-center justify-end">
+        <Button onClick={() => alert('Funcionalidad en desarrollo')} leftIcon={<Plus size={20} />}>
           Nueva Secuencia
-        </button>
+        </Button>
       </div>
 
       {/* Sequences Grid */}
       {error ? (
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <p className="text-red-600 font-medium">{error}</p>
-          </div>
-        </div>
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error al cargar</h3>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button onClick={loadSequences}>Reintentar</Button>
+        </Card>
       ) : isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg border border-gray-200 overflow-hidden animate-pulse">
-              <div className="h-6 bg-gray-200"></div>
-              <div className="p-4 space-y-3">
-                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                <div className="h-4 bg-gray-200 rounded w-full"></div>
-                <div className="h-20 bg-gray-200 rounded"></div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+          <p className="text-gray-600">Cargando...</p>
+        </Card>
       ) : sequences.length === 0 ? (
-        <Card className="p-12 text-center">
-          <div className="max-w-md mx-auto">
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Mail className="w-8 h-8 text-purple-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              No hay secuencias configuradas
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Crea tu primera secuencia automática de emails para mantener a tus clientes comprometidos
-            </p>
-            <button className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
-              Crear Primera Secuencia
-            </button>
-          </div>
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <Mail size={48} className="mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            No hay secuencias configuradas
+          </h3>
+          <p className="text-gray-600 mb-4">
+            Crea tu primera secuencia automática de emails para mantener a tus clientes comprometidos
+          </p>
+          <Button onClick={() => alert('Funcionalidad en desarrollo')}>Crear Primera Secuencia</Button>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {sequences.map((sequence) => (
             <SequenceCard
               key={sequence.id}

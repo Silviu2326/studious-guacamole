@@ -16,8 +16,10 @@ import {
   Loader2,
   Lightbulb,
   BarChart3,
-  X
+  X,
+  Search
 } from 'lucide-react';
+import { Card, Button } from '../../../components/componentsreutilizables';
 
 type ViewMode = 'list' | 'builder' | 'analytics';
 
@@ -117,25 +119,26 @@ export const EmailMarketingYNewslettersPage: React.FC = () => {
         <div className="border-b border-gray-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
           <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6">
             <div className="py-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => {
-                      setViewMode('list');
-                      setSelectedCampaignId(null);
-                    }}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition"
-                  >
-                    <X className="w-5 h-5 text-gray-600" />
-                  </button>
-                  <div>
-                    <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
-                      Analíticas de Campaña
-                    </h1>
-                    <p className="text-gray-600 mt-1">
-                      Métricas y rendimiento de la campaña de email
-                    </p>
-                  </div>
+              <div className="flex items-center">
+                <button
+                  onClick={() => {
+                    setViewMode('list');
+                    setSelectedCampaignId(null);
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition mr-4"
+                >
+                  <X className="w-5 h-5 text-gray-600" />
+                </button>
+                <div className="p-2 bg-blue-100 rounded-xl mr-4 ring-1 ring-blue-200/70">
+                  <BarChart3 size={24} className="text-blue-600" />
+                </div>
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
+                    Analíticas de Campaña
+                  </h1>
+                  <p className="text-gray-600">
+                    Métricas y rendimiento de la campaña de email
+                  </p>
                 </div>
               </div>
             </div>
@@ -143,9 +146,10 @@ export const EmailMarketingYNewslettersPage: React.FC = () => {
         </div>
         <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
           {analyticsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
-            </div>
+            <Card className="p-8 text-center bg-white shadow-sm">
+              <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+              <p className="text-gray-600">Cargando...</p>
+            </Card>
           ) : (
             <CampaignAnalyticsDashboard analytics={analytics} />
           )}
@@ -163,8 +167,8 @@ export const EmailMarketingYNewslettersPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 {/* Icono con contenedor */}
-                <div className="p-2 bg-purple-100 rounded-xl mr-4 ring-1 ring-purple-200/70">
-                  <Mail size={24} className="text-purple-600" />
+                <div className="p-2 bg-blue-100 rounded-xl mr-4 ring-1 ring-blue-200/70">
+                  <Mail size={24} className="text-blue-600" />
                 </div>
                 
                 {/* Título y descripción */}
@@ -172,19 +176,16 @@ export const EmailMarketingYNewslettersPage: React.FC = () => {
                   <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
                     Email Marketing & Newsletters
                   </h1>
-                  <p className="text-gray-600 mt-1">
+                  <p className="text-gray-600">
                     Crea, programa y analiza campañas de email integradas con tu CRM
                   </p>
                 </div>
               </div>
               
-              <button
-                onClick={handleCreateCampaign}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
-              >
-                <Plus className="w-5 h-5" />
+              <Button onClick={handleCreateCampaign}>
+                <Plus size={20} className="mr-2" />
                 Nueva Campaña
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -192,58 +193,67 @@ export const EmailMarketingYNewslettersPage: React.FC = () => {
 
       {/* Contenido principal */}
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
-        {/* Información educativa */}
-        <div className="mb-6 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6">
-          <div className="flex items-start gap-4">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Lightbulb className="w-5 h-5 text-purple-600" />
+        <div className="space-y-6">
+          {/* Información educativa */}
+          <Card className="bg-gradient-to-r from-blue-50 to-blue-50 border border-blue-200">
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Lightbulb className="w-5 h-5 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  ¿Qué es Email Marketing & Newsletters?
+                </h3>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  Esta herramienta reemplaza herramientas externas como Mailchimp, integrando el email marketing 
+                  directamente con tu CRM de TrainerERP. Crea campañas visualmente atractivas con plantillas 
+                  específicas para fitness, segmenta tu audiencia basándote en el comportamiento de tus clientes, 
+                  y analiza el rendimiento con métricas detalladas. Todo integrado para maximizar la retención y 
+                  generar nuevas ventas.
+                </p>
+              </div>
             </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 mb-2">
-                ¿Qué es Email Marketing & Newsletters?
-              </h3>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                Esta herramienta reemplaza herramientas externas como Mailchimp, integrando el email marketing 
-                directamente con tu CRM de TrainerERP. Crea campañas visualmente atractivas con plantillas 
-                específicas para fitness, segmenta tu audiencia basándote en el comportamiento de tus clientes, 
-                y analiza el rendimiento con métricas detalladas. Todo integrado para maximizar la retención y 
-                generar nuevas ventas.
-              </p>
+          </Card>
+
+          {/* Filtros */}
+          <Card className="bg-white shadow-sm">
+            <div className="space-y-4">
+              <div className="rounded-2xl bg-slate-50 ring-1 ring-slate-200 p-3">
+                <div className="flex gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="w-full rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-10 pr-3 py-2.5"
+                    >
+                      <option value="all">Todas las campañas</option>
+                      <option value="draft">Borradores</option>
+                      <option value="scheduled">Programadas</option>
+                      <option value="sent">Enviadas</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </Card>
 
-        {/* Filtros */}
-        <div className="mb-6 bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center gap-4">
-            <Filter className="w-5 h-5 text-gray-400" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            >
-              <option value="all">Todas las campañas</option>
-              <option value="draft">Borradores</option>
-              <option value="scheduled">Programadas</option>
-              <option value="sent">Enviadas</option>
-            </select>
-          </div>
+          {/* Lista de campañas */}
+          {isLoading ? (
+            <Card className="p-8 text-center bg-white shadow-sm">
+              <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+              <p className="text-gray-600">Cargando...</p>
+            </Card>
+          ) : (
+            <CampaignList
+              campaigns={campaigns}
+              onView={handleView}
+              onEdit={handleEditCampaign}
+              onDelete={handleDeleteCampaign}
+              onViewAnalytics={handleViewAnalytics}
+            />
+          )}
         </div>
-
-        {/* Lista de campañas */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
-          </div>
-        ) : (
-          <CampaignList
-            campaigns={campaigns}
-            onView={handleView}
-            onEdit={handleEditCampaign}
-            onDelete={handleDeleteCampaign}
-            onViewAnalytics={handleViewAnalytics}
-          />
-        )}
       </div>
     </div>
   );

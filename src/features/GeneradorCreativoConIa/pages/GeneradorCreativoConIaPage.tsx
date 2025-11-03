@@ -18,6 +18,7 @@ import {
   AlertCircle,
   X
 } from 'lucide-react';
+import { Card, Button } from '../../../components/componentsreutilizables';
 
 /**
  * Página principal del Generador Creativo con IA
@@ -84,8 +85,8 @@ export const GeneradorCreativoConIaPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 {/* Icono con contenedor */}
-                <div className="p-2 bg-purple-100 rounded-xl mr-4 ring-1 ring-purple-200/70">
-                  <Sparkles size={24} className="text-purple-600" />
+                <div className="p-2 bg-blue-100 rounded-xl mr-4 ring-1 ring-blue-200/70">
+                  <Sparkles size={24} className="text-blue-600" />
                 </div>
                 
                 {/* Título y descripción */}
@@ -93,19 +94,19 @@ export const GeneradorCreativoConIaPage: React.FC = () => {
                   <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
                     Generador Creativo con IA
                   </h1>
-                  <p className="text-gray-600 mt-1">
+                  <p className="text-gray-600">
                     Genera contenido de marketing de alta calidad en segundos
                   </p>
                 </div>
               </div>
               
-              <button
+              <Button
+                variant="secondary"
                 onClick={() => setShowHistory(!showHistory)}
-                className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                leftIcon={<History size={20} />}
               >
-                <History className="w-5 h-5" />
                 Historial
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -113,148 +114,153 @@ export const GeneradorCreativoConIaPage: React.FC = () => {
 
       {/* Contenido principal */}
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
-        {/* Información educativa */}
-        <div className="mb-6 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6">
-          <div className="flex items-start gap-4">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Lightbulb className="w-5 h-5 text-purple-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 mb-2">
-                ¿Qué es el Generador Creativo con IA?
-              </h3>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                Esta herramienta utiliza inteligencia artificial para generar textos de marketing 
-                específicos para el nicho del fitness. Selecciona una plantilla, describe tu idea, 
-                y la IA creará múltiples variantes de contenido alineadas con tu marca. Personaliza 
-                el tono, público objetivo y longitud para obtener resultados perfectos para tu negocio.
-              </p>
-              <p className="text-xs text-gray-600 mt-2 italic">
-                ⚠️ El contenido generado debe ser revisado antes de publicarse.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Formulario de generación */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                Crear Nuevo Contenido
-              </h2>
-              
-              <GenerationForm
-                templates={templates}
-                brandProfile={brandProfile}
-                onSubmit={handleGenerate}
-                isGenerating={isLoading}
-              />
-            </div>
-
-            {/* Error */}
-            {error && (
-              <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-red-600" />
-                  <div>
-                    <p className="text-sm font-medium text-red-900">Error al generar contenido</p>
-                    <p className="text-xs text-red-700 mt-1">{error.message}</p>
-                  </div>
-                </div>
+        <div className="space-y-6">
+          {/* Información educativa */}
+          <Card className="bg-gradient-to-r from-blue-50 to-slate-50 ring-1 ring-blue-200">
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Lightbulb size={20} className="text-blue-600" />
               </div>
-            )}
-
-            {/* Resultados */}
-            {data && data.results.length > 0 && (
-              <div className="mt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Resultados Generados
-                  </h2>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span>Tokens usados: {data.tokensUsed}</span>
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  {data.results.map((result) => (
-                    <ResultCard
-                      key={result.id}
-                      result={result}
-                      onCopy={handleCopy}
-                      onSave={() => handleSave(result.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Loading state */}
-            {isLoading && (
-              <div className="mt-6 bg-white rounded-lg border border-gray-200 p-12 text-center">
-                <Loader2 className="w-8 h-8 text-purple-600 animate-spin mx-auto mb-4" />
-                <p className="text-gray-600">Generando contenido con IA...</p>
-                <p className="text-sm text-gray-500 mt-2">
-                  Esto puede tomar unos segundos
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  ¿Qué es el Generador Creativo con IA?
+                </h3>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  Esta herramienta utiliza inteligencia artificial para generar textos de marketing 
+                  específicos para el nicho del fitness. Selecciona una plantilla, describe tu idea, 
+                  y la IA creará múltiples variantes de contenido alineadas con tu marca. Personaliza 
+                  el tono, público objetivo y longitud para obtener resultados perfectos para tu negocio.
+                </p>
+                <p className="text-xs text-gray-600 mt-2 italic">
+                  ⚠️ El contenido generado debe ser revisado antes de publicarse.
                 </p>
               </div>
-            )}
-          </div>
+            </div>
+          </Card>
 
-          {/* Sidebar - Perfil de marca e info */}
-          <div className="space-y-6">
-            {/* Perfil de marca */}
-            {brandProfile && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Perfil de Marca
-                </h3>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-xs font-medium text-gray-600 mb-1">Tono de Voz</p>
-                    <p className="text-sm text-gray-900">{brandProfile.toneOfVoice}</p>
-                  </div>
-                  {brandProfile.targetAudience && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-600 mb-1">Público Objetivo</p>
-                      <p className="text-sm text-gray-900">{brandProfile.targetAudience}</p>
-                    </div>
-                  )}
-                  {brandProfile.keywords && brandProfile.keywords.length > 0 && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-600 mb-1">Palabras Clave</p>
-                      <div className="flex flex-wrap gap-1">
-                        {brandProfile.keywords.map((keyword: string, idx: number) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded"
-                          >
-                            {keyword}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Formulario de generación */}
+            <div className="lg:col-span-2 space-y-6">
+              <Card padding="none" className="bg-white shadow-sm">
+                <div className="p-6">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-6">
+                    Crear Nuevo Contenido
+                  </h2>
+                  
+                  <GenerationForm
+                    templates={templates}
+                    brandProfile={brandProfile}
+                    onSubmit={handleGenerate}
+                    isGenerating={isLoading}
+                  />
                 </div>
-                <button className="mt-4 w-full text-sm text-purple-600 hover:text-purple-700">
-                  Editar Perfil
-                </button>
-              </div>
-            )}
+              </Card>
 
-            {/* Consejos */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-              <h3 className="text-sm font-semibold text-blue-900 mb-3">
-                💡 Consejos para mejores resultados
-              </h3>
-              <ul className="space-y-2 text-xs text-blue-800">
-                <li>• Sé específico sobre el tema y el objetivo</li>
-                <li>• Define claramente a quién va dirigido</li>
-                <li>• Usa el perfil de marca para mantener coherencia</li>
-                <li>• Revisa y personaliza el contenido generado</li>
-                <li>• Guarda las mejores variantes para reutilizar</li>
-              </ul>
+              {/* Error */}
+              {error && (
+                <Card className="p-8 text-center bg-white shadow-sm">
+                  <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Error al cargar</h3>
+                  <p className="text-gray-600 mb-4">{error.message}</p>
+                  <Button onClick={() => window.location.reload()}>Reintentar</Button>
+                </Card>
+              )}
+
+              {/* Resultados */}
+              {data && data.results.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      Resultados Generados
+                    </h2>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <span>Tokens usados: {data.tokensUsed}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {data.results.map((result) => (
+                      <ResultCard
+                        key={result.id}
+                        result={result}
+                        onCopy={handleCopy}
+                        onSave={() => handleSave(result.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Loading state */}
+              {isLoading && (
+                <Card className="p-8 text-center bg-white shadow-sm">
+                  <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+                  <p className="text-gray-600">Generando contenido con IA...</p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Esto puede tomar unos segundos
+                  </p>
+                </Card>
+              )}
+            </div>
+
+            {/* Sidebar - Perfil de marca e info */}
+            <div className="space-y-6">
+              {/* Perfil de marca */}
+              {brandProfile && (
+                <Card padding="none" className="bg-white shadow-sm">
+                  <div className="p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Perfil de Marca
+                    </h3>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-xs font-medium text-gray-600 mb-1">Tono de Voz</p>
+                        <p className="text-sm text-gray-900">{brandProfile.toneOfVoice}</p>
+                      </div>
+                      {brandProfile.targetAudience && (
+                        <div>
+                          <p className="text-xs font-medium text-gray-600 mb-1">Público Objetivo</p>
+                          <p className="text-sm text-gray-900">{brandProfile.targetAudience}</p>
+                        </div>
+                      )}
+                      {brandProfile.keywords && brandProfile.keywords.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-gray-600 mb-1">Palabras Clave</p>
+                          <div className="flex flex-wrap gap-1">
+                            {brandProfile.keywords.map((keyword: string, idx: number) => (
+                              <span
+                                key={idx}
+                                className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded"
+                              >
+                                {keyword}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <button className="mt-4 w-full text-sm text-blue-600 hover:text-blue-700">
+                      Editar Perfil
+                    </button>
+                  </div>
+                </Card>
+              )}
+
+              {/* Consejos */}
+              <Card className="bg-blue-50 ring-1 ring-blue-200">
+                <div className="p-6">
+                  <h3 className="text-sm font-semibold text-blue-900 mb-3">
+                    💡 Consejos para mejores resultados
+                  </h3>
+                  <ul className="space-y-2 text-xs text-blue-800">
+                    <li>• Sé específico sobre el tema y el objetivo</li>
+                    <li>• Define claramente a quién va dirigido</li>
+                    <li>• Usa el perfil de marca para mantener coherencia</li>
+                    <li>• Revisa y personaliza el contenido generado</li>
+                    <li>• Guarda las mejores variantes para reutilizar</li>
+                  </ul>
+                </div>
+              </Card>
             </div>
           </div>
         </div>

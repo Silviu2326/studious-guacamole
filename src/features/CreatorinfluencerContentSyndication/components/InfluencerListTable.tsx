@@ -1,6 +1,8 @@
 import React from 'react';
 import { Influencer } from '../api/influencers';
-import { Plus, ExternalLink, Mail, Phone, Edit, Trash2 } from 'lucide-react';
+import { Plus, ExternalLink, Mail, Phone, Edit, Trash2, Package } from 'lucide-react';
+import { Card } from '../../../components/componentsreutilizables';
+import { Button } from '../../../components/componentsreutilizables';
 
 interface InfluencerListTableProps {
   influencers: Influencer[];
@@ -28,32 +30,32 @@ export const InfluencerListTable: React.FC<InfluencerListTableProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <Card className="p-0 bg-white shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
                 Influencer
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
                 Nicho
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
                 Seguidores
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
                 Engagement
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
                 Campañas Activas
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-slate-700 uppercase tracking-wider">
                 Acciones
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-slate-200">
             {influencers.map((influencer) => (
               <tr
                 key={influencer.id}
@@ -62,8 +64,8 @@ export const InfluencerListTable: React.FC<InfluencerListTableProps> = ({
               >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
-                      <span className="text-purple-600 font-semibold text-sm">
+                    <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 font-semibold text-sm">
                         {influencer.name.charAt(0)}
                       </span>
                     </div>
@@ -78,7 +80,7 @@ export const InfluencerListTable: React.FC<InfluencerListTableProps> = ({
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="hover:text-purple-600"
+                            className="hover:text-blue-600 transition-colors"
                           >
                             <ExternalLink className="w-3 h-3" />
                           </a>
@@ -87,7 +89,7 @@ export const InfluencerListTable: React.FC<InfluencerListTableProps> = ({
                           <a
                             href={`mailto:${influencer.email}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="hover:text-purple-600"
+                            className="hover:text-blue-600 transition-colors"
                           >
                             <Mail className="w-3 h-3" />
                           </a>
@@ -111,35 +113,37 @@ export const InfluencerListTable: React.FC<InfluencerListTableProps> = ({
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                     influencer.activeCampaigns > 0
                       ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800'
+                      : 'bg-slate-100 text-slate-800'
                   }`}>
                     {influencer.activeCampaigns}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                    <button
+                    <Button
                       onClick={() => onAddNewCampaign(influencer.id)}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 transition"
+                      size="sm"
+                      leftIcon={<Plus size={14} />}
                     >
-                      <Plus className="w-3 h-3" />
                       Campaña
-                    </button>
+                    </Button>
                     {onEdit && (
-                      <button
+                      <Button
                         onClick={() => onEdit(influencer.id)}
-                        className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition"
+                        variant="ghost"
+                        size="sm"
                       >
-                        <Edit className="w-4 h-4" />
-                      </button>
+                        <Edit size={16} />
+                      </Button>
                     )}
                     {onDelete && (
-                      <button
+                      <Button
                         onClick={() => onDelete(influencer.id)}
-                        className="p-1.5 text-red-600 hover:text-red-900 hover:bg-red-50 rounded transition"
+                        variant="destructive"
+                        size="sm"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        <Trash2 size={16} />
+                      </Button>
                     )}
                   </div>
                 </td>
@@ -150,11 +154,13 @@ export const InfluencerListTable: React.FC<InfluencerListTableProps> = ({
       </div>
       
       {influencers.length === 0 && (
-        <div className="text-center py-12 text-gray-500">
-          <p>No hay influencers registrados</p>
-        </div>
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <Package size={48} className="mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay influencers registrados</h3>
+          <p className="text-gray-600">Comienza agregando tu primer influencer para gestionar colaboraciones.</p>
+        </Card>
       )}
-    </div>
+    </Card>
   );
 };
 

@@ -146,28 +146,27 @@ export const AccountBasedMarketingAbmPage: React.FC = () => {
         );
       case 'accounts':
         return (
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Cuentas Objetivo</h3>
-              <Button variant="primary" onClick={() => {/* TODO: Crear cuenta */}}>
-                <Plus className="w-4 h-4 mr-2" />
+          <div className="space-y-6">
+            <div className="flex items-center justify-end">
+              <Button onClick={() => {/* TODO: Crear cuenta */}}>
+                <Plus size={20} className="mr-2" />
                 Nueva Cuenta
               </Button>
             </div>
-            <div className="text-center py-12 text-gray-500">
-              <Building2 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p>Gestiona tus cuentas objetivo aquí</p>
-            </div>
-          </Card>
+            <Card className="p-8 text-center bg-white shadow-sm">
+              <Building2 size={48} className="mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Cuentas Objetivo</h3>
+              <p className="text-gray-600 mb-4">Gestiona tus cuentas objetivo aquí</p>
+              <Button onClick={() => {/* TODO: Crear cuenta */}}>Crear Cuenta</Button>
+            </Card>
+          </div>
         );
       case 'analytics':
         return (
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Analíticas Detalladas</h3>
-            <div className="text-center py-12 text-gray-500">
-              <BarChart3 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p>Vista de analíticas avanzadas</p>
-            </div>
+          <Card className="p-8 text-center bg-white shadow-sm">
+            <BarChart3 size={48} className="mx-auto text-gray-400 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Analíticas Detalladas</h3>
+            <p className="text-gray-600 mb-4">Vista de analíticas avanzadas</p>
           </Card>
         );
       default:
@@ -181,29 +180,21 @@ export const AccountBasedMarketingAbmPage: React.FC = () => {
       <div className="border-b border-gray-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6">
           <div className="py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                {/* Icono con contenedor */}
-                <div className="p-2 bg-indigo-100 rounded-xl mr-4 ring-1 ring-indigo-200/70">
-                  <Building2 size={24} className="text-indigo-600" />
-                </div>
-                
-                {/* Título y descripción */}
-                <div>
-                  <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
-                    Account-Based Marketing (ABM)
-                  </h1>
-                  <p className="text-gray-600 mt-1">
-                    Gestiona ventas B2B y capta clientes corporativos con un enfoque estratégico
-                  </p>
-                </div>
+            <div className="flex items-center">
+              {/* Icono con contenedor */}
+              <div className="p-2 bg-blue-100 rounded-xl mr-4 ring-1 ring-blue-200/70">
+                <Building2 size={24} className="text-blue-600" />
               </div>
-
-              {/* Botón de acción principal */}
-              <Button variant="primary" size="md" onClick={() => {/* TODO: Abrir modal de creación */}}>
-                <Plus className="w-5 h-5 mr-2" />
-                Nueva Oportunidad
-              </Button>
+              
+              {/* Título y descripción */}
+              <div>
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
+                  Account-Based Marketing (ABM)
+                </h1>
+                <p className="text-gray-600">
+                  Gestiona ventas B2B y capta clientes corporativos con un enfoque estratégico
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -220,12 +211,20 @@ export const AccountBasedMarketingAbmPage: React.FC = () => {
             />
           )}
 
+          {/* Toolbar */}
+          <div className="flex items-center justify-end">
+            <Button onClick={() => {/* TODO: Abrir modal de creación */}}>
+              <Plus size={20} className="mr-2" />
+              Nueva Oportunidad
+            </Button>
+          </div>
+
           {/* Información sobre ABM */}
-          <Card className="bg-gradient-to-r from-indigo-50 to-blue-50 border-indigo-200">
+          <Card className="bg-white shadow-sm">
             <div className="p-6">
               <div className="flex items-start gap-4">
-                <div className="p-2 bg-indigo-100 rounded-lg">
-                  <Building2 className="w-5 h-5 text-indigo-600" />
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Building2 className="w-5 h-5 text-blue-600" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900 mb-2">
@@ -252,11 +251,11 @@ export const AccountBasedMarketingAbmPage: React.FC = () => {
 
           {/* Tabs de navegación */}
           <Card className="p-0 bg-white shadow-sm">
-            <div className="px-4 py-3 border-b border-gray-200">
+            <div className="px-4 py-3">
               <div
                 role="tablist"
                 aria-label="Secciones"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 rounded-2xl bg-slate-100 p-1"
               >
                 {tabs.map((tab) => {
                   const activo = activeTab === tab.id;
@@ -269,8 +268,8 @@ export const AccountBasedMarketingAbmPage: React.FC = () => {
                       className={[
                         'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all',
                         activo
-                          ? 'bg-indigo-100 text-indigo-900 shadow-sm ring-1 ring-indigo-200'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                          ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
                       ].join(' ')}
                     >
                       {React.cloneElement(tab.icon, {
@@ -283,7 +282,7 @@ export const AccountBasedMarketingAbmPage: React.FC = () => {
                 })}
               </div>
             </div>
-            <div className="p-6">
+            <div className="mt-6 p-6">
               {renderTabContent()}
             </div>
           </Card>

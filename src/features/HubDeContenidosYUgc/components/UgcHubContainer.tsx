@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from '../../../components/componentsreutilizables';
+import { Card, MetricCards, Button } from '../../../components/componentsreutilizables';
 import { ContentCard } from './ContentCard';
 import { ConsentRequestModal } from './ConsentRequestModal';
 import {
@@ -18,7 +18,11 @@ import {
   Clock,
   CheckCircle2,
   Tag as TagIcon,
-  Download
+  Package,
+  AlertCircle,
+  Loader2,
+  Search,
+  X
 } from 'lucide-react';
 
 interface UgcHubContainerProps {
@@ -151,20 +155,14 @@ export const UgcHubContainer: React.FC<UgcHubContainerProps> = ({ trainerId }) =
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <ImageIcon className="w-8 h-8 text-red-600" />
-          </div>
-          <p className="text-red-600 font-medium">{error}</p>
-          <button
-            onClick={loadContent}
-            className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-          >
-            Reintentar
-          </button>
-        </div>
-      </div>
+      <Card className="p-8 text-center bg-white shadow-sm">
+        <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Error al cargar</h3>
+        <p className="text-gray-600 mb-4">{error}</p>
+        <Button onClick={loadContent}>
+          Reintentar
+        </Button>
+      </Card>
     );
   }
 
@@ -172,60 +170,44 @@ export const UgcHubContainer: React.FC<UgcHubContainerProps> = ({ trainerId }) =
     <div className="space-y-6">
       {/* Stats Cards */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <Clock className="w-5 h-5 text-yellow-600" />
-              </div>
-            </div>
-            <h3 className="text-sm font-medium text-gray-600 mb-1">
-              Pendiente Moderación
-            </h3>
-            <p className="text-3xl font-bold text-gray-900">{stats.pendingModeration}</p>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
-              </div>
-            </div>
-            <h3 className="text-sm font-medium text-gray-600 mb-1">
-              Contenido Aprobado
-            </h3>
-            <p className="text-3xl font-bold text-gray-900">{stats.totalApproved}</p>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <BarChart3 className="w-5 h-5 text-blue-600" />
-              </div>
-            </div>
-            <h3 className="text-sm font-medium text-gray-600 mb-1">
-              Tasa Aceptación
-            </h3>
-            <p className="text-3xl font-bold text-gray-900">{stats.consentApprovalRate}%</p>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <TagIcon className="w-5 h-5 text-purple-600" />
-              </div>
-            </div>
-            <h3 className="text-sm font-medium text-gray-600 mb-1">
-              Menciones Recientes
-            </h3>
-            <p className="text-3xl font-bold text-gray-900">{stats.recentMentions}</p>
-          </Card>
-        </div>
+        <MetricCards
+          data={[
+            {
+              id: 'pending',
+              title: 'Pendiente Moderación',
+              value: stats.pendingModeration,
+              color: 'warning',
+              icon: <Clock size={20} />
+            },
+            {
+              id: 'approved',
+              title: 'Contenido Aprobado',
+              value: stats.totalApproved,
+              color: 'success',
+              icon: <CheckCircle2 size={20} />
+            },
+            {
+              id: 'approval-rate',
+              title: 'Tasa Aceptación',
+              value: `${stats.consentApprovalRate}%`,
+              color: 'info',
+              icon: <BarChart3 size={20} />
+            },
+            {
+              id: 'mentions',
+              title: 'Menciones Recientes',
+              value: stats.recentMentions,
+              color: 'primary',
+              icon: <TagIcon size={20} />
+            }
+          ]}
+          columns={4}
+        />
       )}
 
       {/* Top Tags */}
       {stats?.topTags && stats.topTags.length > 0 && (
-        <Card className="p-6">
+        <Card padding="md" className="bg-white shadow-sm">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Etiquetas Más Populares</h3>
           <div className="flex flex-wrap gap-2">
             {stats.topTags.map((tagData: any, index: number) => (
@@ -240,15 +222,15 @@ export const UgcHubContainer: React.FC<UgcHubContainerProps> = ({ trainerId }) =
                       : [...prev.tags, tagData.tag]
                   }));
                 }}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition ${
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
                   activeFilters.tags.includes(tagData.tag)
-                    ? 'border-purple-500 bg-purple-50 text-purple-700'
-                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                    ? 'border-blue-600 bg-blue-50 text-blue-700'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                 }`}
               >
                 <TagIcon className="w-4 h-4" />
-                <span className="font-medium">{tagData.tag}</span>
-                <span className="text-sm bg-gray-200 px-2 py-0.5 rounded">
+                <span className="text-sm font-medium">{tagData.tag}</span>
+                <span className="text-xs bg-gray-200 px-2 py-0.5 rounded">
                   {tagData.count}
                 </span>
               </button>
@@ -257,103 +239,105 @@ export const UgcHubContainer: React.FC<UgcHubContainerProps> = ({ trainerId }) =
         </Card>
       )}
 
-      {/* Actions Bar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold text-gray-900">Biblioteca de Contenido</h2>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleSyncSocial}
-              disabled={isSyncing}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-              {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
-            </button>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
-            <Plus className="w-4 h-4" />
+      {/* Toolbar Superior */}
+      <div className="flex items-center justify-end">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSyncSocial}
+            disabled={isSyncing}
+            loading={isSyncing}
+            leftIcon={<RefreshCw size={20} />}
+          >
+            Sincronizar
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            leftIcon={<Plus size={20} />}
+          >
             Subir Manual
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-4 flex-wrap">
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-gray-500" />
-          <select
-            value={activeFilters.status}
-            onChange={(e) => setActiveFilters(prev => ({ ...prev, status: e.target.value, page: 1 }))}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-          >
-            <option value="all">Todos los estados</option>
-            <option value="pending_moderation">Pendiente</option>
-            <option value="approved">Aprobado</option>
-            <option value="rejected">Rechazado</option>
-          </select>
-        </div>
-        <select
-          value={activeFilters.consentStatus}
-          onChange={(e) => setActiveFilters(prev => ({ ...prev, consentStatus: e.target.value, page: 1 }))}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-        >
-          <option value="all">Todos los consentimientos</option>
-          <option value="not_requested">No solicitado</option>
-          <option value="pending_response">Esperando respuesta</option>
-          <option value="granted">Otorgado</option>
-          <option value="denied">Denegado</option>
-        </select>
-        {activeFilters.tags.length > 0 && (
-          <button
-            onClick={() => setActiveFilters(prev => ({ ...prev, tags: [], page: 1 }))}
-            className="px-3 py-2 text-sm text-purple-600 hover:text-purple-700"
-          >
-            Limpiar filtros
-          </button>
-        )}
-      </div>
-
-      {/* Content Grid */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {[...Array(8)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg border border-gray-200 overflow-hidden animate-pulse">
-              <div className="aspect-video bg-gray-200"></div>
-              <div className="p-4">
-                <div className="h-4 bg-gray-200 rounded w-2/3 mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-              </div>
+      <Card className="p-0 bg-white shadow-sm">
+        <div className="rounded-2xl bg-slate-50 ring-1 ring-slate-200 p-3">
+          <div className="flex gap-4 flex-wrap">
+            <div className="flex items-center gap-2 flex-1 min-w-[200px] relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3" />
+              <input
+                type="text"
+                placeholder="Buscar contenido..."
+                className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-10 pr-3 py-2.5 text-sm"
+              />
             </div>
-          ))}
-        </div>
-      ) : contentItems.length === 0 ? (
-        <Card className="p-12 text-center">
-          <div className="max-w-md mx-auto">
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <ImageIcon className="w-8 h-8 text-purple-600" />
+            <div className="flex items-center gap-2">
+              <Filter size={18} className="opacity-70" />
+              <select
+                value={activeFilters.status}
+                onChange={(e) => setActiveFilters(prev => ({ ...prev, status: e.target.value, page: 1 }))}
+                className="px-3 py-2 rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+              >
+                <option value="all">Todos los estados</option>
+                <option value="pending_moderation">Pendiente</option>
+                <option value="approved">Aprobado</option>
+                <option value="rejected">Rechazado</option>
+              </select>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              No hay contenido disponible
-            </h3>
-            <p className="text-gray-600 mb-6">
-              {activeFilters.status !== 'all' || activeFilters.consentStatus !== 'all' || activeFilters.tags.length > 0
-                ? 'No se encontró contenido con los filtros seleccionados'
-                : 'Empieza por conectar tus redes sociales o subir contenido manualmente'
-              }
-            </p>
-            {activeFilters.status === 'all' && activeFilters.consentStatus === 'all' && activeFilters.tags.length === 0 && (
-              <button className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
-                Conectar Redes Sociales
+            <div className="flex items-center gap-2">
+              <select
+                value={activeFilters.consentStatus}
+                onChange={(e) => setActiveFilters(prev => ({ ...prev, consentStatus: e.target.value, page: 1 }))}
+                className="px-3 py-2 rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+              >
+                <option value="all">Todos los consentimientos</option>
+                <option value="not_requested">No solicitado</option>
+                <option value="pending_response">Esperando respuesta</option>
+                <option value="granted">Otorgado</option>
+                <option value="denied">Denegado</option>
+              </select>
+            </div>
+            {activeFilters.tags.length > 0 && (
+              <button
+                onClick={() => setActiveFilters(prev => ({ ...prev, tags: [], page: 1 }))}
+                className="px-3 py-2 text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+              >
+                <X size={16} />
+                Limpiar filtros
               </button>
             )}
           </div>
+        </div>
+      </Card>
+
+      {/* Content Grid */}
+      {isLoading ? (
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+          <p className="text-gray-600">Cargando...</p>
+        </Card>
+      ) : contentItems.length === 0 ? (
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <Package size={48} className="mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            No hay contenido disponible
+          </h3>
+          <p className="text-gray-600 mb-4">
+            {activeFilters.status !== 'all' || activeFilters.consentStatus !== 'all' || activeFilters.tags.length > 0
+              ? 'No se encontró contenido con los filtros seleccionados'
+              : 'Empieza por conectar tus redes sociales o subir contenido manualmente'
+            }
+          </p>
+          {activeFilters.status === 'all' && activeFilters.consentStatus === 'all' && activeFilters.tags.length === 0 && (
+            <Button>Conectar Redes Sociales</Button>
+          )}
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {contentItems.map((item) => (
               <ContentCard
                 key={item.id}
@@ -367,25 +351,29 @@ export const UgcHubContainer: React.FC<UgcHubContainerProps> = ({ trainerId }) =
 
           {/* Pagination */}
           {pagination.totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-4 border-t border-gray-200">
-              <button
-                onClick={() => handlePageChange(pagination.page - 1)}
-                disabled={pagination.page === 1}
-                className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                Anterior
-              </button>
-              <span className="text-sm text-gray-600">
-                Página {pagination.page} de {pagination.totalPages}
-              </span>
-              <button
-                onClick={() => handlePageChange(pagination.page + 1)}
-                disabled={pagination.page === pagination.totalPages}
-                className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                Siguiente
-              </button>
-            </div>
+            <Card className="p-4 bg-white shadow-sm">
+              <div className="flex justify-center items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.page - 1)}
+                  disabled={pagination.page === 1}
+                >
+                  Anterior
+                </Button>
+                <span className="text-sm text-gray-600">
+                  Página {pagination.page} de {pagination.totalPages}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.page + 1)}
+                  disabled={pagination.page === pagination.totalPages}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </Card>
           )}
         </>
       )}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { PlaybookSummary } from '../api/playbooks';
 import { Target, Users, DollarSign, Eye, Rocket, Mail, MessageSquare, Globe, Smartphone, Tag } from 'lucide-react';
+import { Card, Button } from '../../../components/componentsreutilizables';
 
 interface PlaybookCardProps {
   playbook: PlaybookSummary;
@@ -41,7 +42,7 @@ export const PlaybookCard: React.FC<PlaybookCardProps> = ({
   const ObjectiveIcon = config.icon;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300">
+    <Card variant="hover" className="h-full flex flex-col transition-shadow overflow-hidden">
       {/* Header con gradiente */}
       <div className={`bg-gradient-to-br ${config.bgGradient} p-6 text-white`}>
         <div className="flex items-start justify-between mb-4">
@@ -57,11 +58,11 @@ export const PlaybookCard: React.FC<PlaybookCardProps> = ({
       </div>
 
       {/* Content */}
-      <div className="p-6">
+      <div className="p-4 flex-1 flex flex-col">
         {/* Asset Counts */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="flex items-center gap-2 text-sm">
-            <Mail className="w-4 h-4 text-purple-600" />
+            <Mail className="w-4 h-4 text-blue-600" />
             <span className="text-gray-600">{playbook.assetCounts.emails} Emails</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
@@ -97,24 +98,28 @@ export const PlaybookCard: React.FC<PlaybookCardProps> = ({
         )}
 
         {/* Actions */}
-        <div className="flex gap-2 pt-4 border-t border-gray-200">
-          <button
+        <div className="flex gap-2 mt-auto pt-3 border-t border-gray-100">
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => onPreview(playbook.id)}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium"
+            className="flex-1"
+            leftIcon={<Eye size={16} />}
           >
-            <Eye className="w-4 h-4" />
             Previsualizar
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
             onClick={() => onActivate(playbook.id)}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r ${config.bgGradient} text-white rounded-lg hover:opacity-90 transition text-sm font-medium`}
+            className="flex-1"
+            leftIcon={<Rocket size={16} />}
           >
-            <Rocket className="w-4 h-4" />
             Activar
-          </button>
+          </Button>
         </div>
       </div>
-    </div>
+    </Card>
   );
 };
 

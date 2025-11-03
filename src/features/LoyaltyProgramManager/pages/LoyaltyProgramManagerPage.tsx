@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Layout } from '../../../components/layout';
+import { Card } from '../../../components/componentsreutilizables';
 import { LoyaltyProgramDashboard } from '../components/LoyaltyProgramDashboard';
 import { RulesEngineConfigurator } from '../components/RulesEngineConfigurator';
 import { RewardsCatalogManager } from '../components/RewardsCatalogManager';
 import { getLoyaltyProgram, getLoyaltyRewards, LoyaltyRule, LoyaltyReward } from '../api/loyalty';
-import { Gift, Settings, BarChart3 } from 'lucide-react';
+import { Gift, Settings, BarChart3, Award } from 'lucide-react';
 
 type TabType = 'overview' | 'rules' | 'rewards';
 
@@ -18,44 +18,67 @@ export default function LoyaltyProgramManagerPage() {
   ];
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Programa de Fidelización</h1>
-          <p className="text-gray-600 mt-2">
-            Diseña y gestiona tu programa de lealtad para retener y fidelizar clientes
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+      {/* Header */}
+      <div className="border-b border-gray-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6">
+          <div className="py-6">
+            <div className="flex items-center">
+              {/* Icono con contenedor */}
+              <div className="p-2 bg-blue-100 rounded-xl mr-4 ring-1 ring-blue-200/70">
+                <Award size={24} className="text-blue-600" />
+              </div>
+              
+              {/* Título y descripción */}
+              <div>
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
+                  Programa de Fidelización
+                </h1>
+                <p className="text-gray-600">
+                  Diseña y gestiona tu programa de lealtad para retener y fidelizar clientes
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
 
-        {/* Tabs */}
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as TabType)}
-                  className={`
-                    flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition
-                    ${
-                      activeTab === tab.id
-                        ? 'border-purple-600 text-purple-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }
-                  `}
-                >
-                  <Icon className="w-5 h-5" />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
+      {/* Contenedor Principal */}
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
+        {/* Sistema de Tabs */}
+        <Card className="p-0 bg-white shadow-sm">
+          <div className="px-4 py-3">
+            <div
+              role="tablist"
+              aria-label="Secciones"
+              className="flex items-center gap-2 rounded-2xl bg-slate-100 p-1"
+            >
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as TabType)}
+                    role="tab"
+                    aria-selected={isActive}
+                    className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all ${
+                      isActive
+                        ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
+                    }`}
+                  >
+                    <Icon size={18} className={isActive ? 'opacity-100' : 'opacity-70'} />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </Card>
 
         {/* Tab Content */}
-        <div>
+        <div className="mt-6">
           {activeTab === 'overview' && (
             <LoyaltyProgramDashboard />
           )}
@@ -67,7 +90,7 @@ export default function LoyaltyProgramManagerPage() {
           )}
         </div>
       </div>
-    </Layout>
+    </div>
   );
 }
 
@@ -115,9 +138,10 @@ const RulesTabContent: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-      </div>
+      <Card className="p-8 text-center bg-white shadow-sm">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+        <p className="text-gray-600">Cargando...</p>
+      </Card>
     );
   }
 
@@ -175,9 +199,10 @@ const RewardsTabContent: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-      </div>
+      <Card className="p-8 text-center bg-white shadow-sm">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+        <p className="text-gray-600">Cargando...</p>
+      </Card>
     );
   }
 

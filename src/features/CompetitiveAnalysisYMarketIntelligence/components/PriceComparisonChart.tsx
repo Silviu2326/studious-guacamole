@@ -14,9 +14,9 @@ export const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ data
   const getBarColor = (type: PriceComparisonData['type']) => {
     switch (type) {
       case 'user':
-        return '#9333ea'; // purple
+        return '#2563eb'; // blue-600
       case 'market':
-        return '#3b82f6'; // blue
+        return '#3b82f6'; // blue-500
       case 'competitor':
         return '#10b981'; // green
       default:
@@ -36,7 +36,7 @@ export const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ data
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
           <p className="font-semibold text-gray-900">{payload[0].payload.name}</p>
-          <p className="text-purple-600 font-medium">
+          <p className="text-blue-600 font-medium">
             €{payload[0].value.toFixed(2)}
           </p>
         </div>
@@ -46,7 +46,7 @@ export const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ data
   };
 
   return (
-    <Card>
+    <Card className="bg-white shadow-sm">
       <div className="p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Comparativa de Precios
@@ -86,7 +86,7 @@ export const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ data
         {/* Leyenda personalizada */}
         <div className="mt-4 flex flex-wrap gap-4 justify-center text-sm">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-purple-600"></div>
+            <div className="w-4 h-4 rounded bg-blue-600"></div>
             <span className="text-gray-600">Mi Precio</span>
           </div>
           <div className="flex items-center gap-2">

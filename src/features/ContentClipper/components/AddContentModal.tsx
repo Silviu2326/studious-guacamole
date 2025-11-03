@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createClip, Category, Tag, getCategories, getTags, createTag } from '../api/clips';
-import { X, Loader2, Plus, Search } from 'lucide-react';
+import { Modal, Button, Input, Select, Textarea } from '../../../components/componentsreutilizables';
+import { Loader2, Plus, Search } from 'lucide-react';
 
 interface AddContentModalProps {
   isOpen: boolean;
@@ -161,232 +162,195 @@ export const AddContentModal: React.FC<AddContentModalProps> = ({
     tag.name.toLowerCase().includes(tagSearch.toLowerCase())
   );
 
-  if (!isOpen) return null;
+  const categoryOptions = [
+    { value: '', label: 'Sin categoría' },
+    ...categories.map(cat => ({ value: cat.id, label: cat.name }))
+  ];
+
+  const footer = (
+    <div className="flex items-center justify-end gap-3">
+      <Button variant="secondary" onClick={onClose}>
+        Cancelar
+      </Button>
+      <Button
+        variant="primary"
+        onClick={handleSubmit}
+        disabled={isLoading || !url.trim() || !formData.title.trim()}
+        loading={isLoading}
+      >
+        Guardar Contenido
+      </Button>
+    </div>
+  );
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Agregar Nuevo Contenido</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition"
-          >
-            <X className="w-6 h-6" />
-          </button>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Agregar Nuevo Contenido"
+      size="xl"
+      footer={footer}
+    >
+      <div className="space-y-6">
+        {/* Campo URL */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            URL del Contenido
+          </label>
+          <div className="flex gap-2">
+            <Input
+              type="url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://ejemplo.com/articulo"
+              className="flex-1"
+            />
+            <Button
+              variant="primary"
+              onClick={handleScrape}
+              disabled={isScraping || !url.trim()}
+              loading={isScraping}
+            >
+              Extraer
+            </Button>
+          </div>
         </div>
 
-        {/* Contenido */}
-        <div className="p-6 space-y-6">
-          {/* Campo URL */}
+        {/* Vista previa de imagen */}
+        {scrapedData?.imageUrl && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              URL del Contenido
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Vista Previa
             </label>
-            <div className="flex gap-2">
-              <input
-                type="url"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://ejemplo.com/articulo"
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-              <button
-                onClick={handleScrape}
-                disabled={isScraping || !url.trim()}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
-              >
-                {isScraping ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  'Extraer'
-                )}
-              </button>
-            </div>
+            <img
+              src={scrapedData.imageUrl}
+              alt="Preview"
+              className="w-full h-48 object-cover rounded-lg border border-gray-200"
+            />
           </div>
+        )}
 
-          {/* Vista previa de imagen */}
-          {scrapedData?.imageUrl && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Vista Previa
-              </label>
-              <img
-                src={scrapedData.imageUrl}
-                alt="Preview"
-                className="w-full h-48 object-cover rounded-lg border border-gray-200"
-              />
-            </div>
-          )}
+        {/* Título */}
+        <Input
+          label="Título *"
+          type="text"
+          value={formData.title}
+          onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+          placeholder="Título del contenido"
+          required
+        />
 
-          {/* Título */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Título *
-            </label>
-            <input
+        {/* Descripción */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            Descripción
+          </label>
+          <Textarea
+            value={scrapedData?.description || ''}
+            readOnly
+            rows={3}
+            className="bg-gray-50 text-gray-600"
+          />
+        </div>
+
+        {/* Notas personales */}
+        <Textarea
+          label="Notas Personales"
+          value={formData.notes}
+          onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+          placeholder="Añade tus notas o ideas sobre cómo usar este contenido..."
+          rows={3}
+        />
+
+        {/* Categoría */}
+        <Select
+          label="Categoría"
+          value={formData.categoryId}
+          onChange={(e) => setFormData(prev => ({ ...prev, categoryId: e.target.value }))}
+          options={categoryOptions}
+        />
+
+        {/* Tags */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            Etiquetas
+          </label>
+          
+          {/* Crear nuevo tag */}
+          <div className="flex gap-2 mb-3">
+            <Input
               type="text"
-              value={formData.title}
-              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              placeholder="Título del contenido"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              required
+              value={newTagName}
+              onChange={(e) => setNewTagName(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddTag();
+                }
+              }}
+              placeholder="Crear nueva etiqueta"
+              className="flex-1"
             />
-          </div>
-
-          {/* Descripción */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Descripción
-            </label>
-            <textarea
-              value={scrapedData?.description || ''}
-              readOnly
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
-              rows={3}
-            />
-          </div>
-
-          {/* Notas personales */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Notas Personales
-            </label>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              placeholder="Añade tus notas o ideas sobre cómo usar este contenido..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              rows={3}
-            />
-          </div>
-
-          {/* Categoría */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Categoría
-            </label>
-            <select
-              value={formData.categoryId}
-              onChange={(e) => setFormData(prev => ({ ...prev, categoryId: e.target.value }))}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            <Button
+              variant="secondary"
+              onClick={handleAddTag}
+              leftIcon={<Plus size={16} />}
+              size="sm"
             >
-              <option value="">Sin categoría</option>
-              {categories.map(cat => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+              Añadir
+            </Button>
           </div>
 
-          {/* Tags */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Etiquetas
-            </label>
-            
-            {/* Crear nuevo tag */}
-            <div className="flex gap-2 mb-3">
-              <input
-                type="text"
-                value={newTagName}
-                onChange={(e) => setNewTagName(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddTag();
-                  }
-                }}
-                placeholder="Crear nueva etiqueta"
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-              <button
-                onClick={handleAddTag}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Añadir
-              </button>
-            </div>
+          {/* Búsqueda de tags */}
+          <div className="mb-3">
+            <Input
+              type="text"
+              value={tagSearch}
+              onChange={(e) => setTagSearch(e.target.value)}
+              placeholder="Buscar etiquetas..."
+              leftIcon={<Search size={18} />}
+            />
+          </div>
 
-            {/* Búsqueda de tags */}
-            <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                value={tagSearch}
-                onChange={(e) => setTagSearch(e.target.value)}
-                placeholder="Buscar etiquetas..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
+          {/* Lista de tags disponibles */}
+          <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 border border-gray-200 rounded-lg">
+            {filteredTags.map(tag => {
+              const isSelected = formData.tags.some(t => t.id === tag.id);
+              return (
+                <button
+                  key={tag.id}
+                  onClick={() => handleToggleTag(tag)}
+                  className={`px-3 py-1 rounded-full text-sm transition ${
+                    isSelected
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {tag.name}
+                </button>
+              );
+            })}
+          </div>
 
-            {/* Lista de tags disponibles */}
-            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 border border-gray-200 rounded-lg">
-              {filteredTags.map(tag => {
-                const isSelected = formData.tags.some(t => t.id === tag.id);
-                return (
-                  <button
+          {/* Tags seleccionados */}
+          {formData.tags.length > 0 && (
+            <div className="mt-3">
+              <p className="text-xs text-gray-600 mb-2">Seleccionadas:</p>
+              <div className="flex flex-wrap gap-2">
+                {formData.tags.map(tag => (
+                  <span
                     key={tag.id}
-                    onClick={() => handleToggleTag(tag)}
-                    className={`px-3 py-1 rounded-full text-sm transition ${
-                      isSelected
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
                   >
                     {tag.name}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Tags seleccionados */}
-            {formData.tags.length > 0 && (
-              <div className="mt-3">
-                <p className="text-xs text-gray-600 mb-2">Seleccionadas:</p>
-                <div className="flex flex-wrap gap-2">
-                  {formData.tags.map(tag => (
-                    <span
-                      key={tag.id}
-                      className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm"
-                    >
-                      {tag.name}
-                    </span>
-                  ))}
-                </div>
+                  </span>
+                ))}
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={isLoading || !url.trim() || !formData.title.trim()}
-            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Guardando...
-              </>
-            ) : (
-              'Guardar Contenido'
-            )}
-          </button>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };
 

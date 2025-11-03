@@ -14,7 +14,9 @@ import {
   Phone, 
   Calendar,
   FileText,
-  X
+  X,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 
 interface AccountDetailPanelProps {
@@ -72,29 +74,30 @@ export const AccountDetailPanel: React.FC<AccountDetailPanelProps> = ({ accountI
 
   if (loading) {
     return (
-      <Card className="p-8">
-        <div className="text-gray-500">Cargando detalles de la cuenta...</div>
+      <Card className="p-8 text-center bg-white shadow-sm">
+        <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+        <p className="text-gray-600">Cargando...</p>
       </Card>
     );
   }
 
   if (error || !account) {
     return (
-      <Card className="p-8">
-        <div className="text-red-600 mb-4">{error || 'Cuenta no encontrada'}</div>
-        <Button variant="primary" onClick={loadAccount}>
-          Reintentar
-        </Button>
+      <Card className="p-8 text-center bg-white shadow-sm">
+        <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Error al cargar</h3>
+        <p className="text-gray-600 mb-4">{error || 'Cuenta no encontrada'}</p>
+        <Button onClick={loadAccount}>Reintentar</Button>
       </Card>
     );
   }
 
   return (
-    <Card className="p-6">
+    <Card className="p-6 bg-white shadow-sm">
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-100 rounded-lg">
+          <div className="p-2 bg-blue-100 rounded-lg ring-1 ring-blue-200/70">
             <Building2 className="w-6 h-6 text-blue-600" />
           </div>
           <div>
@@ -148,7 +151,7 @@ export const AccountDetailPanel: React.FC<AccountDetailPanelProps> = ({ accountI
             {account.contacts.map(contact => (
               <div 
                 key={contact.id}
-                className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+                className="p-4 bg-slate-50 rounded-lg ring-1 ring-slate-200"
               >
                 <div className="flex items-start justify-between">
                   <div>
@@ -199,7 +202,7 @@ export const AccountDetailPanel: React.FC<AccountDetailPanelProps> = ({ accountI
             {account.deals.map(deal => (
               <div 
                 key={deal.id}
-                className="p-3 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between"
+                className="p-3 bg-slate-50 rounded-lg ring-1 ring-slate-200 flex items-center justify-between"
               >
                 <div>
                   <p className="font-medium text-gray-900 text-sm">{deal.title}</p>
@@ -231,9 +234,9 @@ export const AccountDetailPanel: React.FC<AccountDetailPanelProps> = ({ accountI
             {account.activityLog.map(activity => (
               <div 
                 key={activity.id}
-                className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
+                className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg ring-1 ring-slate-200"
               >
-                <div className="p-1.5 bg-white rounded border border-gray-200">
+                <div className="p-1.5 bg-white rounded ring-1 ring-slate-200">
                   {getActivityIcon(activity.type)}
                 </div>
                 <div className="flex-1">
@@ -249,8 +252,8 @@ export const AccountDetailPanel: React.FC<AccountDetailPanelProps> = ({ accountI
       )}
 
       {/* Acciones */}
-      <div className="mt-6 pt-6 border-t border-gray-200 flex gap-3">
-        <Button variant="primary" onClick={() => {/* TODO: Crear oportunidad */}}>
+      <div className="mt-6 pt-6 border-t border-gray-100 flex gap-2">
+        <Button onClick={() => {/* TODO: Crear oportunidad */}}>
           Nueva Oportunidad
         </Button>
         <Button variant="secondary" onClick={() => {/* TODO: Enviar email */}}>

@@ -3,6 +3,8 @@ import { Survey, SurveyQuestion, QuestionType, createSurvey, updateSurvey, getSu
 import { AutomationTriggerConfig } from './AutomationTriggerConfig';
 import { getTriggerOptions } from '../api/surveys';
 import { X, ArrowLeft, Plus, Trash2, GripVertical, Loader2, Save, Eye } from 'lucide-react';
+import { Card } from '../../../components/componentsreutilizables';
+import { Button } from '../../../components/componentsreutilizables';
 
 interface SurveyBuilderContainerProps {
   surveyId?: string | null;
@@ -117,97 +119,102 @@ export const SurveyBuilderContainer: React.FC<SurveyBuilderContainerProps> = ({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex items-center justify-center">
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+          <p className="text-gray-600">Cargando...</p>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
-              {onCancel && (
-                <button
-                  onClick={onCancel}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition"
-                >
-                  <ArrowLeft className="w-5 h-5 text-gray-600" />
-                </button>
-              )}
-              <h2 className="text-xl font-semibold text-gray-900">
-                {surveyId ? 'Editar Encuesta' : 'Crear Nueva Encuesta'}
-              </h2>
+      <div className="border-b border-gray-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-10">
+        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6">
+          <div className="py-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                {onCancel && (
+                  <button
+                    onClick={onCancel}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition mr-4"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-gray-600" />
+                  </button>
+                )}
+                <div className="p-2 bg-blue-100 rounded-xl mr-4 ring-1 ring-blue-200/70">
+                  <Plus size={24} className="text-blue-600" />
+                </div>
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
+                    {surveyId ? 'Editar Encuesta' : 'Crear Nueva Encuesta'}
+                  </h1>
+                  <p className="text-gray-600">
+                    {surveyId ? 'Modifica los detalles de tu encuesta' : 'Construye una encuesta personalizada para capturar feedback'}
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={handleSave}
+                disabled={isSaving}
+                loading={isSaving}
+                variant="primary"
+                leftIcon={!isSaving ? <Save size={20} /> : undefined}
+              >
+                {isSaving ? 'Guardando...' : 'Guardar'}
+              </Button>
             </div>
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Guardando...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  Guardar
-                </>
-              )}
-            </button>
           </div>
         </div>
       </div>
 
       {/* Contenido */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
         <div className="space-y-6">
           {/* Información básica */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <Card className="bg-white shadow-sm">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Información Básica</h3>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
                   Título de la Encuesta *
                 </label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5"
                   placeholder="Ej: Satisfacción Post-Sesión"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
                   Descripción (opcional)
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5"
                   rows={3}
                   placeholder="Describe el propósito de esta encuesta..."
                 />
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Preguntas */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <Card className="bg-white shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Preguntas</h3>
               <div className="flex items-center gap-2">
                 <select
                   onChange={(e) => handleAddQuestion(e.target.value as QuestionType)}
                   defaultValue=""
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                  className="rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5 text-sm"
                 >
                   <option value="" disabled>Agregar Pregunta</option>
                   <option value="rating_stars">⭐ Calificación con Estrellas</option>
@@ -234,7 +241,7 @@ export const SurveyBuilderContainer: React.FC<SurveyBuilderContainerProps> = ({
                           value={question.text}
                           onChange={(e) => handleUpdateQuestion(question.id, { text: e.target.value })}
                           placeholder={`Pregunta ${index + 1}...`}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5"
                         />
                       </div>
 
@@ -250,7 +257,7 @@ export const SurveyBuilderContainer: React.FC<SurveyBuilderContainerProps> = ({
                                   newOptions[optIndex] = e.target.value;
                                   handleUpdateQuestion(question.id, { options: newOptions });
                                 }}
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                                className="flex-1 rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5 text-sm"
                                 placeholder={`Opción ${optIndex + 1}`}
                               />
                               {question.options.length > 2 && (
@@ -271,7 +278,7 @@ export const SurveyBuilderContainer: React.FC<SurveyBuilderContainerProps> = ({
                               const newOptions = [...question.options!, 'Nueva opción'];
                               handleUpdateQuestion(question.id, { options: newOptions });
                             }}
-                            className="text-sm text-purple-600 hover:text-purple-700"
+                            className="text-sm text-blue-600 hover:text-blue-700"
                           >
                             + Agregar Opción
                           </button>
@@ -284,9 +291,9 @@ export const SurveyBuilderContainer: React.FC<SurveyBuilderContainerProps> = ({
                             type="checkbox"
                             checked={question.required}
                             onChange={(e) => handleUpdateQuestion(question.id, { required: e.target.checked })}
-                            className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                           />
-                          <span className="text-gray-700">Requerida</span>
+                          <span className="text-slate-700">Requerida</span>
                         </label>
                         <button
                           onClick={() => handleRemoveQuestion(question.id)}
@@ -301,21 +308,21 @@ export const SurveyBuilderContainer: React.FC<SurveyBuilderContainerProps> = ({
               ))}
 
               {questions.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <p>No hay preguntas todavía. Agrega una pregunta para comenzar.</p>
-                </div>
+                <Card className="p-8 text-center bg-white shadow-sm">
+                  <p className="text-gray-500">No hay preguntas todavía. Agrega una pregunta para comenzar.</p>
+                </Card>
               )}
             </div>
-          </div>
+          </Card>
 
           {/* Automatización */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <Card className="bg-white shadow-sm">
             <AutomationTriggerConfig
               availableTriggers={triggerOptions}
               value={automationRule}
               onChange={setAutomationRule}
             />
-          </div>
+          </Card>
         </div>
       </div>
     </div>

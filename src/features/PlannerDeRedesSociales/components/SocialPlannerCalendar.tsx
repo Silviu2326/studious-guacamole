@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { SocialPost, ViewMode, getSocialPosts } from '../api/social';
-import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { PostCard } from './PostCard';
+import { Card, Button } from '../../../components/componentsreutilizables';
 
 interface SocialPlannerCalendarProps {
   currentDate: Date;
@@ -90,46 +91,46 @@ export const SocialPlannerCalendar: React.FC<SocialPlannerCalendarProps> = ({
     const weekEnd = weekDates[6];
 
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <Card className="bg-white shadow-sm">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => navigateDate('prev')}
-              className="p-2 hover:bg-gray-100 rounded-lg transition"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
+              leftIcon={<ChevronLeft size={18} />}
+            />
             <h3 className="text-lg font-bold text-gray-900">
               {weekStart.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
               {' - '}
               {weekEnd.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
             </h3>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => navigateDate('next')}
-              className="p-2 hover:bg-gray-100 rounded-lg transition"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
+              leftIcon={<ChevronRight size={18} />}
+            />
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 rounded-xl bg-slate-100 p-1">
             <button
               onClick={() => setViewMode('week')}
-              className={`px-3 py-1 rounded transition ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 viewMode === 'week'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
               }`}
             >
               Semana
             </button>
             <button
               onClick={() => setViewMode('month')}
-              className={`px-3 py-1 rounded transition ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 viewMode === 'month'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
               }`}
             >
               Mes
@@ -139,9 +140,10 @@ export const SocialPlannerCalendar: React.FC<SocialPlannerCalendarProps> = ({
 
         {/* Week View */}
         {isLoading ? (
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-          </div>
+          <Card className="p-8 text-center bg-white shadow-sm">
+            <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+            <p className="text-gray-600">Cargando...</p>
+          </Card>
         ) : (
           <div className="grid grid-cols-7 gap-4">
             {weekDates.map((date, idx) => {
@@ -149,12 +151,12 @@ export const SocialPlannerCalendar: React.FC<SocialPlannerCalendarProps> = ({
               const isToday = date.toDateString() === new Date().toDateString();
 
               return (
-                <div
+                <Card
                   key={idx}
-                  className={`border rounded-lg p-3 min-h-[300px] ${
+                  className={`p-3 min-h-[300px] ${
                     isToday
-                      ? 'border-purple-500 bg-purple-50'
-                      : 'border-gray-200 bg-white'
+                      ? 'ring-2 ring-blue-500 bg-blue-50'
+                      : 'ring-1 ring-gray-200 bg-white'
                   }`}
                 >
                   {/* Day Header */}
@@ -162,7 +164,7 @@ export const SocialPlannerCalendar: React.FC<SocialPlannerCalendarProps> = ({
                     <p className="text-xs font-medium text-gray-600">
                       {date.toLocaleDateString('es-ES', { weekday: 'short' }).toUpperCase()}
                     </p>
-                    <p className={`text-2xl font-bold ${isToday ? 'text-purple-600' : 'text-gray-900'}`}>
+                    <p className={`text-2xl font-bold ${isToday ? 'text-blue-600' : 'text-gray-900'}`}>
                       {date.getDate()}
                     </p>
                   </div>
@@ -180,56 +182,58 @@ export const SocialPlannerCalendar: React.FC<SocialPlannerCalendarProps> = ({
                     ) : (
                       <div
                         onClick={() => onPostSelect(null)}
-                        className="text-center py-8 border-2 border-dashed border-gray-300 rounded hover:border-purple-500 hover:bg-purple-50 transition cursor-pointer"
+                        className="text-center py-8 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition cursor-pointer"
                       >
                         <Calendar className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                         <p className="text-xs text-gray-600">Click para agregar</p>
                       </div>
                     )}
                   </div>
-                </div>
+                </Card>
               );
             })}
           </div>
         )}
-      </div>
+      </Card>
     );
   }
 
   // Month view (simplified)
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
+    <Card className="bg-white shadow-sm">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-bold text-gray-900">
           {currentDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
         </h3>
-        <div className="flex gap-2">
+        <div className="flex gap-2 rounded-xl bg-slate-100 p-1">
           <button
             onClick={() => setViewMode('week')}
-            className={`px-3 py-1 rounded transition ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               viewMode === 'week'
-                ? 'bg-purple-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
             }`}
           >
             Semana
           </button>
           <button
             onClick={() => setViewMode('month')}
-            className={`px-3 py-1 rounded transition ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               viewMode === 'month'
-                ? 'bg-purple-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
             }`}
           >
             Mes
           </button>
         </div>
       </div>
-      <div className="text-center py-12 text-gray-600">
-        Vista mensual en construcción
-      </div>
-    </div>
+      <Card className="p-8 text-center bg-white shadow-sm">
+        <Calendar size={48} className="mx-auto text-gray-400 mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Vista mensual</h3>
+        <p className="text-gray-600">Esta vista está en construcción</p>
+      </Card>
+    </Card>
   );
 };
 

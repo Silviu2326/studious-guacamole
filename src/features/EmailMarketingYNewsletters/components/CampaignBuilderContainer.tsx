@@ -3,6 +3,7 @@ import { EmailCampaign, EmailTemplate, getEmailTemplates, createCampaign, update
 import { SegmentSelector } from './SegmentSelector';
 import { getSegments, EmailSegment } from '../api/campaigns';
 import { X, ArrowLeft, ArrowRight, Mail, Loader2, Save, Send, Clock } from 'lucide-react';
+import { Card, Button } from '../../../components/componentsreutilizables';
 
 interface CampaignBuilderContainerProps {
   campaignId?: string | null;
@@ -155,10 +156,10 @@ export const CampaignBuilderContainer: React.FC<CampaignBuilderContainerProps> =
   const currentStepIndex = steps.findIndex(s => s.id === currentStep);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       {/* Header con progreso */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="border-b border-gray-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-10">
+        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
               {onCancel && (
@@ -174,14 +175,15 @@ export const CampaignBuilderContainer: React.FC<CampaignBuilderContainerProps> =
               </h2>
             </div>
             <div className="flex items-center gap-2">
-              <button
+              <Button
+                variant="secondary"
                 onClick={handleSaveDraft}
                 disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition disabled:opacity-50"
+                loading={isSaving}
               >
-                <Save className="w-4 h-4" />
+                <Save size={18} className="mr-2" />
                 Guardar Borrador
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -194,7 +196,7 @@ export const CampaignBuilderContainer: React.FC<CampaignBuilderContainerProps> =
                     onClick={() => setCurrentStep(step.id as BuilderStep)}
                     className={`w-10 h-10 rounded-full flex items-center justify-center font-medium transition ${
                       index <= currentStepIndex
-                        ? 'bg-purple-600 text-white'
+                        ? 'bg-blue-600 text-white'
                         : 'bg-gray-200 text-gray-600'
                     }`}
                   >
@@ -204,7 +206,7 @@ export const CampaignBuilderContainer: React.FC<CampaignBuilderContainerProps> =
                 </div>
                 {index < steps.length - 1 && (
                   <div className={`flex-1 h-1 mx-2 ${
-                    index < currentStepIndex ? 'bg-purple-600' : 'bg-gray-200'
+                    index < currentStepIndex ? 'bg-blue-600' : 'bg-gray-200'
                   }`} />
                 )}
               </div>
@@ -214,71 +216,74 @@ export const CampaignBuilderContainer: React.FC<CampaignBuilderContainerProps> =
       </div>
 
       {/* Contenido del paso actual */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
         {currentStep === 'setup' && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
+          <Card className="bg-white shadow-sm">
+            <div className="p-6 space-y-6">
             <h3 className="text-lg font-semibold text-gray-900">Configuración Básica</h3>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Nombre de la Campaña *
               </label>
               <input
                 type="text"
                 value={campaignData.name || ''}
                 onChange={(e) => setCampaignData(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5"
                 placeholder="Ej: Newsletter Mensual Octubre"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Asunto del Email *
               </label>
               <input
                 type="text"
                 value={campaignData.subject || ''}
                 onChange={(e) => setCampaignData(prev => ({ ...prev, subject: e.target.value }))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5"
                 placeholder="Ej: 💪 ¿Listo para tu mejor versión este verano?"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
                   Nombre del Remitente
                 </label>
                 <input
                   type="text"
                   value={campaignData.fromName || ''}
                   onChange={(e) => setCampaignData(prev => ({ ...prev, fromName: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
                   Email del Remitente
                 </label>
                 <input
                   type="email"
                   value={campaignData.fromEmail || ''}
                   onChange={(e) => setCampaignData(prev => ({ ...prev, fromEmail: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5"
                 />
               </div>
             </div>
-          </div>
+            </div>
+          </Card>
         )}
 
         {currentStep === 'design' && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
+          <Card className="bg-white shadow-sm">
+            <div className="p-6 space-y-6">
             <h3 className="text-lg font-semibold text-gray-900">Diseño del Email</h3>
             
             {/* Selección de plantilla */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="block text-sm font-medium text-slate-700 mb-3">
                 Plantillas Disponibles
               </label>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -288,7 +293,7 @@ export const CampaignBuilderContainer: React.FC<CampaignBuilderContainerProps> =
                     onClick={() => handleTemplateSelect(template.id)}
                     className={`p-4 border-2 rounded-lg transition-all text-left ${
                       selectedTemplate === template.id
-                        ? 'border-purple-500 bg-purple-50'
+                        ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
@@ -310,45 +315,49 @@ export const CampaignBuilderContainer: React.FC<CampaignBuilderContainerProps> =
 
             {/* Editor simplificado */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="block text-sm font-medium text-slate-700 mb-3">
                 Contenido HTML del Email
               </label>
               <textarea
                 value={campaignData.bodyHtml || ''}
                 onChange={(e) => setCampaignData(prev => ({ ...prev, bodyHtml: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm"
+                className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-3 font-mono text-sm"
                 rows={15}
                 placeholder="Código HTML del email..."
               />
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-slate-500 mt-2">
                 Nota: En producción, aquí estaría el editor visual de arrastrar y soltar
               </p>
             </div>
-          </div>
+            </div>
+          </Card>
         )}
 
         {currentStep === 'audience' && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">Seleccionar Audiencia</h3>
-            <SegmentSelector
-              segments={segments}
-              selectedSegmentId={selectedSegmentId}
-              onSegmentSelect={setSelectedSegmentId}
-            />
-            {selectedSegmentId && (
-              <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                <p className="text-sm text-purple-900">
-                  ✓ Segmento seleccionado: {segments.find(s => s.id === selectedSegmentId)?.name}
-                  {' '}
-                  ({segments.find(s => s.id === selectedSegmentId)?.contactCount} contactos)
-                </p>
-              </div>
-            )}
-          </div>
+          <Card className="bg-white shadow-sm">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Seleccionar Audiencia</h3>
+              <SegmentSelector
+                segments={segments}
+                selectedSegmentId={selectedSegmentId}
+                onSegmentSelect={setSelectedSegmentId}
+              />
+              {selectedSegmentId && (
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-900">
+                    ✓ Segmento seleccionado: {segments.find(s => s.id === selectedSegmentId)?.name}
+                    {' '}
+                    ({segments.find(s => s.id === selectedSegmentId)?.contactCount} contactos)
+                  </p>
+                </div>
+              )}
+            </div>
+          </Card>
         )}
 
         {currentStep === 'schedule' && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
+          <Card className="bg-white shadow-sm">
+            <div className="p-6 space-y-6">
             <h3 className="text-lg font-semibold text-gray-900">Programar Envío</h3>
             
             <div className="space-y-4">
@@ -359,9 +368,9 @@ export const CampaignBuilderContainer: React.FC<CampaignBuilderContainerProps> =
                     name="sendOption"
                     value="now"
                     defaultChecked
-                    className="w-4 h-4 text-purple-600"
+                    className="w-4 h-4 text-blue-600"
                   />
-                  <span className="text-sm font-medium text-gray-700">Enviar inmediatamente</span>
+                  <span className="text-sm font-medium text-slate-700">Enviar inmediatamente</span>
                 </label>
               </div>
 
@@ -371,29 +380,29 @@ export const CampaignBuilderContainer: React.FC<CampaignBuilderContainerProps> =
                     type="radio"
                     name="sendOption"
                     value="schedule"
-                    className="w-4 h-4 text-purple-600"
+                    className="w-4 h-4 text-blue-600"
                   />
-                  <span className="text-sm font-medium text-gray-700">Programar para más tarde</span>
+                  <span className="text-sm font-medium text-slate-700">Programar para más tarde</span>
                 </label>
                 
                 <div className="ml-6 grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Fecha</label>
+                    <label className="block text-xs text-slate-600 mb-2">Fecha</label>
                     <input
                       type="date"
                       value={scheduleDate}
                       onChange={(e) => setScheduleDate(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5"
                       min={new Date().toISOString().split('T')[0]}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Hora</label>
+                    <label className="block text-xs text-slate-600 mb-2">Hora</label>
                     <input
                       type="time"
                       value={scheduleTime}
                       onChange={(e) => setScheduleTime(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5"
                     />
                   </div>
                 </div>
@@ -420,48 +429,48 @@ export const CampaignBuilderContainer: React.FC<CampaignBuilderContainerProps> =
                 )}
               </div>
             </div>
-          </div>
+            </div>
+          </Card>
         )}
 
         {/* Navegación */}
         <div className="mt-6 flex items-center justify-between">
-          <button
+          <Button
+            variant="ghost"
             onClick={handlePrevious}
             disabled={currentStep === 'setup'}
-            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={18} className="mr-2" />
             Anterior
-          </button>
+          </Button>
 
           <div className="flex items-center gap-2">
             {currentStep === 'schedule' ? (
-              <button
+              <Button
                 onClick={handleSchedule}
                 disabled={isSaving || !campaignData.name || !campaignData.subject || !selectedSegmentId}
-                className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                loading={isSaving}
               >
                 {scheduleDate && scheduleTime ? (
                   <>
-                    <Clock className="w-4 h-4" />
+                    <Clock size={18} className="mr-2" />
                     Programar Envío
                   </>
                 ) : (
                   <>
-                    <Send className="w-4 h-4" />
+                    <Send size={18} className="mr-2" />
                     Enviar Ahora
                   </>
                 )}
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
                 onClick={handleNext}
                 disabled={currentStep === 'schedule'}
-                className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Siguiente
-                <ArrowRight className="w-4 h-4" />
-              </button>
+                <ArrowRight size={18} className="ml-2" />
+              </Button>
             )}
           </div>
         </div>

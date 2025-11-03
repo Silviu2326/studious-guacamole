@@ -1,5 +1,6 @@
 import React from 'react';
 import { Audience, RuleOperator } from '../api/audiences';
+import { Card, Button } from '../../../components/componentsreutilizables';
 import { Edit, Trash2, Users, RefreshCw, Copy } from 'lucide-react';
 
 interface AudienceCardProps {
@@ -23,24 +24,25 @@ export const AudienceCard: React.FC<AudienceCardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition">
+    <Card variant="hover" className="h-full flex flex-col transition-shadow overflow-hidden">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <h3 className="text-lg font-bold text-gray-900 mb-2">{audience.name}</h3>
-          <div className="flex items-center gap-4 text-sm text-gray-600">
-            <div className="flex items-center gap-1">
-              <Users className="w-4 h-4" />
-              <span className="font-semibold text-gray-900">{audience.member_count}</span> miembros
+        <div className="flex-1 min-w-0">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2 truncate">{audience.name}</h3>
+          <div className="flex items-center gap-3 text-sm text-gray-600 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <Users className="w-4 h-4 text-blue-600" />
+              <span className="font-semibold text-gray-900">{audience.member_count}</span>
+              <span>miembros</span>
             </div>
-            <span>•</span>
-            <span>Operador: {audience.rules.operator}</span>
-            <span>•</span>
-            <span>{audience.rules.rules.length} regla(s)</span>
+            <span className="text-gray-400">•</span>
+            <span className="text-xs">Operador: {audience.rules.operator}</span>
+            <span className="text-gray-400">•</span>
+            <span className="text-xs">{audience.rules.rules.length} regla(s)</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 ml-2">
           <button
             onClick={() => onDuplicate(audience)}
             className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
@@ -70,8 +72,8 @@ export const AudienceCard: React.FC<AudienceCardProps> = ({
       </div>
 
       {/* Rules Preview */}
-      <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-        <p className="text-xs font-medium text-gray-700 mb-2">Reglas:</p>
+      <div className="mb-4 p-3 bg-slate-50 rounded-lg ring-1 ring-slate-200">
+        <p className="text-xs font-medium text-slate-700 mb-2">Reglas:</p>
         <div className="space-y-1">
           {audience.rules.rules.map((rule: any, idx: number) => (
             <p key={idx} className="text-xs text-gray-600">
@@ -82,21 +84,22 @@ export const AudienceCard: React.FC<AudienceCardProps> = ({
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+      <div className="flex items-center justify-between pt-3 mt-auto border-t border-gray-100">
         <div className="text-xs text-gray-600">
           Creada: {formatDate(audience.created_at)}
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            variant="primary"
+            size="sm"
             onClick={() => onViewMembers(audience.id)}
-            className="flex items-center gap-1 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm"
+            leftIcon={<Users className="w-4 h-4" />}
           >
-            <Users className="w-4 h-4" />
             Ver Miembros
-          </button>
+          </Button>
         </div>
       </div>
-    </div>
+    </Card>
   );
 };
 

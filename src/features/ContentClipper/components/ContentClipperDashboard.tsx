@@ -3,7 +3,8 @@ import { useContentLibrary } from '../hooks/useContentLibrary';
 import { ClippedContentCard } from './ClippedContentCard';
 import { AddContentModal } from './AddContentModal';
 import { getCategories, Category } from '../api/clips';
-import { Plus, Search, Filter, X, Loader2 } from 'lucide-react';
+import { Card, Button, Input } from '../../../components/componentsreutilizables';
+import { Plus, Search, X, Loader2, Package, AlertCircle } from 'lucide-react';
 
 /**
  * Componente principal que orquesta la página del Content Clipper.
@@ -84,81 +85,95 @@ export const ContentClipperDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header con acciones */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Mi Biblioteca de Contenido</h2>
-          <p className="text-gray-600 mt-1">
-            {pagination.totalItems} {pagination.totalItems === 1 ? 'contenido guardado' : 'contenidos guardados'}
-          </p>
-        </div>
-        <button
+      {/* Toolbar superior */}
+      <div className="flex items-center justify-end">
+        <Button 
+          variant="primary" 
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+          leftIcon={<Plus size={20} />}
         >
-          <Plus className="w-5 h-5" />
           Agregar Contenido
-        </button>
+        </Button>
       </div>
 
       {/* Barra de búsqueda y filtros */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Búsqueda */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              placeholder="Buscar por título, descripción o notas..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
+      <Card className="mb-6 bg-white shadow-sm">
+        <div className="space-y-4">
+          {/* Barra de búsqueda */}
+          <div className="rounded-2xl bg-slate-50 ring-1 ring-slate-200 p-3">
+            <div className="flex gap-4">
+              {/* Input de búsqueda */}
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  placeholder="Buscar por título, descripción o notas..."
+                  className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-10 pr-3 py-2.5"
+                />
+              </div>
+
+              {/* Filtro de categoría */}
+              <div className="w-64">
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => handleCategoryFilter(e.target.value)}
+                  className="w-full rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5"
+                >
+                  <option value="">Todas las categorías</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Botón limpiar filtros */}
+              {hasActiveFilters && (
+                <Button
+                  variant="secondary"
+                  onClick={handleClearFilters}
+                  leftIcon={<X size={18} />}
+                  size="sm"
+                >
+                  Limpiar
+                </Button>
+              )}
+            </div>
           </div>
 
-          {/* Filtro de categoría */}
-          <div className="w-full md:w-64">
-            <select
-              value={selectedCategory}
-              onChange={(e) => handleCategoryFilter(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            >
-              <option value="">Todas las categorías</option>
-              {categories.map(cat => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+          {/* Resumen de resultados */}
+          <div className="flex justify-between items-center text-sm text-slate-600 border-t border-slate-200 pt-4">
+            <span>
+              {pagination.totalItems} {pagination.totalItems === 1 ? 'contenido guardado' : 'contenidos guardados'}
+            </span>
+            {hasActiveFilters && (
+              <span>Filtros aplicados</span>
+            )}
           </div>
-
-          {/* Botón limpiar filtros */}
-          {hasActiveFilters && (
-            <button
-              onClick={handleClearFilters}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-            >
-              <X className="w-4 h-4" />
-              Limpiar
-            </button>
-          )}
         </div>
-      </div>
+      </Card>
 
       {/* Error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-          <p>Error: {error.message}</p>
-        </div>
+        <Card className="p-8 text-center">
+          <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error al cargar</h3>
+          <p className="text-gray-600 mb-4">Error: {error.message}</p>
+          <Button onClick={() => window.location.reload()}>Reintentar</Button>
+        </Card>
       )}
 
       {/* Lista de contenido */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
-        </div>
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+          <p className="text-gray-600">Cargando...</p>
+        </Card>
       ) : clips.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {clips.map(clip => (
             <ClippedContentCard
               key={clip.id}
@@ -169,49 +184,53 @@ export const ContentClipperDashboard: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Search className="w-8 h-8 text-gray-400" />
-          </div>
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <Package size={48} className="mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             {hasActiveFilters ? 'No se encontraron resultados' : 'No tienes contenido guardado todavía'}
           </h3>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 mb-4">
             {hasActiveFilters
               ? 'Intenta ajustar los filtros de búsqueda'
               : 'Comienza capturando contenido valioso para tu biblioteca'}
           </p>
           {!hasActiveFilters && (
-            <button
+            <Button
+              variant="primary"
               onClick={() => setIsModalOpen(true)}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+              leftIcon={<Plus size={20} />}
             >
-              <Plus className="w-5 h-5" />
               Agregar Primer Contenido
-            </button>
+            </Button>
           )}
-        </div>
+        </Card>
       )}
 
       {/* Paginación (si hay múltiples páginas) */}
       {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <button
-            disabled={pagination.currentPage === 1}
-            className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-          >
-            Anterior
-          </button>
-          <span className="px-4 py-2 text-gray-700">
-            Página {pagination.currentPage} de {pagination.totalPages}
-          </span>
-          <button
-            disabled={pagination.currentPage === pagination.totalPages}
-            className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-          >
-            Siguiente
-          </button>
-        </div>
+        <Card className="p-4 bg-white shadow-sm">
+          <div className="flex justify-center items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={pagination.currentPage === 1}
+              onClick={() => {/* TODO: Implementar navegación */}}
+            >
+              Anterior
+            </Button>
+            <span className="px-4 py-2 text-gray-700 text-sm">
+              Página {pagination.currentPage} de {pagination.totalPages}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={pagination.currentPage === pagination.totalPages}
+              onClick={() => {/* TODO: Implementar navegación */}}
+            >
+              Siguiente
+            </Button>
+          </div>
+        </Card>
       )}
 
       {/* Modal para agregar contenido */}

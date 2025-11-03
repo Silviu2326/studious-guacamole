@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Event, EventMetric, EventType } from '../api/events';
 import { X, ArrowLeft, ArrowRight, Save, Plus, Trash2, Loader2 } from 'lucide-react';
+import { Card, Button } from '../../../components/componentsreutilizables';
 
 interface EventBuilderWizardProps {
   initialEventData?: Partial<Event>;
@@ -169,63 +170,69 @@ export const EventBuilderWizard: React.FC<EventBuilderWizardProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between mb-4">
+      <div className="border-b border-gray-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6">
+          <div className="py-6">
             <div className="flex items-center gap-4">
               {onCancel && (
-                <button
+                <Button
                   onClick={onCancel}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition"
-                >
-                  <ArrowLeft className="w-5 h-5 text-gray-600" />
-                </button>
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<ArrowLeft size={18} />}
+                />
               )}
-              <h2 className="text-xl font-semibold text-gray-900">
-                {initialEventData?.id ? 'Editar Evento' : 'Crear Nuevo Evento/Reto'}
-              </h2>
+              <div>
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
+                  {initialEventData?.id ? 'Editar Evento' : 'Crear Nuevo Evento/Reto'}
+                </h1>
+              </div>
             </div>
           </div>
 
           {/* Indicador de pasos */}
-          <div className="flex items-center justify-between">
-            {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center flex-1">
-                <div className="flex flex-col items-center flex-1">
-                  <button
-                    onClick={() => {
-                      if (index <= currentStepIndex) {
-                        setCurrentStep(step.id as WizardStep);
-                      }
-                    }}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-medium transition ${
-                      index <= currentStepIndex
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-gray-200 text-gray-600'
-                    }`}
-                  >
-                    {index + 1}
-                  </button>
-                  <span className="mt-2 text-xs font-medium text-gray-600 text-center">
-                    {step.label}
-                  </span>
-                </div>
-                {index < steps.length - 1 && (
-                  <div className={`flex-1 h-1 mx-2 ${
-                    index < currentStepIndex ? 'bg-purple-600' : 'bg-gray-200'
-                  }`} />
-                )}
+          <Card className="p-0 bg-white shadow-sm">
+            <div className="px-4 py-3">
+              <div className="flex items-center justify-between">
+                {steps.map((step, index) => (
+                  <div key={step.id} className="flex items-center flex-1">
+                    <div className="flex flex-col items-center flex-1">
+                      <button
+                        onClick={() => {
+                          if (index <= currentStepIndex) {
+                            setCurrentStep(step.id as WizardStep);
+                          }
+                        }}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center font-medium transition ${
+                          index <= currentStepIndex
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-200 text-gray-600'
+                        }`}
+                      >
+                        {index + 1}
+                      </button>
+                      <span className="mt-2 text-xs font-medium text-gray-600 text-center">
+                        {step.label}
+                      </span>
+                    </div>
+                    {index < steps.length - 1 && (
+                      <div className={`flex-1 h-1 mx-2 ${
+                        index < currentStepIndex ? 'bg-blue-600' : 'bg-gray-200'
+                      }`} />
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          </Card>
         </div>
       </div>
 
       {/* Contenido del paso actual */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
+        <Card className="bg-white shadow-sm">
           {currentStep === 'basic' && (
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-900">Información Básica</h3>
@@ -238,8 +245,8 @@ export const EventBuilderWizard: React.FC<EventBuilderWizardProps> = ({
                   type="text"
                   value={formData.name || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                    validationErrors.name ? 'border-red-300' : 'border-gray-300'
+                  className={`w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5 ${
+                    validationErrors.name ? 'ring-red-300' : ''
                   }`}
                   placeholder="Ej: Reto de 30 días Fit"
                 />
@@ -255,8 +262,8 @@ export const EventBuilderWizard: React.FC<EventBuilderWizardProps> = ({
                 <textarea
                   value={formData.description || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                    validationErrors.description ? 'border-red-300' : 'border-gray-300'
+                  className={`w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5 ${
+                    validationErrors.description ? 'ring-red-300' : ''
                   }`}
                   rows={4}
                   placeholder="Describe el evento o reto..."
@@ -273,7 +280,7 @@ export const EventBuilderWizard: React.FC<EventBuilderWizardProps> = ({
                 <select
                   value={formData.type}
                   onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as EventType }))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5"
                 >
                   <option value="challenge">Reto/Desafío</option>
                   <option value="bootcamp">Bootcamp</option>
@@ -292,8 +299,8 @@ export const EventBuilderWizard: React.FC<EventBuilderWizardProps> = ({
                     type="datetime-local"
                     value={formData.startDate || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                      validationErrors.startDate ? 'border-red-300' : 'border-gray-300'
+                    className={`w-full rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5 ${
+                      validationErrors.startDate ? 'ring-red-300' : ''
                     }`}
                   />
                   {validationErrors.startDate && (
@@ -308,8 +315,8 @@ export const EventBuilderWizard: React.FC<EventBuilderWizardProps> = ({
                     type="datetime-local"
                     value={formData.endDate || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                      validationErrors.endDate ? 'border-red-300' : 'border-gray-300'
+                    className={`w-full rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5 ${
+                      validationErrors.endDate ? 'ring-red-300' : ''
                     }`}
                   />
                   {validationErrors.endDate && (
@@ -333,8 +340,8 @@ export const EventBuilderWizard: React.FC<EventBuilderWizardProps> = ({
                     type="number"
                     value={formData.fee || 0}
                     onChange={(e) => setFormData(prev => ({ ...prev, fee: Number(e.target.value) }))}
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                      validationErrors.fee ? 'border-red-300' : 'border-gray-300'
+                    className={`w-full rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5 ${
+                      validationErrors.fee ? 'ring-red-300' : ''
                     }`}
                     min="0"
                     step="0.01"
@@ -351,7 +358,7 @@ export const EventBuilderWizard: React.FC<EventBuilderWizardProps> = ({
                     type="number"
                     value={formData.maxParticipants || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, maxParticipants: Number(e.target.value) || undefined }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5"
                     min="1"
                     placeholder="Sin límite"
                   />
@@ -387,14 +394,13 @@ export const EventBuilderWizard: React.FC<EventBuilderWizardProps> = ({
                       }
                     }}
                     placeholder="Añadir nueva regla..."
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="flex-1 rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5"
                   />
-                  <button
+                  <Button
                     onClick={handleAddRule}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
+                    size="sm"
+                    leftIcon={<Plus size={16} />}
+                  />
                 </div>
               </div>
             </div>
@@ -420,7 +426,7 @@ export const EventBuilderWizard: React.FC<EventBuilderWizardProps> = ({
                       {metric.type}
                     </span>
                     {metric.isPrimary && (
-                      <span className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded">
+                      <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
                         Principal
                       </span>
                     )}
@@ -442,12 +448,12 @@ export const EventBuilderWizard: React.FC<EventBuilderWizardProps> = ({
                     value={newMetric.name || ''}
                     onChange={(e) => setNewMetric(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="Nombre"
-                    className="col-span-2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="col-span-2 rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5"
                   />
                   <select
                     value={newMetric.type || 'number'}
                     onChange={(e) => setNewMetric(prev => ({ ...prev, type: e.target.value as any }))}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5"
                   >
                     <option value="number">Número</option>
                     <option value="percentage">Porcentaje</option>
@@ -460,14 +466,13 @@ export const EventBuilderWizard: React.FC<EventBuilderWizardProps> = ({
                       value={newMetric.unit || ''}
                       onChange={(e) => setNewMetric(prev => ({ ...prev, unit: e.target.value }))}
                       placeholder="Unidad"
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="flex-1 rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-4 py-2.5"
                     />
-                    <button
+                    <Button
                       onClick={handleAddMetric}
-                      className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
+                      size="sm"
+                      leftIcon={<Plus size={16} />}
+                    />
                   </div>
                 </div>
               </div>
@@ -520,46 +525,36 @@ export const EventBuilderWizard: React.FC<EventBuilderWizardProps> = ({
 
           {/* Navegación */}
           <div className="mt-6 flex items-center justify-between pt-6 border-t border-gray-200">
-            <button
+            <Button
               onClick={handlePrevious}
               disabled={currentStep === 'basic'}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="ghost"
+              leftIcon={<ArrowLeft size={16} />}
             >
-              <ArrowLeft className="w-4 h-4" />
               Anterior
-            </button>
+            </Button>
 
             <div className="flex items-center gap-2">
               {currentStep === 'review' ? (
-                <button
+                <Button
                   onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  loading={isSubmitting}
+                  leftIcon={!isSubmitting ? <Save size={16} /> : undefined}
                 >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Creando...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      Crear Evento
-                    </>
-                  )}
-                </button>
+                  {isSubmitting ? 'Creando...' : 'Crear Evento'}
+                </Button>
               ) : (
-                <button
+                <Button
                   onClick={handleNext}
-                  className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                  leftIcon={<ArrowRight size={16} />}
                 >
                   Siguiente
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                </Button>
               )}
             </div>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

@@ -56,7 +56,7 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Objetivo */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
+        <label className="block text-sm font-medium text-slate-700 mb-3">
           Objetivo Principal *
         </label>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -72,10 +72,10 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
               key={option.value}
               type="button"
               onClick={() => onInputChange('objective', option.value)}
-              className={`p-4 rounded-lg border-2 text-left transition ${
+              className={`p-4 rounded-xl border-2 text-left transition-all ${
                 inputs.objective === option.value
-                  ? 'border-purple-500 bg-purple-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-200'
+                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}
             >
               <span className="text-2xl mb-2 block">{option.icon}</span>
@@ -87,14 +87,14 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
 
       {/* Audiencia */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
+        <label className="block text-sm font-medium text-slate-700 mb-3">
           Audiencia Objetivo *
         </label>
         
         {/* Segmentos predefinidos */}
         {segments.length > 0 && (
           <div className="mb-3">
-            <p className="text-xs text-gray-600 mb-2">Segmentos del CRM:</p>
+            <p className="text-xs text-slate-600 mb-2">Segmentos del CRM:</p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {segments.map((segment) => (
                 <button
@@ -104,17 +104,17 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
                     segmentId: segment.id,
                     description: segment.description
                   })}
-                  className={`p-3 rounded-lg border-2 text-left transition ${
+                  className={`p-3 rounded-xl border-2 text-left transition-all ${
                     inputs.audience?.segmentId === segment.id
-                      ? 'border-purple-500 bg-purple-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-200'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <Users className="w-4 h-4 text-gray-500" />
+                    <Users className="w-4 h-4 text-slate-500" />
                     <span className="text-xs font-medium text-gray-900">{segment.name}</span>
                   </div>
-                  <p className="text-xs text-gray-600">{segment.memberCount} miembros</p>
+                  <p className="text-xs text-slate-600">{segment.memberCount} miembros</p>
                 </button>
               ))}
             </div>
@@ -123,7 +123,7 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
         
         {/* Descripción personalizada */}
         <div>
-          <label className="block text-xs text-gray-600 mb-2">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
             O describe tu audiencia manualmente:
           </label>
           <textarea
@@ -132,7 +132,7 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
               ...inputs.audience,
               description: e.target.value
             })}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-4 pr-3 py-2.5"
             rows={3}
             placeholder="Ej: Mujeres de 30-45 años que trabajan en oficinas y buscan aliviar dolores de espalda"
             required
@@ -142,7 +142,7 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
 
       {/* Formato */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
+        <label className="block text-sm font-medium text-slate-700 mb-3">
           Formato de Contenido *
         </label>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -160,10 +160,10 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
               key={option.value}
               type="button"
               onClick={() => onInputChange('format', option.value)}
-              className={`p-4 rounded-lg border-2 transition text-center ${
+              className={`p-4 rounded-xl border-2 transition-all text-center ${
                 inputs.format === option.value
-                  ? 'border-purple-500 bg-purple-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-200'
+                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}
             >
               <div className="text-2xl mb-1">{option.icon}</div>
@@ -185,28 +185,28 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
         </button>
 
         {showAdvanced && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-4 border border-gray-200">
+          <div className="mt-4 rounded-2xl bg-white ring-1 ring-slate-200 p-4 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Tema o Palabras Clave
               </label>
               <input
                 type="text"
                 value={inputs.topic || ''}
                 onChange={(e) => onInputChange('topic', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-4 pr-3 py-2.5"
                 placeholder="Ej: movilidad articular, entrenamiento funcional"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Número de Ideas a Generar
               </label>
               <select
                 value={inputs.count || 5}
                 onChange={(e) => onInputChange('count', Number(e.target.value))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-4 pr-3 py-2.5"
               >
                 <option value={3}>3 ideas</option>
                 <option value={5}>5 ideas</option>
@@ -215,14 +215,14 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Tono (opcional)
               </label>
               <input
                 type="text"
                 value={inputs.tone || ''}
                 onChange={(e) => onInputChange('tone', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-4 pr-3 py-2.5"
                 placeholder="Ej: Motivacional, educativo, directo"
               />
             </div>
@@ -234,7 +234,7 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
       <button
         type="submit"
         disabled={isLoading || !inputs.objective || !inputs.format || !inputs.audience?.description}
-        className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+        className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-sm hover:shadow-md"
       >
         {isLoading ? (
           <>

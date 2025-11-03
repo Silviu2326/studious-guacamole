@@ -1,6 +1,8 @@
 import React from 'react';
 import { CampaignAnalytics } from '../api/campaigns';
 import { Mail, MousePointerClick, XCircle, UserMinus, TrendingUp, DollarSign } from 'lucide-react';
+import { MetricCards, MetricCardData } from '../../../components/componentsreutilizables';
+import { Card } from '../../../components/componentsreutilizables';
 
 interface CampaignAnalyticsDashboardProps {
   analytics: CampaignAnalytics;
@@ -12,49 +14,48 @@ interface CampaignAnalyticsDashboardProps {
 export const CampaignAnalyticsDashboard: React.FC<CampaignAnalyticsDashboardProps> = ({
   analytics
 }) => {
+  const metrics: MetricCardData[] = [
+    {
+      id: 'sent',
+      title: 'Emails Enviados',
+      value: analytics.totalSent.toLocaleString(),
+      icon: <Mail size={20} />,
+      color: 'info'
+    },
+    {
+      id: 'opens',
+      title: 'Tasa de Apertura',
+      value: `${(analytics.opens.rate * 100).toFixed(1)}%`,
+      subtitle: `${analytics.opens.total} aperturas`,
+      icon: <TrendingUp size={20} />,
+      color: 'success'
+    },
+    {
+      id: 'clicks',
+      title: 'Tasa de Clics (CTR)',
+      value: `${(analytics.clicks.rate * 100).toFixed(1)}%`,
+      subtitle: `${analytics.clicks.total} clics`,
+      icon: <MousePointerClick size={20} />,
+      color: 'info'
+    },
+    {
+      id: 'bounces',
+      title: 'Tasa de Rebote',
+      value: `${(analytics.bounces.rate * 100).toFixed(2)}%`,
+      subtitle: `${analytics.bounces.total} rebotes`,
+      icon: <XCircle size={20} />,
+      color: 'error'
+    }
+  ];
+
   return (
     <div className="space-y-6">
       {/* KPIs principales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">Emails Enviados</span>
-            <Mail className="w-5 h-5 text-blue-500" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{analytics.totalSent.toLocaleString()}</p>
-        </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">Tasa de Apertura</span>
-            <TrendingUp className="w-5 h-5 text-green-500" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{(analytics.opens.rate * 100).toFixed(1)}%</p>
-          <p className="text-xs text-gray-500 mt-1">{analytics.opens.total} aperturas</p>
-        </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">Tasa de Clics (CTR)</span>
-            <MousePointerClick className="w-5 h-5 text-purple-500" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{(analytics.clicks.rate * 100).toFixed(1)}%</p>
-          <p className="text-xs text-gray-500 mt-1">{analytics.clicks.total} clics</p>
-        </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">Tasa de Rebote</span>
-            <XCircle className="w-5 h-5 text-red-500" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{(analytics.bounces.rate * 100).toFixed(2)}%</p>
-          <p className="text-xs text-gray-500 mt-1">{analytics.bounces.total} rebotes</p>
-        </div>
-      </div>
+      <MetricCards data={metrics} columns={4} />
 
       {/* Conversiones si están disponibles */}
       {analytics.conversions && (
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
+        <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-1">Conversiones</h3>
@@ -80,11 +81,11 @@ export const CampaignAnalyticsDashboard: React.FC<CampaignAnalyticsDashboardProp
               <DollarSign className="w-8 h-8 text-green-600" />
             </div>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Bajas */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <Card className="bg-white shadow-sm">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-600 mb-1">Tasa de Bajas</p>
@@ -99,7 +100,7 @@ export const CampaignAnalyticsDashboard: React.FC<CampaignAnalyticsDashboardProp
         <p className="text-xs text-gray-500 mt-2">
           {analytics.unsubscribes.total} {analytics.unsubscribes.total === 1 ? 'baja' : 'bajas'}
         </p>
-      </div>
+      </Card>
     </div>
   );
 };

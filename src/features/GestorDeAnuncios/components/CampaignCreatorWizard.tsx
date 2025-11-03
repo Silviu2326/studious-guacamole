@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, ChevronRight, ChevronLeft, CheckCircle2, Target, Users, DollarSign, Image as ImageIcon } from 'lucide-react';
 import { createCampaign, CampaignDetails } from '../api/campaigns';
+import { Button } from '../../../components/componentsreutilizables';
 
 interface CampaignCreatorWizardProps {
   isOpen: boolean;
@@ -175,7 +176,7 @@ export const CampaignCreatorWizard: React.FC<CampaignCreatorWizardProps> = ({
               <React.Fragment key={i}>
                 <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
                   i + 1 < currentStep ? 'bg-green-100 text-green-600' :
-                  i + 1 === currentStep ? 'bg-purple-100 text-purple-600' :
+                  i + 1 === currentStep ? 'bg-blue-100 text-blue-600' :
                   'bg-gray-200 text-gray-400'
                 }`}>
                   {i + 1 < currentStep ? <CheckCircle2 className="w-5 h-5" /> : i + 1}
@@ -204,7 +205,7 @@ export const CampaignCreatorWizard: React.FC<CampaignCreatorWizardProps> = ({
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="Ej: Campaña Leads Locales - Enero"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-4 pr-3 py-2.5"
                 />
               </div>
 
@@ -218,7 +219,7 @@ export const CampaignCreatorWizard: React.FC<CampaignCreatorWizardProps> = ({
                     onClick={() => setFormData(prev => ({ ...prev, platform: 'meta' }))}
                     className={`p-6 border-2 rounded-lg text-left transition ${
                       formData.platform === 'meta'
-                        ? 'border-purple-500 bg-purple-50'
+                        ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-300 hover:border-gray-400'
                     }`}
                   >
@@ -235,7 +236,7 @@ export const CampaignCreatorWizard: React.FC<CampaignCreatorWizardProps> = ({
                     onClick={() => setFormData(prev => ({ ...prev, platform: 'google' }))}
                     className={`p-6 border-2 rounded-lg text-left transition ${
                       formData.platform === 'google'
-                        ? 'border-purple-500 bg-purple-50'
+                        ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-300 hover:border-gray-400'
                     }`}
                   >
@@ -262,11 +263,11 @@ export const CampaignCreatorWizard: React.FC<CampaignCreatorWizardProps> = ({
                       onClick={() => setFormData(prev => ({ ...prev, objective: obj.value }))}
                       className={`w-full p-4 border-2 rounded-lg text-left transition flex items-start gap-3 ${
                         formData.objective === obj.value
-                          ? 'border-purple-500 bg-purple-50'
+                          ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-300 hover:border-gray-400'
                       }`}
                     >
-                      <Target className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                      <Target className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                       <div>
                         <div className="font-semibold text-gray-900">{obj.label}</div>
                         <div className="text-sm text-gray-600">{obj.desc}</div>
@@ -290,7 +291,7 @@ export const CampaignCreatorWizard: React.FC<CampaignCreatorWizardProps> = ({
                   value={formData.location}
                   onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
                   placeholder="Ej: Madrid, España"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-4 pr-3 py-2.5"
                 />
               </div>
 
@@ -303,7 +304,7 @@ export const CampaignCreatorWizard: React.FC<CampaignCreatorWizardProps> = ({
                     type="number"
                     value={formData.ageMin}
                     onChange={(e) => setFormData(prev => ({ ...prev, ageMin: parseInt(e.target.value) }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-4 pr-3 py-2.5"
                   />
                 </div>
                 <div>
@@ -314,7 +315,7 @@ export const CampaignCreatorWizard: React.FC<CampaignCreatorWizardProps> = ({
                     type="number"
                     value={formData.ageMax}
                     onChange={(e) => setFormData(prev => ({ ...prev, ageMax: parseInt(e.target.value) }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-4 pr-3 py-2.5"
                   />
                 </div>
               </div>
@@ -329,7 +330,7 @@ export const CampaignCreatorWizard: React.FC<CampaignCreatorWizardProps> = ({
                     onClick={() => toggleGender('women')}
                     className={`px-4 py-2 border-2 rounded-lg transition ${
                       formData.gender.includes('women')
-                        ? 'border-purple-500 bg-purple-50 text-purple-700'
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
                         : 'border-gray-300 hover:border-gray-400'
                     }`}
                   >
@@ -340,7 +341,7 @@ export const CampaignCreatorWizard: React.FC<CampaignCreatorWizardProps> = ({
                     onClick={() => toggleGender('men')}
                     className={`px-4 py-2 border-2 rounded-lg transition ${
                       formData.gender.includes('men')
-                        ? 'border-purple-500 bg-purple-50 text-purple-700'
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
                         : 'border-gray-300 hover:border-gray-400'
                     }`}
                   >
@@ -361,7 +362,7 @@ export const CampaignCreatorWizard: React.FC<CampaignCreatorWizardProps> = ({
                       onClick={() => toggleInterest(interest)}
                       className={`px-3 py-2 border rounded-lg text-sm transition ${
                         formData.interests.includes(interest)
-                          ? 'bg-purple-600 text-white border-purple-600'
+                          ? 'bg-blue-600 text-white border-blue-600'
                           : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
                       }`}
                     >
@@ -384,7 +385,7 @@ export const CampaignCreatorWizard: React.FC<CampaignCreatorWizardProps> = ({
                   type="number"
                   value={formData.dailyBudget}
                   onChange={(e) => setFormData(prev => ({ ...prev, dailyBudget: parseFloat(e.target.value) }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-4 pr-3 py-2.5"
                 />
                 <p className="text-sm text-gray-600 mt-2">
                   Recomendamos mínimo 10€/día para mejores resultados
@@ -400,7 +401,7 @@ export const CampaignCreatorWizard: React.FC<CampaignCreatorWizardProps> = ({
                     type="date"
                     value={formData.startDate}
                     onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-4 pr-3 py-2.5"
                   />
                 </div>
                 <div>
@@ -411,7 +412,7 @@ export const CampaignCreatorWizard: React.FC<CampaignCreatorWizardProps> = ({
                     type="date"
                     value={formData.endDate}
                     onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-4 pr-3 py-2.5"
                   />
                 </div>
               </div>
@@ -443,7 +444,7 @@ export const CampaignCreatorWizard: React.FC<CampaignCreatorWizardProps> = ({
                   value={formData.headline}
                   onChange={(e) => setFormData(prev => ({ ...prev, headline: e.target.value }))}
                   placeholder="Ej: Transforma tu cuerpo en 12 semanas"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-4 pr-3 py-2.5"
                 />
               </div>
 
@@ -456,7 +457,7 @@ export const CampaignCreatorWizard: React.FC<CampaignCreatorWizardProps> = ({
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   rows={4}
                   placeholder="Ej: Únete a nuestro programa personalizado y logra resultados reales. Tu primera consulta es gratis."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-4 pr-3 py-2.5"
                 />
               </div>
 
@@ -469,7 +470,7 @@ export const CampaignCreatorWizard: React.FC<CampaignCreatorWizardProps> = ({
                   value={formData.imageUrl}
                   onChange={(e) => setFormData(prev => ({ ...prev, imageUrl: e.target.value }))}
                   placeholder="https://ejemplo.com/imagen.jpg"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-4 pr-3 py-2.5"
                 />
                 {formData.imageUrl && (
                   <div className="mt-4">
@@ -546,34 +547,32 @@ export const CampaignCreatorWizard: React.FC<CampaignCreatorWizardProps> = ({
 
         {/* Footer */}
         <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
-          <button
+          <Button
             onClick={handleBack}
             disabled={currentStep === 1}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            variant="ghost"
+            leftIcon={<ChevronLeft size={20} />}
           >
-            <ChevronLeft className="w-5 h-5" />
             Atrás
-          </button>
+          </Button>
           <div className="text-sm text-gray-600">
             Paso {currentStep} de {totalSteps}
           </div>
           {currentStep < totalSteps ? (
-            <button
+            <Button
               onClick={handleNext}
               disabled={!canAdvance()}
-              className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
               Siguiente
-              <ChevronRight className="w-5 h-5" />
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
               onClick={handleSubmit}
               disabled={!canAdvance() || isSubmitting}
-              className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              variant="primary"
             >
               {isSubmitting ? 'Creando...' : 'Lanzar Campaña'}
-            </button>
+            </Button>
           )}
         </div>
       </div>

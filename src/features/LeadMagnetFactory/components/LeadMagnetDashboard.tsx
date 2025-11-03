@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from '../../../components/componentsreutilizables';
+import { Card, Button, MetricCards, type MetricCardData } from '../../../components/componentsreutilizables';
 import { LeadMagnetCard } from './LeadMagnetCard';
 import {
   getLeadMagnets,
@@ -15,7 +15,9 @@ import {
   Users,
   TrendingUp,
   AlertCircle,
-  Filter
+  Filter,
+  Loader2,
+  Package
 } from 'lucide-react';
 
 interface LeadMagnetDashboardProps {
@@ -75,127 +77,122 @@ export const LeadMagnetDashboard: React.FC<LeadMagnetDashboardProps> = ({ traine
     alert('Funcionalidad de estadísticas en desarrollo');
   };
 
+  const metricCardsData: MetricCardData[] = stats ? [
+    {
+      id: 'total-lead-magnets',
+      title: 'Total Lead Magnets',
+      value: stats.totalLeadMagnets.toString(),
+      icon: <FileText className="w-5 h-5" />,
+      color: 'info'
+    },
+    {
+      id: 'total-views',
+      title: 'Total Visualizaciones',
+      value: stats.totalViews.toLocaleString(),
+      icon: <Eye className="w-5 h-5" />,
+      color: 'info'
+    },
+    {
+      id: 'total-leads',
+      title: 'Leads Generados',
+      value: stats.totalLeads.toLocaleString(),
+      icon: <Users className="w-5 h-5" />,
+      color: 'success'
+    },
+    {
+      id: 'avg-conversion',
+      title: 'Tasa Conversión',
+      value: `${(stats.avgConversionRate * 100).toFixed(1)}%`,
+      icon: <TrendingUp className="w-5 h-5" />,
+      color: 'warning'
+    }
+  ] : [];
+
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
+      {/* Toolbar superior */}
+      <div className="flex items-center justify-end">
+        <Button 
+          onClick={() => {/* TODO: Implementar creación */}}
+          leftIcon={<Plus size={20} />}
+        >
+          Crear Lead Magnet
+        </Button>
+      </div>
+
+      {/* Métricas */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <FileText className="w-5 h-5 text-purple-600" />
-              </div>
-            </div>
-            <h3 className="text-sm font-medium text-gray-600 mb-1">
-              Total Lead Magnets
-            </h3>
-            <p className="text-3xl font-bold text-gray-900">{stats.totalLeadMagnets}</p>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Eye className="w-5 h-5 text-blue-600" />
-              </div>
-            </div>
-            <h3 className="text-sm font-medium text-gray-600 mb-1">
-              Total Visualizaciones
-            </h3>
-            <p className="text-3xl font-bold text-gray-900">{stats.totalViews.toLocaleString()}</p>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Users className="w-5 h-5 text-green-600" />
-              </div>
-            </div>
-            <h3 className="text-sm font-medium text-gray-600 mb-1">
-              Leads Generados
-            </h3>
-            <p className="text-3xl font-bold text-gray-900">{stats.totalLeads.toLocaleString()}</p>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-orange-600" />
-              </div>
-            </div>
-            <h3 className="text-sm font-medium text-gray-600 mb-1">
-              Tasa Conversión
-            </h3>
-            <p className="text-3xl font-bold text-gray-900">{(stats.avgConversionRate * 100).toFixed(1)}%</p>
-          </Card>
-        </div>
+        <MetricCards 
+          data={metricCardsData} 
+          columns={4} 
+        />
       )}
 
-      {/* Actions Bar */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Tus Lead Magnets</h2>
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
-            <Plus className="w-4 h-4" />
-            Crear Lead Magnet
-          </button>
+      {/* Sistema de Filtros */}
+      <Card className="mb-6 bg-white shadow-sm">
+        <div className="space-y-4">
+          <div className="rounded-2xl bg-slate-50 ring-1 ring-slate-200 p-3">
+            <div className="flex gap-4">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  placeholder="Buscar lead magnets..."
+                  className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-10 pr-3 py-2.5 text-sm"
+                />
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="block text-sm font-medium text-slate-700">
+                  Estado:
+                </label>
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5 text-sm"
+                >
+                  <option value="all">Todos</option>
+                  <option value="DRAFT">Borradores</option>
+                  <option value="PUBLISHED">Publicados</option>
+                  <option value="ARCHIVED">Archivados</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-between items-center text-sm text-slate-600 border-t border-slate-200 pt-4">
+            <span>{leadMagnets.length} resultados encontrados</span>
+            <span>{selectedStatus !== 'all' ? '1 filtro aplicado' : 'Sin filtros'}</span>
+          </div>
         </div>
-      </div>
-
-      {/* Filters */}
-      <div className="flex items-center gap-4">
-        <Filter className="w-4 h-4 text-gray-500" />
-        <select
-          value={selectedStatus}
-          onChange={(e) => setSelectedStatus(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-        >
-          <option value="all">Todos</option>
-          <option value="DRAFT">Borradores</option>
-          <option value="PUBLISHED">Publicados</option>
-          <option value="ARCHIVED">Archivados</option>
-        </select>
-      </div>
+      </Card>
 
       {/* Lead Magnets Grid */}
       {error ? (
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <p className="text-red-600 font-medium">{error}</p>
-          </div>
-        </div>
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error al cargar</h3>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button onClick={loadData}>Reintentar</Button>
+        </Card>
       ) : isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg border border-gray-200 overflow-hidden animate-pulse">
-              <div className="h-32 bg-gray-200"></div>
-              <div className="p-5 space-y-3">
-                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                <div className="h-4 bg-gray-200 rounded w-full"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+          <p className="text-gray-600">Cargando...</p>
+        </Card>
       ) : leadMagnets.length === 0 ? (
-        <Card className="p-12 text-center">
-          <div className="max-w-md mx-auto">
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Plus className="w-8 h-8 text-purple-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              No hay lead magnets aún
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Crea tu primer lead magnet para empezar a captar clientes potenciales
-            </p>
-            <button className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
-              Crear Lead Magnet
-            </button>
-          </div>
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <Package size={48} className="mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            No hay lead magnets aún
+          </h3>
+          <p className="text-gray-600 mb-4">
+            Crea tu primer lead magnet para empezar a captar clientes potenciales
+          </p>
+          <Button onClick={() => {/* TODO: Implementar creación */}}>
+            Crear Lead Magnet
+          </Button>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {leadMagnets.map((magnet) => (
             <LeadMagnetCard
               key={magnet.id}

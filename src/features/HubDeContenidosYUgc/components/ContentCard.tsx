@@ -1,4 +1,5 @@
 import React from 'react';
+import { Card } from '../../../components/componentsreutilizables';
 import { UgcContent } from '../api/ugc';
 import {
   CheckCircle,
@@ -102,9 +103,9 @@ export const ContentCard: React.FC<ContentCardProps> = ({
                      (content.status === 'approved' && content.consentStatus === 'not_requested');
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
+    <Card variant="hover" className="h-full flex flex-col transition-shadow overflow-hidden">
       {/* Thumbnail */}
-      <div className="relative aspect-video bg-gray-100 overflow-hidden">
+      <div className="relative h-48 bg-gray-100 overflow-hidden">
         <img
           src={content.storageUrl}
           alt={`Contenido de ${content.client.name}`}
@@ -128,12 +129,12 @@ export const ContentCard: React.FC<ContentCardProps> = ({
       </div>
 
       {/* Content Info */}
-      <div className="p-4">
+      <div className="p-4 flex-1 flex flex-col">
         {/* Client Info */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-              <User className="w-4 h-4 text-purple-600" />
+            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <User className="w-4 h-4 text-blue-600" />
             </div>
             <div>
               <p className="font-medium text-gray-900">{content.client.name}</p>
@@ -146,7 +147,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({
             href={content.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-400 hover:text-purple-600 transition"
+            className="text-gray-400 hover:text-blue-600 transition"
             title="Ver en la red social"
           >
             <ExternalLink className="w-4 h-4" />
@@ -176,7 +177,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({
 
         {/* Actions */}
         {showActions && (
-          <div className="flex gap-2 pt-3 border-t border-gray-200">
+          <div className="flex gap-2 mt-auto pt-3 border-t border-gray-100">
             {content.status === 'pending_moderation' && (
               <>
                 <button
@@ -198,7 +199,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({
             {content.status === 'approved' && content.consentStatus === 'not_requested' && (
               <button
                 onClick={() => onRequestConsent(content.id)}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition text-sm font-medium"
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition text-sm font-medium"
               >
                 <Mail className="w-4 h-4" />
                 Solicitar Consentimiento
@@ -207,7 +208,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 };
 

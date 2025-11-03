@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Layout } from '../../../components/layout';
 import { OfferListTable } from '../components/OfferListTable';
 import { OfferFormModal } from '../components/OfferFormModal';
 import { OfferStatsDashboard } from '../components/OfferStatsDashboard';
@@ -13,7 +12,9 @@ import {
   OfferType,
   OfferStatus
 } from '../api/offers';
-import { Plus, AlertCircle, Tag } from 'lucide-react';
+import { Plus, AlertCircle, Tag, Loader2, Package } from 'lucide-react';
+import { Button } from '../../../components/componentsreutilizables';
+import { Card } from '../../../components/componentsreutilizables';
 
 export default function PromocionesCuponesYPacksPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -96,112 +97,136 @@ export default function PromocionesCuponesYPacksPage() {
 
   if (error && offers.length === 0 && !stats) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <p className="text-red-600 font-medium">{error}</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+          <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
+            <Card className="p-8 text-center bg-white shadow-sm">
+              <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Error al cargar</h3>
+              <p className="text-gray-600 mb-4">{error}</p>
+              <Button onClick={loadData}>Reintentar</Button>
+            </Card>
           </div>
         </div>
-      </Layout>
     );
   }
 
   return (
-    <Layout>
-      <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Promociones, Cupones & Packs
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Crea y gestiona ofertas para impulsar tus ventas
-            </p>
-          </div>
-          <button
-            onClick={handleCreateOffer}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-          >
-            <Plus className="w-5 h-5" />
-            Nueva Oferta
-          </button>
-        </div>
-
-        {/* Error Banner */}
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-            <strong className="font-bold">Error:</strong>
-            <span className="block sm:inline"> {error}</span>
-          </div>
-        )}
-
-        {/* Stats Dashboard */}
-        <OfferStatsDashboard stats={stats} isLoading={isLoadingStats} />
-
-        {/* Filters */}
-        <div className="flex gap-4 items-center">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Filtrar por estado
-            </label>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as any)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="all">Todos</option>
-              <option value="active">Activas</option>
-              <option value="inactive">Inactivas</option>
-              <option value="expired">Expiradas</option>
-              <option value="scheduled">Programadas</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Filtrar por tipo
-            </label>
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value as any)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="all">Todos</option>
-              <option value="coupon">Cupones</option>
-              <option value="pack">Packs</option>
-              <option value="automatic">Automáticas</option>
-            </select>
+        <div className="border-b border-gray-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+          <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6">
+            <div className="py-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  {/* Icono con contenedor */}
+                  <div className="p-2 bg-blue-100 rounded-xl mr-4 ring-1 ring-blue-200/70">
+                    <Tag size={24} className="text-blue-600" />
+                  </div>
+                  
+                  {/* Título y descripción */}
+                  <div>
+                    <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
+                      Promociones, Cupones & Packs
+                    </h1>
+                    <p className="text-gray-600">
+                      Crea y gestiona ofertas para impulsar tus ventas
+                    </p>
+                  </div>
+                </div>
+                <Button onClick={handleCreateOffer} leftIcon={<Plus size={20} />}>
+                  Nueva Oferta
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Offers List */}
-        {isLoading ? (
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        {/* Contenedor Principal */}
+        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
+          <div className="space-y-6">
+            {/* Error Banner */}
+            {error && (
+              <Card className="p-4 bg-red-50 border border-red-200 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-600" />
+                  <span className="text-sm font-medium text-red-700">Error: {error}</span>
+                </div>
+              </Card>
+            )}
+
+            {/* Stats Dashboard */}
+            <OfferStatsDashboard stats={stats} isLoading={isLoadingStats} />
+
+            {/* Filters */}
+            <Card className="mb-6 bg-white shadow-sm">
+              <div className="space-y-4">
+                <div className="rounded-2xl bg-slate-50 ring-1 ring-slate-200 p-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Filtrar por estado
+                      </label>
+                      <select
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value as any)}
+                        className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5"
+                      >
+                        <option value="all">Todos</option>
+                        <option value="active">Activas</option>
+                        <option value="inactive">Inactivas</option>
+                        <option value="expired">Expiradas</option>
+                        <option value="scheduled">Programadas</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Filtrar por tipo
+                      </label>
+                      <select
+                        value={filterType}
+                        onChange={(e) => setFilterType(e.target.value as any)}
+                        className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5"
+                      >
+                        <option value="all">Todos</option>
+                        <option value="coupon">Cupones</option>
+                        <option value="pack">Packs</option>
+                        <option value="automatic">Automáticas</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Offers List */}
+            {isLoading ? (
+              <Card className="p-8 text-center bg-white shadow-sm">
+                <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+                <p className="text-gray-600">Cargando...</p>
+              </Card>
+            ) : (
+              <OfferListTable
+                offers={offers}
+                onEdit={handleEditOffer}
+                onViewStats={handleViewStats}
+              />
+            )}
           </div>
-        ) : (
-          <OfferListTable
-            offers={offers}
-            onEdit={handleEditOffer}
-            onViewStats={handleViewStats}
-          />
-        )}
+        </div>
+
+        {/* Modal */}
+        <OfferFormModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedOffer(null);
+          }}
+          onSubmit={handleSubmitOffer}
+          initialData={selectedOffer}
+          availableServices={availableServices}
+        />
       </div>
-
-      {/* Modal */}
-      <OfferFormModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedOffer(null);
-        }}
-        onSubmit={handleSubmitOffer}
-        initialData={selectedOffer}
-        availableServices={availableServices}
-      />
-    </Layout>
   );
 }
 

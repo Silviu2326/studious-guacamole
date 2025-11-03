@@ -45,8 +45,8 @@ export const CompetitorCard: React.FC<CompetitorCardProps> = ({
   };
 
   return (
-    <Card className="hover:shadow-lg transition-shadow">
-      <div className="p-6">
+    <Card variant="hover" className="h-full flex flex-col transition-shadow overflow-hidden">
+      <div className="p-4 flex flex-col flex-1">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
@@ -98,7 +98,7 @@ export const CompetitorCard: React.FC<CompetitorCardProps> = ({
         </div>
 
         {/* Acciones */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 mt-auto pt-3 border-t border-gray-100">
           <Button
             variant="secondary"
             size="sm"

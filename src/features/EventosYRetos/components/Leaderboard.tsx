@@ -1,6 +1,7 @@
 import React from 'react';
 import { LeaderboardEntry } from '../api/events';
 import { Trophy, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Card } from '../../../components/componentsreutilizables';
 
 interface LeaderboardProps {
   participants: LeaderboardEntry[];
@@ -33,8 +34,8 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 border-b border-gray-200">
+    <Card className="bg-white shadow-sm overflow-hidden">
+      <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-50 border-b border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900">
           Leaderboard - {metricName}
         </h3>
@@ -89,8 +90,8 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
                         className="w-10 h-10 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                        <span className="text-purple-600 font-semibold text-sm">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <span className="text-blue-600 font-semibold text-sm">
                           {participant.userName.charAt(0)}
                         </span>
                       </div>
@@ -126,12 +127,13 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
       </div>
       
       {participants.length === 0 && (
-        <div className="text-center py-12 text-gray-500">
-          <Trophy className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-          <p>No hay participantes aún en el leaderboard</p>
+        <div className="text-center py-12">
+          <Trophy size={48} className="mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Sin participantes</h3>
+          <p className="text-gray-600">No hay participantes aún en el leaderboard</p>
         </div>
       )}
-    </div>
+    </Card>
   );
 };
 

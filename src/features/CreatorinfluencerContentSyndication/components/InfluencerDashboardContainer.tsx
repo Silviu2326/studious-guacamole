@@ -9,7 +9,10 @@ import {
   Influencer, 
   Campaign 
 } from '../api/influencers';
-import { Plus, Filter, Search, X, Users, TrendingUp } from 'lucide-react';
+import { Plus, Filter, Search, X, Users, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react';
+import { Button } from '../../../components/componentsreutilizables';
+import { Card } from '../../../components/componentsreutilizables';
+import { MetricCards } from '../../../components/componentsreutilizables';
 
 interface InfluencerDashboardContainerProps {
   userId: string;
@@ -111,119 +114,160 @@ export const InfluencerDashboardContainer: React.FC<InfluencerDashboardContainer
 
   return (
     <div className="space-y-6">
-      {/* Header con acciones */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Influencers & Colaboraciones</h2>
-          <p className="text-gray-600 mt-1">
-            {influencers.length} {influencers.length === 1 ? 'influencer registrado' : 'influencers registrados'}
-          </p>
-        </div>
-        <button
-          onClick={() => setIsInfluencerModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
-        >
-          <Plus className="w-5 h-5" />
+      {/* Toolbar superior */}
+      <div className="flex items-center justify-end">
+        <Button onClick={() => setIsInfluencerModalOpen(true)} leftIcon={<Plus size={20} />}>
           Agregar Influencer
-        </button>
+        </Button>
       </div>
 
-      {/* Filtros y búsqueda */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Búsqueda */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por nombre, nicho o email..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
+      {/* Métricas/KPIs */}
+      <MetricCards
+        data={[
+          {
+            id: 'total-influencers',
+            title: 'Total Influencers',
+            value: influencers.length,
+            color: 'info',
+            icon: <Users size={20} />
+          },
+          {
+            id: 'active-campaigns',
+            title: 'Campañas Activas',
+            value: campaigns.filter(c => c.status === 'active').length,
+            color: 'success',
+            icon: <TrendingUp size={20} />
+          },
+          {
+            id: 'total-campaigns',
+            title: 'Total Campañas',
+            value: campaigns.length,
+            color: 'info',
+            icon: <Users size={20} />
+          }
+        ]}
+        columns={3}
+      />
+
+      {/* Sistema de Filtros */}
+      <Card className="mb-6 bg-white shadow-sm">
+        <div className="space-y-4">
+          {/* Barra de búsqueda */}
+          <div className="rounded-2xl bg-slate-50 ring-1 ring-slate-200 p-3">
+            <div className="flex gap-4">
+              {/* Input de búsqueda */}
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar por nombre, nicho o email..."
+                  className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-10 pr-3 py-2.5"
+                />
+              </div>
+
+              {/* Botón de filtros */}
+              <Button
+                variant="secondary"
+                onClick={() => setShowFilters(!showFilters)}
+                leftIcon={showFilters ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              >
+                Filtros
+                {(activeFilters.niche || activeFilters.status) && (
+                  <span className="ml-2 px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full">
+                    {(activeFilters.niche ? 1 : 0) + (activeFilters.status ? 1 : 0)}
+                  </span>
+                )}
+              </Button>
+
+              {/* Botón limpiar */}
+              {(activeFilters.niche || activeFilters.status || searchQuery) && (
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setActiveFilters({ niche: '', status: '' });
+                    setSearchQuery('');
+                  }}
+                  leftIcon={<X size={18} />}
+                >
+                  Limpiar
+                </Button>
+              )}
+            </div>
           </div>
 
-          {/* Filtro de nicho */}
-          <div className="w-full md:w-48">
-            <select
-              value={activeFilters.niche}
-              onChange={(e) => setActiveFilters(prev => ({ ...prev, niche: e.target.value }))}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            >
-              <option value="">Todos los nichos</option>
-              {niches.map(niche => (
-                <option key={niche} value={niche}>{niche}</option>
-              ))}
-            </select>
-          </div>
+          {/* Panel de filtros avanzados */}
+          {showFilters && (
+            <div className="rounded-2xl bg-white ring-1 ring-slate-200 p-4 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Filtro de nicho */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <Filter size={16} className="inline mr-1" />
+                    Nicho
+                  </label>
+                  <select
+                    value={activeFilters.niche}
+                    onChange={(e) => setActiveFilters(prev => ({ ...prev, niche: e.target.value }))}
+                    className="w-full rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5"
+                  >
+                    <option value="">Todos los nichos</option>
+                    {niches.map(niche => (
+                      <option key={niche} value={niche}>{niche}</option>
+                    ))}
+                  </select>
+                </div>
 
-          {/* Botón limpiar filtros */}
-          {(activeFilters.niche || searchQuery) && (
-            <button
-              onClick={() => {
-                setActiveFilters({ niche: '', status: '' });
-                setSearchQuery('');
-              }}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-            >
-              <X className="w-4 h-4" />
-              Limpiar
-            </button>
+                {/* Filtro de estado */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <Filter size={16} className="inline mr-1" />
+                    Estado
+                  </label>
+                  <select
+                    value={activeFilters.status}
+                    onChange={(e) => setActiveFilters(prev => ({ ...prev, status: e.target.value }))}
+                    className="w-full rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5"
+                  >
+                    <option value="">Todos los estados</option>
+                    <option value="active">Activa</option>
+                    <option value="completed">Completada</option>
+                    <option value="pending">Pendiente</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           )}
-        </div>
-      </div>
 
-      {/* Estadísticas rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Influencers</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{influencers.length}</p>
-            </div>
-            <div className="p-3 bg-purple-100 rounded-lg">
-              <Users className="w-6 h-6 text-purple-600" />
-            </div>
+          {/* Resumen de resultados */}
+          <div className="flex justify-between items-center text-sm text-slate-600 border-t border-slate-200 pt-4">
+            <span>{filteredInfluencers.length} {filteredInfluencers.length === 1 ? 'resultado encontrado' : 'resultados encontrados'}</span>
+            <span>
+              {((activeFilters.niche ? 1 : 0) + (activeFilters.status ? 1 : 0) + (searchQuery ? 1 : 0))} {((activeFilters.niche ? 1 : 0) + (activeFilters.status ? 1 : 0) + (searchQuery ? 1 : 0)) === 1 ? 'filtro aplicado' : 'filtros aplicados'}
+            </span>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Campañas Activas</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                {campaigns.filter(c => c.status === 'active').length}
-              </p>
-            </div>
-            <div className="p-3 bg-green-100 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Campañas</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{campaigns.length}</p>
-            </div>
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Users className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-      </div>
+      </Card>
 
       {/* Error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-          <p>{error}</p>
-        </div>
+        <Card className="p-4 bg-white shadow-sm">
+          <div className="flex items-center gap-3 text-red-600">
+            <X size={20} />
+            <p>{error}</p>
+          </div>
+        </Card>
       )}
 
       {/* Tabla de influencers */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-        </div>
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+            <p className="text-gray-600">Cargando...</p>
+          </div>
+        </Card>
       ) : (
         <InfluencerListTable
           influencers={filteredInfluencers}
@@ -247,20 +291,20 @@ export const InfluencerDashboardContainer: React.FC<InfluencerDashboardContainer
       {/* Modal para agregar influencer (simplificado) */}
       {isInfluencerModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
+          <Card className="max-w-md w-full p-6 bg-white shadow-sm">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Agregar Nuevo Influencer
             </h3>
             <p className="text-gray-600 mb-4">
               Esta funcionalidad será implementada con un formulario completo en una versión futura.
             </p>
-            <button
+            <Button 
               onClick={() => setIsInfluencerModalOpen(false)}
-              className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+              fullWidth
             >
               Cerrar
-            </button>
-          </div>
+            </Button>
+          </Card>
         </div>
       )}
     </div>

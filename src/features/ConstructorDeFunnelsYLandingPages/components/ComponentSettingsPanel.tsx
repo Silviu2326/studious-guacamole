@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PageComponent } from '../api/funnels';
+import { Input, Select } from '../../../components/componentsreutilizables';
 
 interface ComponentSettingsPanelProps {
   component: PageComponent | null;
@@ -42,46 +43,33 @@ export const ComponentSettingsPanel: React.FC<ComponentSettingsPanelProps> = ({
       case 'heading':
         return (
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Texto del Título
-              </label>
-              <input
-                type="text"
-                value={formState.text || ''}
-                onChange={(e) => handleChange('text', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded"
-                placeholder="Escribe el título..."
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tamaño
-              </label>
-              <select
-                value={formState.size || 'h2'}
-                onChange={(e) => handleChange('size', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded"
-              >
-                <option value="h1">H1 (Muy Grande)</option>
-                <option value="h2">H2 (Grande)</option>
-                <option value="h3">H3 (Mediano)</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Alineación
-              </label>
-              <select
-                value={formState.align || 'left'}
-                onChange={(e) => handleChange('align', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded"
-              >
-                <option value="left">Izquierda</option>
-                <option value="center">Centro</option>
-                <option value="right">Derecha</option>
-              </select>
-            </div>
+            <Input
+              type="text"
+              label="Texto del Título"
+              value={formState.text || ''}
+              onChange={(e) => handleChange('text', e.target.value)}
+              placeholder="Escribe el título..."
+            />
+            <Select
+              label="Tamaño"
+              value={formState.size || 'h2'}
+              onChange={(e) => handleChange('size', e.target.value)}
+              options={[
+                { value: 'h1', label: 'H1 (Muy Grande)' },
+                { value: 'h2', label: 'H2 (Grande)' },
+                { value: 'h3', label: 'H3 (Mediano)' }
+              ]}
+            />
+            <Select
+              label="Alineación"
+              value={formState.align || 'left'}
+              onChange={(e) => handleChange('align', e.target.value)}
+              options={[
+                { value: 'left', label: 'Izquierda' },
+                { value: 'center', label: 'Centro' },
+                { value: 'right', label: 'Derecha' }
+              ]}
+            />
           </div>
         );
 
@@ -89,13 +77,13 @@ export const ComponentSettingsPanel: React.FC<ComponentSettingsPanelProps> = ({
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Contenido
               </label>
               <textarea
                 value={formState.text || ''}
                 onChange={(e) => handleChange('text', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded"
+                className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5"
                 rows={5}
                 placeholder="Escribe el texto..."
               />
@@ -106,105 +94,72 @@ export const ComponentSettingsPanel: React.FC<ComponentSettingsPanelProps> = ({
       case 'image':
         return (
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                URL de la Imagen
-              </label>
-              <input
-                type="url"
-                value={formState.src || ''}
-                onChange={(e) => handleChange('src', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded"
-                placeholder="https://..."
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Texto Alternativo
-              </label>
-              <input
-                type="text"
-                value={formState.alt || ''}
-                onChange={(e) => handleChange('alt', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded"
-                placeholder="Descripción de la imagen..."
-              />
-            </div>
+            <Input
+              type="url"
+              label="URL de la Imagen"
+              value={formState.src || ''}
+              onChange={(e) => handleChange('src', e.target.value)}
+              placeholder="https://..."
+            />
+            <Input
+              type="text"
+              label="Texto Alternativo"
+              value={formState.alt || ''}
+              onChange={(e) => handleChange('alt', e.target.value)}
+              placeholder="Descripción de la imagen..."
+            />
           </div>
         );
 
       case 'form':
         return (
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Texto del Botón
-              </label>
-              <input
-                type="text"
-                value={formState.buttonText || 'Enviar'}
-                onChange={(e) => handleChange('buttonText', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Acción al Enviar
-              </label>
-              <select
-                value={formState.action || 'add_to_list'}
-                onChange={(e) => handleChange('action', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded"
-              >
-                <option value="add_to_list">Añadir a Lista</option>
-                <option value="send_email">Enviar Email</option>
-                <option value="redirect">Redirigir</option>
-              </select>
-            </div>
+            <Input
+              type="text"
+              label="Texto del Botón"
+              value={formState.buttonText || 'Enviar'}
+              onChange={(e) => handleChange('buttonText', e.target.value)}
+            />
+            <Select
+              label="Acción al Enviar"
+              value={formState.action || 'add_to_list'}
+              onChange={(e) => handleChange('action', e.target.value)}
+              options={[
+                { value: 'add_to_list', label: 'Añadir a Lista' },
+                { value: 'send_email', label: 'Enviar Email' },
+                { value: 'redirect', label: 'Redirigir' }
+              ]}
+            />
           </div>
         );
 
       case 'button':
         return (
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Texto del Botón
-              </label>
-              <input
-                type="text"
-                value={formState.text || ''}
-                onChange={(e) => handleChange('text', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded"
-                placeholder="Ej: ¡Quiero Unirme Ahora!"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                URL de Destino
-              </label>
-              <input
-                type="url"
-                value={formState.url || ''}
-                onChange={(e) => handleChange('url', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded"
-                placeholder="https://..."
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Estilo
-              </label>
-              <select
-                value={formState.style || 'primary'}
-                onChange={(e) => handleChange('style', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded"
-              >
-                <option value="primary">Primario (Azul)</option>
-                <option value="secondary">Secundario (Gris)</option>
-                <option value="success">Éxito (Verde)</option>
-              </select>
-            </div>
+            <Input
+              type="text"
+              label="Texto del Botón"
+              value={formState.text || ''}
+              onChange={(e) => handleChange('text', e.target.value)}
+              placeholder="Ej: ¡Quiero Unirme Ahora!"
+            />
+            <Input
+              type="url"
+              label="URL de Destino"
+              value={formState.url || ''}
+              onChange={(e) => handleChange('url', e.target.value)}
+              placeholder="https://..."
+            />
+            <Select
+              label="Estilo"
+              value={formState.style || 'primary'}
+              onChange={(e) => handleChange('style', e.target.value)}
+              options={[
+                { value: 'primary', label: 'Primario (Azul)' },
+                { value: 'secondary', label: 'Secundario (Gris)' },
+                { value: 'success', label: 'Éxito (Verde)' }
+              ]}
+            />
           </div>
         );
 

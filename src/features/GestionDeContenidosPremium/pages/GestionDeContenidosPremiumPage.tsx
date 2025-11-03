@@ -79,21 +79,23 @@ export const GestionDeContenidosPremiumPage: React.FC = () => {
         <div className="border-b border-gray-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
           <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6">
             <div className="py-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => {
-                      setViewMode('list');
-                      setSelectedPackageId(null);
-                      setAnalytics(null);
-                    }}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition"
-                  >
-                    <ArrowLeft className="w-5 h-5 text-gray-600" />
-                  </button>
-                  <div className="flex items-center gap-3">
-                    <BarChart3 className="w-6 h-6 text-purple-600" />
-                    <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
+              <div className="flex items-center">
+                <button
+                  onClick={() => {
+                    setViewMode('list');
+                    setSelectedPackageId(null);
+                    setAnalytics(null);
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition mr-4"
+                >
+                  <ArrowLeft className="w-5 h-5 text-gray-600" />
+                </button>
+                <div className="flex items-center">
+                  <div className="p-2 bg-purple-100 rounded-xl mr-4 ring-1 ring-purple-200/70">
+                    <BarChart3 size={24} className="text-purple-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
                       Analíticas del Paquete
                     </h1>
                   </div>
@@ -121,22 +123,20 @@ export const GestionDeContenidosPremiumPage: React.FC = () => {
       <div className="border-b border-gray-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6">
           <div className="py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                {/* Icono con contenedor */}
-                <div className="p-2 bg-purple-100 rounded-xl mr-4 ring-1 ring-purple-200/70">
-                  <Package size={24} className="text-purple-600" />
-                </div>
-                
-                {/* Título y descripción */}
-                <div>
-                  <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
-                    Gestión de Contenidos Premium
-                  </h1>
-                  <p className="text-gray-600 mt-1">
-                    Crea, empaqueta y vende contenido digital escalable para múltiples clientes
-                  </p>
-                </div>
+            <div className="flex items-center">
+              {/* Icono con contenedor */}
+              <div className="p-2 bg-purple-100 rounded-xl mr-4 ring-1 ring-purple-200/70">
+                <Package size={24} className="text-purple-600" />
+              </div>
+              
+              {/* Título y descripción */}
+              <div>
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
+                  Gestión de Contenidos Premium
+                </h1>
+                <p className="text-gray-600">
+                  Crea, empaqueta y vende contenido digital escalable para múltiples clientes
+                </p>
               </div>
             </div>
           </div>

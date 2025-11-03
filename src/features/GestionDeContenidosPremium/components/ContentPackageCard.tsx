@@ -11,6 +11,7 @@ import {
   Copy,
   Trash2
 } from 'lucide-react';
+import { Card } from '../../../components/componentsreutilizables';
 
 interface ContentPackageCardProps {
   packageData: ContentPackage;
@@ -53,10 +54,10 @@ export const ContentPackageCard: React.FC<ContentPackageCardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
+    <Card variant="hover" className="h-full flex flex-col transition-shadow overflow-hidden">
       {/* Imagen de portada */}
       {packageData.imageUrl && (
-        <div className="h-48 bg-gray-200 overflow-hidden">
+        <div className="h-48 bg-gray-100 overflow-hidden">
           <img
             src={packageData.imageUrl}
             alt={packageData.title}
@@ -66,12 +67,12 @@ export const ContentPackageCard: React.FC<ContentPackageCardProps> = ({
       )}
 
       {/* Contenido */}
-      <div className="p-6">
+      <div className="flex-1 p-4 flex flex-col">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">{packageData.title}</h3>
+            <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{packageData.title}</h3>
             {packageData.description && (
-              <p className="text-sm text-gray-600 line-clamp-2">{packageData.description}</p>
+              <p className="text-sm text-gray-600 mb-3 line-clamp-2 flex-1">{packageData.description}</p>
             )}
           </div>
           <span className={`px-2 py-1 text-xs font-medium rounded-full ml-2 ${getAccessTypeColor(packageData.accessType)}`}>
@@ -80,27 +81,23 @@ export const ContentPackageCard: React.FC<ContentPackageCardProps> = ({
         </div>
 
         {/* Estadísticas */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="flex items-center gap-2 text-sm">
-            <Users className="w-4 h-4 text-gray-500" />
-            <div>
-              <p className="font-semibold text-gray-900">{packageData.enrolledClients}</p>
-              <p className="text-xs text-gray-500">Inscritos</p>
-            </div>
+        <div className="space-y-2 mb-4">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-500">Inscritos:</span>
+            <span className="font-semibold text-gray-900">{packageData.enrolledClients}</span>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <DollarSign className="w-4 h-4 text-gray-500" />
-            <div>
-              <p className="font-semibold text-gray-900">
-                {packageData.price > 0 ? `${packageData.price.toFixed(2)}${packageData.currency || '€'}` : 'Gratis'}
-              </p>
-              {packageData.totalRevenue && packageData.totalRevenue > 0 && (
-                <p className="text-xs text-gray-500">
-                  {packageData.totalRevenue.toFixed(2)}€ total
-                </p>
-              )}
-            </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-500">Precio:</span>
+            <span className="font-semibold text-gray-900">
+              {packageData.price > 0 ? `${packageData.price.toFixed(2)}${packageData.currency || '€'}` : 'Gratis'}
+            </span>
           </div>
+          {packageData.totalRevenue && packageData.totalRevenue > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Ingresos:</span>
+              <span className="text-gray-900">{packageData.totalRevenue.toFixed(2)}€</span>
+            </div>
+          )}
         </div>
 
         {/* Módulos */}
@@ -125,7 +122,7 @@ export const ContentPackageCard: React.FC<ContentPackageCardProps> = ({
         </div>
 
         {/* Acciones */}
-        <div className="flex items-center gap-2 pt-4 border-t border-gray-200">
+        <div className="flex gap-2 mt-auto pt-3 border-t border-gray-100">
           <button
             onClick={() => onEdit(packageData.id)}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-medium"
@@ -179,7 +176,7 @@ export const ContentPackageCard: React.FC<ContentPackageCardProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </Card>
   );
 };
 

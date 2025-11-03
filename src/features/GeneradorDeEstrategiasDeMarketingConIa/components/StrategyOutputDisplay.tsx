@@ -1,6 +1,7 @@
 import React from 'react';
 import { StrategyOutput, ContentPlanWeek, CampaignElement } from '../api/strategies';
 import { Calendar, CheckCircle2, Users, FileText, Lightbulb, Loader2 } from 'lucide-react';
+import { Card } from '../../../components/componentsreutilizables';
 
 interface StrategyOutputDisplayProps {
   strategyData: StrategyOutput;
@@ -16,25 +17,26 @@ export const StrategyOutputDisplay: React.FC<StrategyOutputDisplayProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
-      </div>
+      <Card className="p-8 text-center">
+        <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+        <p className="text-gray-600">Cargando estrategia...</p>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-6">
       {/* Resumen */}
-      <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6">
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Resumen de la Estrategia</h3>
         <p className="text-gray-700 leading-relaxed">{strategyData.summary}</p>
-      </div>
+      </Card>
 
       {/* Plan de Contenido */}
       {strategyData.contentPlan && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <Card className="p-6">
           <div className="flex items-center gap-2 mb-6">
-            <Calendar className="w-6 h-6 text-purple-600" />
+            <Calendar className="w-6 h-6 text-blue-600" />
             <h3 className="text-xl font-semibold text-gray-900">Plan de Contenido</h3>
           </div>
           
@@ -49,7 +51,7 @@ export const StrategyOutputDisplay: React.FC<StrategyOutputDisplayProps> = ({
                     <div key={index} className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium text-gray-900">{day.day}</span>
-                        <span className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded">
+                        <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">
                           {day.format}
                         </span>
                       </div>
@@ -80,14 +82,14 @@ export const StrategyOutputDisplay: React.FC<StrategyOutputDisplayProps> = ({
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Campaña */}
       {strategyData.campaign && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <Card className="p-6">
           <div className="flex items-center gap-2 mb-6">
-            <FileText className="w-6 h-6 text-purple-600" />
+            <FileText className="w-6 h-6 text-blue-600" />
             <h3 className="text-xl font-semibold text-gray-900">
               {strategyData.campaign.name}
             </h3>
@@ -100,7 +102,7 @@ export const StrategyOutputDisplay: React.FC<StrategyOutputDisplayProps> = ({
             {strategyData.campaign.elements.map((element: CampaignElement, index: number) => (
               <div key={index} className="border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle2 className="w-5 h-5 text-purple-600" />
+                  <CheckCircle2 className="w-5 h-5 text-blue-600" />
                   <h4 className="font-semibold text-gray-900">{element.title}</h4>
                   <span className="ml-auto px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded capitalize">
                     {element.type.replace(/_/g, ' ')}
@@ -114,14 +116,14 @@ export const StrategyOutputDisplay: React.FC<StrategyOutputDisplayProps> = ({
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Estrategias de Retención */}
       {strategyData.retentionStrategies && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <Card className="p-6">
           <div className="flex items-center gap-2 mb-6">
-            <Users className="w-6 h-6 text-purple-600" />
+            <Users className="w-6 h-6 text-blue-600" />
             <h3 className="text-xl font-semibold text-gray-900">Estrategias de Retención</h3>
           </div>
           
@@ -141,14 +143,14 @@ export const StrategyOutputDisplay: React.FC<StrategyOutputDisplayProps> = ({
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Ideas de Colaboración */}
       {strategyData.collaborationIdeas && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <Card className="p-6">
           <div className="flex items-center gap-2 mb-6">
-            <Lightbulb className="w-6 h-6 text-purple-600" />
+            <Lightbulb className="w-6 h-6 text-blue-600" />
             <h3 className="text-xl font-semibold text-gray-900">Ideas de Colaboración</h3>
           </div>
           
@@ -164,7 +166,7 @@ export const StrategyOutputDisplay: React.FC<StrategyOutputDisplayProps> = ({
                   <ul className="space-y-1">
                     {idea.benefits.map((benefit, benefitIndex) => (
                       <li key={benefitIndex} className="flex items-start gap-2 text-sm text-gray-600">
-                        <span className="text-purple-600 mt-1">•</span>
+                        <span className="text-blue-600 mt-1">•</span>
                         <span>{benefit}</span>
                       </li>
                     ))}
@@ -173,7 +175,7 @@ export const StrategyOutputDisplay: React.FC<StrategyOutputDisplayProps> = ({
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Recomendaciones */}

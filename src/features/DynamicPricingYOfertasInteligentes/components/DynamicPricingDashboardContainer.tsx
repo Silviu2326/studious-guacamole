@@ -3,7 +3,8 @@ import { useDynamicPricingRules } from '../hooks/useDynamicPricingRules';
 import { RuleListItem } from './RuleListItem';
 import { RuleBuilderForm } from './RuleBuilderForm';
 import { DynamicPricingRule } from '../api/pricingRules';
-import { Plus, TrendingUp, DollarSign, Target, Loader2 } from 'lucide-react';
+import { Plus, TrendingUp, DollarSign, Target, Loader2, Package, AlertCircle } from 'lucide-react';
+import { Button, Card, MetricCards } from '../../../components/componentsreutilizables';
 
 /**
  * Componente principal que orquesta la página de precios dinámicos.
@@ -98,74 +99,62 @@ export const DynamicPricingDashboardContainer: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header con acciones */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Reglas de Precios Dinámicos</h2>
-          <p className="text-gray-600 mt-1">
-            {rules.length} {rules.length === 1 ? 'regla configurada' : 'reglas configuradas'}
-          </p>
-        </div>
-        <button
+      <div className="flex items-center justify-end">
+        <Button
           onClick={() => {
             setSelectedRuleForEdit(null);
             setIsRuleBuilderOpen(true);
           }}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+          leftIcon={<Plus size={20} />}
         >
-          <Plus className="w-5 h-5" />
           Crear Nueva Regla
-        </button>
+        </Button>
       </div>
 
       {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Reglas Activas</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{activeRules.length}</p>
-            </div>
-            <div className="p-3 bg-green-100 rounded-lg">
-              <Target className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Ingresos Adicionales</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{totalRevenue.toLocaleString()}€</p>
-            </div>
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <DollarSign className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Conversiones</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{totalConversions}</p>
-            </div>
-            <div className="p-3 bg-purple-100 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
-      </div>
+      <MetricCards
+        data={[
+          {
+            id: 'active-rules',
+            title: 'Reglas Activas',
+            value: activeRules.length,
+            color: 'success',
+            icon: <Target size={20} />,
+          },
+          {
+            id: 'revenue',
+            title: 'Ingresos Adicionales',
+            value: `${totalRevenue.toLocaleString()}€`,
+            color: 'info',
+            icon: <DollarSign size={20} />,
+          },
+          {
+            id: 'conversions',
+            title: 'Total Conversiones',
+            value: totalConversions,
+            color: 'success',
+            icon: <TrendingUp size={20} />,
+          },
+        ]}
+        columns={3}
+      />
 
       {/* Error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-          <p>Error: {error.message}</p>
-        </div>
+        <Card className="p-4 bg-white shadow-sm">
+          <div className="flex items-center gap-3 text-red-600">
+            <AlertCircle size={20} />
+            <p className="text-sm font-medium">Error: {error.message}</p>
+          </div>
+        </Card>
       )}
 
       {/* Lista de reglas */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
-        </div>
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+          <p className="text-gray-600">Cargando...</p>
+        </Card>
       ) : rules.length > 0 ? (
         <div className="space-y-4">
           {rules.map(rule => (
@@ -180,27 +169,24 @@ export const DynamicPricingDashboardContainer: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Target className="w-8 h-8 text-gray-400" />
-          </div>
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <Package size={48} className="mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             No tienes reglas configuradas todavía
           </h3>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 mb-4">
             Crea tu primera regla de precios dinámicos para optimizar tus ingresos y ocupación
           </p>
-          <button
+          <Button
             onClick={() => {
               setSelectedRuleForEdit(null);
               setIsRuleBuilderOpen(true);
             }}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+            leftIcon={<Plus size={20} />}
           >
-            <Plus className="w-5 h-5" />
             Crear Primera Regla
-          </button>
-        </div>
+          </Button>
+        </Card>
       )}
 
       {/* Modal de creación/edición */}

@@ -16,6 +16,7 @@ import {
   Calendar as CalendarIcon,
   X
 } from 'lucide-react';
+import { Button, Card } from '../../../components/componentsreutilizables';
 
 /**
  * Página principal del Generador de Estrategias de Marketing con IA
@@ -62,8 +63,8 @@ export const GeneradorDeEstrategiasDeMarketingConIaPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 {/* Icono con contenedor */}
-                <div className="p-2 bg-purple-100 rounded-xl mr-4 ring-1 ring-purple-200/70">
-                  <Target size={24} className="text-purple-600" />
+                <div className="p-2 bg-blue-100 rounded-xl mr-4 ring-1 ring-blue-200/70">
+                  <Target size={24} className="text-blue-600" />
                 </div>
                 
                 {/* Título y descripción */}
@@ -71,7 +72,7 @@ export const GeneradorDeEstrategiasDeMarketingConIaPage: React.FC = () => {
                   <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
                     Generador de Estrategias de Marketing
                   </h1>
-                  <p className="text-gray-600 mt-1">
+                  <p className="text-gray-600">
                     Crea planes de marketing completos y personalizados con inteligencia artificial
                   </p>
                 </div>
@@ -84,10 +85,10 @@ export const GeneradorDeEstrategiasDeMarketingConIaPage: React.FC = () => {
       {/* Contenido principal */}
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
         {/* Información educativa */}
-        <div className="mb-6 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6">
+        <Card className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
           <div className="flex items-start gap-4">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Lightbulb className="w-5 h-5 text-purple-600" />
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Lightbulb className="w-5 h-5 text-blue-600" />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-gray-900 mb-2">
@@ -105,11 +106,11 @@ export const GeneradorDeEstrategiasDeMarketingConIaPage: React.FC = () => {
               </p>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Error */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+          <Card className="mb-6 bg-red-50 border-red-200">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-red-600" />
               <div>
@@ -117,21 +118,21 @@ export const GeneradorDeEstrategiasDeMarketingConIaPage: React.FC = () => {
                 <p className="text-xs text-red-700 mt-1">{error.message}</p>
               </div>
             </div>
-          </div>
+          </Card>
         )}
 
         {/* Formulario de generación o resultado */}
         {!data ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <Card padding="lg">
             <StrategyGeneratorWizard
               onSubmit={handleGenerate}
               isGenerating={isLoading}
             />
-          </div>
+          </Card>
         ) : (
           <div className="space-y-6">
             {/* Header con acciones */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <Card className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">{data.title}</h2>
@@ -144,39 +145,39 @@ export const GeneradorDeEstrategiasDeMarketingConIaPage: React.FC = () => {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
+                  <Button
                     onClick={handleSave}
-                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                    variant="primary"
+                    leftIcon={<Save size={20} />}
                   >
-                    <Save className="w-4 h-4" />
                     Guardar
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={handleExport}
-                    className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                    variant="secondary"
+                    leftIcon={<Download size={20} />}
                   >
-                    <Download className="w-4 h-4" />
                     Exportar PDF
-                  </button>
+                  </Button>
                   {data.output?.contentPlan && (
-                    <button
+                    <Button
                       onClick={handleAddToCalendar}
-                      className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                      variant="secondary"
+                      leftIcon={<CalendarIcon size={20} />}
                     >
-                      <CalendarIcon className="w-4 h-4" />
                       Añadir al Calendario
-                    </button>
+                    </Button>
                   )}
-                  <button
+                  <Button
                     onClick={() => window.location.reload()}
-                    className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                    variant="secondary"
+                    leftIcon={<X size={20} />}
                   >
-                    <X className="w-4 h-4" />
                     Nueva Estrategia
-                  </button>
+                  </Button>
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Estrategia generada */}
             {data.output && (

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from '../../../components/componentsreutilizables';
+import { Card, MetricCards, Select, Button, type MetricCardData } from '../../../components/componentsreutilizables';
 import { PlaybookCard } from './PlaybookCard';
 import { PlaybookDetailModal } from './PlaybookDetailModal';
 import { getPlaybookTemplates, getPlaybookStats, PlaybookSummary } from '../api/playbooks';
-import { Filter, Target, TrendingUp, AlertCircle } from 'lucide-react';
+import { Filter, Target, TrendingUp, AlertCircle, Package, Loader2, Search } from 'lucide-react';
 
 export const PlaybookLibraryContainer: React.FC = () => {
   const [playbooks, setPlaybooks] = useState<PlaybookSummary[]>([]);
@@ -55,92 +55,89 @@ export const PlaybookLibraryContainer: React.FC = () => {
     setSelectedPlaybookId(null);
   };
 
+  // Preparar datos para MetricCards
+  const metricCardsData: MetricCardData[] = stats ? [
+    {
+      id: 'total-playbooks',
+      title: 'Total Playbooks',
+      value: stats.totalPlaybooks,
+      color: 'info',
+      icon: <Target size={20} />
+    },
+    {
+      id: 'activations',
+      title: 'Activaciones',
+      value: stats.totalActivations.toLocaleString(),
+      color: 'success',
+      icon: <TrendingUp size={20} />
+    },
+    {
+      id: 'conversion-rate',
+      title: 'Tasa Conversión',
+      value: `${(stats.avgConversionRate * 100).toFixed(0)}%`,
+      color: 'info',
+      icon: <Target size={20} />
+    }
+  ] : [];
+
   return (
     <div className="space-y-6">
       {/* Stats */}
-      {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Target className="w-5 h-5 text-purple-600" />
-              </div>
-            </div>
-            <h3 className="text-sm font-medium text-gray-600 mb-1">Total Playbooks</h3>
-            <p className="text-3xl font-bold text-gray-900">{stats.totalPlaybooks}</p>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-green-600" />
-              </div>
-            </div>
-            <h3 className="text-sm font-medium text-gray-600 mb-1">Activaciones</h3>
-            <p className="text-3xl font-bold text-gray-900">{stats.totalActivations.toLocaleString()}</p>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Target className="w-5 h-5 text-blue-600" />
-              </div>
-            </div>
-            <h3 className="text-sm font-medium text-gray-600 mb-1">Tasa Conversión</h3>
-            <p className="text-3xl font-bold text-gray-900">{(stats.avgConversionRate * 100).toFixed(0)}%</p>
-          </Card>
-        </div>
-      )}
+      {stats && <MetricCards data={metricCardsData} columns={3} />}
 
       {/* Filters */}
-      <div className="flex items-center gap-4">
-        <Filter className="w-4 h-4 text-gray-500" />
-        <select
-          value={filters.objective}
-          onChange={(e) => setFilters(prev => ({ ...prev, objective: e.target.value }))}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-        >
-          <option value="all">Todos los objetivos</option>
-          <option value="lead_generation">Captación</option>
-          <option value="retention">Retención</option>
-          <option value="monetization">Monetización</option>
-        </select>
-      </div>
+      <Card className="mb-6 bg-white shadow-sm">
+        <div className="space-y-4">
+          <div className="rounded-2xl bg-slate-50 ring-1 ring-slate-200 p-3">
+            <div className="flex gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Buscar playbooks..."
+                  className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-10 pr-3 py-2.5"
+                />
+              </div>
+              <div className="w-64">
+                <Select
+                  value={filters.objective}
+                  onChange={(e) => setFilters(prev => ({ ...prev, objective: e.target.value }))}
+                  options={[
+                    { value: 'all', label: 'Todos los objetivos' },
+                    { value: 'lead_generation', label: 'Captación' },
+                    { value: 'retention', label: 'Retención' },
+                    { value: 'monetization', label: 'Monetización' }
+                  ]}
+                  fullWidth={false}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
 
       {/* Playbooks Grid */}
       {error ? (
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <p className="text-red-600 font-medium">{error}</p>
-          </div>
-        </div>
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error al cargar</h3>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button onClick={loadData}>Reintentar</Button>
+        </Card>
       ) : isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg border border-gray-200 overflow-hidden animate-pulse">
-              <div className="h-40 bg-gray-200"></div>
-              <div className="p-6 space-y-3">
-                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                <div className="h-4 bg-gray-200 rounded w-full"></div>
-                <div className="h-10 bg-gray-200 rounded"></div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+          <p className="text-gray-600">Cargando...</p>
+        </Card>
       ) : playbooks.length === 0 ? (
-        <Card className="p-12 text-center">
-          <div className="max-w-md mx-auto">
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Target className="w-8 h-8 text-purple-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              No hay playbooks disponibles
-            </h3>
-            <p className="text-gray-600">
-              Ajusta los filtros para ver más resultados
-            </p>
-          </div>
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <Package size={48} className="mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            No hay playbooks disponibles
+          </h3>
+          <p className="text-gray-600 mb-4">
+            Ajusta los filtros para ver más resultados
+          </p>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

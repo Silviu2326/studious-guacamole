@@ -58,7 +58,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const canDelete = user?.id === post.author.id || user?.role === 'trainer' || user?.role === 'admin';
 
   return (
-    <Card className="p-6 hover:shadow-md transition-shadow">
+    <Card variant="hover" className="p-4 bg-white shadow-sm transition-shadow overflow-hidden flex flex-col">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-start gap-3">
@@ -80,12 +80,12 @@ export const PostCard: React.FC<PostCardProps> = ({
             <div className="flex items-center gap-2">
               <h3 className="font-semibold text-gray-900">{post.author.name}</h3>
               {post.author.role === 'trainer' && (
-                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-xl">
                   Entrenador
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+            <div className="flex items-center gap-2 text-sm text-slate-600 mt-1">
               <span>{formatDate(post.createdAt)}</span>
               {post.groupName && (
                 <>
@@ -112,8 +112,8 @@ export const PostCard: React.FC<PostCardProps> = ({
 
         {/* Menu de acciones */}
         <div className="relative">
-          <button className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-            <MoreVertical className="w-4 h-4 text-gray-500" />
+          <button className="p-1 hover:bg-slate-100 rounded-xl transition-all">
+            <MoreVertical size={16} className="text-slate-500" />
           </button>
         </div>
       </div>
@@ -121,7 +121,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       {/* Pinned indicator */}
       {post.isPinned && (
         <div className="flex items-center gap-1 text-blue-600 text-sm font-medium mb-2">
-          <Pin className="w-3 h-3" />
+          <Pin size={16} />
           <span>Fijado</span>
         </div>
       )}
@@ -129,7 +129,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       {/* Tipo de publicación */}
       {post.type === 'question' && (
         <div className="mb-2">
-          <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded">
+          <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-xl">
             Pregunta
           </span>
         </div>
@@ -140,7 +140,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
       {/* Media */}
       {post.mediaUrl && (
-        <div className="mb-4 rounded-lg overflow-hidden">
+        <div className="mb-4 rounded-xl overflow-hidden">
           {post.mediaType === 'image' ? (
             <img 
               src={post.mediaUrl} 
@@ -158,13 +158,13 @@ export const PostCard: React.FC<PostCardProps> = ({
       )}
 
       {/* Acciones (Reacciones y Comentarios) */}
-      <div className="flex items-center gap-6 pt-4 border-t border-gray-100">
+      <div className="flex items-center gap-6 pt-3 mt-auto border-t border-gray-100">
         {/* Reacciones */}
         <button
           onClick={() => onReact?.(post.id, 'celebrate')}
-          className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
+          className="flex items-center gap-2 text-slate-600 hover:text-blue-600 transition-all"
         >
-          <Heart className="w-5 h-5" />
+          <Heart size={20} />
           <span className="text-sm font-medium">
             {Object.values(post.reactions).reduce((sum, count) => sum + (count || 0), 0)}
           </span>
@@ -173,24 +173,24 @@ export const PostCard: React.FC<PostCardProps> = ({
         {/* Comentarios */}
         <button
           onClick={handleShowComments}
-          className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
+          className="flex items-center gap-2 text-slate-600 hover:text-blue-600 transition-all"
         >
-          <MessageCircle className="w-5 h-5" />
+          <MessageCircle size={20} />
           <span className="text-sm font-medium">{post.commentCount}</span>
         </button>
 
         {/* Reportar */}
-        <button className="flex items-center gap-2 text-gray-400 hover:text-red-600 transition-colors">
-          <Flag className="w-4 h-4" />
+        <button className="flex items-center gap-2 text-slate-400 hover:text-red-600 transition-all">
+          <Flag size={16} />
         </button>
 
         {/* Eliminar (solo autor o admin) */}
         {canDelete && onDelete && (
           <button
             onClick={() => onDelete(post.id)}
-            className="flex items-center gap-2 text-gray-400 hover:text-red-600 transition-colors ml-auto"
+            className="flex items-center gap-2 text-slate-400 hover:text-red-600 transition-all ml-auto"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 size={16} />
           </button>
         )}
       </div>
@@ -199,14 +199,14 @@ export const PostCard: React.FC<PostCardProps> = ({
       {showComments && (
         <div className="mt-4 pt-4 border-t border-gray-100">
           {loadingComments ? (
-            <div className="text-center text-gray-500 py-4">Cargando comentarios...</div>
+            <div className="text-center text-slate-600 py-4">Cargando comentarios...</div>
           ) : comments.length === 0 ? (
-            <div className="text-center text-gray-500 py-4">No hay comentarios aún</div>
+            <div className="text-center text-slate-600 py-4">No hay comentarios aún</div>
           ) : (
             <div className="space-y-3">
               {comments.map(comment => (
                 <div key={comment.id} className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
                     {comment.author.avatarUrl ? (
                       <img 
                         src={comment.author.avatarUrl} 
@@ -220,9 +220,9 @@ export const PostCard: React.FC<PostCardProps> = ({
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-sm text-gray-900">{comment.author.name}</span>
-                      <span className="text-xs text-gray-500">{formatDate(comment.createdAt)}</span>
+                      <span className="text-xs text-slate-600">{formatDate(comment.createdAt)}</span>
                     </div>
-                    <p className="text-sm text-gray-700 mt-1">{comment.content}</p>
+                    <p className="text-sm text-slate-700 mt-1">{comment.content}</p>
                   </div>
                 </div>
               ))}
@@ -230,7 +230,7 @@ export const PostCard: React.FC<PostCardProps> = ({
           )}
           <button
             onClick={() => onComment?.(post.id)}
-            className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
+            className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
           >
             Escribir un comentario...
           </button>

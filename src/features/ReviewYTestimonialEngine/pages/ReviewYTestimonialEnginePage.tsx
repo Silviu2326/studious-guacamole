@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Layout } from '../../../components/layout';
 import { ReviewCard } from '../components/ReviewCard';
 import { ReviewFilterControls } from '../components/ReviewFilterControls';
 import {
@@ -12,7 +11,8 @@ import {
   ReviewStatus,
   ReviewStats as ReviewStatsType
 } from '../api/reviews';
-import { RefreshCw, AlertCircle, Star, TrendingUp, Share2 } from 'lucide-react';
+import { RefreshCw, AlertCircle, Star, TrendingUp, Share2, MessageSquare, Loader2, Package } from 'lucide-react';
+import { Card, MetricCards, Button } from '../../../components/componentsreutilizables';
 
 export default function ReviewYTestimonialEnginePage() {
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -88,140 +88,157 @@ export default function ReviewYTestimonialEnginePage() {
   };
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Review & Testimonial Engine
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Gestiona tu reputación online y convierte testimonios en contenido de marketing
-            </p>
-          </div>
-          <button
-            onClick={handleSync}
-            disabled={isSyncing}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50"
-          >
-            <RefreshCw className={`w-5 h-5 ${isSyncing ? 'animate-spin' : ''}`} />
-            {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
-          </button>
-        </div>
-
-        {/* Error Banner */}
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-            <strong className="font-bold">Error:</strong>
-            <span className="block sm:inline"> {error}</span>
-          </div>
-        )}
-
-        {/* Stats Dashboard */}
-        {isLoadingStats ? (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
-                <div className="h-16 bg-gray-200 rounded"></div>
-              </div>
-            ))}
-          </div>
-        ) : stats ? (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                <h3 className="text-sm font-medium text-gray-600">Puntuación Media</h3>
-              </div>
-              <p className="text-3xl font-bold text-gray-900">{stats.averageRating.toFixed(1)}</p>
-              <p className="text-sm text-gray-600 mt-1">{stats.totalReviews} reseñas totales</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-5 h-5 text-green-600" />
-                <h3 className="text-sm font-medium text-gray-600">Tasa de Conversión</h3>
-              </div>
-              <p className="text-3xl font-bold text-gray-900">{stats.requestConversionRate.toFixed(1)}%</p>
-              <p className="text-sm text-gray-600 mt-1">Solicitudes → Reseñas</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Share2 className="w-5 h-5 text-purple-600" />
-                <h3 className="text-sm font-medium text-gray-600">Conversiones a Contenido</h3>
-              </div>
-              <p className="text-3xl font-bold text-gray-900">{stats.reviewsConvertedToContent}</p>
-              <p className="text-sm text-gray-600 mt-1">Este mes</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-sm font-medium text-gray-600 mb-2">Por Plataforma</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Google</span>
-                  <span className="font-semibold">{stats.reviewsByPlatform.google}</span>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+      {/* Header */}
+      <div className="border-b border-gray-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6">
+          <div className="py-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                {/* Icono con contenedor */}
+                <div className="p-2 bg-blue-100 rounded-xl mr-4 ring-1 ring-blue-200/70">
+                  <MessageSquare size={24} className="text-blue-600" />
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Facebook</span>
-                  <span className="font-semibold">{stats.reviewsByPlatform.facebook}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Web</span>
-                  <span className="font-semibold">{stats.reviewsByPlatform.web}</span>
+                
+                {/* Título y descripción */}
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
+                    Review & Testimonial Engine
+                  </h1>
+                  <p className="text-gray-600">
+                    Gestiona tu reputación online y convierte testimonios en contenido de marketing
+                  </p>
                 </div>
               </div>
-            </div>
-          </div>
-        ) : null}
-
-        {/* Filters */}
-        <ReviewFilterControls currentFilters={filters} onFilterChange={setFilters} />
-
-        {/* Reviews List */}
-        {isLoading ? (
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-          </div>
-        ) : reviews.length === 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-            <Star className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay reseñas</h3>
-            <p className="text-gray-600">No se encontraron reseñas con los filtros seleccionados</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-6">
-            {reviews.map((review) => (
-              <ReviewCard
-                key={review.id}
-                review={review}
-                onFeature={handleFeature}
-                onCreatePost={handleCreatePost}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Info Card */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-6 h-6 text-blue-600 mt-0.5" />
-            <div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
-                Consejos para gestionar tus reseñas
-              </h3>
-              <ul className="list-disc list-inside text-gray-700 space-y-1">
-                <li>Responde siempre a las reseñas, especialmente las negativas, de forma profesional y constructiva</li>
-                <li>Destaca las mejores reseñas para mostrarlas en tus landing pages y mejorar la conversión</li>
-                <li>Convierte testimonios positivos en contenido de marketing para redes sociales</li>
-                <li>Configura automatizaciones para solicitar reseñas en momentos clave del viaje del cliente</li>
-              </ul>
+              <Button
+                variant="primary"
+                onClick={handleSync}
+                disabled={isSyncing}
+                loading={isSyncing}
+                leftIcon={<RefreshCw size={20} />}
+              >
+                {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
+              </Button>
             </div>
           </div>
         </div>
       </div>
-    </Layout>
+
+      {/* Contenido principal */}
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
+        <div className="space-y-6">
+
+          {/* Error Banner */}
+          {error && (
+            <Card className="p-8 text-center bg-white shadow-sm">
+              <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Error al cargar</h3>
+              <p className="text-gray-600 mb-4">{error}</p>
+              <Button onClick={loadData}>Reintentar</Button>
+            </Card>
+          )}
+
+          {/* Stats Dashboard */}
+          {isLoadingStats ? (
+            <MetricCards
+              data={[
+                { id: '1', title: '', value: '', loading: true },
+                { id: '2', title: '', value: '', loading: true },
+                { id: '3', title: '', value: '', loading: true },
+                { id: '4', title: '', value: '', loading: true },
+              ]}
+              columns={4}
+            />
+          ) : stats ? (
+            <MetricCards
+              data={[
+                {
+                  id: 'average-rating',
+                  title: 'Puntuación Media',
+                  value: stats.averageRating.toFixed(1),
+                  subtitle: `${stats.totalReviews} reseñas totales`,
+                  icon: <Star className="w-5 h-5" />,
+                  color: 'info' as const,
+                },
+                {
+                  id: 'conversion-rate',
+                  title: 'Tasa de Conversión',
+                  value: `${stats.requestConversionRate.toFixed(1)}%`,
+                  subtitle: 'Solicitudes → Reseñas',
+                  icon: <TrendingUp className="w-5 h-5" />,
+                  color: 'success' as const,
+                },
+                {
+                  id: 'content-conversions',
+                  title: 'Conversiones a Contenido',
+                  value: stats.reviewsConvertedToContent.toString(),
+                  subtitle: 'Este mes',
+                  icon: <Share2 className="w-5 h-5" />,
+                  color: 'warning' as const,
+                },
+                {
+                  id: 'platforms',
+                  title: 'Por Plataforma',
+                  value: `${stats.reviewsByPlatform.google + stats.reviewsByPlatform.facebook + stats.reviewsByPlatform.web}`,
+                  subtitle: `G:${stats.reviewsByPlatform.google} F:${stats.reviewsByPlatform.facebook} W:${stats.reviewsByPlatform.web}`,
+                  icon: <MessageSquare className="w-5 h-5" />,
+                  color: 'primary' as const,
+                },
+              ]}
+              columns={4}
+            />
+          ) : null}
+
+        {/* Filters */}
+        <ReviewFilterControls currentFilters={filters} onFilterChange={setFilters} />
+
+          {/* Reviews List */}
+          {isLoading ? (
+            <Card className="p-8 text-center bg-white shadow-sm">
+              <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+              <p className="text-gray-600">Cargando...</p>
+            </Card>
+          ) : reviews.length === 0 ? (
+            <Card className="p-8 text-center bg-white shadow-sm">
+              <Package size={48} className="mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay reseñas</h3>
+              <p className="text-gray-600 mb-4">No se encontraron reseñas con los filtros seleccionados</p>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {reviews.map((review) => (
+                <ReviewCard
+                  key={review.id}
+                  review={review}
+                  onFeature={handleFeature}
+                  onCreatePost={handleCreatePost}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Info Card */}
+          <Card className="bg-white shadow-sm">
+            <div className="p-6">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-6 h-6 text-blue-600 mt-0.5" />
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Consejos para gestionar tus reseñas
+                  </h3>
+                  <ul className="list-disc list-inside text-gray-700 space-y-1">
+                    <li>Responde siempre a las reseñas, especialmente las negativas, de forma profesional y constructiva</li>
+                    <li>Destaca las mejores reseñas para mostrarlas en tus landing pages y mejorar la conversión</li>
+                    <li>Convierte testimonios positivos en contenido de marketing para redes sociales</li>
+                    <li>Configura automatizaciones para solicitar reseñas en momentos clave del viaje del cliente</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+    </div>
   );
 }
 

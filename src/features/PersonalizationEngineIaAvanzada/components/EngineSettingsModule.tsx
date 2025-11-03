@@ -1,4 +1,5 @@
 import React from 'react';
+import { Card } from '../../../components/componentsreutilizables';
 import { ModuleConfig } from '../api/personalization';
 import { ToggleLeft, ToggleRight } from 'lucide-react';
 
@@ -26,10 +27,14 @@ export const EngineSettingsModule: React.FC<EngineSettingsModuleProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
+    <Card className="p-6 bg-white shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-bold text-gray-900">{title}</h3>
-        <button onClick={handleToggle} className="p-2">
+        <button 
+          onClick={handleToggle} 
+          className="p-2 rounded-xl hover:bg-slate-50 transition-all"
+          aria-label={config.enabled ? 'Desactivar' : 'Activar'}
+        >
           {config.enabled ? (
             <ToggleRight className="w-8 h-8 text-green-600" />
           ) : (
@@ -44,10 +49,10 @@ export const EngineSettingsModule: React.FC<EngineSettingsModuleProps> = ({
           {config.maxWeightIncreasePercent !== undefined && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-medium text-slate-700">
                   Aumento máximo de peso semanal
                 </label>
-                <span className="text-sm font-bold text-purple-600">
+                <span className="text-sm font-bold text-blue-600">
                   {config.maxWeightIncreasePercent}%
                 </span>
               </div>
@@ -57,7 +62,7 @@ export const EngineSettingsModule: React.FC<EngineSettingsModuleProps> = ({
                 max="20"
                 value={config.maxWeightIncreasePercent}
                 onChange={(e) => handleSliderChange('maxWeightIncreasePercent', parseInt(e.target.value))}
-                className="w-full"
+                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
               />
               <div className="flex justify-between text-xs text-gray-600 mt-1">
                 <span>5%</span>
@@ -70,7 +75,7 @@ export const EngineSettingsModule: React.FC<EngineSettingsModuleProps> = ({
           {config.reviewRequired !== undefined && (
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-medium text-slate-700">
                   Requerir revisión manual
                 </label>
                 <p className="text-xs text-gray-600 mt-1">
@@ -79,7 +84,8 @@ export const EngineSettingsModule: React.FC<EngineSettingsModuleProps> = ({
               </div>
               <button
                 onClick={() => handleCheckboxChange('reviewRequired', !config.reviewRequired)}
-                className="p-2"
+                className="p-2 rounded-xl hover:bg-slate-50 transition-all"
+                aria-label={config.reviewRequired ? 'Desactivar revisión manual' : 'Activar revisión manual'}
               >
                 {config.reviewRequired ? (
                   <ToggleRight className="w-8 h-8 text-green-600" />
@@ -94,10 +100,10 @@ export const EngineSettingsModule: React.FC<EngineSettingsModuleProps> = ({
           {config.maxOffersPerMonth !== undefined && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-medium text-slate-700">
                   Máximo de ofertas por mes
                 </label>
-                <span className="text-sm font-bold text-purple-600">
+                <span className="text-sm font-bold text-blue-600">
                   {config.maxOffersPerMonth}
                 </span>
               </div>
@@ -107,7 +113,7 @@ export const EngineSettingsModule: React.FC<EngineSettingsModuleProps> = ({
                 max="5"
                 value={config.maxOffersPerMonth}
                 onChange={(e) => handleSliderChange('maxOffersPerMonth', parseInt(e.target.value))}
-                className="w-full"
+                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
               />
               <div className="flex justify-between text-xs text-gray-600 mt-1">
                 <span>1</span>
@@ -120,7 +126,7 @@ export const EngineSettingsModule: React.FC<EngineSettingsModuleProps> = ({
           {config.autoSend !== undefined && (
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-medium text-slate-700">
                   Envío automático
                 </label>
                 <p className="text-xs text-gray-600 mt-1">
@@ -129,7 +135,8 @@ export const EngineSettingsModule: React.FC<EngineSettingsModuleProps> = ({
               </div>
               <button
                 onClick={() => handleCheckboxChange('autoSend', !config.autoSend)}
-                className="p-2"
+                className="p-2 rounded-xl hover:bg-slate-50 transition-all"
+                aria-label={config.autoSend ? 'Desactivar envío automático' : 'Activar envío automático'}
               >
                 {config.autoSend ? (
                   <ToggleRight className="w-8 h-8 text-green-600" />
@@ -141,7 +148,7 @@ export const EngineSettingsModule: React.FC<EngineSettingsModuleProps> = ({
           )}
         </div>
       )}
-    </div>
+    </Card>
   );
 };
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card } from '../../../components/componentsreutilizables';
+import { Card, Button } from '../../../components/componentsreutilizables';
 import { LoyaltyRule } from '../api/loyalty';
 import { Edit, Check, X, ToggleLeft, ToggleRight, Calendar, Gift, User, Star, Target, ShoppingCart } from 'lucide-react';
 
@@ -46,18 +46,18 @@ export const RulesEngineConfigurator: React.FC<RulesEngineConfiguratorProps> = (
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-gray-900">Reglas de Acumulación de Puntos</h2>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {rules.map((rule) => {
           const ActionIcon = getActionIcon(rule.actionType);
           const isEditing = editingRuleId === rule.id;
 
           return (
-            <Card key={rule.id} className="p-4">
+            <Card key={rule.id} className="p-4 bg-white shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-start gap-3 flex-1">
                   <div className={`p-2 rounded-lg ${
@@ -79,36 +79,42 @@ export const RulesEngineConfigurator: React.FC<RulesEngineConfiguratorProps> = (
                         type="number"
                         value={editingPoints}
                         onChange={(e) => setEditingPoints(parseInt(e.target.value) || 0)}
-                        className="w-20 px-2 py-1 border border-gray-300 rounded"
+                        className="w-20 px-2 py-1 border border-gray-300 rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                         min="0"
                       />
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => handleSaveEdit(rule.id)}
-                        className="p-1 text-green-600 hover:bg-green-50 rounded"
+                        className="p-1"
                       >
-                        <Check className="w-5 h-5" />
-                      </button>
-                      <button
+                        <Check className="w-5 h-5 text-green-600" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={handleCancelEdit}
-                        className="p-1 text-red-600 hover:bg-red-50 rounded"
+                        className="p-1"
                       >
-                        <X className="w-5 h-5" />
-                      </button>
+                        <X className="w-5 h-5 text-red-600" />
+                      </Button>
                     </div>
                   ) : (
                     <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-purple-600">{rule.points}</p>
+                        <p className="text-2xl font-bold text-blue-600">{rule.points}</p>
                         <p className="text-xs text-gray-600">puntos</p>
                       </div>
 
                       <div className="flex gap-2">
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handleStartEdit(rule)}
-                          className="p-1 text-gray-600 hover:bg-gray-100 rounded"
+                          className="p-1"
                         >
                           <Edit className="w-5 h-5" />
-                        </button>
+                        </Button>
 
                         <button
                           onClick={() => handleToggleActive(rule.id, rule.isActive)}

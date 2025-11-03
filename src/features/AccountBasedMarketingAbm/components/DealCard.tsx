@@ -1,4 +1,5 @@
 import React from 'react';
+import { Card } from '../../../components/componentsreutilizables';
 import { Deal } from '../api/abm';
 import { Building2, DollarSign, Calendar, TrendingUp } from 'lucide-react';
 
@@ -25,11 +26,11 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, onClick }) => {
   };
 
   return (
-    <div
+    <Card
+      variant="hover"
+      padding="sm"
       onClick={onClick}
-      className={`bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-all cursor-pointer ${
-        onClick ? 'hover:border-blue-300' : ''
-      }`}
+      className="h-full flex flex-col transition-shadow overflow-hidden bg-white shadow-sm"
     >
       {/* Título */}
       <h3 className="font-semibold text-gray-900 mb-2 text-sm">
@@ -51,7 +52,7 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, onClick }) => {
       </div>
 
       {/* Probabilidad y próxima acción */}
-      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+      <div className="flex items-center justify-between pt-2 border-t border-gray-100 mt-auto">
         {deal.probability !== undefined && (
           <div className="flex items-center gap-1">
             <TrendingUp className="w-3 h-3 text-blue-500" />
@@ -67,7 +68,7 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, onClick }) => {
           </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 };
 

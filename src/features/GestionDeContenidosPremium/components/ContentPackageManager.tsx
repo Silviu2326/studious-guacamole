@@ -6,7 +6,8 @@ import {
   duplicatePackage,
   ContentPackage
 } from '../api/contentPackages';
-import { Plus, Loader2, Filter, DollarSign, Users, TrendingUp } from 'lucide-react';
+import { Plus, Loader2, Filter, DollarSign, Users, TrendingUp, Package as PackageIcon, AlertCircle } from 'lucide-react';
+import { MetricCards, Card } from '../../../components/componentsreutilizables';
 
 interface ContentPackageManagerProps {
   trainerId: string;
@@ -77,91 +78,87 @@ export const ContentPackageManager: React.FC<ContentPackageManagerProps> = ({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
-      </div>
+      <Card className="p-8 text-center bg-white shadow-sm">
+        <Loader2 size={48} className="mx-auto text-purple-600 animate-spin mb-4" />
+        <p className="text-gray-600">Cargando...</p>
+      </Card>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-900">{error}</p>
-      </div>
+      <Card className="p-8 text-center">
+        <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Error al cargar paquetes</h3>
+        <p className="text-gray-600 mb-4">{error}</p>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Estadísticas rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Paquetes</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{packages.length}</p>
-            </div>
-            <div className="p-3 bg-purple-100 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Inscritos</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{totalEnrolled}</p>
-            </div>
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Users className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Ingresos Totales</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                {totalRevenue.toFixed(2)}€
-              </p>
-            </div>
-            <div className="p-3 bg-green-100 rounded-lg">
-              <DollarSign className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </div>
+      {/* Toolbar superior */}
+      <div className="flex items-center justify-end">
+        {onCreateNew && (
+          <button
+            onClick={onCreateNew}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium"
+          >
+            <Plus size={20} className="" />
+            Nuevo Paquete
+          </button>
+        )}
       </div>
 
+      {/* KPIs */}
+      <MetricCards
+        data={[
+          {
+            id: 'total',
+            title: 'Total Paquetes',
+            value: packages.length,
+            color: 'info',
+            icon: <PackageIcon />
+          },
+          {
+            id: 'inscritos',
+            title: 'Total Inscritos',
+            value: totalEnrolled,
+            color: 'success',
+            icon: <Users />
+          },
+          {
+            id: 'ingresos',
+            title: 'Ingresos Totales',
+            value: `${totalRevenue.toFixed(2)}€`,
+            color: 'warning',
+            icon: <DollarSign />
+          }
+        ]}
+        columns={3}
+      />
+
       {/* Filtros y acciones */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-center justify-between">
+      <Card className="mb-6 bg-white shadow-sm">
+        <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-4">
             <Filter className="w-5 h-5 text-gray-400" />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="px-4 py-2 rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
               <option value="createdAt">Más Recientes</option>
               <option value="title">Por Título</option>
               <option value="enrolledClients">Más Inscritos</option>
             </select>
           </div>
-          {onCreateNew && (
-            <button
-              onClick={onCreateNew}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium"
-            >
-              <Plus className="w-5 h-5" />
-              Nuevo Paquete
-            </button>
-          )}
         </div>
-      </div>
+      </Card>
 
       {/* Lista de paquetes */}
       {packages.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {packages.map((pkg) => (
             <ContentPackageCard
               key={pkg.id}
@@ -174,18 +171,20 @@ export const ContentPackageManager: React.FC<ContentPackageManagerProps> = ({
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-          <p className="text-gray-500 mb-4">No tienes paquetes de contenido creados todavía</p>
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <PackageIcon size={48} className="mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay paquetes creados</h3>
+          <p className="text-gray-600 mb-4">Comienza creando tu primer paquete de contenido premium</p>
           {onCreateNew && (
             <button
               onClick={onCreateNew}
               className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium"
             >
-              <Plus className="w-5 h-5" />
+              <Plus size={20} className="" />
               Crear Primer Paquete
             </button>
           )}
-        </div>
+        </Card>
       )}
     </div>
   );

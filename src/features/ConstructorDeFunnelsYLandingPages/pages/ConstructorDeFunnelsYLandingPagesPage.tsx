@@ -15,8 +15,10 @@ import {
   Globe, 
   BarChart3, 
   ArrowLeft,
-  Lightbulb 
+  Lightbulb,
+  Loader2 
 } from 'lucide-react';
+import { Button, Card, Modal, Input } from '../../../components/componentsreutilizables';
 
 type ViewMode = 'list' | 'builder' | 'analytics';
 
@@ -108,20 +110,25 @@ export const ConstructorDeFunnelsYLandingPagesPage: React.FC = () => {
 
   if (viewMode === 'builder') {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setViewMode('list')}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              Volver a Funnels
-            </button>
-            <h2 className="text-lg font-semibold text-gray-900">
-              Editor de Funnel
-            </h2>
-            <div className="w-32" /> {/* Spacer para centrar */}
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+        <div className="border-b border-gray-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+          <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6">
+            <div className="py-6">
+              <div className="flex items-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  leftIcon={<ArrowLeft size={20} />}
+                  className="mr-4"
+                >
+                  Volver a Funnels
+                </Button>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Editor de Funnel
+                </h2>
+              </div>
+            </div>
           </div>
         </div>
         <FunnelBuilderContainer
@@ -143,19 +150,26 @@ export const ConstructorDeFunnelsYLandingPagesPage: React.FC = () => {
             <div className="py-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setViewMode('list')}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition"
+                    className="p-2"
                   >
-                    <ArrowLeft className="w-5 h-5 text-gray-600" />
-                  </button>
-                  <div>
-                    <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
-                      Analíticas del Funnel
-                    </h1>
-                    <p className="text-gray-600 mt-1">
-                      Métricas y rendimiento del embudo de conversión
-                    </p>
+                    <ArrowLeft size={20} />
+                  </Button>
+                  <div className="flex items-center">
+                    <div className="p-2 bg-blue-100 rounded-xl mr-4 ring-1 ring-blue-200/70">
+                      <BarChart3 size={24} className="text-blue-600" />
+                    </div>
+                    <div>
+                      <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
+                        Analíticas del Funnel
+                      </h1>
+                      <p className="text-gray-600">
+                        Métricas y rendimiento del embudo de conversión
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -164,9 +178,10 @@ export const ConstructorDeFunnelsYLandingPagesPage: React.FC = () => {
         </div>
         <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
           {analyticsLoading ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500">Cargando analíticas...</p>
-            </div>
+            <Card className="p-8 text-center bg-white shadow-sm">
+              <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+              <p className="text-gray-600">Cargando analíticas...</p>
+            </Card>
           ) : (
             <AnalyticsDashboard analytics={analytics} />
           )}
@@ -184,8 +199,8 @@ export const ConstructorDeFunnelsYLandingPagesPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 {/* Icono con contenedor */}
-                <div className="p-2 bg-purple-100 rounded-xl mr-4 ring-1 ring-purple-200/70">
-                  <Globe size={24} className="text-purple-600" />
+                <div className="p-2 bg-blue-100 rounded-xl mr-4 ring-1 ring-blue-200/70">
+                  <Globe size={24} className="text-blue-600" />
                 </div>
                 
                 {/* Título y descripción */}
@@ -193,19 +208,18 @@ export const ConstructorDeFunnelsYLandingPagesPage: React.FC = () => {
                   <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
                     Constructor de Funnels & Landing Pages
                   </h1>
-                  <p className="text-gray-600 mt-1">
+                  <p className="text-gray-600">
                     Crea páginas de aterrizaje y embudos de conversión para captar más clientes
                   </p>
                 </div>
               </div>
               
-              <button
+              <Button
                 onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                leftIcon={<Plus size={20} />}
               >
-                <Plus className="w-5 h-5" />
                 Crear Nuevo Funnel
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -236,9 +250,10 @@ export const ConstructorDeFunnelsYLandingPagesPage: React.FC = () => {
 
         {/* Lista de Funnels */}
         {isLoading ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500">Cargando funnels...</p>
-          </div>
+          <Card className="p-8 text-center bg-white shadow-sm">
+            <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+            <p className="text-gray-600">Cargando...</p>
+          </Card>
         ) : funnels.length > 0 ? (
           <FunnelList
             funnels={funnels}
@@ -248,72 +263,68 @@ export const ConstructorDeFunnelsYLandingPagesPage: React.FC = () => {
             onViewLive={handleViewLive}
           />
         ) : (
-          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-            <Globe className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <Card className="p-8 text-center bg-white shadow-sm">
+            <Globe size={48} className="mx-auto text-gray-400 mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               No tienes funnels creados todavía
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 mb-4">
               Crea tu primer funnel para empezar a captar leads y convertir visitantes en clientes
             </p>
-            <button
+            <Button
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+              leftIcon={<Plus size={20} />}
             >
-              <Plus className="w-5 h-5" />
               Crear Primer Funnel
-            </button>
-          </div>
+            </Button>
+          </Card>
         )}
       </div>
 
       {/* Modal de Crear Funnel */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Crear Nuevo Funnel
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nombre del Funnel
-                </label>
-                <input
-                  type="text"
-                  value={newFunnelName}
-                  onChange={(e) => setNewFunnelName(e.target.value)}
-                  placeholder="Ej: Reto Verano 2024"
-                  className="w-full p-2 border border-gray-300 rounded-lg"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      handleCreateFunnel();
-                    }
-                  }}
-                />
-              </div>
-              <div className="flex gap-2 justify-end">
-                <button
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setNewFunnelName('');
-                  }}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleCreateFunnel}
-                  disabled={!newFunnelName.trim()}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Crear
-                </button>
-              </div>
-            </div>
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => {
+          setShowCreateModal(false);
+          setNewFunnelName('');
+        }}
+        title="Crear Nuevo Funnel"
+        size="md"
+        footer={
+          <div className="flex gap-2 justify-end">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowCreateModal(false);
+                setNewFunnelName('');
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleCreateFunnel}
+              disabled={!newFunnelName.trim()}
+            >
+              Crear
+            </Button>
           </div>
+        }
+      >
+        <div className="space-y-4">
+          <Input
+            type="text"
+            label="Nombre del Funnel"
+            value={newFunnelName}
+            onChange={(e) => setNewFunnelName(e.target.value)}
+            placeholder="Ej: Reto Verano 2024"
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handleCreateFunnel();
+              }
+            }}
+          />
         </div>
-      )}
+      </Modal>
     </div>
   );
 };

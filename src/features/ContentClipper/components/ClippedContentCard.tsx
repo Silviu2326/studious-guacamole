@@ -1,5 +1,6 @@
 import React from 'react';
 import { ClippedContent } from '../api/clips';
+import { Card, Badge, Button } from '../../../components/componentsreutilizables';
 import { Edit, Trash2, ExternalLink, Tag as TagIcon } from 'lucide-react';
 
 interface ClippedContentCardProps {
@@ -22,10 +23,10 @@ export const ClippedContentCard: React.FC<ClippedContentCardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+    <Card variant="hover" className="h-full flex flex-col transition-shadow overflow-hidden">
       {/* Imagen de vista previa */}
       {clip.thumbnailUrl && (
-        <div className="aspect-video w-full bg-gray-100 overflow-hidden">
+        <div className="h-48 bg-gray-100 overflow-hidden">
           <img
             src={clip.thumbnailUrl}
             alt={clip.title}
@@ -35,58 +36,56 @@ export const ClippedContentCard: React.FC<ClippedContentCardProps> = ({
       )}
       
       {/* Contenido */}
-      <div className="p-4">
-        {/* Categoría */}
-        {clip.category && (
-          <div className="mb-2">
-            <span
-              className="inline-block px-2 py-1 text-xs font-medium rounded-full"
-              style={{
-                backgroundColor: clip.category.color ? `${clip.category.color}20` : '#F3F4F620',
-                color: clip.category.color || '#6B7280'
-              }}
+      <div className="p-4 flex flex-col flex-1">
+        <div className="space-y-2 mb-4">
+          {/* Categoría */}
+          {clip.category && (
+            <Badge 
+              variant="blue" 
+              leftIcon={<TagIcon size={12} />}
             >
               {clip.category.name}
-            </span>
-          </div>
-        )}
-        
-        {/* Título */}
-        <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
-          {clip.title}
-        </h3>
-        
-        {/* Descripción */}
-        {clip.scrapedDescription && (
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-            {clip.scrapedDescription}
-          </p>
-        )}
-        
-        {/* Notas personales */}
-        {clip.personalNotes && (
-          <div className="mb-3 p-2 bg-blue-50 border border-blue-100 rounded text-sm text-blue-900">
-            <span className="font-medium">Nota:</span> {clip.personalNotes}
-          </div>
-        )}
-        
-        {/* Tags */}
-        {clip.tags && clip.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-3">
-            {clip.tags.map(tag => (
-              <span
-                key={tag.id}
-                className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded"
-              >
-                <TagIcon className="w-3 h-3" />
-                {tag.name}
-              </span>
-            ))}
-          </div>
-        )}
+            </Badge>
+          )}
+          
+          {/* Título */}
+          <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
+            {clip.title}
+          </h3>
+          
+          {/* Descripción */}
+          {clip.scrapedDescription && (
+            <p className="text-sm text-gray-600 line-clamp-2">
+              {clip.scrapedDescription}
+            </p>
+          )}
+          
+          {/* Notas personales */}
+          {clip.personalNotes && (
+            <div className="p-2 bg-blue-50 border border-blue-100 rounded-lg text-sm text-blue-900">
+              <span className="font-medium">Nota:</span> {clip.personalNotes}
+            </div>
+          )}
+          
+          {/* Tags */}
+          {clip.tags && clip.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {clip.tags.map(tag => (
+                <Badge 
+                  key={tag.id}
+                  variant="gray"
+                  size="sm"
+                  leftIcon={<TagIcon size={12} />}
+                >
+                  {tag.name}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
         
         {/* Fuente y fecha */}
-        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+        <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
           <span>{clip.source || 'Fuente desconocida'}</span>
           <span>
             {new Date(clip.createdAt).toLocaleDateString('es-ES', {
@@ -97,30 +96,34 @@ export const ClippedContentCard: React.FC<ClippedContentCardProps> = ({
         </div>
         
         {/* Acciones */}
-        <div className="flex items-center gap-2 pt-3 border-t border-gray-200">
-          <button
+        <div className="flex gap-2 mt-auto pt-3 border-t border-gray-100">
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleOpenLink}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded transition"
+            leftIcon={<ExternalLink size={16} />}
           >
-            <ExternalLink className="w-4 h-4" />
             Abrir
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => onEdit(clip.id)}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded transition"
+            leftIcon={<Edit size={16} />}
           >
-            <Edit className="w-4 h-4" />
             Editar
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
             onClick={() => onDelete(clip.id)}
-            className="ml-auto flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded transition"
+            className="ml-auto"
+            leftIcon={<Trash2 size={16} />}
           >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
-    </div>
+    </Card>
   );
 };
 

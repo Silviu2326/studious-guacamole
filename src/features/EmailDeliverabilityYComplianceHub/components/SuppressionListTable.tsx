@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { SuppressedEmail } from '../api/emailCompliance';
-import { Plus, Search, Trash2, Mail, X } from 'lucide-react';
+import { Card, Button, Input, Modal } from '../../../components/componentsreutilizables';
+import { Plus, Search, Trash2, Mail } from 'lucide-react';
 
 interface SuppressionListTableProps {
   trainerId: string;
@@ -80,47 +81,50 @@ export const SuppressionListTable: React.FC<SuppressionListTableProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Header con búsqueda y botón añadir */}
-      <div className="flex items-center justify-between">
-        <div className="flex-1 relative max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar por email..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-          />
+      <Card className="mb-6 bg-white shadow-sm">
+        <div className="rounded-2xl bg-slate-50 ring-1 ring-slate-200 p-3">
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <Input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar por email..."
+                leftIcon={<Search size={18} />}
+              />
+            </div>
+            <Button
+              variant="primary"
+              onClick={() => setShowAddModal(true)}
+              leftIcon={<Plus size={20} />}
+            >
+              Añadir Email
+            </Button>
+          </div>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
-        >
-          <Plus className="w-5 h-5" />
-          Añadir Email
-        </button>
-      </div>
+      </Card>
 
       {/* Tabla */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <Card className="p-0 bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
                   Email
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
                   Razón
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
                   Fecha
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
                   Notas
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-slate-700 uppercase tracking-wider">
                   Acciones
                 </th>
               </tr>
@@ -177,66 +181,53 @@ export const SuppressionListTable: React.FC<SuppressionListTableProps> = ({
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
 
       {/* Modal para añadir email */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Añadir Email a Lista de Supresión</h3>
-              <button
-                onClick={() => {
-                  setShowAddModal(false);
-                  setNewEmail('');
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder="email@ejemplo.com"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      handleAddEmail();
-                    }
-                  }}
-                />
-              </div>
-              
-              <div className="flex gap-3 justify-end">
-                <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setNewEmail('');
-                  }}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleAddEmail}
-                  disabled={isAdding || !newEmail.trim()}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                  {isAdding ? 'Añadiendo...' : 'Añadir'}
-                </button>
-              </div>
-            </div>
+      <Modal
+        isOpen={showAddModal}
+        onClose={() => {
+          setShowAddModal(false);
+          setNewEmail('');
+        }}
+        title="Añadir Email a Lista de Supresión"
+        size="md"
+      >
+        <div className="space-y-4">
+          <Input
+            type="email"
+            label="Email *"
+            value={newEmail}
+            onChange={(e) => setNewEmail(e.target.value)}
+            placeholder="email@ejemplo.com"
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handleAddEmail();
+              }
+            }}
+          />
+          
+          <div className="flex gap-3 justify-end pt-4 border-t border-gray-100">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setShowAddModal(false);
+                setNewEmail('');
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleAddEmail}
+              disabled={isAdding || !newEmail.trim()}
+              loading={isAdding}
+            >
+              Añadir
+            </Button>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 };

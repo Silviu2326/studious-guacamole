@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StrategyInputData, StrategyType, BudgetRange, TimeHorizon, MarketingChannel } from '../api/strategies';
 import { TitledInputSection } from './TitledInputSection';
 import { ArrowLeft, ArrowRight, Loader2, CheckCircle } from 'lucide-react';
+import { Button } from '../../../components/componentsreutilizables';
 
 interface StrategyGeneratorWizardProps {
   onSubmit: (data: StrategyInputData) => void;
@@ -113,7 +114,7 @@ export const StrategyGeneratorWizard: React.FC<StrategyGeneratorWizardProps> = (
                   index < currentStep
                     ? 'bg-green-600 text-white'
                     : index === currentStep
-                    ? 'bg-purple-600 text-white'
+                    ? 'bg-blue-600 text-white'
                     : 'bg-gray-200 text-gray-600'
                 }`}
               >
@@ -154,9 +155,9 @@ export const StrategyGeneratorWizard: React.FC<StrategyGeneratorWizardProps> = (
                   key={option.value}
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, type: option.value as StrategyType }))}
-                  className={`p-4 rounded-lg border-2 text-left transition ${
+                  className={`p-4 rounded-xl border-2 text-left transition ${
                     formData.type === option.value
-                      ? 'border-purple-500 bg-purple-50'
+                      ? 'border-blue-500 bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
@@ -182,7 +183,7 @@ export const StrategyGeneratorWizard: React.FC<StrategyGeneratorWizardProps> = (
                   ...prev,
                   objectives: { ...prev.objectives, primary: e.target.value }
                 }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 rows={3}
                 placeholder="Ej: Aumentar el engagement en Instagram y conseguir 15 nuevas consultas en 30 días"
                 required
@@ -198,7 +199,7 @@ export const StrategyGeneratorWizard: React.FC<StrategyGeneratorWizardProps> = (
                   ...prev,
                   objectives: { ...prev.objectives, timeHorizon: e.target.value as TimeHorizon }
                 }))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-2 rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
               >
                 <option value="short_term">Corto Plazo (1-3 meses)</option>
                 <option value="medium_term">Mediano Plazo (3-6 meses)</option>
@@ -223,7 +224,7 @@ export const StrategyGeneratorWizard: React.FC<StrategyGeneratorWizardProps> = (
                   ...prev,
                   audience: { ...prev.audience, description: e.target.value }
                 }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 rows={4}
                 placeholder="Ej: Hombres y mujeres entre 30-45 años que trabajan en oficinas, pasan más de 8 horas sentados y sufren de dolores de espalda. Valoran la eficiencia y necesitan rutinas cortas y efectivas."
                 required
@@ -240,7 +241,7 @@ export const StrategyGeneratorWizard: React.FC<StrategyGeneratorWizardProps> = (
                   ...prev,
                   audience: { ...prev.audience, ageRange: e.target.value }
                 }))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-2 rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 placeholder="Ej: 30-45 años"
               />
             </div>
@@ -267,9 +268,9 @@ export const StrategyGeneratorWizard: React.FC<StrategyGeneratorWizardProps> = (
                         : [...formData.channels, channel];
                       setFormData(prev => ({ ...prev, channels: newChannels }));
                     }}
-                    className={`p-3 rounded-lg border-2 transition ${
+                    className={`p-3 rounded-xl border-2 transition ${
                       formData.channels.includes(channel)
-                        ? 'border-purple-500 bg-purple-50'
+                        ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
@@ -285,7 +286,7 @@ export const StrategyGeneratorWizard: React.FC<StrategyGeneratorWizardProps> = (
               <select
                 value={formData.budget}
                 onChange={(e) => setFormData(prev => ({ ...prev, budget: e.target.value as BudgetRange }))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-2 rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
               >
                 <option value="low">Bajo (€0-100/mes)</option>
                 <option value="medium">Medio (€100-500/mes)</option>
@@ -301,7 +302,7 @@ export const StrategyGeneratorWizard: React.FC<StrategyGeneratorWizardProps> = (
                 type="text"
                 value={formData.tone}
                 onChange={(e) => setFormData(prev => ({ ...prev, tone: e.target.value }))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-2 rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 placeholder="Ej: Educativo, profesional pero cercano"
                 required
               />
@@ -349,45 +350,40 @@ export const StrategyGeneratorWizard: React.FC<StrategyGeneratorWizardProps> = (
 
         {/* Navegación */}
         <div className="flex items-center justify-between pt-6 border-t border-gray-200 mt-6">
-          <button
+          <Button
             type="button"
             onClick={handlePrevious}
             disabled={currentStep === 0}
-            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+            variant="ghost"
+            size="md"
+            leftIcon={<ArrowLeft size={20} />}
           >
-            <ArrowLeft className="w-4 h-4" />
             Anterior
-          </button>
+          </Button>
 
           {currentStep < steps.length - 1 ? (
-            <button
+            <Button
               type="button"
               onClick={handleNext}
               disabled={!isStepValid(currentStep)}
-              className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="primary"
+              size="md"
+              leftIcon={<ArrowRight size={20} />}
             >
               Siguiente
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
               type="button"
               onClick={handleSubmit}
               disabled={isGenerating || !isStepValid(currentStep)}
-              className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="primary"
+              size="md"
+              loading={isGenerating}
+              leftIcon={<ArrowRight size={20} />}
             >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Generando...
-                </>
-              ) : (
-                <>
-                  Generar Estrategia
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
+              {isGenerating ? 'Generando...' : 'Generar Estrategia'}
+            </Button>
           )}
         </div>
       </div>

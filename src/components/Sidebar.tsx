@@ -1,4 +1,4 @@
-import { LayoutDashboard, LogOut, Award, Building2, ChevronLeft, ChevronRight, ChevronDown, TrendingUp, CalendarDays, ShieldAlert, Dumbbell, Banknote, Megaphone, Package, PackageOpen, ShoppingBag, AlertTriangle, Clock, UtensilsCrossed, FileEdit, MessageSquare, Trophy, Receipt, Wallet, Users, BarChart, Warehouse, UserPlus, Users as UsersList, ShoppingCart, ListFilter, Wrench, Ticket, Target, DollarSign, PieChart, Kanban, ClipboardList, UserCircle, ClipboardCheck, Calendar, CheckSquare, Apple, Shield, BookOpen, ChefHat, Boxes, RotateCcw, CalendarCheck, RefreshCw, Bell, Store, UserCheck, LineChart, Clipboard, UserMinus, AlertCircle, BarChart3, FileText, Globe, Briefcase, Handshake, UserCog, Star, FileCheck, ClipboardPen, Settings, FileBarChart, Database, FileSpreadsheet, Plug, Coins, Scroll, FileSpreadsheet as Payroll, Award as IncentiveIcon, Clock as TimeTrackingIcon, FileStack, ShieldCheck, Building, FileSignature, Shield as ShieldIcon, Tag, ArrowRightLeft, TrendingDown, Key, ShoppingBasket } from 'lucide-react';
+import { LayoutDashboard, LogOut, Award, Building2, ChevronLeft, ChevronRight, ChevronDown, TrendingUp, CalendarDays, ShieldAlert, Dumbbell, Banknote, Megaphone, Package, PackageOpen, ShoppingBag, AlertTriangle, Clock, UtensilsCrossed, FileEdit, MessageSquare, Trophy, Receipt, Wallet, Users, BarChart, Warehouse, UserPlus, Users as UsersList, ShoppingCart, ListFilter, Wrench, Ticket, Target, DollarSign, PieChart, Kanban, ClipboardList, UserCircle, ClipboardCheck, Calendar, CheckSquare, Apple, Shield, BookOpen, ChefHat, Boxes, RotateCcw, CalendarCheck, RefreshCw, Bell, Store, UserCheck, LineChart, Clipboard, UserMinus, AlertCircle, BarChart3, FileText, Globe, Briefcase, Handshake, UserCog, Star, FileCheck, ClipboardPen, Settings, FileBarChart, Database, FileSpreadsheet, Plug, Coins, Scroll, FileSpreadsheet as Payroll, Award as IncentiveIcon, Clock as TimeTrackingIcon, FileStack, ShieldCheck, Building, FileSignature, Shield as ShieldIcon, Tag, ArrowRightLeft, TrendingDown, Key, ShoppingBasket, FlaskConical, Search, Scissors, Sparkles, Mail, Image, Inbox, Gift, Brain, Layers, Filter, Video, Zap, Radio, ThumbsUp, DollarSign as DollarIcon, Palette, BarChart2, Network, Sparkles as SparklesIcon, TestTube } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
@@ -32,7 +32,7 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['dashboard', 'crm']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['dashboard', 'crm', 'captura-conversion']));
 
   const isEntrenador = user?.role === 'entrenador';
 
@@ -109,6 +109,45 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     if (path.includes('feedback-interno-y-evaluaciones-de-rendimiento')) return 'feedback-interno-y-evaluaciones-de-rendimiento';
     if (path.includes('afiliados-y-referidos') || path.includes('marketing/afiliados')) return 'afiliados-y-referidos';
     if (path.includes('embudos-ofertas-landing-pages') || path.includes('marketing/landing-pages')) return 'embudos-ofertas-landing-pages';
+    if (path.includes('dashboard/marketing/funnels') || path.includes('constructor-de-funnels')) return 'constructor-de-funnels-y-landing-pages';
+    if (path.includes('dashboard/content/clipper') || path.includes('content-clipper')) return 'content-clipper';
+    if (path.includes('dashboard/content/video-studio') || path.includes('video-studio')) return 'video-studio';
+    if (path.includes('dashboard/marketing/influencers') || path.includes('influencer-content-syndication')) return 'creatorinfluencer-content-syndication';
+    if (path.includes('dashboard/monetizacion/precios-dinamicos') || path.includes('dynamic-pricing')) return 'dynamic-pricing-ofertas-inteligentes';
+    if (path.includes('dashboard/monetizacion/loyalty') || path.includes('loyalty-program-manager')) return 'loyalty-program-manager';
+    if (path.includes('dashboard/monetizacion/referidos') || path.includes('marketing-de-referidos')) return 'marketing-de-referidos';
+    if (path.includes('dashboard/partnerships') || path.includes('partnerships-influencers')) return 'partnerships-influencers';
+    if (path.includes('dashboard/email/compliance') || path.includes('email-deliverability')) return 'email-deliverability-compliance-hub';
+    if (path.includes('dashboard/marketing/email-campaigns') || path.includes('email-marketing-newsletters')) return 'email-marketing-newsletters';
+    if (path.includes('dashboard/marketing/mensajeria') || path.includes('sms-whatsapp-marketing')) return 'sms-whatsapp-marketing';
+    if (path.includes('dashboard/experiencias/eventos') || path.includes('eventos-retos')) return 'eventos-retos';
+    if (path.includes('dashboard/experiences/virtual-events') || path.includes('webinars-virtual-events')) return 'webinars-virtual-events';
+    if (path.includes('dashboard/feedback/surveys') || path.includes('feedback-encuestas')) return 'feedback-encuestas';
+    if (path.includes('dashboard/marketing/ia-generator') || path.includes('generador-creativo-ia')) return 'generador-creativo-ia';
+    if (path.includes('dashboard/marketing/ia-estrategias') || path.includes('generador-estrategias-marketing')) return 'generador-estrategias-marketing';
+    if (path.includes('dashboard/contenido/generador-ia') || path.includes('generador-ideas-contenido')) return 'generador-ideas-contenido';
+    if (path.includes('dashboard/ia/personalization-engine') || path.includes('personalization-engine-ia')) return 'personalization-engine-ia-avanzada';
+    if (path.includes('dashboard/marketing/progressive-profiling') || path.includes('progressive-profiling')) return 'progressive-profiling';
+    if (path.includes('dashboard/monetizacion/ofertas') || path.includes('promociones-cupones-packs')) return 'promociones-cupones-packs';
+    if (path.includes('dashboard/marketing/referrals') || path.includes('referidos-afiliados')) return 'referidos-afiliados';
+    if (path.includes('dashboard/marketing/retargeting') || path.includes('retargeting-pixel-manager')) return 'retargeting-pixel-manager';
+    if (path.includes('dashboard/reviews') || path.includes('review-testimonial-engine')) return 'review-testimonial-engine';
+    if (path.includes('dashboard/audiencias') || path.includes('segmentacion-dinamica-audiencias')) return 'segmentacion-dinamica-audiencias';
+    if (path.includes('client/preferences/communication') || path.includes('smsemail-preference-center')) return 'smsemail-preference-center';
+    if (path.includes('dashboard/contenido-premium') || path.includes('gestion-contenidos-premium')) return 'gestion-contenidos-premium';
+    if (path.includes('dashboard/contenido/ugc-hub') || path.includes('hub-contenidos-ugc')) return 'hub-contenidos-ugc';
+    if (path.includes('dashboard/marketing/lead-magnets') || path.includes('lead-magnet-factory')) return 'lead-magnet-factory';
+    if (path.includes('dashboard/intelligence/playbooks') || path.includes('libreria-campanas-playbooks')) return 'libreria-campanas-playbooks';
+    if (path.includes('dashboard/intelligence/trend-analyzer') || path.includes('trend-analizer')) return 'trend-analizer';
+    if (path.includes('dashboard/automatizacion/secuencias-email') || path.includes('lifecycle-email-sequences')) return 'lifecycle-email-sequences';
+    if (path.includes('dashboard/automations/messaging') || path.includes('sms-whatsapp-automation')) return 'sms-whatsapp-automation';
+    if (path.includes('dashboard/analytics/inbox') || path.includes('lead-inbox-unificado-sla')) return 'lead-inbox-unificado-sla';
+    if (path.includes('ab-testing') || path.includes('experimentacion')) return 'ab-testing-experimentacion';
+    if (path.includes('abm') || path.includes('account-based')) return 'account-based-marketing';
+    if (path.includes('comunidad') || path.includes('community')) return 'community-engagement';
+    if (path.includes('market-intelligence') || path.includes('competitive-analysis')) return 'competitive-analysis-market-intelligence';
+    if (path.includes('dashboard/marketing/anuncios') || path.includes('gestor-de-anuncios')) return 'gestor-de-anuncios';
+    if (path.includes('dashboard/marketing/social-planner') || path.includes('planner-redes-sociales')) return 'planner-redes-sociales';
     if (path.includes('analitica-de-adquisicion')) return 'analitica-de-adquisicion';
     if (path.includes('empresas-convenios') || path.includes('b2b/convenios')) return 'empresas-convenios';
     if (path.includes('empleados-activos')) return 'empleados-activos';
@@ -163,6 +202,7 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
       icon: Users,
       items: [
         { id: 'leads', label: 'Leads', icon: UserPlus, path: '/leads' },
+        { id: 'lead-inbox-unificado-sla', label: 'Inbox Unificado & SLA', icon: Inbox, path: '/dashboard/analytics/inbox' },
         { id: 'pipeline-de-venta-kanban', label: 'Pipeline de Venta', icon: Kanban, path: '/pipeline-de-venta-kanban' },
         { id: 'gestión-de-clientes', label: isEntrenador ? 'Mis Clientes' : 'Clientes Activos', icon: Users, path: '/gestión-de-clientes' },
         { id: 'clientes-en-riesgo-retencion', label: isEntrenador ? 'Clientes en Riesgo' : 'Clientes en Riesgo / Retención', icon: AlertCircle, path: '/crm/clientes-en-riesgo' },
@@ -212,6 +252,8 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
         { id: 'disponibilidad-turnos-staff', label: 'Disponibilidad / Turnos', icon: Clock, path: '/disponibilidad-turnos-staff', gimnasioOnly: true },
         { id: 'recursos-salas-material', label: 'Recursos / Salas / Material', icon: Boxes, path: '/recursos-salas-material', gimnasioOnly: true },
         { id: 'eventos-retos-especiales', label: isEntrenador ? 'Mis Retos' : 'Eventos & Retos', icon: Trophy, path: '/eventos-retos-especiales' },
+        { id: 'eventos-retos', label: 'Eventos & Retos (Avanzado)', icon: Trophy, path: '/dashboard/experiencias/eventos' },
+        { id: 'webinars-virtual-events', label: 'Webinars & Eventos Virtuales', icon: Video, path: '/dashboard/experiences/virtual-events' },
       ],
     },
     {
@@ -220,6 +262,7 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
       icon: DollarSign,
       items: [
         { id: 'panel-financiero-overview', label: isEntrenador ? 'Panel Financiero' : 'Panel Financiero / Overview', icon: PieChart, path: '/panel-financiero-overview' },
+        { id: 'dynamic-pricing-ofertas-inteligentes', label: 'Precios Dinámicos', icon: Sparkles, path: '/dashboard/monetizacion/precios-dinamicos' },
         { id: 'facturacin-cobros', label: 'Facturación & Cobros', icon: Receipt, path: '/facturacin-cobros' },
         { id: 'pagos-pendientes-morosidad', label: 'Pagos Pendientes / Morosidad', icon: DollarSign, path: '/pagos-pendientes-morosidad' },
         { id: 'suscripciones-cuotas-recurrentes', label: isEntrenador ? 'Suscripciones PT' : 'Suscripciones & Cuotas', icon: RefreshCw, path: '/suscripciones-cuotas-recurrentes' },
@@ -294,14 +337,137 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
       ],
     },
     {
-      id: 'marketing',
-      title: 'Marketing & Crecimiento',
+      id: 'captura-conversion',
+      title: 'Captura & Conversión',
+      icon: Target,
+      items: [
+        { id: 'constructor-de-funnels-y-landing-pages', label: 'Constructor de Funnels & Landing Pages', icon: Globe, path: '/dashboard/marketing/funnels' },
+        { id: 'lead-magnet-factory', label: 'Lead Magnet Factory', icon: FileText, path: '/dashboard/marketing/lead-magnets' },
+        { id: 'progressive-profiling', label: 'Progressive Profiling', icon: Layers, path: '/dashboard/marketing/progressive-profiling' },
+        { id: 'gestion-contenidos-premium', label: 'Gestión de Contenidos Premium', icon: Package, path: '/dashboard/contenido-premium' },
+      ],
+    },
+    {
+      id: 'segmentacion-automatizacion',
+      title: 'Segmentación & Automatización',
+      icon: Filter,
+      items: [
+        { id: 'segmentacion-dinamica-audiencias', label: 'Segmentación Dinámica & Audiencias', icon: Filter, path: '/dashboard/audiencias' },
+        { id: 'lifecycle-email-sequences', label: 'Lifecycle Email Sequences', icon: Mail, path: '/dashboard/automatizacion/secuencias-email' },
+      ],
+    },
+    {
+      id: 'email-sms',
+      title: 'Email & SMS',
+      icon: Mail,
+      items: [
+        { id: 'email-marketing-newsletters', label: 'Email Marketing & Newsletters', icon: Mail, path: '/dashboard/marketing/email-campaigns' },
+        { id: 'email-deliverability-compliance-hub', label: 'Email Deliverability & Compliance Hub', icon: ShieldCheck, path: '/dashboard/email/compliance' },
+        { id: 'sms-whatsapp-marketing', label: 'SMS/WhatsApp Marketing', icon: MessageSquare, path: '/dashboard/marketing/mensajeria' },
+        { id: 'sms-whatsapp-automation', label: 'SMS/WhatsApp Automation', icon: MessageSquare, path: '/dashboard/automations/messaging' },
+        { id: 'smsemail-preference-center', label: 'SMS/Email Preference Center', icon: Settings, path: '/client/preferences/communication' },
+      ],
+    },
+    {
+      id: 'contenido-redes-sociales',
+      title: 'Contenido & Redes Sociales',
+      icon: Palette,
+      items: [
+        { id: 'planner-redes-sociales', label: 'Planner de Redes Sociales', icon: Calendar, path: '/dashboard/marketing/social-planner' },
+        { id: 'generador-creativo-ia', label: 'Generador Creativo con IA', icon: Sparkles, path: '/dashboard/marketing/ia-generator' },
+        { id: 'generador-estrategias-marketing', label: 'Generador de Estrategias de Marketing con IA', icon: Target, path: '/dashboard/marketing/ia-estrategias' },
+        { id: 'generador-ideas-contenido', label: 'Generador de Ideas de Contenido con IA', icon: SparklesIcon, path: '/dashboard/contenido/generador-ia' },
+        { id: 'content-clipper', label: 'Content Clipper', icon: Scissors, path: '/dashboard/content/clipper' },
+        { id: 'creatorinfluencer-content-syndication', label: 'Creator/Influencer Content Syndication', icon: Users, path: '/dashboard/marketing/influencers' },
+        { id: 'video-studio', label: 'Video Marketing & Automation', icon: Video, path: '/dashboard/content/video-studio' },
+        { id: 'hub-contenidos-ugc', label: 'Hub de Contenidos & UGC', icon: Image, path: '/dashboard/contenido/ugc-hub' },
+      ],
+    },
+    {
+      id: 'confianza-social-proof',
+      title: 'Confianza & Social Proof',
+      icon: ThumbsUp,
+      items: [
+        { id: 'review-testimonial-engine', label: 'Review & Testimonial Engine', icon: Star, path: '/dashboard/reviews' },
+        { id: 'feedback-encuestas', label: 'Feedback Loop & Encuestas Inteligentes', icon: MessageSquare, path: '/dashboard/feedback/surveys' },
+      ],
+    },
+    {
+      id: 'publicidad-retargeting',
+      title: 'Publicidad & Retargeting',
+      icon: Radio,
+      items: [
+        { id: 'gestor-de-anuncios', label: 'Gestor de Anuncios', icon: Megaphone, path: '/dashboard/marketing/anuncios' },
+        { id: 'retargeting-pixel-manager', label: 'Retargeting & Pixel Manager', icon: Target, path: '/dashboard/marketing/retargeting' },
+      ],
+    },
+    {
+      id: 'monetizacion-ofertas',
+      title: 'Monetización & Ofertas',
+      icon: DollarIcon,
+      items: [
+        { id: 'promociones-cupones-packs', label: 'Promociones, Cupones & Packs', icon: Tag, path: '/dashboard/monetizacion/ofertas' },
+        { id: 'dynamic-pricing-ofertas-inteligentes', label: 'Dynamic Pricing & Ofertas Inteligentes', icon: Sparkles, path: '/dashboard/monetizacion/precios-dinamicos' },
+        { id: 'loyalty-program-manager', label: 'Loyalty Program Manager', icon: Gift, path: '/dashboard/monetizacion/loyalty' },
+        { id: 'referidos-afiliados', label: 'Referidos & Afiliados', icon: Users, path: '/dashboard/marketing/referrals' },
+        { id: 'marketing-de-referidos', label: 'Referral Marketing', icon: UserCheck, path: '/dashboard/monetizacion/referidos' },
+      ],
+    },
+    {
+      id: 'experiencias-eventos',
+      title: 'Experiencias & Eventos',
+      icon: CalendarCheck,
+      items: [
+        { id: 'webinars-virtual-events', label: 'Webinars & Virtual Events Manager', icon: Video, path: '/dashboard/experiences/virtual-events' },
+        { id: 'eventos-retos', label: 'Eventos & Retos', icon: Trophy, path: '/dashboard/experiencias/eventos' },
+        { id: 'community-engagement', label: 'Community & Engagement', icon: Users, path: '/comunidad' },
+      ],
+    },
+    {
+      id: 'analisis-inteligencia',
+      title: 'Análisis & Inteligencia',
+      icon: BarChart2,
+      items: [
+        { id: 'lead-inbox-unificado-sla', label: 'Lead Inbox Unificado & SLA', icon: Inbox, path: '/dashboard/analytics/inbox' },
+        { id: 'libreria-campanas-playbooks', label: 'Librería de Campañas (Playbooks)', icon: BookOpen, path: '/dashboard/intelligence/playbooks' },
+        { id: 'trend-analizer', label: 'Trend Analizer', icon: TrendingUp, path: '/dashboard/intelligence/trend-analyzer' },
+        { id: 'analitica-de-adquisicion', label: 'Analítica de Adquisición', icon: LineChart, path: '/analytics/acquisition' },
+      ],
+    },
+    {
+      id: 'integraciones-partnerships',
+      title: 'Integraciones & Partnerships',
+      icon: Network,
+      items: [
+        { id: 'partnerships-influencers', label: 'Partnerships & Influencers', icon: Handshake, path: '/dashboard/partnerships' },
+        { id: 'account-based-marketing', label: 'Account-Based Marketing (ABM)', icon: Building2, path: '/abm' },
+      ],
+    },
+    {
+      id: 'personalizacion-ia',
+      title: 'Personalización & IA',
+      icon: Brain,
+      items: [
+        { id: 'personalization-engine-ia-avanzada', label: 'Personalization Engine (IA avanzada)', icon: Brain, path: '/dashboard/ia/personalization-engine' },
+      ],
+    },
+    {
+      id: 'extras-especializados',
+      title: 'Extras & Especializados',
+      icon: TestTube,
+      items: [
+        { id: 'ab-testing-experimentacion', label: 'A/B Testing & Experimentación', icon: FlaskConical, path: '/marketing/ab-testing' },
+        { id: 'competitive-analysis-market-intelligence', label: 'Competitive Analysis & Market Intelligence', icon: Search, path: '/market-intelligence' },
+      ],
+    },
+    {
+      id: 'marketing-general',
+      title: 'Marketing General',
       icon: Megaphone,
       items: [
         { id: 'campanas-outreach', label: 'Campañas', icon: Megaphone, path: '/campanas-outreach', gimnasioOnly: true },
         { id: 'embudos-ofertas-landing-pages', label: 'Embudos & Landing Pages', icon: Globe, path: '/marketing/landing-pages' },
         { id: 'afiliados-y-referidos', label: 'Afiliados & Referidos', icon: UserCheck, path: '/marketing/afiliados-y-referidos' },
-        { id: 'analitica-de-adquisicion', label: 'Analítica de Adquisición', icon: LineChart, path: '/analytics/acquisition' },
       ],
     },
     {

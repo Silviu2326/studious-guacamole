@@ -6,6 +6,22 @@ import { RestriccionesAlimentariasPage } from './features/restricciones-alimenta
 import BibliotecaEjerciciosPage from './features/biblioteca-de-ejercicios/pages/biblioteca-de-ejerciciosPage';
 import { CajaBancosPage } from './features/caja-bancos/pages/caja-bancosPage';
 import { CampanasOutreachPage } from './features/campanas-outreach/pages/campanas-outreachPage';
+import AbTestingYExperimentacionPage from './features/AbTestingYExperimentacion/pages/AbTestingYExperimentacionPage';
+import AccountBasedMarketingAbmPage from './features/AccountBasedMarketingAbm/pages/AccountBasedMarketingAbmPage';
+import CommunityYEngagementPage from './features/CommunityYEngagement/pages/CommunityYEngagementPage';
+import CompetitiveAnalysisYMarketIntelligencePage from './features/CompetitiveAnalysisYMarketIntelligence/pages/CompetitiveAnalysisYMarketIntelligencePage';
+import ConstructorDeFunnelsYLandingPagesPage from './features/ConstructorDeFunnelsYLandingPages/pages/ConstructorDeFunnelsYLandingPagesPage';
+import ContentClipperPage from './features/ContentClipper/pages/ContentClipperPage';
+import CreatorinfluencerContentSyndicationPage from './features/CreatorinfluencerContentSyndication/pages/CreatorinfluencerContentSyndicationPage';
+import DynamicPricingYOfertasInteligentesPage from './features/DynamicPricingYOfertasInteligentes/pages/DynamicPricingYOfertasInteligentesPage';
+import EmailDeliverabilityYComplianceHubPage from './features/EmailDeliverabilityYComplianceHub/pages/EmailDeliverabilityYComplianceHubPage';
+import EmailMarketingYNewslettersPage from './features/EmailMarketingYNewsletters/pages/EmailMarketingYNewslettersPage';
+import EventosYRetosPage from './features/EventosYRetos/pages/EventosYRetosPage';
+import FeedbackLoopYEncuestasInteligentesPage from './features/FeedbackLoopYEncuestasInteligentes/pages/FeedbackLoopYEncuestasInteligentesPage';
+import GeneradorCreativoConIaPage from './features/GeneradorCreativoConIa/pages/GeneradorCreativoConIaPage';
+import GeneradorDeEstrategiasDeMarketingConIaPage from './features/GeneradorDeEstrategiasDeMarketingConIa/pages/GeneradorDeEstrategiasDeMarketingConIaPage';
+import GeneradorDeIdeasDeContenidoConIaPage from './features/GeneradorDeIdeasDeContenidoConIa/pages/GeneradorDeIdeasDeContenidoConIaPage';
+import GestionDeContenidosPremiumPage from './features/GestionDeContenidosPremium/pages/GestionDeContenidosPremiumPage';
 import { CatalogoPage } from './features/catalogo-planes';
 import { CatalogoProductosPage } from './features/catalogo-productos';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
@@ -93,6 +109,29 @@ import PresupuestosForecastPage from './features/presupuestos-forecast/pages/pre
 import ProveedoresContratosPage from './features/proveedores-contratos/pages/proveedores-contratosPage';
 import TransferenciasEntreSedesPage from './features/transferencias-entre-sedes/pages/transferencias-entre-sedesPage';
 import UsoResultadosProgramasCorporativosPage from './features/uso-resultados-programas-corporativos/pages/uso-resultados-programas-corporativosPage';
+import GestorDeAnunciosPage from './features/GestorDeAnuncios/pages/GestorDeAnunciosPage';
+import HubDeContenidosYUgcPage from './features/HubDeContenidosYUgc/pages/HubDeContenidosYUgcPage';
+import LeadMagnetFactoryPage from './features/LeadMagnetFactory/pages/LeadMagnetFactoryPage';
+import LibreriaDeCampanasPlaybooksPage from './features/LibreriaDeCampanasPlaybooks/pages/LibreriaDeCampanasPlaybooksPage';
+import LifecycleEmailSequencesPage from './features/LifecycleEmailSequences/pages/LifecycleEmailSequencesPage';
+import LeadInboxUnificadoYSlaPage from './features/LeadInboxUnificadoYSla/pages/LeadInboxUnificadoYSlaPage';
+import LoyaltyProgramManagerPage from './features/LoyaltyProgramManager/pages/LoyaltyProgramManagerPage';
+import MarketingDeReferidosPage from './features/MarketingDeReferidos/pages/MarketingDeReferidosPage';
+import PartnershipsYInfluencersPage from './features/PartnershipsYInfluencers/pages/PartnershipsYInfluencersPage';
+import PersonalizationEngineIaAvanzadaPage from './features/PersonalizationEngineIaAvanzada/pages/PersonalizationEngineIaAvanzadaPage';
+import PlannerDeRedesSocialesPage from './features/PlannerDeRedesSociales/pages/PlannerDeRedesSocialesPage';
+import ProgressiveProfilingPage from './features/ProgressiveProfiling/pages/ProgressiveProfilingPage';
+import PromocionesCuponesYPacksPage from './features/PromocionesCuponesYPacks/pages/PromocionesCuponesYPacksPage';
+import ReferidosYAfiliadosPage from './features/ReferidosYAfiliados/pages/ReferidosYAfiliadosPage';
+import RetargetingYPixelManagerPage from './features/RetargetingYPixelManager/pages/RetargetingYPixelManagerPage';
+import ReviewYTestimonialEnginePage from './features/ReviewYTestimonialEngine/pages/ReviewYTestimonialEnginePage';
+import SegmentacionDinamicaYAudienciasPage from './features/SegmentacionDinamicaYAudiencias/pages/SegmentacionDinamicaYAudienciasPage';
+import SmsemailPreferenceCenterPage from './features/SmsemailPreferenceCenter/pages/SmsemailPreferenceCenterPage';
+import SmswhatsappAutomationPage from './features/SmswhatsappAutomation/pages/SmswhatsappAutomationPage';
+import SmswhatsappMarketingPage from './features/SmswhatsappMarketing/pages/SmswhatsappMarketingPage';
+import TrendAnalizerPage from './features/TrendAnalizer/pages/TrendAnalizerPage';
+import VideoMarketingYAutomationPage from './features/VideoMarketingYAutomation/pages/VideoMarketingYAutomationPage';
+import WebinarsYVirtualEventsManagerPage from './features/WebinarsYVirtualEventsManager/pages/WebinarsYVirtualEventsManagerPage';
 function ProtectedRoute() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
@@ -139,6 +178,7 @@ function App() {
             <Route path="/inventario-stock" element={<InventarioStockPage />} />
             <Route path="/inventario/recepciones" element={<RecepcionesDeMaterialPage />} />
             <Route path="/leads" element={<LeadsPage />} />
+            <Route path="/dashboard/analytics/inbox" element={<LeadInboxUnificadoYSlaPage />} />
             <Route path="/lista-de-espera-ausencias" element={<ListaEsperaAusenciasPage />} />
             <Route path="/lista-de-la-compra-supermercado" element={<ListaDeLaCompraSupermercadoPage />} />
             <Route path="/listas-inteligentes-segmentos-guardados" element={<ListasInteligentesSegmentosGuardadosPage />} />
@@ -170,6 +210,44 @@ function App() {
             <Route path="/tienda-online-checkout-online" element={<TiendaOnlineCheckoutOnlinePage />} />
             <Route path="/marketing/afiliados-y-referidos" element={<AfiliadosReferidosPage />} />
             <Route path="/marketing/landing-pages" element={<EmbudosOfertasLandingPagesPage />} />
+            <Route path="/marketing/ab-testing" element={<AbTestingYExperimentacionPage />} />
+            <Route path="/dashboard/marketing/anuncios" element={<GestorDeAnunciosPage />} />
+            <Route path="/dashboard/marketing/social-planner" element={<PlannerDeRedesSocialesPage />} />
+            <Route path="/abm" element={<AccountBasedMarketingAbmPage />} />
+            <Route path="/comunidad" element={<CommunityYEngagementPage />} />
+            <Route path="/market-intelligence" element={<CompetitiveAnalysisYMarketIntelligencePage />} />
+            <Route path="/dashboard/marketing/funnels" element={<ConstructorDeFunnelsYLandingPagesPage />} />
+            <Route path="/dashboard/content/clipper" element={<ContentClipperPage />} />
+            <Route path="/dashboard/content/video-studio" element={<VideoMarketingYAutomationPage />} />
+            <Route path="/dashboard/marketing/influencers" element={<CreatorinfluencerContentSyndicationPage />} />
+            <Route path="/dashboard/monetizacion/precios-dinamicos" element={<DynamicPricingYOfertasInteligentesPage />} />
+            <Route path="/dashboard/monetizacion/loyalty" element={<LoyaltyProgramManagerPage />} />
+            <Route path="/dashboard/monetizacion/referidos" element={<MarketingDeReferidosPage />} />
+            <Route path="/dashboard/partnerships" element={<PartnershipsYInfluencersPage />} />
+            <Route path="/dashboard/email/compliance" element={<EmailDeliverabilityYComplianceHubPage />} />
+            <Route path="/dashboard/marketing/email-campaigns" element={<EmailMarketingYNewslettersPage />} />
+            <Route path="/dashboard/marketing/mensajeria" element={<SmswhatsappMarketingPage />} />
+            <Route path="/dashboard/automatizacion/secuencias-email" element={<LifecycleEmailSequencesPage />} />
+            <Route path="/dashboard/automations/messaging" element={<SmswhatsappAutomationPage />} />
+            <Route path="/dashboard/experiencias/eventos" element={<EventosYRetosPage />} />
+            <Route path="/dashboard/experiences/virtual-events" element={<WebinarsYVirtualEventsManagerPage />} />
+            <Route path="/dashboard/feedback/surveys" element={<FeedbackLoopYEncuestasInteligentesPage />} />
+            <Route path="/dashboard/marketing/ia-generator" element={<GeneradorCreativoConIaPage />} />
+            <Route path="/dashboard/marketing/ia-estrategias" element={<GeneradorDeEstrategiasDeMarketingConIaPage />} />
+            <Route path="/dashboard/contenido/generador-ia" element={<GeneradorDeIdeasDeContenidoConIaPage />} />
+            <Route path="/dashboard/ia/personalization-engine" element={<PersonalizationEngineIaAvanzadaPage />} />
+            <Route path="/dashboard/marketing/progressive-profiling" element={<ProgressiveProfilingPage />} />
+            <Route path="/dashboard/monetizacion/ofertas" element={<PromocionesCuponesYPacksPage />} />
+            <Route path="/dashboard/marketing/referrals" element={<ReferidosYAfiliadosPage />} />
+            <Route path="/dashboard/marketing/retargeting" element={<RetargetingYPixelManagerPage />} />
+            <Route path="/dashboard/reviews" element={<ReviewYTestimonialEnginePage />} />
+            <Route path="/dashboard/audiencias" element={<SegmentacionDinamicaYAudienciasPage />} />
+            <Route path="/client/preferences/communication" element={<SmsemailPreferenceCenterPage />} />
+            <Route path="/dashboard/contenido-premium" element={<GestionDeContenidosPremiumPage />} />
+            <Route path="/dashboard/contenido/ugc-hub" element={<HubDeContenidosYUgcPage />} />
+            <Route path="/dashboard/marketing/lead-magnets" element={<LeadMagnetFactoryPage />} />
+            <Route path="/dashboard/intelligence/playbooks" element={<LibreriaDeCampanasPlaybooksPage />} />
+            <Route path="/dashboard/intelligence/trend-analyzer" element={<TrendAnalizerPage />} />
             <Route path="/analytics/acquisition" element={<AnaliticaDeAdquisicionPage />} />
             <Route path="/analytics/locations-summary" element={<ResumenPorSedePage />} />
             <Route path="/analiticas/comparativa-sedes" element={<ComparativaEntreSedesPage />} />

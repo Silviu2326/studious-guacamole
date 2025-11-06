@@ -291,3 +291,10 @@ export const getRatingColor = (rating: number): string => {
   return 'text-red-600';
 };
 
+
+
+
+
+
+
+

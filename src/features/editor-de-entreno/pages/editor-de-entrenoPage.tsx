@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { Card, Tabs, MetricCards, Table, Button, Modal } from '../../../components/componentsreutilizables';
-import { EditorEntreno } from '../components';
+import { EditorEntreno, EditorAvanzado } from '../components';
 import { SesionEntrenamiento, getSesiones, eliminarSesion, getPlantillas } from '../api';
 import { Dumbbell, Target, Plus, FileText, Trash2, Edit, Copy, Calendar } from 'lucide-react';
 
@@ -15,19 +15,44 @@ export default function EditorDeEntrenoPage() {
   const [mostrarEditor, setMostrarEditor] = useState(false);
   const [sesionAEliminar, setSesionAEliminar] = useState<string | null>(null);
 
+  // Cargar datos cuando cambiamos a tabs que los necesitan
   React.useEffect(() => {
-    cargarSesiones();
-    cargarPlantillas();
+    if (tabActiva === 'sesiones' || tabActiva === 'plantillas') {
+      if (tabActiva === 'sesiones') {
+        cargarSesiones();
+      }
+      if (tabActiva === 'plantillas') {
+        cargarPlantillas();
+      }
+    }
+  }, [tabActiva]);
+
+  // Cargar datos iniciales solo si no estamos en el editor
+  React.useEffect(() => {
+    if (tabActiva !== 'editor') {
+      cargarSesiones();
+      cargarPlantillas();
+    }
   }, []);
 
   const cargarSesiones = async () => {
-    const data = await getSesiones();
-    setSesiones(data);
+    try {
+      const data = await getSesiones();
+      setSesiones(data || []);
+    } catch (error) {
+      console.warn('Error al cargar sesiones:', error);
+      setSesiones([]);
+    }
   };
 
   const cargarPlantillas = async () => {
-    const data = await getPlantillas();
-    setPlantillas(data);
+    try {
+      const data = await getPlantillas();
+      setPlantillas(data || []);
+    } catch (error) {
+      console.warn('Error al cargar plantillas:', error);
+      setPlantillas([]);
+    }
   };
 
   const tabs = useMemo(
@@ -51,13 +76,13 @@ export default function EditorDeEntrenoPage() {
     []
   );
 
-  const metricas = [
+  const metricas = useMemo(() => [
     {
       title: 'Total Sesiones',
       value: sesiones.length.toString(),
       icon: <Dumbbell className="w-5 h-5" />,
       trend: 'up' as const,
-      trendValue: '+0%',
+      trendValue: '0%',
       color: 'blue' as const,
     },
     {
@@ -73,7 +98,7 @@ export default function EditorDeEntrenoPage() {
       value: sesiones.filter((s) => !s.plantilla).length.toString(),
       icon: <Target className="w-5 h-5" />,
       trend: 'up' as const,
-      trendValue: '+0%',
+      trendValue: '0%',
       color: 'green' as const,
     },
     {
@@ -81,10 +106,10 @@ export default function EditorDeEntrenoPage() {
       value: sesiones.reduce((acc, s) => acc + (s.ejercicios?.length || 0), 0).toString(),
       icon: <Calendar className="w-5 h-5" />,
       trend: 'up' as const,
-      trendValue: '+0%',
+      trendValue: '0%',
       color: 'yellow' as const,
     },
-  ];
+  ], [sesiones, plantillas]);
 
   const columnasSesiones = [
     { key: 'nombre', label: 'Nombre' },
@@ -141,28 +166,21 @@ export default function EditorDeEntrenoPage() {
       case 'editor':
         return (
           <div>
-            {!mostrarEditor ? (
-              <Card className="p-8 text-center bg-white shadow-sm">
-                <Dumbbell size={48} className="mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Crear Nueva Sesión de Entrenamiento
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  {esEntrenador
-                    ? 'Crea sesiones personalizadas para tus clientes'
-                    : 'Crea sesiones para grupos, clases y programas estándar'}
-                </p>
-                <Button onClick={() => setMostrarEditor(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nueva Sesión
-                </Button>
-              </Card>
-            ) : (
-              <EditorEntreno
-                sesionInicial={sesionEditando || undefined}
-                onGuardar={handleGuardarSesion}
-              />
-            )}
+            <Card className="p-8 text-center bg-white shadow-sm">
+              <Dumbbell size={48} className="mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Crear Nueva Sesión de Entrenamiento
+              </h3>
+              <p className="text-gray-600 mb-4">
+                {esEntrenador
+                  ? 'Crea sesiones personalizadas para tus clientes'
+                  : 'Crea sesiones para grupos, clases y programas estándar'}
+              </p>
+              <Button onClick={() => setMostrarEditor(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nueva Sesión
+              </Button>
+            </Card>
           </div>
         );
       case 'sesiones':
@@ -235,6 +253,64 @@ export default function EditorDeEntrenoPage() {
     }
   };
 
+  // Si el editor avanzado está abierto, mostrar solo el editor (con su TopBar)
+  if (mostrarEditor) {
+    return (
+      <>
+        <EditorAvanzado
+          sesionInicial={sesionEditando || undefined}
+          clientePerfil={{
+            id: user?.id || '',
+            nombre: 'Cliente Ejemplo',
+            tiempoSemana: 180,
+            materialDisponible: ['mancuernas', 'barra', 'banco'],
+            lesiones: [],
+            preferencias: ['fuerza'],
+            cronotipo: 'matutino',
+          }}
+          estadoCliente={{
+            adherenciaSemana: 85,
+            fatigaReportada: 'media',
+            dolorActual: {
+              intensidad: 'verde',
+            },
+          }}
+          onGuardar={(sesion) => {
+            handleGuardarSesion(sesion);
+            setMostrarEditor(false);
+          }}
+          onGuardarYProgramar={(planificacion) => {
+            console.log('Guardar y programar', planificacion);
+            // TODO: Implementar guardado de planificación
+            setMostrarEditor(false);
+          }}
+          onClose={() => {
+            setMostrarEditor(false);
+            setSesionEditando(null);
+          }}
+        />
+        <Modal
+          isOpen={!!sesionAEliminar}
+          onClose={() => setSesionAEliminar(null)}
+          title="Confirmar Eliminación"
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setSesionAEliminar(null)}>
+                Cancelar
+              </Button>
+              <Button variant="destructive" onClick={handleEliminar}>
+                Eliminar
+              </Button>
+            </>
+          }
+        >
+          <p>¿Estás seguro de que deseas eliminar esta sesión?</p>
+        </Modal>
+      </>
+    );
+  }
+
+  // Vista normal de la página (con header, métricas, tabs)
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       {/* Header */}

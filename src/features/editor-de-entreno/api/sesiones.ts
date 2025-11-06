@@ -1,9 +1,17 @@
 import { SesionEntrenamiento } from './editor';
 
 export async function getSesiones(): Promise<SesionEntrenamiento[]> {
-  const res = await fetch('/api/entrenamiento/sesiones');
-  if (!res.ok) return [];
-  return res.json();
+  try {
+    const res = await fetch('/api/entrenamiento/sesiones');
+    if (!res.ok) {
+      console.warn('Error al cargar sesiones:', res.status);
+      return [];
+    }
+    return res.json();
+  } catch (error) {
+    console.warn('Error al cargar sesiones:', error);
+    return [];
+  }
 }
 
 export async function getSesion(id: string): Promise<SesionEntrenamiento | null> {
@@ -61,8 +69,16 @@ export async function duplicarSesion(sesionId: string, nuevoNombre?: string): Pr
 }
 
 export async function getPlantillas(): Promise<SesionEntrenamiento[]> {
-  const res = await fetch('/api/entrenamiento/sesiones/plantillas');
-  if (!res.ok) return [];
-  return res.json();
+  try {
+    const res = await fetch('/api/entrenamiento/sesiones/plantillas');
+    if (!res.ok) {
+      console.warn('Error al cargar plantillas:', res.status);
+      return [];
+    }
+    return res.json();
+  } catch (error) {
+    console.warn('Error al cargar plantillas:', error);
+    return [];
+  }
 }
 

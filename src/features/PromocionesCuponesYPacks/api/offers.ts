@@ -270,3 +270,10 @@ export const getDiscountTypeLabel = (type: DiscountType): string => {
   return labels[type];
 };
 
+
+
+
+
+
+
+

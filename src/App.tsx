@@ -3,7 +3,6 @@ import { Login } from './components/Login';
 import { Dashboard } from './components/Dashboard';
 import AdherenciaCumplimientoEntrenoPage from './features/adherencia-cumplimiento-de-entreno/pages/adherencia-cumplimiento-de-entrenoPage';
 import { RestriccionesAlimentariasPage } from './features/restricciones-alimentarias/page';
-import BibliotecaEjerciciosPage from './features/biblioteca-de-ejercicios/pages/biblioteca-de-ejerciciosPage';
 import { CajaBancosPage } from './features/caja-bancos/pages/caja-bancosPage';
 import { CampanasOutreachPage } from './features/campanas-outreach/pages/campanas-outreachPage';
 import AbTestingYExperimentacionPage from './features/AbTestingYExperimentacion/pages/AbTestingYExperimentacionPage';
@@ -32,10 +31,12 @@ import AgendaPage from './features/agenda/page';
 import AgendaCalendarioPage from './features/agenda-calendario/pages/agenda-calendarioPage';
 import AlertasRestriccionesAlimentariasPage from './features/alertas-restricciones-alimentarias/pages/alertas-restricciones-alimentariasPage';
 import DisponibilidadTurnosStaffPage from './features/disponibilidad-turnos-staff/pages/disponibilidad-turnos-staffPage';
-import EditorDietaMealPlannerPage from './features/editor-de-dieta-meal-planner/pages/editor-de-dieta-meal-plannerPage';
 import EditorDeEntrenoPage from './features/editor-de-entreno/pages/editor-de-entrenoPage';
+import SuiteDeEntrenoPage from './features/suite-de-entreno/pages/suite-de-entrenoPage';
+import SuiteDeNutricionPage from './features/suite-de-nutricion/pages/suite-de-nutricionPage';
 import EncuestasSatisfaccinNPSCSATPage from './features/encuestas-satisfaccin-npscsat/pages/encuestas-satisfaccin-npscsatPage';
 import EventosRetosEspecialesPage from './features/eventos-retos-especiales';
+import EventosRetosPage from './features/eventos-retos/pages/eventos-retosPage';
 import { FacturacinCobrosPage } from './features/facturacin-cobros';
 import { GastosProveedoresPage } from './features/gastos-proveedores';
 import GestiónDeClientesPage from './features/gestión-de-clientes/pages/gestión-de-clientesPage';
@@ -53,7 +54,6 @@ import PagosPendientesMorosidadPage from './features/pagos-pendientes-morosidad/
 import PanelFinancieroOverviewPage from './features/panel-financiero-overview/pages/panel-financiero-overviewPage';
 import { PedidosTicketsPage } from './features/pedidos-tickets';
 import PipelineDeVentaKanbanPage from './features/pipeline-de-venta-kanban/pages/pipeline-de-venta-kanbanPage';
-import PlantillasDeDietaPage from './features/plantillas-de-dieta/pages/plantillas-de-dietaPage';
 import PlantillasDeEntrenamientoPage from './features/plantillas-de-entrenamiento/pages/plantillas-de-entrenamientoPage';
 import PortalDelClienteAutoservicioPage from './features/portal-del-cliente-autoservicio/pages/portal-del-cliente-autoservicioPage';
 import ProgramasDeEntrenoPage from './features/programas-de-entreno/pages/programas-de-entrenoPage';
@@ -61,7 +61,6 @@ import TurnosHorariosDelStaffPage from './features/turnos-horarios-del-staff/pag
 import CheckInsDeEntrenoPage from './features/check-ins-de-entreno/pages/check-ins-de-entrenoPage';
 import CheckInsNutricionalesPage from './features/check-ins-nutricionales/pages/check-ins-nutricionalesPage';
 import ControlAccesoAforoTiempoRealPage from './features/control-de-acceso-aforo-en-tiempo-real/pages/control-de-acceso-aforo-en-tiempo-realPage';
-import DietasAsignadasPage from './features/dietas-asignadas/pages/dietas-asignadasPage';
 import RecetarioComidasGuardadasPage from './features/recetario-comidas-guardadas/pages/recetario-comidas-guardadasPage';
 import RecursosSalasMaterialPage from './features/recursos-salas-material/pages/recursos-salas-materialPage';
 import RenovacionesBajasPage from './features/renovaciones-bajas/pages/renovaciones-bajasPage';
@@ -156,7 +155,6 @@ function App() {
           <Route element={<AppLayout />}>
             <Route path="/adherencia" element={<AdherenciaCumplimientoEntrenoPage />} />
             <Route path="/restricciones" element={<RestriccionesAlimentariasPage />} />
-            <Route path="/biblioteca-de-ejercicios" element={<BibliotecaEjerciciosPage />} />
             <Route path="/catalogo-planes" element={<CatalogoPage />} />
             <Route path="/catalogo-productos" element={<CatalogoProductosPage />} />
             <Route path="/settings/services" element={<ServiciosTarifasPage />} />
@@ -165,10 +163,10 @@ function App() {
             <Route path="/campanas-outreach" element={<CampanasOutreachPage />} />
             <Route path="/alertas-restricciones-alimentarias" element={<AlertasRestriccionesAlimentariasPage />} />
             <Route path="/disponibilidad-turnos-staff" element={<DisponibilidadTurnosStaffPage />} />
-            <Route path="/editor-de-dieta-meal-planner" element={<EditorDietaMealPlannerPage />} />
             <Route path="/editor-de-entreno" element={<EditorDeEntrenoPage />} />
             <Route path="/encuestas-satisfaccin-npscsat" element={<EncuestasSatisfaccinNPSCSATPage />} />
             <Route path="/eventos-retos-especiales" element={<EventosRetosEspecialesPage />} />
+            <Route path="/eventos-retos" element={<EventosRetosPage />} />
             <Route path="/facturacin-cobros" element={<FacturacinCobrosPage />} />
             <Route path="/gastos-proveedores" element={<GastosProveedoresPage />} />
             <Route path="/ordenes-de-compra" element={<OrdenesDeCompraPage />} />
@@ -189,17 +187,17 @@ function App() {
             <Route path="/panel-financiero-overview" element={<PanelFinancieroOverviewPage />} />
             <Route path="/pedidos-tickets" element={<PedidosTicketsPage />} />
             <Route path="/pipeline-de-venta-kanban" element={<PipelineDeVentaKanbanPage />} />
-            <Route path="/plantillas-de-dieta" element={<PlantillasDeDietaPage />} />
             <Route path="/plantillas-de-entrenamiento" element={<PlantillasDeEntrenamientoPage />} />
             <Route path="/settings/templates" element={<PlantillasDeMensajesYContratosPage />} />
             <Route path="/settings/policies" element={<PoliticasTerminosPage />} />
             <Route path="/portal-del-cliente-autoservicio" element={<PortalDelClienteAutoservicioPage />} />
             <Route path="/programas-de-entreno" element={<ProgramasDeEntrenoPage />} />
+            <Route path="/suite-de-entreno" element={<SuiteDeEntrenoPage />} />
+            <Route path="/suite-de-nutricion" element={<SuiteDeNutricionPage />} />
             <Route path="/turnos-horarios-del-staff" element={<TurnosHorariosDelStaffPage />} />
             <Route path="/check-ins-de-entreno" element={<CheckInsDeEntrenoPage />} />
             <Route path="/check-ins-nutricionales" element={<CheckInsNutricionalesPage />} />
             <Route path="/control-de-acceso-aforo" element={<ControlAccesoAforoTiempoRealPage />} />
-            <Route path="/dietas-asignadas" element={<DietasAsignadasPage />} />
             <Route path="/recetario-comidas-guardadas" element={<RecetarioComidasGuardadasPage />} />
             <Route path="/recursos-salas-material" element={<RecursosSalasMaterialPage />} />
             <Route path="/renovaciones-bajas" element={<RenovacionesBajasPage />} />

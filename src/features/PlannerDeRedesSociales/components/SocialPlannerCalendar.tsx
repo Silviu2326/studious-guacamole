@@ -198,13 +198,58 @@ export const SocialPlannerCalendar: React.FC<SocialPlannerCalendarProps> = ({
     );
   }
 
-  // Month view (simplified)
+  // Month view (complete implementation)
+  const getMonthDates = () => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - startDate.getDay());
+    
+    const dates: Date[] = [];
+    const current = new Date(startDate);
+    
+    for (let i = 0; i < 42; i++) {
+      dates.push(new Date(current));
+      current.setDate(current.getDate() + 1);
+    }
+    
+    return dates;
+  };
+
+  const monthDates = getMonthDates();
+  const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+  const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+
   return (
     <Card className="bg-white shadow-sm">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-bold text-gray-900">
-          {currentDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
-        </h3>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              const newDate = new Date(currentDate);
+              newDate.setMonth(newDate.getMonth() - 1);
+              setCurrentDate(newDate);
+            }}
+            leftIcon={<ChevronLeft size={18} />}
+          />
+          <h3 className="text-lg font-bold text-gray-900">
+            {currentDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+          </h3>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              const newDate = new Date(currentDate);
+              newDate.setMonth(newDate.getMonth() + 1);
+              setCurrentDate(newDate);
+            }}
+            leftIcon={<ChevronRight size={18} />}
+          />
+        </div>
         <div className="flex gap-2 rounded-xl bg-slate-100 p-1">
           <button
             onClick={() => setViewMode('week')}
@@ -228,11 +273,76 @@ export const SocialPlannerCalendar: React.FC<SocialPlannerCalendarProps> = ({
           </button>
         </div>
       </div>
-      <Card className="p-8 text-center bg-white shadow-sm">
-        <Calendar size={48} className="mx-auto text-gray-400 mb-4" />
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Vista mensual</h3>
-        <p className="text-gray-600">Esta vista está en construcción</p>
-      </Card>
+
+      {isLoading ? (
+        <Card className="p-8 text-center bg-white shadow-sm">
+          <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
+          <p className="text-gray-600">Cargando...</p>
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          {/* Day headers */}
+          <div className="grid grid-cols-7 gap-2 mb-2">
+            {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map((day, idx) => (
+              <div key={idx} className="p-2 text-center">
+                <p className="text-xs font-semibold text-gray-600">{day}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Calendar grid */}
+          <div className="grid grid-cols-7 gap-2">
+            {monthDates.map((date, idx) => {
+              const dayPosts = getPostsForDate(date);
+              const isToday = date.toDateString() === new Date().toDateString();
+              const isCurrentMonth = date.getMonth() === currentDate.getMonth();
+              
+              return (
+                <Card
+                  key={idx}
+                  className={`p-2 min-h-[100px] transition-all ${
+                    isToday
+                      ? 'ring-2 ring-blue-500 bg-blue-50'
+                      : isCurrentMonth
+                      ? 'ring-1 ring-gray-200 bg-white hover:ring-blue-400'
+                      : 'ring-1 ring-gray-100 bg-gray-50 opacity-50'
+                  }`}
+                  onClick={() => onPostSelect(null)}
+                >
+                  <div className="mb-2">
+                    <p className={`text-sm font-semibold ${
+                      isToday ? 'text-blue-600' : isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
+                    }`}>
+                      {date.getDate()}
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    {dayPosts.slice(0, 2).map((post) => (
+                      <div
+                        key={post.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onPostSelect(post.id);
+                        }}
+                        className="text-xs p-1 bg-blue-100 text-blue-700 rounded cursor-pointer hover:bg-blue-200 transition truncate"
+                        title={post.content}
+                      >
+                        {post.content.substring(0, 20)}...
+                      </div>
+                    ))}
+                    {dayPosts.length > 2 && (
+                      <p className="text-xs text-gray-500 text-center">
+                        +{dayPosts.length - 2} más
+                      </p>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </Card>
   );
 };

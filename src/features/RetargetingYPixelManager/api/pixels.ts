@@ -216,3 +216,10 @@ export const formatLastEvent = (timestamp?: string): string => {
   return `hace ${Math.floor(diff / 86400)} días`;
 };
 
+
+
+
+
+
+
+

@@ -4,7 +4,6 @@ import { EntrenadorDashboard } from './EntrenadorDashboard';
 import { GimnasioDashboard } from './GimnasioDashboard';
 import { AdherenciaTracker } from '../features/adherencia/components/AdherenciaTracker';
 import { RestriccionesAlimentariasPage } from '../features/restricciones-alimentarias/page';
-import { BibliotecaEjerciciosPage } from '../features/biblioteca-ejercicios';
 
 export function Dashboard() {
   const { user } = useAuth();
@@ -18,8 +17,6 @@ export function Dashboard() {
         return <AdherenciaTracker />;
       case 'restricciones':
         return <RestriccionesAlimentariasPage />;
-      case 'biblioteca-ejercicios':
-        return <BibliotecaEjerciciosPage />;
       case 'dashboard':
       default:
         return user.role === 'entrenador' ? (

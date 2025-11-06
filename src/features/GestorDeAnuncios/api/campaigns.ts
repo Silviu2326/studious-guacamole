@@ -250,3 +250,10 @@ export const deleteCampaign = async (id: string): Promise<void> => {
   console.log('Eliminando campaña:', id);
 };
 
+
+
+
+
+
+
+

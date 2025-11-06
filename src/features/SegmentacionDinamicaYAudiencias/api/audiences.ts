@@ -239,3 +239,10 @@ export const getAvailableFields = () => [
   { id: 'lead_magnet_download', label: 'Lead Magnet Descargado', type: 'select', options: ['nutrition_guide', 'workout_plans', 'meal_prep'] }
 ];
 
+
+
+
+
+
+
+

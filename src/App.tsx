@@ -27,7 +27,6 @@ import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { useState } from 'react';
 import { ExamplePage } from './components/componentsreutilizables';
-import AgendaPage from './features/agenda/page';
 import AgendaCalendarioPage from './features/agenda-calendario/pages/agenda-calendarioPage';
 import AlertasRestriccionesAlimentariasPage from './features/alertas-restricciones-alimentarias/pages/alertas-restricciones-alimentariasPage';
 import DisponibilidadTurnosStaffPage from './features/disponibilidad-turnos-staff/pages/disponibilidad-turnos-staffPage';
@@ -51,7 +50,6 @@ import { MantenimientoIncidenciasPage } from './features/mantenimiento-incidenci
 import MembresiasActivasPage from './features/membresas-activas/pages/membresas-activasPage';
 import ObjetivosRendimientoPage from './features/objetivos-rendimiento/pages/objetivos-rendimientoPage';
 import PagosPendientesMorosidadPage from './features/pagos-pendientes-morosidad/pages/pagos-pendientes-morosidadPage';
-import PanelFinancieroOverviewPage from './features/panel-financiero-overview/pages/panel-financiero-overviewPage';
 import { PedidosTicketsPage } from './features/pedidos-tickets';
 import PipelineDeVentaKanbanPage from './features/pipeline-de-venta-kanban/pages/pipeline-de-venta-kanbanPage';
 import PlantillasDeEntrenamientoPage from './features/plantillas-de-entrenamiento/pages/plantillas-de-entrenamientoPage';
@@ -131,6 +129,23 @@ import SmswhatsappMarketingPage from './features/SmswhatsappMarketing/pages/Smsw
 import TrendAnalizerPage from './features/TrendAnalizer/pages/TrendAnalizerPage';
 import VideoMarketingYAutomationPage from './features/VideoMarketingYAutomation/pages/VideoMarketingYAutomationPage';
 import WebinarsYVirtualEventsManagerPage from './features/WebinarsYVirtualEventsManager/pages/WebinarsYVirtualEventsManagerPage';
+import { CampanasPromocionesPage } from './features/CampanasYPromociones/pages/CampanasPromocionesPage';
+import { LandingPagesSimplesPage } from './features/LandingPagesSimples/pages/LandingPagesSimplesPage';
+import { GestionResenasTestimoniosPage } from './features/GestionResenasTestimonios/pages/GestionResenasTestimoniosPage';
+import { CampanasRetencionRiesgoPage } from './features/CampanasRetencionRiesgo/pages/CampanasRetencionRiesgoPage';
+import { RedesSocialesPlannerSimplePage } from './features/RedesSocialesPlannerSimple/pages/RedesSocialesPlannerSimplePage';
+import { AnaliticaCaptacionPage } from './features/AnaliticaCaptacion/pages/AnaliticaCaptacionPage';
+import { Clientes360Page } from './features/Clientes360/pages/Clientes360Page';
+import { AgendaReservasPage } from './features/AgendaReservas/pages/AgendaReservasPage';
+import { MembresiasPlanesPage } from './features/MembresiasPlanes/pages/MembresiasPlanesPage';
+import { FinanzasPage } from './features/Finanzas/pages/FinanzasPage';
+import { VentasYLeadsPage } from './features/VentasYLeads/pages/VentasYLeadsPage';
+import { B2BEmpresasPage } from './features/B2BEmpresas';
+import { OperacionesPage } from './features/Operaciones';
+import { EquipoRRHHPage } from './features/EquipoRRHH';
+import { MultisedeFranquiciasPage } from './features/MultisedeFranquicias';
+import { ConfiguracionCentroPage } from './features/ConfiguracionCentro';
+
 function ProtectedRoute() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
@@ -159,6 +174,8 @@ function App() {
             <Route path="/catalogo-productos" element={<CatalogoProductosPage />} />
             <Route path="/settings/services" element={<ServiciosTarifasPage />} />
             <Route path="/agenda" element={<AgendaCalendarioPage />} />
+            <Route path="/agenda-reservas" element={<AgendaReservasPage />} />
+            <Route path="/membresias-planes" element={<MembresiasPlanesPage />} />
             <Route path="/caja-bancos" element={<CajaBancosPage />} />
             <Route path="/campanas-outreach" element={<CampanasOutreachPage />} />
             <Route path="/alertas-restricciones-alimentarias" element={<AlertasRestriccionesAlimentariasPage />} />
@@ -184,9 +201,11 @@ function App() {
             <Route path="/membresias-activas" element={<MembresiasActivasPage />} />
             <Route path="/objetivos-rendimiento" element={<ObjetivosRendimientoPage />} />
             <Route path="/pagos-pendientes-morosidad" element={<PagosPendientesMorosidadPage />} />
-            <Route path="/panel-financiero-overview" element={<PanelFinancieroOverviewPage />} />
+            <Route path="/panel-financiero-overview" element={<FinanzasPage />} />
             <Route path="/pedidos-tickets" element={<PedidosTicketsPage />} />
             <Route path="/pipeline-de-venta-kanban" element={<PipelineDeVentaKanbanPage />} />
+            <Route path="/clientes-360" element={<Clientes360Page />} />
+            <Route path="/ventas-leads" element={<VentasYLeadsPage />} />
             <Route path="/plantillas-de-entrenamiento" element={<PlantillasDeEntrenamientoPage />} />
             <Route path="/settings/templates" element={<PlantillasDeMensajesYContratosPage />} />
             <Route path="/settings/policies" element={<PoliticasTerminosPage />} />
@@ -247,6 +266,12 @@ function App() {
             <Route path="/dashboard/intelligence/playbooks" element={<LibreriaDeCampanasPlaybooksPage />} />
             <Route path="/dashboard/intelligence/trend-analyzer" element={<TrendAnalizerPage />} />
             <Route path="/analytics/acquisition" element={<AnaliticaDeAdquisicionPage />} />
+            <Route path="/dashboard/marketing/campanas-promociones" element={<CampanasPromocionesPage />} />
+            <Route path="/dashboard/marketing/landing-pages-simples" element={<LandingPagesSimplesPage />} />
+            <Route path="/dashboard/marketing/resenas-testimonios" element={<GestionResenasTestimoniosPage />} />
+            <Route path="/dashboard/marketing/retencion-riesgo" element={<CampanasRetencionRiesgoPage />} />
+            <Route path="/dashboard/marketing/social-planner-simple" element={<RedesSocialesPlannerSimplePage />} />
+            <Route path="/dashboard/analytics/captacion" element={<AnaliticaCaptacionPage />} />
             <Route path="/analytics/locations-summary" element={<ResumenPorSedePage />} />
             <Route path="/analiticas/comparativa-sedes" element={<ComparativaEntreSedesPage />} />
             <Route path="/multisede/transferencias" element={<TransferenciasEntreSedesPage />} />
@@ -254,6 +279,8 @@ function App() {
             <Route path="/operations/checklists" element={<ChecklistsOperativosAperturaCierreLimpiezaPage />} />
             <Route path="/operations/documents" element={<DocumentacionInternaYProtocolosPage />} />
             <Route path="/corporate/governance/templates" element={<NormativaYPlantillasGlobalesPage />} />
+            <Route path="/operaciones" element={<OperacionesPage />} />
+            <Route path="/operaciones/equipo-rrhh" element={<EquipoRRHHPage />} />
             <Route path="/finanzas/impuestos-y-exportacion" element={<ImpuestosExportContablePage />} />
             <Route path="/finanzas/informes-avanzados" element={<InformesFinancierosAvanzadosPage />} />
             <Route path="/finanzas/presupuestos" element={<PresupuestosForecastPage />} />
@@ -262,6 +289,7 @@ function App() {
             <Route path="/crm/cliente-360/:clientId" element={<Cliente360Page />} />
             <Route path="/corporate/companies/:companyId/employees" element={<EmpleadosActivosPage />} />
             <Route path="/b2b/convenios" element={<EmpresasConveniosPage />} />
+            <Route path="/b2b/empresas" element={<B2BEmpresasPage />} />
             <Route path="/b2b/empresas-corporativas" element={<PortalEmpresaPage />} />
             <Route path="/corporate/usage-results" element={<UsoResultadosProgramasCorporativosPage />} />
             <Route path="/corporate/billing" element={<FacturacionAEmpresasPage />} />
@@ -278,6 +306,8 @@ function App() {
             <Route path="/team/incentives" element={<ObjetivosComisionesPage />} />
             <Route path="/team/time-tracking" element={<ParteHorariaFichajesPage />} />
             <Route path="/configuracion/roles-y-permisos" element={<RolesPermisosPage />} />
+            <Route path="/multisede" element={<MultisedeFranquiciasPage />} />
+            <Route path="/configuracion/centro" element={<ConfiguracionCentroPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -34,7 +34,11 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
   const location = useLocation();
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['dashboard', 'crm', 'marketing']));
 
-  const isEntrenador = user?.role === 'entrenador';
+  const role = user?.role ?? 'gimnasio';
+  const isEntrenador = role === 'entrenador';
+  const isCreador = role === 'creador';
+  const isPersonalRole = isEntrenador || isCreador;
+  const isGimnasio = role === 'gimnasio';
 
   // Determinar el path actual
   const getCurrentPath = () => {
@@ -46,6 +50,8 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     if (path.includes('gestión-de-clientes') || path.includes('clientes')) return 'gestión-de-clientes';
     if (path.includes('portal-del-cliente-autoservicio')) return 'portal-del-cliente-autoservicio';
     if (path.includes('pipeline-de-venta-kanban')) return 'pipeline-de-venta-kanban';
+    if (path.includes('clientes-360')) return 'clientes-360';
+    if (path.includes('ventas-leads')) return 'ventas-leads';
     if (path.includes('encuestas-satisfaccin-npscsat')) return 'encuestas-satisfaccin-npscsat';
     if (path.includes('campanas-outreach')) return 'campanas-outreach';
     if (path.includes('listas-inteligentes-segmentos-guardados')) return 'listas-inteligentes-segmentos-guardados';
@@ -57,6 +63,7 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     if (path.includes('lista-de-la-compra-supermercado')) return 'lista-de-la-compra-supermercado';
     if (path.includes('restricciones')) return 'restricciones';
     if (path.includes('alertas-restricciones-alimentarias')) return 'alertas-restricciones-alimentarias';
+    if (path.includes('agenda-reservas')) return 'agenda-reservas';
     if (path.includes('agenda')) return 'agenda';
     if (path.includes('reservas-online')) return 'reservas-online';
     if (path.includes('lista-de-espera-ausencias')) return 'lista-de-espera-ausencias';
@@ -73,6 +80,7 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     if (path.includes('impuestos-y-exportacion')) return 'impuestos-y-exportacion';
     if (path.includes('informes-financieros-avanzados')) return 'informes-financieros-avanzados';
     if (path.includes('catalogo-planes')) return 'catalogo-planes';
+    if (path.includes('membresias-planes')) return 'membresias-planes';
     if (path.includes('membresias-activas')) return 'membresias-activas';
     if (path.includes('renovaciones-bajas')) return 'renovaciones-bajas';
     if (path.includes('portal-del-cliente-autoservicio')) return 'portal-del-cliente-autoservicio';
@@ -86,6 +94,26 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     if (path.includes('turnos-horarios-del-staff')) return 'turnos-horarios-del-staff';
     if (path.includes('control-de-acceso-aforo')) return 'control-de-acceso-aforo';
     if (path.includes('mantenimiento-incidencias')) return 'mantenimiento-incidencias';
+    if (path === '/operaciones') return 'operaciones-hub';
+    if (path.startsWith('/operaciones/equipo-rrhh')) return 'operaciones-equipo-rrhh';
+    if (
+      path.includes('turnos-horarios-del-staff') ||
+      path.includes('control-de-acceso-aforo') ||
+      path.includes('mantenimiento-incidencias') ||
+      path.includes('operations/checklists') ||
+      path.includes('operations/documents')
+    ) {
+      return 'operaciones-hub';
+    }
+    if (
+      path.includes('settings/team') ||
+      path.includes('team/time-tracking') ||
+      path.includes('equipo/nominas') ||
+      path.includes('team/incentives') ||
+      path.includes('team/performance-reviews')
+    ) {
+      return 'operaciones-equipo-rrhh';
+    }
     if (path.includes('operations/checklists')) return 'operations-checklists';
     if (path.includes('recursos-salas-material')) return 'recursos-salas-material';
     if (path.includes('documentacion-interna-y-protocolos')) return 'documentacion-interna-y-protocolos';
@@ -139,11 +167,7 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     if (path.includes('dashboard/marketing/anuncios') || path.includes('gestor-de-anuncios')) return 'gestor-de-anuncios';
     if (path.includes('dashboard/marketing/social-planner') || path.includes('planner-redes-sociales')) return 'planner-redes-sociales';
     if (path.includes('analitica-de-adquisicion')) return 'analitica-de-adquisicion';
-    if (path.includes('empresas-convenios') || path.includes('b2b/convenios')) return 'empresas-convenios';
-    if (path.includes('empleados-activos')) return 'empleados-activos';
-    if (path.includes('uso-resultados-programas-corporativos')) return 'uso-resultados-programas-corporativos';
-    if (path.includes('facturacion-a-empresas')) return 'facturacion-a-empresas';
-    if (path.includes('portal-empresa')) return 'portal-empresa';
+    if (path === '/b2b/empresas') return 'b2b-empresas';
     if (path.includes('resumen-por-sede')) return 'resumen-por-sede';
     if (path.includes('comparativa-entre-sedes')) return 'comparativa-entre-sedes';
     if (path.includes('catalogo-y-precios-por-sede')) return 'catalogo-y-precios-por-sede';
@@ -158,10 +182,30 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     if (path.includes('plantillas-de-mensajes-y-contratos') || path.includes('settings/templates')) return 'plantillas-de-mensajes-y-contratos';
     if (path.includes('roles-permisos')) return 'roles-permisos';
     if (path.includes('moneda-impuestos-series-de-factura') || path.includes('settings/financials')) return 'moneda-impuestos-series-de-factura';
+    if (path === '/multisede') return 'multisede-hub';
+    if (path.includes('resumen-por-sede') || path.includes('comparativa-entre-sedes') || path.includes('catalogo-y-precios-por-sede') || path.includes('transferencias-entre-sedes') || path.includes('normativa-y-plantillas-globales')) return 'multisede-hub';
+    if (
+      path === '/configuracion/centro' ||
+      path.includes('settings/general-profile') ||
+      path.includes('settings/services') ||
+      path.includes('settings/policies') ||
+      path.includes('settings/templates') ||
+      path.includes('configuracion/roles-y-permisos') ||
+      path.includes('settings/financials') ||
+      path.includes('settings/integrations') ||
+      path.includes('settings/developer') ||
+      path.includes('settings/data/importers')
+    ) {
+      return 'configuracion-centro';
+    }
     return 'dashboard';
   };
 
   const currentPath = getCurrentPath();
+
+  const headerBgClass = isPersonalRole ? 'bg-blue-600' : 'bg-purple-600';
+  const headerTitle = isEntrenador ? 'Panel Entrenador' : isCreador ? 'Panel Creador' : 'Panel Gimnasio';
+  const HeaderIcon = isEntrenador ? Award : isCreador ? Sparkles : Building2;
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => {
@@ -174,6 +218,158 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
       return next;
     });
   };
+
+  const marketingLiteItems: NavItem[] = [
+    { id: 'marketing-lite', label: 'Marketing (Lite)', icon: Megaphone, path: '/campanas-outreach' },
+    { id: 'planner-redes-sociales', label: 'Planner RRSS', icon: Calendar, path: '/dashboard/marketing/social-planner' },
+    { id: 'email-marketing-newsletters', label: 'Email/SMS (básico + secuencias esenciales)', icon: Mail, path: '/dashboard/marketing/email-campaigns' },
+    { id: 'review-testimonial-engine', label: 'Reviews & Testimonios', icon: Star, path: '/dashboard/reviews' },
+    { id: 'referidos-afiliados', label: 'Promos & Referidos', icon: Users, path: '/dashboard/marketing/referrals' },
+    { id: 'generador-creativo-ia', label: 'Generador Creativo IA', icon: Sparkles, path: '/dashboard/marketing/ia-generator' },
+  ];
+
+  const marketingGimnasioItems: NavItem[] = [
+    { id: 'campanas-promociones', label: 'Campañas & Promociones', icon: Megaphone, path: '/dashboard/marketing/campanas-promociones' },
+    { id: 'landing-pages-simples', label: 'Landing Pages Simples', icon: Globe, path: '/dashboard/marketing/landing-pages-simples' },
+    { id: 'resenas-testimonios', label: 'Gestión de Reseñas & Testimonios', icon: Star, path: '/dashboard/marketing/resenas-testimonios' },
+    { id: 'campanas-retencion-riesgo', label: 'Campañas Retención & Riesgo de Baja', icon: AlertCircle, path: '/dashboard/marketing/retencion-riesgo' },
+    { id: 'planner-redes-sociales-simple', label: 'Redes Sociales (Planner simple)', icon: Calendar, path: '/dashboard/marketing/social-planner-simple' },
+    { id: 'analitica-captacion', label: 'Analítica de Captación', icon: LineChart, path: '/dashboard/analytics/captacion' },
+  ];
+
+  const marketingFullItems: NavItem[] = [
+    // Captura & Conversión
+    { id: 'constructor-de-funnels-y-landing-pages', label: 'Constructor de Funnels & Landing Pages', icon: Globe, path: '/dashboard/marketing/funnels' },
+    { id: 'lead-magnet-factory', label: 'Lead Magnet Factory', icon: FileText, path: '/dashboard/marketing/lead-magnets' },
+    { id: 'progressive-profiling', label: 'Progressive Profiling', icon: Layers, path: '/dashboard/marketing/progressive-profiling' },
+    { id: 'gestion-contenidos-premium', label: 'Gestión de Contenidos Premium', icon: Package, path: '/dashboard/contenido-premium' },
+    // Segmentación & Automatización
+    { id: 'segmentacion-dinamica-audiencias', label: 'Segmentación Dinámica & Audiencias', icon: Filter, path: '/dashboard/audiencias' },
+    { id: 'lifecycle-email-sequences', label: 'Lifecycle Email Sequences', icon: Mail, path: '/dashboard/automatizacion/secuencias-email' },
+    // Email & SMS
+    { id: 'email-marketing-newsletters', label: 'Email Marketing & Newsletters', icon: Mail, path: '/dashboard/marketing/email-campaigns' },
+    { id: 'email-deliverability-compliance-hub', label: 'Email Deliverability & Compliance Hub', icon: ShieldCheck, path: '/dashboard/email/compliance' },
+    { id: 'sms-whatsapp-marketing', label: 'SMS/WhatsApp Marketing', icon: MessageSquare, path: '/dashboard/marketing/mensajeria' },
+    { id: 'sms-whatsapp-automation', label: 'SMS/WhatsApp Automation', icon: MessageSquare, path: '/dashboard/automations/messaging' },
+    { id: 'smsemail-preference-center', label: 'SMS/Email Preference Center', icon: Settings, path: '/client/preferences/communication' },
+    // Contenido & Redes Sociales
+    { id: 'planner-redes-sociales', label: 'Planner de Redes Sociales', icon: Calendar, path: '/dashboard/marketing/social-planner' },
+    { id: 'generador-creativo-ia', label: 'Generador Creativo con IA', icon: Sparkles, path: '/dashboard/marketing/ia-generator' },
+    { id: 'generador-estrategias-marketing', label: 'Generador de Estrategias de Marketing con IA', icon: Target, path: '/dashboard/marketing/ia-estrategias' },
+    { id: 'generador-ideas-contenido', label: 'Generador de Ideas de Contenido con IA', icon: SparklesIcon, path: '/dashboard/contenido/generador-ia' },
+    { id: 'content-clipper', label: 'Content Clipper', icon: Scissors, path: '/dashboard/content/clipper' },
+    { id: 'creatorinfluencer-content-syndication', label: 'Creator/Influencer Content Syndication', icon: Users, path: '/dashboard/marketing/influencers' },
+    { id: 'video-studio', label: 'Video Marketing & Automation', icon: Video, path: '/dashboard/content/video-studio' },
+    { id: 'hub-contenidos-ugc', label: 'Hub de Contenidos & UGC', icon: Image, path: '/dashboard/contenido/ugc-hub' },
+    // Confianza & Social Proof
+    { id: 'review-testimonial-engine', label: 'Review & Testimonial Engine', icon: Star, path: '/dashboard/reviews' },
+    { id: 'feedback-encuestas', label: 'Feedback Loop & Encuestas Inteligentes', icon: MessageSquare, path: '/dashboard/feedback/surveys' },
+    // Publicidad & Retargeting
+    { id: 'gestor-de-anuncios', label: 'Gestor de Anuncios', icon: Megaphone, path: '/dashboard/marketing/anuncios' },
+    { id: 'retargeting-pixel-manager', label: 'Retargeting & Pixel Manager', icon: Target, path: '/dashboard/marketing/retargeting' },
+    // Monetización & Ofertas
+    { id: 'promociones-cupones-packs', label: 'Promociones, Cupones & Packs', icon: Tag, path: '/dashboard/monetizacion/ofertas' },
+    { id: 'dynamic-pricing-ofertas-inteligentes', label: 'Dynamic Pricing & Ofertas Inteligentes', icon: Sparkles, path: '/dashboard/monetizacion/precios-dinamicos' },
+    { id: 'loyalty-program-manager', label: 'Loyalty Program Manager', icon: Gift, path: '/dashboard/monetizacion/loyalty' },
+    { id: 'referidos-afiliados', label: 'Referidos & Afiliados', icon: Users, path: '/dashboard/marketing/referrals' },
+    { id: 'marketing-de-referidos', label: 'Referral Marketing', icon: UserCheck, path: '/dashboard/monetizacion/referidos' },
+    // Experiencias & Eventos
+    { id: 'webinars-virtual-events', label: 'Webinars & Virtual Events Manager', icon: Video, path: '/dashboard/experiences/virtual-events' },
+    { id: 'eventos-retos', label: 'Eventos & Retos', icon: Trophy, path: '/dashboard/experiencias/eventos' },
+    { id: 'community-engagement', label: 'Community & Engagement', icon: Users, path: '/comunidad' },
+    // Análisis & Inteligencia
+    { id: 'libreria-campanas-playbooks', label: 'Librería de Campañas (Playbooks)', icon: BookOpen, path: '/dashboard/intelligence/playbooks' },
+    { id: 'trend-analizer', label: 'Trend Analizer', icon: TrendingUp, path: '/dashboard/intelligence/trend-analyzer' },
+    { id: 'analitica-de-adquisicion', label: 'Analítica de Adquisición', icon: LineChart, path: '/analytics/acquisition' },
+    // Integraciones & Partnerships
+    { id: 'partnerships-influencers', label: 'Partnerships & Influencers', icon: Handshake, path: '/dashboard/partnerships' },
+    { id: 'account-based-marketing', label: 'Account-Based Marketing (ABM)', icon: Building2, path: '/abm' },
+    // Personalización & IA
+    { id: 'personalization-engine-ia-avanzada', label: 'Personalization Engine (IA avanzada)', icon: Brain, path: '/dashboard/ia/personalization-engine' },
+    // Extras & Especializados
+    { id: 'ab-testing-experimentacion', label: 'A/B Testing & Experimentación', icon: FlaskConical, path: '/marketing/ab-testing' },
+    { id: 'competitive-analysis-market-intelligence', label: 'Competitive Analysis & Market Intelligence', icon: Search, path: '/market-intelligence' },
+    // Marketing General
+    { id: 'campanas-outreach', label: 'Campañas', icon: Megaphone, path: '/campanas-outreach', gimnasioOnly: true },
+    { id: 'embudos-ofertas-landing-pages', label: 'Embudos & Landing Pages', icon: Globe, path: '/marketing/landing-pages' },
+    { id: 'afiliados-y-referidos', label: 'Afiliados & Referidos', icon: UserCheck, path: '/marketing/afiliados-y-referidos' },
+  ];
+
+  const marketingItems = isEntrenador
+    ? marketingLiteItems
+    : isCreador
+      ? marketingFullItems.map(item =>
+          item.gimnasioOnly ? { ...item, gimnasioOnly: undefined } : item
+        )
+      : isGimnasio
+        ? marketingGimnasioItems
+        : marketingFullItems;
+
+  const crmBaseItems: NavItem[] = [
+    { id: 'leads', label: 'Leads', icon: UserPlus, path: '/leads' },
+    { id: 'lead-inbox-unificado-sla', label: 'Inbox Unificado & SLA', icon: Inbox, path: '/dashboard/analytics/inbox' },
+    { id: 'pipeline-de-venta-kanban', label: 'Pipeline de Venta', icon: Kanban, path: '/pipeline-de-venta-kanban' },
+    { id: 'clientes-360', label: 'Clientes 360', icon: UserCircle, path: '/clientes-360' },
+    { id: 'ventas-leads', label: 'Ventas & Leads', icon: TrendingUp, path: '/ventas-leads', gimnasioOnly: true },
+    { id: 'gestión-de-clientes', label: isPersonalRole ? 'Mis Clientes' : 'Clientes', icon: Users, path: '/gestión-de-clientes' },
+    { id: 'portal-del-cliente-autoservicio', label: 'Portal del Cliente', icon: UserCircle, path: '/portal-del-cliente-autoservicio' },
+    { id: 'encuestas-satisfaccin-npscsat', label: 'Encuestas & Satisfacción', icon: MessageSquare, path: '/encuestas-satisfaccin-npscsat', gimnasioOnly: true },
+    { id: 'campanas-outreach', label: 'Campañas / Outreach', icon: Megaphone, path: '/campanas-outreach', gimnasioOnly: true },
+    { id: 'listas-inteligentes-segmentos-guardados', label: 'Listas Inteligentes', icon: ListFilter, path: '/listas-inteligentes-segmentos-guardados', gimnasioOnly: true },
+  ];
+
+  const crmItems: NavItem[] = isGimnasio
+    ? crmBaseItems.filter(item => item.id === 'clientes-360' || item.id === 'ventas-leads')
+    : crmBaseItems;
+
+  const agendaBaseItems: NavItem[] = [
+    { id: 'agenda', label: 'Agenda / Calendario', icon: CalendarDays, path: '/agenda' },
+    { id: 'agenda-reservas', label: 'Agenda & Reservas', icon: CalendarDays, path: '/agenda-reservas' },
+    { id: 'reservas-online', label: 'Reservas Online', icon: CalendarCheck, path: '/reservas-online' },
+    { id: 'eventos-retos', label: 'Eventos & Retos', icon: Trophy, path: '/eventos-retos' },
+    { id: 'lista-de-espera-ausencias', label: 'Lista de Espera & Ausencias', icon: UsersList, path: '/lista-de-espera-ausencias', gimnasioOnly: true },
+    { id: 'disponibilidad-turnos-staff', label: 'Disponibilidad / Turnos', icon: Clock, path: '/disponibilidad-turnos-staff', gimnasioOnly: true },
+  ];
+
+  const agendaItems: NavItem[] = isGimnasio
+    ? agendaBaseItems.filter(
+        item =>
+          item.id !== 'agenda' &&
+          item.id !== 'reservas-online' &&
+          item.id !== 'eventos-retos' &&
+          item.id !== 'lista-de-espera-ausencias'
+      )
+    : agendaBaseItems;
+
+  const membresiasBaseItems: NavItem[] = [
+    { id: 'membresias-planes', label: 'Membresías & Planes', icon: Ticket, path: '/membresias-planes', gimnasioOnly: true },
+    { id: 'catalogo-planes', label: isPersonalRole ? 'Bonos PT' : 'Catálogo de Planes', icon: Package, path: '/catalogo-planes' },
+    { id: 'membresias-activas', label: isPersonalRole ? 'Membresías PT' : 'Membresías Activas', icon: Ticket, path: '/membresias-activas' },
+    { id: 'renovaciones-bajas', label: isPersonalRole ? 'Renovaciones' : 'Renovaciones & Bajas', icon: RotateCcw, path: '/renovaciones-bajas' },
+  ];
+
+  const membresiasItems: NavItem[] = isGimnasio
+    ? membresiasBaseItems.filter(item => item.id === 'membresias-planes')
+    : membresiasBaseItems;
+
+  const finanzasItems: NavItem[] = isGimnasio
+    ? [
+        { id: 'panel-financiero-overview', label: 'Finanzas', icon: PieChart, path: '/panel-financiero-overview' },
+        membresiasItems.find(item => item.id === 'membresias-planes')!,
+      ].filter(Boolean) as NavItem[]
+    : [
+        { id: 'panel-financiero-overview', label: isPersonalRole ? 'Panel Financiero' : 'Panel Financiero / Overview', icon: PieChart, path: '/panel-financiero-overview' },
+        { id: 'dynamic-pricing-ofertas-inteligentes', label: 'Precios Dinámicos', icon: Sparkles, path: '/dashboard/monetizacion/precios-dinamicos' },
+        { id: 'facturacin-cobros', label: 'Facturación & Cobros', icon: Receipt, path: '/facturacin-cobros' },
+        { id: 'pagos-pendientes-morosidad', label: 'Pagos Pendientes / Morosidad', icon: DollarSign, path: '/pagos-pendientes-morosidad' },
+        { id: 'suscripciones-cuotas-recurrentes', label: isPersonalRole ? 'Suscripciones PT' : 'Suscripciones & Cuotas', icon: RefreshCw, path: '/suscripciones-cuotas-recurrentes' },
+        { id: 'gastos-proveedores', label: 'Gastos & Proveedores', icon: Wallet, path: '/gastos-proveedores', gimnasioOnly: true },
+        { id: 'caja-bancos', label: 'Caja & Bancos', icon: Banknote, path: '/caja-bancos', gimnasioOnly: true },
+        { id: 'presupuestos-forecast', label: 'Presupuestos & Forecast', icon: FileBarChart, path: '/finanzas/presupuestos', gimnasioOnly: true },
+        { id: 'impuestos-y-exportacion', label: 'Impuestos & Export', icon: FileSpreadsheet, path: '/finanzas/impuestos-y-exportacion' },
+        { id: 'informes-financieros-avanzados', label: 'Informes Avanzados', icon: FileBarChart, path: '/finanzas/informes-avanzados', gimnasioOnly: true },
+        ...membresiasItems,
+      ];
 
   const sections: NavSection[] = [
     {
@@ -190,16 +386,7 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
       id: 'crm',
       title: 'CRM & Clientes',
       icon: Users,
-      items: [
-        { id: 'leads', label: 'Leads', icon: UserPlus, path: '/leads' },
-        { id: 'lead-inbox-unificado-sla', label: 'Inbox Unificado & SLA', icon: Inbox, path: '/dashboard/analytics/inbox' },
-        { id: 'pipeline-de-venta-kanban', label: 'Pipeline de Venta', icon: Kanban, path: '/pipeline-de-venta-kanban' },
-        { id: 'gestión-de-clientes', label: isEntrenador ? 'Mis Clientes' : 'Clientes', icon: Users, path: '/gestión-de-clientes' },
-        { id: 'portal-del-cliente-autoservicio', label: 'Portal del Cliente', icon: UserCircle, path: '/portal-del-cliente-autoservicio' },
-        { id: 'encuestas-satisfaccin-npscsat', label: 'Encuestas & Satisfacción', icon: MessageSquare, path: '/encuestas-satisfaccin-npscsat', gimnasioOnly: true },
-        { id: 'campanas-outreach', label: 'Campañas / Outreach', icon: Megaphone, path: '/campanas-outreach', gimnasioOnly: true },
-        { id: 'listas-inteligentes-segmentos-guardados', label: 'Listas Inteligentes', icon: ListFilter, path: '/listas-inteligentes-segmentos-guardados', gimnasioOnly: true },
-      ],
+      items: crmItems,
     },
     {
       id: 'entrenamiento',
@@ -227,41 +414,13 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
       id: 'agenda',
       title: 'Agenda & Reservas',
       icon: CalendarDays,
-      items: [
-        { id: 'agenda', label: 'Agenda / Calendario', icon: CalendarDays, path: '/agenda' },
-        { id: 'reservas-online', label: 'Reservas Online', icon: CalendarCheck, path: '/reservas-online' },
-        { id: 'eventos-retos', label: 'Eventos & Retos', icon: Trophy, path: '/eventos-retos' },
-        { id: 'lista-de-espera-ausencias', label: 'Lista de Espera & Ausencias', icon: UsersList, path: '/lista-de-espera-ausencias', gimnasioOnly: true },
-        { id: 'disponibilidad-turnos-staff', label: 'Disponibilidad / Turnos', icon: Clock, path: '/disponibilidad-turnos-staff', gimnasioOnly: true },
-        { id: 'recursos-salas-material', label: 'Recursos / Salas / Material', icon: Boxes, path: '/recursos-salas-material', gimnasioOnly: true },
-      ],
+      items: agendaItems,
     },
     {
       id: 'finanzas',
       title: 'Finanzas',
       icon: DollarSign,
-      items: [
-        { id: 'panel-financiero-overview', label: isEntrenador ? 'Panel Financiero' : 'Panel Financiero / Overview', icon: PieChart, path: '/panel-financiero-overview' },
-        { id: 'dynamic-pricing-ofertas-inteligentes', label: 'Precios Dinámicos', icon: Sparkles, path: '/dashboard/monetizacion/precios-dinamicos' },
-        { id: 'facturacin-cobros', label: 'Facturación & Cobros', icon: Receipt, path: '/facturacin-cobros' },
-        { id: 'pagos-pendientes-morosidad', label: 'Pagos Pendientes / Morosidad', icon: DollarSign, path: '/pagos-pendientes-morosidad' },
-        { id: 'suscripciones-cuotas-recurrentes', label: isEntrenador ? 'Suscripciones PT' : 'Suscripciones & Cuotas', icon: RefreshCw, path: '/suscripciones-cuotas-recurrentes' },
-        { id: 'gastos-proveedores', label: 'Gastos & Proveedores', icon: Wallet, path: '/gastos-proveedores', gimnasioOnly: true },
-        { id: 'caja-bancos', label: 'Caja & Bancos', icon: Banknote, path: '/caja-bancos', gimnasioOnly: true },
-        { id: 'presupuestos-forecast', label: 'Presupuestos & Forecast', icon: FileBarChart, path: '/finanzas/presupuestos', gimnasioOnly: true },
-        { id: 'impuestos-y-exportacion', label: 'Impuestos & Export', icon: FileSpreadsheet, path: '/finanzas/impuestos-y-exportacion' },
-        { id: 'informes-financieros-avanzados', label: 'Informes Avanzados', icon: FileBarChart, path: '/finanzas/informes-avanzados', gimnasioOnly: true },
-      ],
-    },
-    {
-      id: 'membresias',
-      title: 'Membresías & Planes',
-      icon: Ticket,
-      items: [
-        { id: 'catalogo-planes', label: isEntrenador ? 'Bonos PT' : 'Catálogo de Planes', icon: Package, path: '/catalogo-planes' },
-        { id: 'membresias-activas', label: isEntrenador ? 'Membresías PT' : 'Membresías Activas', icon: Ticket, path: '/membresias-activas' },
-        { id: 'renovaciones-bajas', label: isEntrenador ? 'Renovaciones' : 'Renovaciones & Bajas', icon: RotateCcw, path: '/renovaciones-bajas' },
-      ],
+      items: finanzasItems,
     },
     {
       id: 'ventas',
@@ -271,8 +430,7 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
         { id: 'catalogo-productos', label: 'Catálogo de Productos', icon: ShoppingBag, path: '/catalogo-productos', gimnasioOnly: true },
         { id: 'inventario-stock', label: 'Inventario & Stock', icon: Warehouse, path: '/inventario-stock', gimnasioOnly: true },
         { id: 'pedidos-tickets', label: 'Pedidos & Tickets', icon: Receipt, path: '/pedidos-tickets', gimnasioOnly: true },
-        { id: 'recepciones-de-material', label: 'Recepciones de Material', icon: PackageOpen, path: '/inventario/recepciones', gimnasioOnly: true },
-        { id: 'tienda-online-checkout-online', label: isEntrenador ? 'Tienda de Servicios' : 'Tienda Online', icon: Store, path: '/tienda-online-checkout-online' },
+        { id: 'tienda-online-checkout-online', label: isPersonalRole ? 'Tienda de Servicios' : 'Tienda Online', icon: Store, path: '/tienda-online-checkout-online' },
         { id: 'informe-de-ventas-retail', label: 'Informe de Ventas Retail', icon: BarChart, path: '/informe-de-ventas-retail', gimnasioOnly: true },
       ],
     },
@@ -282,12 +440,8 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
       icon: Wrench,
       gimnasioOnly: true,
       items: [
-        { id: 'turnos-horarios-del-staff', label: 'Turnos & Horarios', icon: Calendar, path: '/turnos-horarios-del-staff' },
-        { id: 'control-de-acceso-aforo', label: 'Control de Acceso & Aforo', icon: Shield, path: '/control-de-acceso-aforo' },
-        { id: 'mantenimiento-incidencias', label: 'Mantenimiento & Incidencias', icon: Wrench, path: '/mantenimiento-incidencias' },
-        { id: 'operations-checklists', label: 'Checklists Operativos', icon: Clipboard, path: '/operations/checklists' },
-        { id: 'recursos-salas-material', label: 'Salas & Recursos', icon: Boxes, path: '/recursos-salas-material' },
-        { id: 'documentacion-interna-y-protocolos', label: 'Documentación Interna', icon: FileText, path: '/operations/documents' },
+        { id: 'operaciones-hub', label: 'Operaciones', icon: Wrench, path: '/operaciones' },
+        { id: 'operaciones-equipo-rrhh', label: 'Equipo & RRHH', icon: UserCog, path: '/operaciones/equipo-rrhh' },
       ],
     },
     {
@@ -304,115 +458,24 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
       ],
     },
     {
-      id: 'equipo',
-      title: 'Equipo / RRHH / Nóminas',
-      icon: UserCog,
-      gimnasioOnly: true,
-      items: [
-        { id: 'equipo-roles', label: 'Equipo & Roles', icon: UserCog, path: '/settings/team' },
-        { id: 'objetivos-comisiones', label: 'Objetivos & Comisiones', icon: IncentiveIcon, path: '/team/incentives' },
-        { id: 'parte-horaria-fichajes', label: 'Parte Horaria / Fichajes', icon: TimeTrackingIcon, path: '/team/time-tracking' },
-        { id: 'nominas-variables', label: 'Nóminas & Variables', icon: Payroll, path: '/equipo/nominas' },
-        { id: 'feedback-interno-y-evaluaciones-de-rendimiento', label: 'Evaluaciones Rendimiento', icon: ClipboardPen, path: '/team/performance-reviews' },
-      ],
-    },
-    {
       id: 'marketing',
       title: 'Marketing',
       icon: Megaphone,
-      items: isEntrenador
-        ? [
-            // Marketing Lite para Entrenadores
-            { id: 'marketing-lite', label: 'Marketing (Lite)', icon: Megaphone, path: '/campanas-outreach' },
-            { id: 'planner-redes-sociales', label: 'Planner RRSS', icon: Calendar, path: '/dashboard/marketing/social-planner' },
-            { id: 'email-marketing-newsletters', label: 'Email/SMS (básico + secuencias esenciales)', icon: Mail, path: '/dashboard/marketing/email-campaigns' },
-            { id: 'review-testimonial-engine', label: 'Reviews & Testimonios', icon: Star, path: '/dashboard/reviews' },
-            { id: 'referidos-afiliados', label: 'Promos & Referidos', icon: Users, path: '/dashboard/marketing/referrals' },
-            { id: 'generador-creativo-ia', label: 'Generador Creativo IA', icon: Sparkles, path: '/dashboard/marketing/ia-generator' },
-          ]
-        : [
-            // Captura & Conversión
-            { id: 'constructor-de-funnels-y-landing-pages', label: 'Constructor de Funnels & Landing Pages', icon: Globe, path: '/dashboard/marketing/funnels' },
-            { id: 'lead-magnet-factory', label: 'Lead Magnet Factory', icon: FileText, path: '/dashboard/marketing/lead-magnets' },
-            { id: 'progressive-profiling', label: 'Progressive Profiling', icon: Layers, path: '/dashboard/marketing/progressive-profiling' },
-            { id: 'gestion-contenidos-premium', label: 'Gestión de Contenidos Premium', icon: Package, path: '/dashboard/contenido-premium' },
-            // Segmentación & Automatización
-            { id: 'segmentacion-dinamica-audiencias', label: 'Segmentación Dinámica & Audiencias', icon: Filter, path: '/dashboard/audiencias' },
-            { id: 'lifecycle-email-sequences', label: 'Lifecycle Email Sequences', icon: Mail, path: '/dashboard/automatizacion/secuencias-email' },
-            // Email & SMS
-            { id: 'email-marketing-newsletters', label: 'Email Marketing & Newsletters', icon: Mail, path: '/dashboard/marketing/email-campaigns' },
-            { id: 'email-deliverability-compliance-hub', label: 'Email Deliverability & Compliance Hub', icon: ShieldCheck, path: '/dashboard/email/compliance' },
-            { id: 'sms-whatsapp-marketing', label: 'SMS/WhatsApp Marketing', icon: MessageSquare, path: '/dashboard/marketing/mensajeria' },
-            { id: 'sms-whatsapp-automation', label: 'SMS/WhatsApp Automation', icon: MessageSquare, path: '/dashboard/automations/messaging' },
-            { id: 'smsemail-preference-center', label: 'SMS/Email Preference Center', icon: Settings, path: '/client/preferences/communication' },
-            // Contenido & Redes Sociales
-            { id: 'planner-redes-sociales', label: 'Planner de Redes Sociales', icon: Calendar, path: '/dashboard/marketing/social-planner' },
-            { id: 'generador-creativo-ia', label: 'Generador Creativo con IA', icon: Sparkles, path: '/dashboard/marketing/ia-generator' },
-            { id: 'generador-estrategias-marketing', label: 'Generador de Estrategias de Marketing con IA', icon: Target, path: '/dashboard/marketing/ia-estrategias' },
-            { id: 'generador-ideas-contenido', label: 'Generador de Ideas de Contenido con IA', icon: SparklesIcon, path: '/dashboard/contenido/generador-ia' },
-            { id: 'content-clipper', label: 'Content Clipper', icon: Scissors, path: '/dashboard/content/clipper' },
-            { id: 'creatorinfluencer-content-syndication', label: 'Creator/Influencer Content Syndication', icon: Users, path: '/dashboard/marketing/influencers' },
-            { id: 'video-studio', label: 'Video Marketing & Automation', icon: Video, path: '/dashboard/content/video-studio' },
-            { id: 'hub-contenidos-ugc', label: 'Hub de Contenidos & UGC', icon: Image, path: '/dashboard/contenido/ugc-hub' },
-            // Confianza & Social Proof
-            { id: 'review-testimonial-engine', label: 'Review & Testimonial Engine', icon: Star, path: '/dashboard/reviews' },
-            { id: 'feedback-encuestas', label: 'Feedback Loop & Encuestas Inteligentes', icon: MessageSquare, path: '/dashboard/feedback/surveys' },
-            // Publicidad & Retargeting
-            { id: 'gestor-de-anuncios', label: 'Gestor de Anuncios', icon: Megaphone, path: '/dashboard/marketing/anuncios' },
-            { id: 'retargeting-pixel-manager', label: 'Retargeting & Pixel Manager', icon: Target, path: '/dashboard/marketing/retargeting' },
-            // Monetización & Ofertas
-            { id: 'promociones-cupones-packs', label: 'Promociones, Cupones & Packs', icon: Tag, path: '/dashboard/monetizacion/ofertas' },
-            { id: 'dynamic-pricing-ofertas-inteligentes', label: 'Dynamic Pricing & Ofertas Inteligentes', icon: Sparkles, path: '/dashboard/monetizacion/precios-dinamicos' },
-            { id: 'loyalty-program-manager', label: 'Loyalty Program Manager', icon: Gift, path: '/dashboard/monetizacion/loyalty' },
-            { id: 'referidos-afiliados', label: 'Referidos & Afiliados', icon: Users, path: '/dashboard/marketing/referrals' },
-            { id: 'marketing-de-referidos', label: 'Referral Marketing', icon: UserCheck, path: '/dashboard/monetizacion/referidos' },
-            // Experiencias & Eventos
-            { id: 'webinars-virtual-events', label: 'Webinars & Virtual Events Manager', icon: Video, path: '/dashboard/experiences/virtual-events' },
-            { id: 'eventos-retos', label: 'Eventos & Retos', icon: Trophy, path: '/dashboard/experiencias/eventos' },
-            { id: 'community-engagement', label: 'Community & Engagement', icon: Users, path: '/comunidad' },
-            // Análisis & Inteligencia
-            { id: 'libreria-campanas-playbooks', label: 'Librería de Campañas (Playbooks)', icon: BookOpen, path: '/dashboard/intelligence/playbooks' },
-            { id: 'trend-analizer', label: 'Trend Analizer', icon: TrendingUp, path: '/dashboard/intelligence/trend-analyzer' },
-            { id: 'analitica-de-adquisicion', label: 'Analítica de Adquisición', icon: LineChart, path: '/analytics/acquisition' },
-            // Integraciones & Partnerships
-            { id: 'partnerships-influencers', label: 'Partnerships & Influencers', icon: Handshake, path: '/dashboard/partnerships' },
-            { id: 'account-based-marketing', label: 'Account-Based Marketing (ABM)', icon: Building2, path: '/abm' },
-            // Personalización & IA
-            { id: 'personalization-engine-ia-avanzada', label: 'Personalization Engine (IA avanzada)', icon: Brain, path: '/dashboard/ia/personalization-engine' },
-            // Extras & Especializados
-            { id: 'ab-testing-experimentacion', label: 'A/B Testing & Experimentación', icon: FlaskConical, path: '/marketing/ab-testing' },
-            { id: 'competitive-analysis-market-intelligence', label: 'Competitive Analysis & Market Intelligence', icon: Search, path: '/market-intelligence' },
-            // Marketing General
-            { id: 'campanas-outreach', label: 'Campañas', icon: Megaphone, path: '/campanas-outreach', gimnasioOnly: true },
-            { id: 'embudos-ofertas-landing-pages', label: 'Embudos & Landing Pages', icon: Globe, path: '/marketing/landing-pages' },
-            { id: 'afiliados-y-referidos', label: 'Afiliados & Referidos', icon: UserCheck, path: '/marketing/afiliados-y-referidos' },
-          ],
+      items: marketingItems,
     },
     {
       id: 'b2b',
       title: 'Programas Corporativos (B2B)',
       icon: Building,
       gimnasioOnly: true,
-      items: [
-        { id: 'empresas-convenios', label: 'Empresas / Convenios', icon: Handshake, path: '/b2b/convenios' },
-        { id: 'empleados-activos', label: 'Empleados Activos', icon: Briefcase, path: '/corporate/companies/example-company-id/employees' },
-        { id: 'uso-resultados-programas-corporativos', label: 'Uso & Resultados', icon: TrendingDown, path: '/corporate/usage-results' },
-        { id: 'facturacion-a-empresas', label: 'Facturación a Empresas', icon: FileCheck, path: '/corporate/billing' },
-        { id: 'portal-empresa', label: 'Portal Empresa', icon: Building, path: '/b2b/empresas-corporativas' },
-      ],
+      items: [{ id: 'b2b-empresas', label: 'B2B / Empresas', icon: Building2, path: '/b2b/empresas' }],
     },
     {
       id: 'multisede',
       title: 'Multisede / Franquicias',
       icon: Building2,
       gimnasioOnly: true,
-      items: [
-        { id: 'resumen-por-sede', label: 'Resumen por Sede', icon: BarChart3, path: '/analytics/locations-summary' },
-        { id: 'comparativa-entre-sedes', label: 'Comparativa Entre Sedes', icon: BarChart3, path: '/analiticas/comparativa-sedes' },
-        { id: 'catalogo-y-precios-por-sede', label: 'Catálogo y Precios por Sede', icon: Package, path: '/catalogo-y-precios-por-sede' },
-        { id: 'transferencias-entre-sedes', label: 'Transferencias Entre Sedes', icon: ArrowRightLeft, path: '/multisede/transferencias' },
-        { id: 'normativa-y-plantillas-globales', label: 'Normativas y Plantillas', icon: Scroll, path: '/corporate/governance/templates' },
-      ],
+      items: [{ id: 'multisede-hub', label: 'Multisede & Franquicias', icon: Building2, path: '/multisede' }],
     },
     {
       id: 'integraciones',
@@ -421,33 +484,26 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
       items: [
         { id: 'integraciones-y-automatizacion', label: 'Integraciones', icon: Plug, path: '/settings/integrations' },
         { id: 'webhooks-api-keys', label: 'Webhooks & API Keys', icon: Key, path: '/settings/developer', gimnasioOnly: true },
-        { id: 'importadores-migraciones', label: isEntrenador ? 'Importar Clientes' : 'Importadores / Migraciones', icon: Database, path: '/settings/data/importers' },
+        { id: 'importadores-migraciones', label: isPersonalRole ? 'Importar Clientes' : 'Importadores / Migraciones', icon: Database, path: '/settings/data/importers' },
       ],
     },
     {
       id: 'configuracion',
       title: 'Configuración',
       icon: Settings,
-      items: [
-        { id: 'general-del-centro-marca-personal', label: isEntrenador ? 'Marca Personal' : 'General del Centro', icon: Settings, path: '/settings/general-profile' },
-        { id: 'servicios-tarifas', label: 'Servicios & Tarifas', icon: Tag, path: '/settings/services' },
-        { id: 'politicas-terminos', label: 'Políticas & Términos', icon: ShieldCheck, path: '/settings/policies', gimnasioOnly: true },
-        { id: 'plantillas-de-mensajes-y-contratos', label: 'Plantillas Mensajes', icon: FileText, path: '/settings/templates' },
-        { id: 'roles-permisos', label: 'Roles & Permisos', icon: ShieldIcon, path: '/configuracion/roles-y-permisos', gimnasioOnly: true },
-        { id: 'moneda-impuestos-series-de-factura', label: isEntrenador ? 'Configuración Fiscal' : 'Configuración Financiera', icon: Coins, path: '/settings/financials' },
-      ],
+      items: [{ id: 'configuracion-centro', label: 'Configuración del Centro', icon: Settings, path: '/configuracion/centro' }],
     },
   ];
 
   const filteredSections = sections.filter(section => {
-    if (section.gimnasioOnly && isEntrenador) return false;
-    if (section.entrenadorOnly && !isEntrenador) return false;
+    if (section.gimnasioOnly && isPersonalRole) return false;
+    if (section.entrenadorOnly && !isPersonalRole) return false;
     return true;
   });
 
   const renderNavItem = (item: NavItem) => {
-    if (item.gimnasioOnly && isEntrenador) return null;
-    if (item.entrenadorOnly && !isEntrenador) return null;
+    if (item.gimnasioOnly && isPersonalRole) return null;
+    if (item.entrenadorOnly && !isPersonalRole) return null;
 
     const isActive = currentPath === item.id;
     const Icon = item.icon;
@@ -461,7 +517,7 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
           }}
           className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-2.5 rounded-lg transition-all ${
             isActive
-              ? isEntrenador
+            ? isPersonalRole
                 ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm'
                 : 'bg-purple-50 text-purple-700 border border-purple-200 shadow-sm'
               : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
@@ -479,8 +535,8 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     const isExpanded = expandedSections.has(section.id);
     const SectionIcon = section.icon;
     const hasItems = section.items.some(item => {
-      if (item.gimnasioOnly && isEntrenador) return false;
-      if (item.entrenadorOnly && !isEntrenador) return false;
+      if (item.gimnasioOnly && isPersonalRole) return false;
+      if (item.entrenadorOnly && !isPersonalRole) return false;
       return true;
     });
 
@@ -494,7 +550,7 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
               onClick={() => toggleSection(section.id)}
               className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-all ${
                 isExpanded
-                  ? isEntrenador
+                  ? isPersonalRole
                     ? 'bg-blue-50 text-blue-900'
                     : 'bg-purple-50 text-purple-900'
                   : 'text-gray-600 hover:bg-gray-50'
@@ -514,10 +570,12 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
           </>
         ) : (
           <div className="px-2 py-1">
-            <div className={`flex items-center justify-center p-2 rounded-lg ${
-              isEntrenador ? 'bg-blue-50' : 'bg-purple-50'
-            }`}>
-              <SectionIcon className={`w-4 h-4 ${isEntrenador ? 'text-blue-600' : 'text-purple-600'}`} />
+            <div
+              className={`flex items-center justify-center p-2 rounded-lg ${
+                isPersonalRole ? 'bg-blue-50' : 'bg-purple-50'
+              }`}
+            >
+              <SectionIcon className={`w-4 h-4 ${isPersonalRole ? 'text-blue-600' : 'text-purple-600'}`} />
             </div>
           </div>
         )}
@@ -530,17 +588,13 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
       {/* Header */}
       <div className="p-6 border-b border-gray-200 bg-gradient-to-br from-white to-gray-50">
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 ${isEntrenador ? 'bg-blue-600' : 'bg-purple-600'} rounded-lg flex items-center justify-center flex-shrink-0 shadow-md`}>
-            {isEntrenador ? (
-              <Award className="w-6 h-6 text-white" />
-            ) : (
-              <Building2 className="w-6 h-6 text-white" />
-            )}
+          <div className={`w-10 h-10 ${headerBgClass} rounded-lg flex items-center justify-center flex-shrink-0 shadow-md`}>
+            <HeaderIcon className="w-6 h-6 text-white" />
           </div>
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
               <h2 className="text-sm font-bold text-gray-900 truncate">
-                {isEntrenador ? 'Panel Entrenador' : 'Panel Gimnasio'}
+                {headerTitle}
               </h2>
               <p className="text-xs text-gray-600 truncate">{user?.name}</p>
             </div>

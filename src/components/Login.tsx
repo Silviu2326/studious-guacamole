@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LogIn, User, Building2 } from 'lucide-react';
+import { LogIn, User, Building2, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -33,13 +33,16 @@ export function Login() {
     }
   };
 
-  const fillCredentials = (role: 'entrenador' | 'gimnasio') => {
+  const fillCredentials = (role: 'entrenador' | 'gimnasio' | 'creador') => {
     if (role === 'entrenador') {
       setEmail('entrenador@test.com');
       setPassword('entrenador123');
-    } else {
+    } else if (role === 'gimnasio') {
       setEmail('gimnasio@test.com');
       setPassword('gimnasio123');
+    } else {
+      setEmail('creador@test.com');
+      setPassword('creador123');
     }
     setError('');
   };
@@ -107,7 +110,7 @@ export function Login() {
             <p className="text-sm text-gray-600 text-center mb-4">
               Usuarios de prueba:
             </p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <button
                 onClick={() => fillCredentials('entrenador')}
                 className="flex items-center justify-center gap-2 px-4 py-3 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg transition border border-green-200"
@@ -121,6 +124,13 @@ export function Login() {
               >
                 <Building2 className="w-4 h-4" />
                 <span className="text-sm font-medium">Gimnasio</span>
+              </button>
+              <button
+                onClick={() => fillCredentials('creador')}
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-lg transition border border-orange-200"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span className="text-sm font-medium">Creador/a</span>
               </button>
             </div>
           </div>

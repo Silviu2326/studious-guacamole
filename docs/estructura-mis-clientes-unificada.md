@@ -209,3 +209,5 @@ type Segmento =
 
 
 
+
+

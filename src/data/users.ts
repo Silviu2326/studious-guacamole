@@ -14,5 +14,12 @@ export const MOCK_USERS: User[] = [
     password: 'gimnasio123',
     role: 'gimnasio',
     name: 'Gimnasio FitZone'
+  },
+  {
+    id: '3',
+    email: 'creador@test.com',
+    password: 'creador123',
+    role: 'creador',
+    name: 'Alex Creativo'
   }
 ];

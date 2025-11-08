@@ -29,7 +29,9 @@ import {
   History,
   Calendar,
   FileDown,
-  FileText
+  FileText,
+  Zap,
+  Receipt
 } from 'lucide-react';
 
 interface LeadsManagerProps {
@@ -208,8 +210,8 @@ export const LeadsManager: React.FC<LeadsManagerProps> = ({
     },
     {
       id: 'nurturing',
-      label: 'Nurturing',
-      icon: <MessageSquare className="w-4 h-4" />,
+      label: businessType === 'entrenador' ? 'Respuestas Automáticas' : 'Nurturing',
+      icon: <Zap className="w-4 h-4" />,
     },
     {
       id: 'templates',
@@ -233,8 +235,8 @@ export const LeadsManager: React.FC<LeadsManagerProps> = ({
     }] : []),
     {
       id: 'quotes',
-      label: 'Presupuestos',
-      icon: <FileText className="w-4 h-4" />,
+      label: businessType === 'entrenador' ? 'Propuestas y Precios' : 'Presupuestos',
+      icon: <Receipt className="w-4 h-4" />,
     },
   ];
 
@@ -345,14 +347,6 @@ export const LeadsManager: React.FC<LeadsManagerProps> = ({
           >
             <FileDown className="w-4 h-4 mr-2" />
             Exportar/Reportes
-          </Button>
-          <Button
-            variant="primary"
-            size="md"
-            onClick={() => setShowCaptureModal(true)}
-          >
-            <UserPlus className="w-4 h-4 mr-2" />
-            Nuevo Lead
           </Button>
         </div>
       </div>

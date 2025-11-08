@@ -71,3 +71,4 @@ export function ChallengesPanel({ challenges }: ChallengesPanelProps) {
   );
 }
 
+

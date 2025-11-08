@@ -80,7 +80,7 @@ export const PipelineKanban: React.FC<PipelineKanbanProps> = ({
             <Card variant="hover" padding="md">
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className={`${ds.typography.h3} ${ds.color.textPrimary} ${ds.color.textPrimaryDark}`}>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-[#F1F5F9]">
                     {stageLabels[column.stage]}
                   </h3>
                   <span className={`${ds.typography.bodySmall} ${ds.badge.base} ${ds.badge.primary}`}>
@@ -91,9 +91,9 @@ export const PipelineKanban: React.FC<PipelineKanbanProps> = ({
               
               <div className="space-y-3 max-h-[600px] overflow-y-auto">
                 {column.leads.length === 0 ? (
-                  <div className={`text-center py-8 ${ds.color.textMuted} ${ds.color.textMutedDark}`}>
+                  <div className="text-center py-8 text-gray-500 dark:text-[#64748B]">
                     <TrendingUp className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className={ds.typography.bodySmall}>No hay leads en esta etapa</p>
+                    <p className="text-sm">No hay leads en esta etapa</p>
                   </div>
                 ) : (
                   column.leads.map((lead) => (

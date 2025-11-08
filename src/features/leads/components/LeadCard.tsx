@@ -1,8 +1,17 @@
-import React, { useState } from 'react';
-import { Card, Modal, Select } from '../../../components/componentsreutilizables';
+import React, { useState, useEffect } from 'react';
+import { Card, Modal, Select, Tabs } from '../../../components/componentsreutilizables';
+import { useAuth } from '../../../context/AuthContext';
 import { ds } from '../../adherencia/ui/ds';
-import { Lead, PipelineStage, LeadStatus } from '../types';
+import { Lead, PipelineStage, LeadStatus, LeadInteraction, InteractionType, InteractionChannel } from '../types';
 import { LeadHistory } from './LeadHistory';
+import { ConversionProbability } from './ConversionProbability';
+import { QuickMessageComposer } from './QuickMessageComposer';
+import { LeadTasks } from './LeadTasks';
+import { AppointmentScheduler } from './AppointmentScheduler';
+import { LeadChat } from './LeadChat';
+import { QuoteManager } from './QuoteManager';
+import { getUnreadCount } from '../api/chat';
+import { updateLead } from '../api';
 import { 
   User, 
   Mail, 
@@ -13,7 +22,9 @@ import {
   MessageSquare,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  MessageCircle,
+  FileText
 } from 'lucide-react';
 
 interface LeadCardProps {
@@ -23,8 +34,27 @@ interface LeadCardProps {
 }
 
 export const LeadCard: React.FC<LeadCardProps> = ({ lead, onUpdate, onStageChange }) => {
+  const { user } = useAuth();
   const [showDetails, setShowDetails] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showMessageComposer, setShowMessageComposer] = useState(false);
+  const [showAppointmentScheduler, setShowAppointmentScheduler] = useState(false);
+  const [activeDetailTab, setActiveDetailTab] = useState<'info' | 'tasks' | 'chat' | 'quotes'>('info');
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
+
+  useEffect(() => {
+    const loadUnreadCount = async () => {
+      try {
+        const count = await getUnreadCount(lead.id);
+        setUnreadChatCount(count);
+      } catch (error) {
+        console.error('Error cargando mensajes no leídos:', error);
+      }
+    };
+    loadUnreadCount();
+    const interval = setInterval(loadUnreadCount, 10000); // Actualizar cada 10 segundos
+    return () => clearInterval(interval);
+  }, [lead.id]);
 
   const getStatusBadge = (status: LeadStatus) => {
     const badges: Record<LeadStatus, string> = {
@@ -48,69 +78,233 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onUpdate, onStageChang
     return ds.color.error;
   };
 
+  const handleQuickAction = async (action: 'whatsapp' | 'call' | 'email') => {
+    let url = '';
+    let interactionType: InteractionType;
+    let interactionChannel: InteractionChannel;
+
+    if (action === 'whatsapp' && lead.phone) {
+      // Formatear número para WhatsApp (eliminar + y espacios)
+      const phoneNumber = lead.phone.replace(/[+\s]/g, '');
+      url = `https://wa.me/${phoneNumber}`;
+      interactionType = 'whatsapp_sent';
+      interactionChannel = 'whatsapp';
+    } else if (action === 'call' && lead.phone) {
+      url = `tel:${lead.phone}`;
+      interactionType = 'call_made';
+      interactionChannel = 'phone';
+    } else if (action === 'email' && lead.email) {
+      url = `mailto:${lead.email}`;
+      interactionType = 'email_sent';
+      interactionChannel = 'email';
+    } else {
+      return; // No hay contacto disponible
+    }
+
+    // Registrar interacción
+    const newInteraction: LeadInteraction = {
+      id: Date.now().toString(),
+      type: interactionType,
+      channel: interactionChannel,
+      date: new Date(),
+      description: `Acción rápida: ${action === 'whatsapp' ? 'WhatsApp' : action === 'call' ? 'Llamada' : 'Email'}`,
+      outcome: 'neutral',
+      userId: user?.id || 'unknown'
+    };
+
+    const updatedInteractions = [...lead.interactions, newInteraction];
+    
+    try {
+      await updateLead(lead.id, {
+        interactions: updatedInteractions,
+        lastContactDate: new Date(),
+        status: lead.status === 'new' ? 'contacted' : lead.status,
+      });
+      
+      // Actualizar el lead localmente
+      onUpdate({
+        interactions: updatedInteractions,
+        lastContactDate: new Date(),
+        status: lead.status === 'new' ? 'contacted' : lead.status,
+      });
+
+      // Abrir la acción
+      window.open(url, '_blank');
+    } catch (error) {
+      console.error('Error registrando interacción:', error);
+      // Abrir la acción de todas formas
+      window.open(url, '_blank');
+    }
+  };
+
+  // Verificar si necesita seguimiento urgente
+  const needsUrgentFollowUp = () => {
+    if (!lead.lastContactDate) return true;
+    const lastContact = new Date(lead.lastContactDate);
+    const now = new Date();
+    const hoursSinceContact = (now.getTime() - lastContact.getTime()) / (1000 * 60 * 60);
+    return hoursSinceContact > 24;
+  };
+
+  // Verificar si tiene seguimiento hoy
+  const hasFollowUpToday = () => {
+    if (!lead.nextFollowUpDate) return false;
+    const followUpDate = new Date(lead.nextFollowUpDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const followUp = new Date(followUpDate);
+    followUp.setHours(0, 0, 0, 0);
+    return followUp.getTime() === today.getTime();
+  };
+
   return (
     <>
-      <Card
-        variant="hover"
-        padding="sm"
+      <div
         onClick={() => setShowDetails(true)}
         className="cursor-pointer"
       >
-        <div className="space-y-3">
-          {/* Header */}
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h4 className={`${ds.typography.bodyLarge} font-semibold ${ds.color.textPrimary} ${ds.color.textPrimaryDark} mb-1`}>
-                {lead.name}
-              </h4>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className={`${ds.typography.caption} ${getStatusBadge(lead.status)}`}>
-                  {lead.status}
-                </span>
-                <div className={`${ds.typography.caption} flex items-center gap-1 ${getScoreColor(lead.score)}`}>
-                  <TrendingUp className="w-3 h-3" />
-                  {lead.score}
+        <Card
+          variant="hover"
+          padding="sm"
+        >
+          <div className="space-y-3">
+            {/* Header */}
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-[#F1F5F9] mb-1">
+                  {lead.name}
+                </h4>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`${ds.typography.caption} ${getStatusBadge(lead.status)}`}>
+                    {lead.status}
+                  </span>
+                  <div className={`${ds.typography.caption} flex items-center gap-1 ${getScoreColor(lead.score)}`}>
+                    <TrendingUp className="w-3 h-3" />
+                    {lead.score}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Contact info */}
-          <div className="space-y-1">
-            {lead.email && (
-              <div className={`flex items-center gap-2 ${ds.typography.bodySmall} ${ds.color.textSecondary} ${ds.color.textSecondaryDark}`}>
-                <Mail className="w-4 h-4" />
-                <span className="truncate">{lead.email}</span>
-              </div>
-            )}
-            {lead.phone && (
-              <div className={`flex items-center gap-2 ${ds.typography.bodySmall} ${ds.color.textSecondary} ${ds.color.textSecondaryDark}`}>
-                <Phone className="w-4 h-4" />
-                <span>{lead.phone}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Source */}
-          <div className={`flex items-center justify-between ${ds.typography.caption} ${ds.color.textMuted} ${ds.color.textMutedDark}`}>
-            <span>Origen: {lead.source}</span>
-            {lead.interactions.length > 0 && (
-              <div className="flex items-center gap-1">
-                <MessageSquare className="w-3 h-3" />
-                <span>{lead.interactions.length}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Next follow up */}
-          {lead.nextFollowUpDate && (
-            <div className={`flex items-center gap-2 ${ds.typography.caption} ${ds.color.info}`}>
-              <Calendar className="w-3 h-3" />
-              <span>Próximo seguimiento: {new Date(lead.nextFollowUpDate).toLocaleDateString()}</span>
+            {/* Contact info */}
+            <div className="space-y-1">
+              {lead.email && (
+                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-[#94A3B8]">
+                  <Mail className="w-4 h-4" />
+                  <span className="truncate">{lead.email}</span>
+                </div>
+              )}
+              {lead.phone && (
+                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-[#94A3B8]">
+                  <Phone className="w-4 h-4" />
+                  <span>{lead.phone}</span>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </Card>
+
+            {/* Source */}
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-[#64748B]">
+              <span>Origen: {lead.source}</span>
+              {lead.interactions.length > 0 && (
+                <div className="flex items-center gap-1">
+                  <MessageSquare className="w-3 h-3" />
+                  <span>{lead.interactions.length}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Next follow up */}
+            {lead.nextFollowUpDate && (
+              <div className={`flex items-center gap-2 ${ds.typography.caption} ${hasFollowUpToday() ? 'text-orange-600 font-semibold' : ds.color.info}`}>
+                <Calendar className="w-3 h-3" />
+                <span>
+                  {hasFollowUpToday() ? 'Seguimiento HOY' : `Próximo: ${new Date(lead.nextFollowUpDate).toLocaleDateString()}`}
+                </span>
+              </div>
+            )}
+
+            {/* Badge urgente */}
+            {needsUrgentFollowUp() && lead.status !== 'converted' && lead.status !== 'lost' && (
+              <div className={`flex items-center gap-2 ${ds.typography.caption} text-red-600 font-semibold`}>
+                <Clock className="w-3 h-3" />
+                <span>Requiere atención urgente</span>
+              </div>
+            )}
+
+            {/* Probabilidad de conversión (compacta) */}
+            {lead.status !== 'converted' && lead.status !== 'lost' && (
+              <div className="pt-2 border-t border-gray-200 dark:border-[#334155]">
+                <ConversionProbability lead={lead} compact />
+              </div>
+            )}
+
+            {/* Acciones rápidas */}
+            <div className={`flex items-center gap-2 pt-2 border-t ${ds.color.borderLight} ${ds.color.borderLightDark}`} onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMessageComposer(true);
+                }}
+                className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200"
+                title="Enviar mensaje"
+              >
+                <MessageSquare className="w-4 h-4 mr-1" />
+                Mensaje
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowAppointmentScheduler(true);
+                }}
+                className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 transition-all duration-200"
+                title="Agendar consulta"
+              >
+                <Calendar className="w-4 h-4 mr-1" />
+                Agendar
+              </button>
+              {lead.phone && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleQuickAction('whatsapp');
+                    }}
+                    className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-[#94A3B8] hover:bg-gray-50 dark:hover:bg-[#1E1E2E] transition-all duration-200"
+                    title="Contactar por WhatsApp"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-1" />
+                    WhatsApp
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleQuickAction('call');
+                    }}
+                    className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-[#94A3B8] hover:bg-gray-50 dark:hover:bg-[#1E1E2E] transition-all duration-200"
+                    title="Llamar"
+                  >
+                    <Phone className="w-4 h-4 mr-1" />
+                    Llamar
+                  </button>
+                </>
+              )}
+              {lead.email && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleQuickAction('email');
+                  }}
+                  className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-[#94A3B8] hover:bg-gray-50 dark:hover:bg-[#1E1E2E] transition-all duration-200"
+                  title="Enviar email"
+                >
+                  <Mail className="w-4 h-4 mr-1" />
+                  Email
+                </button>
+              )}
+            </div>
+          </div>
+        </Card>
+      </div>
 
       {/* Modal de detalles */}
       <Modal
@@ -138,9 +332,36 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onUpdate, onStageChang
           </div>
         }
       >
-        <div className="space-y-6">
-          {/* Información básica */}
-          <div>
+        <Tabs
+          items={[
+            { id: 'info', label: 'Información', icon: <User className="w-4 h-4" /> },
+            { id: 'tasks', label: 'Tareas', icon: <Clock className="w-4 h-4" /> },
+            { 
+              id: 'chat', 
+              label: (
+                <span className="flex items-center gap-2">
+                  Chat
+                  {unreadChatCount > 0 && (
+                    <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">
+                      {unreadChatCount}
+                    </span>
+                  )}
+                </span>
+              ), 
+              icon: <MessageSquare className="w-4 h-4" /> 
+            },
+            { id: 'quotes', label: 'Presupuestos', icon: <FileText className="w-4 h-4" /> }
+          ]}
+          activeTab={activeDetailTab}
+          onTabChange={(tab) => setActiveDetailTab(tab as 'info' | 'tasks' | 'chat' | 'quotes')}
+          variant="pills"
+        />
+        
+        <div className="mt-6">
+          {activeDetailTab === 'info' && (
+            <div className="space-y-6">
+              {/* Información básica */}
+              <div>
             <h3 className={`${ds.typography.h3} ${ds.color.textPrimary} ${ds.color.textPrimaryDark} mb-4`}>
               Información Básica
             </h3>
@@ -263,6 +484,33 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onUpdate, onStageChang
             </div>
             </div>
           )}
+
+              {/* Probabilidad de conversión (detallada) */}
+              {lead.status !== 'converted' && lead.status !== 'lost' && (
+                <div>
+                  <ConversionProbability lead={lead} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeDetailTab === 'tasks' && (
+            <div>
+              <LeadTasks lead={lead} onTaskUpdate={() => onUpdate({})} />
+            </div>
+          )}
+
+          {activeDetailTab === 'chat' && (
+            <div className="h-[500px]">
+              <LeadChat lead={lead} onMessageSent={() => onUpdate({})} />
+            </div>
+          )}
+
+          {activeDetailTab === 'quotes' && (
+            <div>
+              <QuoteManager lead={lead} businessType={lead.businessType} />
+            </div>
+          )}
         </div>
       </Modal>
 
@@ -275,6 +523,17 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onUpdate, onStageChang
       >
         <LeadHistory leadId={lead.id} />
       </Modal>
+
+      {/* Modal de compositor de mensajes */}
+      <QuickMessageComposer
+        lead={lead}
+        isOpen={showMessageComposer}
+        onClose={() => setShowMessageComposer(false)}
+        onSent={() => {
+          // Recargar lead para actualizar interacciones
+          onUpdate({});
+        }}
+      />
     </>
   );
 };

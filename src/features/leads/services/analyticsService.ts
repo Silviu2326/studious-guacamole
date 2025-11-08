@@ -108,33 +108,66 @@ export class AnalyticsService {
       };
     });
 
-    // Top performers (mock)
-    const topPerformers: TopPerformer[] = [
-      {
-        userId: 'user1',
-        userName: 'Vendedor 1',
-        leadsAssigned: 15,
-        converted: 5,
-        conversionRate: 33.3,
-      },
-      {
-        userId: 'user2',
-        userName: 'Vendedor 2',
-        leadsAssigned: 12,
-        converted: 4,
-        conversionRate: 33.3,
-      },
-    ];
+    // Top performers - calcular basándose en leads reales
+    const userMap = new Map<string, { assigned: number; converted: number }>();
+    filteredLeads.forEach(lead => {
+      if (lead.assignedTo) {
+        const current = userMap.get(lead.assignedTo) || { assigned: 0, converted: 0 };
+        userMap.set(lead.assignedTo, {
+          assigned: current.assigned + 1,
+          converted: current.converted + (lead.status === 'converted' ? 1 : 0),
+        });
+      }
+    });
 
-    // Trends (mock - últimos 7 días)
+    const topPerformers: TopPerformer[] = Array.from(userMap.entries())
+      .map(([userId, data]) => ({
+        userId,
+        userName: userId === '1' ? 'Entrenador Principal' : userId === '2' ? 'Vendedor 2' : `Usuario ${userId}`,
+        leadsAssigned: data.assigned,
+        converted: data.converted,
+        conversionRate: data.assigned > 0 ? (data.converted / data.assigned) * 100 : 0,
+      }))
+      .sort((a, b) => b.conversionRate - a.conversionRate)
+      .slice(0, 5);
+
+    // Si no hay usuarios asignados, usar datos mock
+    if (topPerformers.length === 0) {
+      topPerformers.push(
+        {
+          userId: '1',
+          userName: 'Entrenador Principal',
+          leadsAssigned: filteredLeads.filter(l => l.assignedTo === '1' || !l.assignedTo).length,
+          converted: filteredLeads.filter(l => (l.assignedTo === '1' || !l.assignedTo) && l.status === 'converted').length,
+          conversionRate: 0,
+        }
+      );
+      if (topPerformers[0].leadsAssigned > 0) {
+        topPerformers[0].conversionRate = (topPerformers[0].converted / topPerformers[0].leadsAssigned) * 100;
+      }
+    }
+
+    // Trends - calcular basándose en leads reales (últimos 7 días)
     const trends: TrendPoint[] = Array.from({ length: 7 }, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() - (6 - i));
+      const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1);
+      
+      const dayLeads = filteredLeads.filter(l => {
+        const leadDate = new Date(l.createdAt);
+        return leadDate >= startOfDay && leadDate <= endOfDay;
+      });
+      
+      const newLeads = dayLeads.filter(l => l.status === 'new' || l.stage === 'captacion').length;
+      const convertedLeads = dayLeads.filter(l => l.status === 'converted').length;
+      const conversionRate = dayLeads.length > 0 ? (convertedLeads / dayLeads.length) * 100 : 0;
+      
       return {
         date,
-        newLeads: Math.floor(Math.random() * 5) + 1,
-        convertedLeads: Math.floor(Math.random() * 2),
-        conversionRate: Math.random() * 30 + 10,
+        newLeads,
+        convertedLeads,
+        conversionRate: Math.round(conversionRate * 10) / 10, // Redondear a 1 decimal
       };
     });
 

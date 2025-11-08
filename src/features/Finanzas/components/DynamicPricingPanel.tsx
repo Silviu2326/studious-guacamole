@@ -60,3 +60,4 @@ export function DynamicPricingPanel({ insights }: DynamicPricingPanelProps) {
   );
 }
 
+

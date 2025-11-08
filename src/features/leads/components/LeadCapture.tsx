@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Button, Input, Select } from '../../../components/componentsreutilizables';
 import { ds } from '../../adherencia/ui/ds';
 import { Lead, LeadSource } from '../types';
+import { DuplicateMergeModal } from './DuplicateMergeModal';
+import { detectDuplicates } from '../api/duplicates';
 
 interface LeadCaptureProps {
   businessType: 'entrenador' | 'gimnasio';
@@ -21,8 +23,15 @@ export const LeadCapture: React.FC<LeadCaptureProps> = ({
     source: 'instagram' as LeadSource,
     notes: '',
   });
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [duplicates, setDuplicates] = useState<Array<{
+    lead: Lead;
+    similarity: number;
+    matchType: 'email' | 'phone' | 'name';
+  }>>([]);
+  const [pendingLeadData, setPendingLeadData] = useState<Omit<Lead, 'id' | 'createdAt' | 'updatedAt'> | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'> = {
@@ -39,7 +48,45 @@ export const LeadCapture: React.FC<LeadCaptureProps> = ({
       tags: [],
     };
 
-    onSubmit(leadData);
+    // Crear lead temporal para verificar duplicados
+    const tempLead: Lead = {
+      ...leadData,
+      id: 'temp',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    // Verificar duplicados
+    const detectedDuplicates = await detectDuplicates(tempLead, 70);
+    
+    if (detectedDuplicates.length > 0) {
+      setDuplicates(detectedDuplicates);
+      setPendingLeadData(leadData);
+      setShowDuplicateModal(true);
+    } else {
+      onSubmit(leadData);
+    }
+  };
+
+  const handleMergeComplete = () => {
+    setShowDuplicateModal(false);
+    setDuplicates([]);
+    setPendingLeadData(null);
+    // Limpiar formulario
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      source: 'instagram',
+      notes: '',
+    });
+  };
+
+  const handleSkipDuplicate = () => {
+    if (pendingLeadData) {
+      onSubmit(pendingLeadData);
+      handleMergeComplete();
+    }
   };
 
   const sourcesByBusinessType: LeadSource[] = businessType === 'entrenador'
@@ -123,6 +170,22 @@ export const LeadCapture: React.FC<LeadCaptureProps> = ({
           Crear Lead
         </Button>
       </div>
+
+      {/* Modal de duplicados */}
+      {pendingLeadData && (
+        <DuplicateMergeModal
+          isOpen={showDuplicateModal}
+          onClose={handleSkipDuplicate}
+          lead={{
+            ...pendingLeadData,
+            id: 'temp',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }}
+          duplicates={duplicates}
+          onMerge={handleMergeComplete}
+        />
+      )}
     </form>
   );
 };

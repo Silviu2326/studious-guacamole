@@ -12,7 +12,7 @@ export function Login() {
 
   useEffect(() => {
     if (user) {
-      navigate('/dashboard', { replace: true });
+      navigate('/resumen-general', { replace: true });
     }
   }, [user, navigate]);
 
@@ -29,7 +29,7 @@ export function Login() {
     if (!success) {
       setError('Credenciales incorrectas');
     } else {
-      navigate('/dashboard', { replace: true });
+      navigate('/resumen-general', { replace: true });
     }
   };
 

@@ -1,8 +1,9 @@
-import { LeadScoring, Lead, ScoringFactor } from '../types';
+import { LeadScoring, Lead, ScoringFactor, ConversionPrediction } from '../types';
 import { getLead } from '../api/leads';
+import { PredictionService } from './predictionService';
 
 export class ScoringService {
-  static async calculateLeadScore(leadId: string): Promise<LeadScoring> {
+  static async calculateLeadScore(leadId: string, includePrediction: boolean = true): Promise<LeadScoring & { prediction?: ConversionPrediction }> {
     const lead = await getLead(leadId);
     if (!lead) {
       throw new Error('Lead not found');
@@ -14,7 +15,20 @@ export class ScoringService {
     const timeScore = this.calculateTimeScore(lead);
     
     const baseScore = 50;
-    const totalScore = baseScore + interactionScore + engagementScore + timeScore;
+    let totalScore = baseScore + interactionScore + engagementScore + timeScore;
+
+    // Mejorar score con predicción de conversión si está habilitado
+    let prediction: ConversionPrediction | undefined;
+    if (includePrediction) {
+      try {
+        prediction = await PredictionService.getPrediction(leadId);
+        // Ajustar score basado en probabilidad de conversión (peso del 20%)
+        const predictionAdjustment = (prediction.probability - 50) * 0.2;
+        totalScore += predictionAdjustment;
+      } catch (error) {
+        console.warn('Error obteniendo predicción para score:', error);
+      }
+    }
 
     const factors: ScoringFactor[] = [
       {
@@ -43,7 +57,7 @@ export class ScoringService {
       },
     ];
 
-    return {
+    const result: LeadScoring & { prediction?: ConversionPrediction } = {
       leadId,
       baseScore,
       interactionScore,
@@ -53,6 +67,12 @@ export class ScoringService {
       factors,
       lastCalculated: new Date(),
     };
+
+    if (prediction) {
+      result.prediction = prediction;
+    }
+
+    return result;
   }
 
   private static calculateInteractionScore(lead: Lead): number {

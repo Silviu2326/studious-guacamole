@@ -154,7 +154,7 @@ function ProtectedRoute() {
 
 function RedirectIfAuthed() {
   const { user } = useAuth();
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (user) return <Navigate to="/resumen-general" replace />;
   return <Login />;
 }
 
@@ -310,7 +310,7 @@ function App() {
             <Route path="/configuracion/centro" element={<ConfiguracionCentroPage />} />
           </Route>
         </Route>
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/resumen-general" replace />} />
       </Routes>
     </AuthProvider>
   );

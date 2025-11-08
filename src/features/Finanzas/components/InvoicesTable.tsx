@@ -76,3 +76,4 @@ export function InvoicesTable({ invoices }: InvoicesTableProps) {
   );
 }
 
+

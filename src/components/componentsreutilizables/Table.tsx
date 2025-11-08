@@ -20,6 +20,7 @@ export interface TableProps<T> {
   onSort?: (column: string, direction: 'asc' | 'desc') => void;
   sortColumn?: string;
   sortDirection?: 'asc' | 'desc';
+  getRowProps?: (row: T) => React.HTMLAttributes<HTMLTableRowElement>;
 }
 
 export const Table = <T extends Record<string, any>>({
@@ -31,6 +32,7 @@ export const Table = <T extends Record<string, any>>({
   onSort,
   sortColumn,
   sortDirection = 'asc',
+  getRowProps,
 }: TableProps<T>) => {
   const handleSort = (column: string) => {
     if (onSort) {
@@ -105,13 +107,18 @@ export const Table = <T extends Record<string, any>>({
             </tr>
           </thead>
           <tbody className="divide-y divide-[#E2E8F0] dark:divide-[#334155]">
-            {data.map((row, index) => (
-              <tr
-                key={index}
-                className={`
-                  hover:bg-[#F8FAFC] dark:hover:bg-[#1E1E2E] ${ds.animation.fast}
-                `}
-              >
+            {data.map((row, index) => {
+              const rowProps = getRowProps ? getRowProps(row) : {};
+              const { className: rowClassName, ...restRowProps } = rowProps;
+              return (
+                <tr
+                  key={index}
+                  className={`
+                    hover:bg-[#F8FAFC] dark:hover:bg-[#1E1E2E] ${ds.animation.fast}
+                    ${rowClassName ?? ''}
+                  `}
+                  {...restRowProps}
+                >
                 {columns.map((column) => (
                   <td
                     key={String(column.key)}
@@ -126,8 +133,9 @@ export const Table = <T extends Record<string, any>>({
                     }
                   </td>
                 ))}
-              </tr>
-            ))}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

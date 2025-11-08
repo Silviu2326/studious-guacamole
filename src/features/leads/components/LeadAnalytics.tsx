@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Card, MetricCards } from '../../../components/componentsreutilizables';
+import { Card, MetricCards, Tabs } from '../../../components/componentsreutilizables';
 import { ds } from '../../adherencia/ui/ds';
 import { LeadAnalytics as LeadAnalyticsType } from '../types';
 import { getLeadAnalytics } from '../api';
+import { ROIAnalytics } from './ROIAnalytics';
 import { 
   Users, 
   TrendingUp, 
@@ -21,6 +22,7 @@ interface LeadAnalyticsProps {
 export const LeadAnalytics: React.FC<LeadAnalyticsProps> = ({ businessType, userId }) => {
   const [analytics, setAnalytics] = useState<LeadAnalyticsType | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'overview' | 'roi'>('overview');
 
   useEffect(() => {
     loadAnalytics();
@@ -93,10 +95,43 @@ export const LeadAnalytics: React.FC<LeadAnalyticsProps> = ({ businessType, user
     },
   ];
 
+  const tabs = businessType === 'gimnasio' ? [
+    {
+      id: 'overview',
+      label: 'Resumen',
+      icon: <BarChart3 className="w-4 h-4" />
+    },
+    {
+      id: 'roi',
+      label: 'ROI y Atribución',
+      icon: <DollarSign className="w-4 h-4" />
+    }
+  ] : [
+    {
+      id: 'overview',
+      label: 'Resumen',
+      icon: <BarChart3 className="w-4 h-4" />
+    }
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Métricas principales */}
-      <MetricCards data={metrics} columns={4} />
+      {/* Tabs solo para gimnasio */}
+      {businessType === 'gimnasio' && (
+        <Tabs
+          items={tabs}
+          activeTab={activeTab}
+          onTabChange={(tab) => setActiveTab(tab as 'overview' | 'roi')}
+          variant="pills"
+        />
+      )}
+
+      {activeTab === 'roi' ? (
+        <ROIAnalytics businessType={businessType} />
+      ) : (
+        <>
+          {/* Métricas principales */}
+          <MetricCards data={metrics} columns={4} />
 
       {/* Breakdown por origen */}
       <Card>
@@ -172,6 +207,8 @@ export const LeadAnalytics: React.FC<LeadAnalyticsProps> = ({ businessType, user
           </div>
         </div>
       </Card>
+        </>
+      )}
     </div>
   );
 };

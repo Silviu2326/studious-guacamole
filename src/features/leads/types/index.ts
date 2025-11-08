@@ -312,3 +312,251 @@ export interface LeadFilters {
   businessType?: 'entrenador' | 'gimnasio';
 }
 
+// Tareas y Recordatorios
+export interface Task {
+  id: string;
+  leadId: string;
+  title: string;
+  description?: string;
+  type: 'call' | 'email' | 'whatsapp' | 'meeting' | 'proposal' | 'follow_up' | 'other';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  dueDate: Date;
+  completed: boolean;
+  completedAt?: Date;
+  completedBy?: string;
+  assignedTo: string;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
+  metadata?: Record<string, any>;
+}
+
+// Presupuestos y Cotizaciones
+export interface Quote {
+  id: string;
+  leadId: string;
+  quoteNumber: string;
+  title: string;
+  description?: string;
+  items: QuoteItem[];
+  subtotal: number;
+  discount?: {
+    type: 'percentage' | 'fixed';
+    value: number;
+    description?: string;
+  };
+  tax?: {
+    rate: number;
+    amount: number;
+  };
+  total: number;
+  currency: string;
+  validUntil: Date;
+  status: 'draft' | 'sent' | 'viewed' | 'approved' | 'rejected' | 'expired';
+  sentAt?: Date;
+  viewedAt?: Date;
+  approvedAt?: Date;
+  rejectedAt?: Date;
+  rejectionReason?: string;
+  notes?: string;
+  templateId?: string;
+  pdfUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
+}
+
+export interface QuoteItem {
+  id: string;
+  name: string;
+  description?: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+// Chat y Mensajería
+export interface ChatMessage {
+  id: string;
+  leadId: string;
+  channel: 'whatsapp' | 'email' | 'sms' | 'internal';
+  direction: 'inbound' | 'outbound';
+  content: string;
+  timestamp: Date;
+  userId?: string;
+  userName?: string;
+  read: boolean;
+  important: boolean;
+  metadata?: {
+    messageId?: string; // ID del mensaje en WhatsApp/Email
+    attachments?: Array<{
+      type: 'image' | 'document' | 'audio' | 'video';
+      url: string;
+      name?: string;
+    }>;
+    replyTo?: string; // ID del mensaje al que responde
+  };
+}
+
+// ROI y Atribución
+export interface CampaignCost {
+  id: string;
+  source: LeadSource;
+  campaignName: string;
+  period: {
+    start: Date;
+    end: Date;
+  };
+  cost: number;
+  currency: string;
+  businessType: 'entrenador' | 'gimnasio';
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
+}
+
+export interface ROIMetrics {
+  source: LeadSource;
+  totalCost: number;
+  totalLeads: number;
+  convertedLeads: number;
+  conversionRate: number;
+  costPerLead: number;
+  costPerConversion: number;
+  totalRevenue: number;
+  roi: number;
+  roiRatio: number;
+  period: {
+    start: Date;
+    end: Date;
+  };
+}
+
+export interface ROITrend {
+  date: Date;
+  source: LeadSource;
+  cost: number;
+  leads: number;
+  conversions: number;
+  revenue: number;
+  roi: number;
+}
+
+export interface ROIAlert {
+  id: string;
+  source: LeadSource;
+  type: 'low_roi' | 'high_cost_per_lead' | 'low_conversion' | 'negative_roi';
+  message: string;
+  severity: 'warning' | 'critical';
+  threshold: number;
+  currentValue: number;
+  createdAt: Date;
+}
+
+// Predicción de Conversión
+export interface ConversionPrediction {
+  leadId: string;
+  probability: number; // 0-100%
+  confidence: 'low' | 'medium' | 'high';
+  factors: PredictionFactor[];
+  recommendations: string[];
+  lastCalculated: Date;
+}
+
+export interface PredictionFactor {
+  name: string;
+  impact: number; // -100 a +100, impacto en la probabilidad
+  description: string;
+  currentValue: any;
+  optimalValue?: any;
+  suggestion?: string;
+}
+
+// Notificaciones
+export type NotificationType = 
+  | 'lead_no_response'
+  | 'follow_up_today'
+  | 'hot_lead'
+  | 'new_lead'
+  | 'lead_converted'
+  | 'lead_stage_changed'
+  | 'task_due'
+  | 'quote_sent'
+  | 'roi_alert';
+
+export type NotificationPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  priority: NotificationPriority;
+  title: string;
+  message: string;
+  leadId?: string;
+  leadName?: string;
+  userId: string;
+  businessType: 'entrenador' | 'gimnasio';
+  read: boolean;
+  createdAt: Date;
+  actionUrl?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface NotificationPreferences {
+  userId: string;
+  pushEnabled: boolean;
+  emailEnabled: boolean;
+  types: {
+    [key in NotificationType]: {
+      push: boolean;
+      email: boolean;
+    };
+  };
+  quietHours?: {
+    enabled: boolean;
+    start: string; // HH:mm
+    end: string; // HH:mm
+  };
+}
+
+// Exportación y Reportes
+export type ExportFormat = 'excel' | 'csv' | 'pdf';
+export type ReportType = 'monthly' | 'by_seller' | 'by_source' | 'custom';
+
+export interface ExportOptions {
+  format: ExportFormat;
+  columns?: string[]; // Columnas a incluir
+  filters?: {
+    status?: LeadStatus[];
+    source?: LeadSource[];
+    stage?: PipelineStage[];
+    dateRange?: {
+      start: Date;
+      end: Date;
+    };
+    assignedTo?: string[];
+  };
+  includeCharts?: boolean;
+}
+
+export interface ReportOptions {
+  type: ReportType;
+  format: 'pdf';
+  period?: {
+    start: Date;
+    end: Date;
+  };
+  sellerId?: string;
+  source?: LeadSource;
+  includeCharts?: boolean;
+  emailRecipients?: string[];
+  schedule?: {
+    enabled: boolean;
+    frequency: 'daily' | 'weekly' | 'monthly';
+    dayOfWeek?: number; // 0-6 para weekly
+    dayOfMonth?: number; // 1-31 para monthly
+    time?: string; // HH:mm
+  };
+}
+

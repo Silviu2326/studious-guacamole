@@ -92,3 +92,4 @@ export const fetchSimpleAutomations = async (): Promise<SimpleAutomation[]> => {
   ];
 };
 
+

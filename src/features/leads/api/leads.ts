@@ -26,3 +26,10 @@ export const getLeadHistory = async (id: string): Promise<LeadHistory> => {
   return LeadsService.getLeadHistory(id);
 };
 
+export const createInteraction = async (
+  leadId: string,
+  interaction: Omit<import('../types').LeadInteraction, 'id'>
+): Promise<import('../types').Lead> => {
+  return LeadsService.addInteraction(leadId, interaction);
+};
+

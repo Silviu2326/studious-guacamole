@@ -1,4 +1,4 @@
-import { LayoutDashboard, LogOut, Award, Building2, ChevronLeft, ChevronRight, ChevronDown, TrendingUp, CalendarDays, ShieldAlert, Dumbbell, Banknote, Megaphone, Package, PackageOpen, ShoppingBag, AlertTriangle, Clock, UtensilsCrossed, FileEdit, MessageSquare, Trophy, Receipt, Wallet, Users, BarChart, Warehouse, UserPlus, Users as UsersList, ShoppingCart, ListFilter, Wrench, Ticket, Target, DollarSign, PieChart, Kanban, ClipboardList, UserCircle, ClipboardCheck, Calendar, CheckSquare, Apple, Shield, BookOpen, ChefHat, Boxes, RotateCcw, CalendarCheck, RefreshCw, Bell, Store, UserCheck, LineChart, Clipboard, UserMinus, AlertCircle, BarChart3, FileText, Globe, Briefcase, Handshake, UserCog, Star, FileCheck, ClipboardPen, Settings, FileBarChart, Database, FileSpreadsheet, Plug, Coins, Scroll, FileSpreadsheet as Payroll, Award as IncentiveIcon, Clock as TimeTrackingIcon, FileStack, ShieldCheck, Building, FileSignature, Shield as ShieldIcon, Tag, ArrowRightLeft, TrendingDown, Key, ShoppingBasket, FlaskConical, Search, Scissors, Sparkles, Mail, Image, Inbox, Gift, Brain, Layers, Filter, Video, Zap, Radio, ThumbsUp, DollarSign as DollarIcon, Palette, BarChart2, Network, Sparkles as SparklesIcon, TestTube } from 'lucide-react';
+import { LayoutDashboard, LogOut, Award, Building2, ChevronLeft, ChevronRight, ChevronDown, TrendingUp, CalendarDays, ShieldAlert, Dumbbell, Banknote, Megaphone, Package, PackageOpen, ShoppingBag, AlertTriangle, Clock, UtensilsCrossed, FileEdit, MessageSquare, Trophy, Receipt, Wallet, Users, BarChart, Warehouse, UserPlus, Users as UsersList, ShoppingCart, ListFilter, Wrench, Ticket, Target, DollarSign, PieChart, Kanban, ClipboardList, UserCircle, ClipboardCheck, Calendar, CheckSquare, Apple, Shield, BookOpen, ChefHat, Boxes, RotateCcw, CalendarCheck, RefreshCw, Bell, Store, UserCheck, LineChart, Clipboard, UserMinus, AlertCircle, BarChart3, FileText, Globe, Briefcase, Handshake, UserCog, Star, FileCheck, ClipboardPen, Settings, FileBarChart, Database, FileSpreadsheet, Plug, Coins, Scroll, FileSpreadsheet as Payroll, Award as IncentiveIcon, Clock as TimeTrackingIcon, FileStack, ShieldCheck, Building, FileSignature, Shield as ShieldIcon, Tag, ArrowRightLeft, TrendingDown, Key, ShoppingBasket, FlaskConical, Search, Scissors, Sparkles, Mail, Image, Inbox, Gift, Brain, Layers, Filter, Video, Zap, Radio, ThumbsUp, DollarSign as DollarIcon, Palette, BarChart2, Network, Sparkles as SparklesIcon, TestTube, Workflow, HeartHandshake } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
@@ -46,6 +46,8 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     if (path.includes('resumen-general')) return 'resumen-general';
     if (path.includes('tareas-alertas')) return 'tareas-alertas';
     if (path.includes('objetivos-rendimiento')) return 'objetivos-rendimiento';
+    if (path.includes('overview-marketing')) return 'overview-marketing';
+  if (path.includes('funnels-adquisicion')) return 'funnels-adquisicion';
     if (path.includes('leads')) return 'leads';
     if (path.includes('gestión-de-clientes') || path.includes('clientes')) return 'gestión-de-clientes';
     if (path.includes('portal-del-cliente-autoservicio')) return 'portal-del-cliente-autoservicio';
@@ -54,6 +56,7 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     if (path.includes('ventas-leads')) return 'ventas-leads';
     if (path.includes('encuestas-satisfaccin-npscsat')) return 'encuestas-satisfaccin-npscsat';
     if (path.includes('campanas-outreach')) return 'campanas-outreach';
+    if (path.includes('campanas-automatizacion')) return 'campanas-automatizacion';
     if (path.includes('listas-inteligentes-segmentos-guardados')) return 'listas-inteligentes-segmentos-guardados';
     if (path.includes('suite-de-entreno') || path.includes('programas-de-entreno') || path.includes('editor-de-entreno') || path.includes('plantillas-de-entrenamiento') || path.includes('biblioteca-de-ejercicios')) return 'suite-de-entreno';
     if (path.includes('check-ins-de-entreno')) return 'check-ins-de-entreno';
@@ -130,6 +133,7 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     if (path.includes('afiliados-y-referidos') || path.includes('marketing/afiliados')) return 'afiliados-y-referidos';
     if (path.includes('embudos-ofertas-landing-pages') || path.includes('marketing/landing-pages')) return 'embudos-ofertas-landing-pages';
     if (path.includes('dashboard/marketing/funnels') || path.includes('constructor-de-funnels')) return 'constructor-de-funnels-y-landing-pages';
+    if (path.includes('dashboard/content/social-studio') || path.includes('content-social-studio')) return 'content-social-studio';
     if (path.includes('dashboard/content/clipper') || path.includes('content-clipper')) return 'content-clipper';
     if (path.includes('dashboard/content/video-studio') || path.includes('video-studio')) return 'video-studio';
     if (path.includes('dashboard/marketing/influencers') || path.includes('influencer-content-syndication')) return 'creatorinfluencer-content-syndication';
@@ -162,6 +166,7 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     if (path.includes('dashboard/analytics/inbox') || path.includes('lead-inbox-unificado-sla')) return 'lead-inbox-unificado-sla';
     if (path.includes('ab-testing') || path.includes('experimentacion')) return 'ab-testing-experimentacion';
     if (path.includes('abm') || path.includes('account-based')) return 'account-based-marketing';
+    if (path.includes('comunidad-fidelizacion')) return 'comunidad-fidelizacion';
     if (path.includes('comunidad') || path.includes('community')) return 'community-engagement';
     if (path.includes('market-intelligence') || path.includes('competitive-analysis')) return 'competitive-analysis-market-intelligence';
     if (path.includes('dashboard/marketing/anuncios') || path.includes('gestor-de-anuncios')) return 'gestor-de-anuncios';
@@ -220,24 +225,32 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
   };
 
   const marketingLiteItems: NavItem[] = [
-    { id: 'marketing-lite', label: 'Marketing (Lite)', icon: Megaphone, path: '/campanas-outreach' },
-    { id: 'planner-redes-sociales', label: 'Planner RRSS', icon: Calendar, path: '/dashboard/marketing/social-planner' },
-    { id: 'email-marketing-newsletters', label: 'Email/SMS (básico + secuencias esenciales)', icon: Mail, path: '/dashboard/marketing/email-campaigns' },
+    { id: 'overview-marketing', label: 'Overview Marketing', icon: BarChart3, path: '/overview-marketing' },
+    { id: 'funnels-adquisicion', label: 'Funnels & Adquisición', icon: Layers, path: '/dashboard/marketing/funnels-adquisicion' },
+    { id: 'campanas-automatizacion', label: 'Campañas & Automatización', icon: Workflow, path: '/dashboard/marketing/campanas-automatizacion' },
+    { id: 'content-social-studio', label: 'Content & Social Studio', icon: SparklesIcon, path: '/dashboard/content/social-studio' },
     { id: 'review-testimonial-engine', label: 'Reviews & Testimonios', icon: Star, path: '/dashboard/reviews' },
-    { id: 'referidos-afiliados', label: 'Promos & Referidos', icon: Users, path: '/dashboard/marketing/referrals' },
-    { id: 'generador-creativo-ia', label: 'Generador Creativo IA', icon: Sparkles, path: '/dashboard/marketing/ia-generator' },
+    { id: 'comunidad-fidelizacion', label: 'Comunidad & Fidelización', icon: HeartHandshake, path: '/comunidad-fidelizacion' },
+    { id: 'inteligencia-ia-experimentacion', label: 'IA & Experimentación', icon: Brain, path: '/dashboard/intelligence/ia-experimentacion' },
   ];
 
-  const marketingGimnasioItems: NavItem[] = [
+const marketingGimnasioItems: NavItem[] = [
+    { id: 'overview-marketing', label: 'Overview Marketing', icon: BarChart3, path: '/overview-marketing' },
+    { id: 'funnels-adquisicion', label: 'Funnels & Adquisición', icon: Layers, path: '/dashboard/marketing/funnels-adquisicion' },
     { id: 'campanas-promociones', label: 'Campañas & Promociones', icon: Megaphone, path: '/dashboard/marketing/campanas-promociones' },
+    { id: 'campanas-automatizacion', label: 'Campañas & Automatización', icon: Workflow, path: '/dashboard/marketing/campanas-automatizacion' },
     { id: 'landing-pages-simples', label: 'Landing Pages Simples', icon: Globe, path: '/dashboard/marketing/landing-pages-simples' },
     { id: 'resenas-testimonios', label: 'Gestión de Reseñas & Testimonios', icon: Star, path: '/dashboard/marketing/resenas-testimonios' },
+    { id: 'comunidad-fidelizacion', label: 'Comunidad & Fidelización', icon: HeartHandshake, path: '/comunidad-fidelizacion' },
     { id: 'campanas-retencion-riesgo', label: 'Campañas Retención & Riesgo de Baja', icon: AlertCircle, path: '/dashboard/marketing/retencion-riesgo' },
     { id: 'planner-redes-sociales-simple', label: 'Redes Sociales (Planner simple)', icon: Calendar, path: '/dashboard/marketing/social-planner-simple' },
     { id: 'analitica-captacion', label: 'Analítica de Captación', icon: LineChart, path: '/dashboard/analytics/captacion' },
+  { id: 'inteligencia-ia-experimentacion', label: 'IA & Experimentación', icon: SparklesIcon, path: '/dashboard/intelligence/ia-experimentacion' },
   ];
 
   const marketingFullItems: NavItem[] = [
+    { id: 'overview-marketing', label: 'Overview Marketing', icon: BarChart3, path: '/overview-marketing' },
+    { id: 'funnels-adquisicion', label: 'Funnels & Adquisición', icon: Layers, path: '/dashboard/marketing/funnels-adquisicion' },
     // Captura & Conversión
     { id: 'constructor-de-funnels-y-landing-pages', label: 'Constructor de Funnels & Landing Pages', icon: Globe, path: '/dashboard/marketing/funnels' },
     { id: 'lead-magnet-factory', label: 'Lead Magnet Factory', icon: FileText, path: '/dashboard/marketing/lead-magnets' },
@@ -245,6 +258,7 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     { id: 'gestion-contenidos-premium', label: 'Gestión de Contenidos Premium', icon: Package, path: '/dashboard/contenido-premium' },
     // Segmentación & Automatización
     { id: 'segmentacion-dinamica-audiencias', label: 'Segmentación Dinámica & Audiencias', icon: Filter, path: '/dashboard/audiencias' },
+    { id: 'campanas-automatizacion', label: 'Campañas & Automatización', icon: Workflow, path: '/dashboard/marketing/campanas-automatizacion' },
     { id: 'lifecycle-email-sequences', label: 'Lifecycle Email Sequences', icon: Mail, path: '/dashboard/automatizacion/secuencias-email' },
     // Email & SMS
     { id: 'email-marketing-newsletters', label: 'Email Marketing & Newsletters', icon: Mail, path: '/dashboard/marketing/email-campaigns' },
@@ -253,6 +267,7 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     { id: 'sms-whatsapp-automation', label: 'SMS/WhatsApp Automation', icon: MessageSquare, path: '/dashboard/automations/messaging' },
     { id: 'smsemail-preference-center', label: 'SMS/Email Preference Center', icon: Settings, path: '/client/preferences/communication' },
     // Contenido & Redes Sociales
+    { id: 'content-social-studio', label: 'Content & Social Studio', icon: SparklesIcon, path: '/dashboard/content/social-studio' },
     { id: 'planner-redes-sociales', label: 'Planner de Redes Sociales', icon: Calendar, path: '/dashboard/marketing/social-planner' },
     { id: 'generador-creativo-ia', label: 'Generador Creativo con IA', icon: Sparkles, path: '/dashboard/marketing/ia-generator' },
     { id: 'generador-estrategias-marketing', label: 'Generador de Estrategias de Marketing con IA', icon: Target, path: '/dashboard/marketing/ia-estrategias' },
@@ -263,6 +278,7 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     { id: 'hub-contenidos-ugc', label: 'Hub de Contenidos & UGC', icon: Image, path: '/dashboard/contenido/ugc-hub' },
     // Confianza & Social Proof
     { id: 'review-testimonial-engine', label: 'Review & Testimonial Engine', icon: Star, path: '/dashboard/reviews' },
+    { id: 'comunidad-fidelizacion', label: 'Comunidad & Fidelización', icon: HeartHandshake, path: '/comunidad-fidelizacion' },
     { id: 'feedback-encuestas', label: 'Feedback Loop & Encuestas Inteligentes', icon: MessageSquare, path: '/dashboard/feedback/surveys' },
     // Publicidad & Retargeting
     { id: 'gestor-de-anuncios', label: 'Gestor de Anuncios', icon: Megaphone, path: '/dashboard/marketing/anuncios' },
@@ -279,6 +295,7 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     { id: 'community-engagement', label: 'Community & Engagement', icon: Users, path: '/comunidad' },
     // Análisis & Inteligencia
     { id: 'libreria-campanas-playbooks', label: 'Librería de Campañas (Playbooks)', icon: BookOpen, path: '/dashboard/intelligence/playbooks' },
+  { id: 'inteligencia-ia-experimentacion', label: 'Inteligencia, IA & Experimentación', icon: Brain, path: '/dashboard/intelligence/ia-experimentacion' },
     { id: 'trend-analizer', label: 'Trend Analizer', icon: TrendingUp, path: '/dashboard/intelligence/trend-analyzer' },
     { id: 'analitica-de-adquisicion', label: 'Analítica de Adquisición', icon: LineChart, path: '/analytics/acquisition' },
     // Integraciones & Partnerships

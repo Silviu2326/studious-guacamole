@@ -14,6 +14,9 @@ import {
   BarChart3,
   Bell,
   UserCog,
+  Plus,
+  Download,
+  Upload,
 } from 'lucide-react';
 import { getChurnAnalytics } from '../api/analytics';
 
@@ -22,7 +25,7 @@ type TabId = 'clients' | 'alerts' | 'analytics' | 'segmentation';
 interface TabItem {
   id: TabId;
   label: string;
-  icon: React.FC<{ size?: number; className?: string }>;
+  icon: React.ComponentType<{ size?: number | string; className?: string }>;
 }
 
 /**
@@ -165,19 +168,34 @@ export default function GestiónDeClientesPage() {
         <div className="border-b border-gray-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
           <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6">
             <div className="py-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-xl mr-4 ring-1 ring-blue-200/70">
-                  <Users size={24} className="text-blue-600" />
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 bg-blue-100 rounded-xl ring-1 ring-blue-200/70">
+                    <Users size={24} className="text-blue-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
+                      {esEntrenador ? 'Gestión de Clientes' : 'Gestión de Socios'}
+                    </h1>
+                    <p className="text-gray-600">
+                      {esEntrenador
+                        ? 'Sistema completo de gestión de clientes con seguimiento de estado, retención y perfil 360º'
+                        : 'Sistema integral de gestión de socios con estado de cuotas, retención y análisis de churn'}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
-                    {esEntrenador ? 'Gestión de Clientes' : 'Gestión de Socios'}
-                  </h1>
-                  <p className="text-gray-600">
-                    {esEntrenador
-                      ? 'Sistema completo de gestión de clientes con seguimiento de estado, retención y perfil 360º'
-                      : 'Sistema integral de gestión de socios con estado de cuotas, retención y análisis de churn'}
-                  </p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button size="sm" leftIcon={<Plus size={16} />}>
+                    {esEntrenador ? 'Crear Cliente' : 'Nuevo Socio'}
+                  </Button>
+                  <Button size="sm" variant="secondary" leftIcon={<Download size={16} />}>
+                    Exportar {esEntrenador ? 'Clientes' : 'Socios'}
+                  </Button>
+                  {!esEntrenador && (
+                    <Button size="sm" variant="ghost" leftIcon={<Upload size={16} />}>
+                      Importar Socios
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

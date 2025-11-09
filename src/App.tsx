@@ -5,12 +5,15 @@ import AdherenciaCumplimientoEntrenoPage from './features/adherencia-cumplimient
 import { RestriccionesAlimentariasPage } from './features/restricciones-alimentarias/page';
 import { CajaBancosPage } from './features/caja-bancos/pages/caja-bancosPage';
 import { CampanasOutreachPage } from './features/campanas-outreach/pages/campanas-outreachPage';
+import CampanasAutomatizacionPage from './features/CampanasAutomatizacion/pages/CampanasAutomatizacionPage';
 import AbTestingYExperimentacionPage from './features/AbTestingYExperimentacion/pages/AbTestingYExperimentacionPage';
 import AccountBasedMarketingAbmPage from './features/AccountBasedMarketingAbm/pages/AccountBasedMarketingAbmPage';
 import CommunityYEngagementPage from './features/CommunityYEngagement/pages/CommunityYEngagementPage';
+import ComunidadYFidelizacionPage from './features/ComunidadYFidelizacion/pages/ComunidadYFidelizacionPage';
 import CompetitiveAnalysisYMarketIntelligencePage from './features/CompetitiveAnalysisYMarketIntelligence/pages/CompetitiveAnalysisYMarketIntelligencePage';
 import ConstructorDeFunnelsYLandingPagesPage from './features/ConstructorDeFunnelsYLandingPages/pages/ConstructorDeFunnelsYLandingPagesPage';
 import ContentClipperPage from './features/ContentClipper/pages/ContentClipperPage';
+import ContentSocialStudioPage from './features/ContentSocialStudio/pages/ContentSocialStudioPage';
 import CreatorinfluencerContentSyndicationPage from './features/CreatorinfluencerContentSyndication/pages/CreatorinfluencerContentSyndicationPage';
 import DynamicPricingYOfertasInteligentesPage from './features/DynamicPricingYOfertasInteligentes/pages/DynamicPricingYOfertasInteligentesPage';
 import EmailDeliverabilityYComplianceHubPage from './features/EmailDeliverabilityYComplianceHub/pages/EmailDeliverabilityYComplianceHubPage';
@@ -116,6 +119,7 @@ import LoyaltyProgramManagerPage from './features/LoyaltyProgramManager/pages/Lo
 import MarketingDeReferidosPage from './features/MarketingDeReferidos/pages/MarketingDeReferidosPage';
 import PartnershipsYInfluencersPage from './features/PartnershipsYInfluencers/pages/PartnershipsYInfluencersPage';
 import PersonalizationEngineIaAvanzadaPage from './features/PersonalizationEngineIaAvanzada/pages/PersonalizationEngineIaAvanzadaPage';
+import InteligenciaIaExperimentacionPage from './features/InteligenciaIaExperimentacion/pages/InteligenciaIaExperimentacionPage';
 import PlannerDeRedesSocialesPage from './features/PlannerDeRedesSociales/pages/PlannerDeRedesSocialesPage';
 import ProgressiveProfilingPage from './features/ProgressiveProfiling/pages/ProgressiveProfilingPage';
 import PromocionesCuponesYPacksPage from './features/PromocionesCuponesYPacks/pages/PromocionesCuponesYPacksPage';
@@ -145,6 +149,11 @@ import { OperacionesPage } from './features/Operaciones';
 import { EquipoRRHHPage } from './features/EquipoRRHH';
 import { MultisedeFranquiciasPage } from './features/MultisedeFranquicias';
 import { ConfiguracionCentroPage } from './features/ConfiguracionCentro';
+import OverviewMarketingPage from './features/OverviewMarketing/pages/OverviewMarketingPage';
+import FunnelsAdquisicionPage from './features/FunnelsAdquisicion/pages/FunnelsAdquisicionPage';
+import FunnelsEditorPage from './features/FunnelsAdquisicion/pages/FunnelsEditorPage';
+import LandingPageEditorPage from './features/FunnelsAdquisicion/pages/LandingPageEditorPage';
+import FunnelsLeadMagnetFactoryPage from './features/FunnelsAdquisicion/pages/LeadMagnetFactoryPage';
 
 function ProtectedRoute() {
   const { user } = useAuth();
@@ -177,6 +186,12 @@ function App() {
             <Route path="/agenda-reservas" element={<AgendaReservasPage />} />
             <Route path="/membresias-planes" element={<MembresiasPlanesPage />} />
             <Route path="/caja-bancos" element={<CajaBancosPage />} />
+            <Route path="/overview-marketing" element={<OverviewMarketingPage />} />
+            <Route path="/dashboard/marketing/campanas-automatizacion" element={<CampanasAutomatizacionPage />} />
+            <Route path="/dashboard/marketing/funnels-adquisicion" element={<FunnelsAdquisicionPage />} />
+            <Route path="/dashboard/marketing/funnels-adquisicion/funnel-editor" element={<FunnelsEditorPage />} />
+            <Route path="/dashboard/marketing/funnels-adquisicion/landing-page-editor" element={<LandingPageEditorPage />} />
+            <Route path="/dashboard/marketing/funnels-adquisicion/lead-magnet-factory" element={<FunnelsLeadMagnetFactoryPage />} />
             <Route path="/campanas-outreach" element={<CampanasOutreachPage />} />
             <Route path="/alertas-restricciones-alimentarias" element={<AlertasRestriccionesAlimentariasPage />} />
             <Route path="/disponibilidad-turnos-staff" element={<DisponibilidadTurnosStaffPage />} />
@@ -232,8 +247,10 @@ function App() {
             <Route path="/dashboard/marketing/social-planner" element={<PlannerDeRedesSocialesPage />} />
             <Route path="/abm" element={<AccountBasedMarketingAbmPage />} />
             <Route path="/comunidad" element={<CommunityYEngagementPage />} />
+            <Route path="/comunidad-fidelizacion" element={<ComunidadYFidelizacionPage />} />
             <Route path="/market-intelligence" element={<CompetitiveAnalysisYMarketIntelligencePage />} />
             <Route path="/dashboard/marketing/funnels" element={<ConstructorDeFunnelsYLandingPagesPage />} />
+            <Route path="/dashboard/content/social-studio" element={<ContentSocialStudioPage />} />
             <Route path="/dashboard/content/clipper" element={<ContentClipperPage />} />
             <Route path="/dashboard/content/video-studio" element={<VideoMarketingYAutomationPage />} />
             <Route path="/dashboard/marketing/influencers" element={<CreatorinfluencerContentSyndicationPage />} />
@@ -263,6 +280,7 @@ function App() {
             <Route path="/dashboard/contenido-premium" element={<GestionDeContenidosPremiumPage />} />
             <Route path="/dashboard/contenido/ugc-hub" element={<HubDeContenidosYUgcPage />} />
             <Route path="/dashboard/marketing/lead-magnets" element={<LeadMagnetFactoryPage />} />
+            <Route path="/dashboard/intelligence/ia-experimentacion" element={<InteligenciaIaExperimentacionPage />} />
             <Route path="/dashboard/intelligence/playbooks" element={<LibreriaDeCampanasPlaybooksPage />} />
             <Route path="/dashboard/intelligence/trend-analyzer" element={<TrendAnalizerPage />} />
             <Route path="/analytics/acquisition" element={<AnaliticaDeAdquisicionPage />} />

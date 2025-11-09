@@ -1,0 +1,1 @@
+Implementa estas US en los archivos mencionados, manten los estilos y asegurate que tenga una presentacion apta para el usuario (entrenadores personales)

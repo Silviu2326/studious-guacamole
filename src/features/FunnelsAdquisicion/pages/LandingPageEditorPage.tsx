@@ -28,6 +28,11 @@ export default function LandingPageEditorPage() {
   const layersManagerRef = useRef<HTMLDivElement | null>(null);
   const styleManagerRef = useRef<HTMLDivElement | null>(null);
 
+  const activeDeviceConfig = useMemo(
+    () => DEVICE_CANVAS_CONFIG[activeDevice],
+    [activeDevice],
+  );
+
   const editorTabs = useMemo(
     () => [
       {
@@ -94,10 +99,10 @@ export default function LandingPageEditorPage() {
 
       .gjs-block {
         border-radius: 18px !important;
-        border: 1px solid transparent !important;
-        background: linear-gradient(140deg, rgba(99,102,241,0.12), rgba(236,72,153,0.12)) !important;
+        border: 1px solid rgba(99,102,241,0.15) !important;
+        background: rgba(255,255,255,0.94) !important;
         color: #0f172a !important;
-        box-shadow: 0 24px 38px -24px rgba(79,70,229,0.55);
+        box-shadow: 0 18px 36px -28px rgba(79,70,229,0.55);
         min-height: 96px;
         display: flex;
         align-items: center;
@@ -105,13 +110,14 @@ export default function LandingPageEditorPage() {
         font-size: 0.85rem;
         font-weight: 600;
         text-align: center;
-        transition: transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease, background 0.2s ease;
       }
 
       .gjs-block:hover {
         transform: translateY(-4px);
-        box-shadow: 0 26px 40px -22px rgba(99,102,241,0.65);
-        border-color: rgba(99,102,241,0.4) !important;
+        box-shadow: 0 26px 40px -22px rgba(99,102,241,0.4);
+        border-color: rgba(99,102,241,0.35) !important;
+        background: linear-gradient(140deg, rgba(255,255,255,0.98), rgba(224,231,255,0.75)) !important;
       }
 
       .gjs-block svg {
@@ -122,20 +128,20 @@ export default function LandingPageEditorPage() {
         border-radius: 14px !important;
         margin-bottom: 8px !important;
         padding: 10px 12px !important;
-        background: rgba(15,23,42,0.06) !important;
-        border: 1px solid transparent !important;
+        background: rgba(248,250,252,0.9) !important;
+        border: 1px solid rgba(148,163,184,0.28) !important;
         color: #0f172a !important;
         transition: all 0.2s ease;
       }
 
       .gjs-layer-item:hover {
-        border-color: rgba(99,102,241,0.25) !important;
-        background: rgba(99,102,241,0.1) !important;
+        border-color: rgba(99,102,241,0.35) !important;
+        background: rgba(229,231,235,0.75) !important;
       }
 
       .gjs-layer-item.gjs-selected {
         border-color: rgba(99,102,241,0.55) !important;
-        background: rgba(99,102,241,0.18) !important;
+        background: rgba(224,231,255,0.6) !important;
       }
 
       .gjs-layer-title {
@@ -163,10 +169,10 @@ export default function LandingPageEditorPage() {
       }
 
       .gjs-sm-property {
-        border-radius: 14px !important;
-        background: rgba(148,163,184,0.18) !important;
+        border-radius: 16px !important;
+        background: rgba(241,245,249,0.85) !important;
         padding: 12px 14px !important;
-        border: none !important;
+        border: 1px solid rgba(148,163,184,0.22) !important;
         margin-bottom: 12px !important;
       }
 
@@ -208,6 +214,12 @@ export default function LandingPageEditorPage() {
 
       .gjs-cv-canvas {
         background: linear-gradient(135deg, rgba(244,247,254,0.9), rgba(240,249,255,0.8)) !important;
+      }
+
+      .gjs-cv-canvas__frames {
+        max-width: var(--device-frame-width, 1120px);
+        width: 100%;
+        margin: 0 auto;
       }
 
       .gjs-highlighter,
@@ -511,7 +523,7 @@ export default function LandingPageEditorPage() {
           </p>
         </div>
 
-        <Card className="bg-white/90 shadow-xl dark:bg-slate-900/60">
+        <Card className="bg-gradient-to-br from-white/95 via-white/90 to-indigo-50/40 shadow-xl backdrop-blur dark:from-slate-900/70 dark:via-slate-900/60 dark:to-indigo-900/30">
           <Tabs
             items={editorTabs}
             activeTab={activeTab}
@@ -523,35 +535,35 @@ export default function LandingPageEditorPage() {
 
           {activeTab === 'estructura' && (
           <div className="grid gap-6 xl:grid-cols-[260px_minmax(0,1fr)_280px]">
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-800/60 dark:bg-slate-900/40">
+              <div className="space-y-4">
+              <div className="rounded-3xl border border-slate-200/80 bg-white/95 p-5 shadow-sm ring-1 ring-transparent transition dark:border-slate-800/70 dark:bg-slate-900/60">
                 <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
                     Bloques IA
                   </h3>
-                  <span className="text-xs uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">
+                  <span className="rounded-full bg-indigo-50/80 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-indigo-500 dark:bg-indigo-500/10 dark:text-indigo-200">
                     Drag & drop
                   </span>
                 </div>
                 <div
                   ref={blockManagerRef}
-                  className="mt-4 max-h-[70vh] overflow-y-auto pr-1 text-sm [&_.gjs-block]:rounded-xl [&_.gjs-block]:border-none [&_.gjs-block]:bg-white [&_.gjs-block]:shadow-sm dark:[&_.gjs-block]:bg-slate-950/60"
+                  className="mt-5 max-h-[70vh] overflow-y-auto pr-1 text-sm [&_.gjs-block]:rounded-2xl [&_.gjs-block]:border [&_.gjs-block]:border-indigo-100/70 [&_.gjs-block]:bg-white/95 [&_.gjs-block]:shadow-sm [&_.gjs-block-title]:text-slate-600 dark:[&_.gjs-block]:border-indigo-500/20 dark:[&_.gjs-block]:bg-slate-900/70 dark:[&_.gjs-block-title]:text-slate-300"
                 />
               </div>
             </div>
 
             <div className="space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="inline-flex rounded-2xl bg-slate-100 p-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                <div className="inline-flex rounded-2xl bg-slate-100/80 p-1 text-xs font-semibold text-slate-600 shadow-inner shadow-indigo-500/10 ring-1 ring-slate-200/70 dark:bg-slate-800/70 dark:text-slate-300 dark:ring-slate-700/70">
                   {(['Desktop', 'Tablet', 'Mobile'] as DeviceName[]).map((device) => (
                     <button
                       key={device}
                       onClick={() => handleDeviceButtonClick(device)}
                       className={[
-                        'px-4 py-2 rounded-xl transition-all',
+                        'relative px-4 py-2 rounded-xl transition-all border border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 dark:focus-visible:ring-indigo-500',
                         activeDevice === device
-                          ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100'
-                          : 'hover:text-slate-900 dark:hover:text-white',
+                          ? 'bg-gradient-to-r from-indigo-500 to-sky-500 text-white shadow-lg shadow-indigo-500/30 dark:from-indigo-500 dark:to-purple-500'
+                          : 'text-slate-600 hover:bg-white/70 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-white',
                       ].join(' ')}
                       type="button"
                     >
@@ -559,7 +571,12 @@ export default function LandingPageEditorPage() {
                     </button>
                   ))}
                 </div>
-                <Button variant="secondary" size="sm" onClick={handleExport} className="inline-flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleExport}
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white shadow-lg shadow-indigo-500/30 transition hover:shadow-indigo-500/50"
+                >
                   <Sparkles className="h-4 w-4" />
                   Exportar HTML
                 </Button>
@@ -571,23 +588,41 @@ export default function LandingPageEditorPage() {
                     Cargando editor visual...
                   </div>
                 )}
-                <div ref={editorContainerRef} className="absolute inset-0 [&_.gjs-cv-canvas__frames]:rounded-2xl" />
+                <div
+                  ref={editorContainerRef}
+                  className="absolute inset-0 flex justify-center [&_.gjs-cv-canvas__frames]:rounded-2xl"
+                  style={{
+                    padding: activeDeviceConfig.bodyPadding,
+                    alignItems: 'stretch',
+                    ['--device-frame-width' as any]: activeDeviceConfig.width,
+                  }}
+                />
               </div>
             </div>
 
             <div className="space-y-4">
-              <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-4 dark:border-slate-800/70 dark:bg-slate-900/40">
-                <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Capas</h3>
+              <div className="rounded-3xl border border-slate-200/80 bg-white/95 p-5 shadow-sm transition dark:border-slate-800/70 dark:bg-slate-900/60">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Capas</h3>
+                  <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+                    Structure
+                  </span>
+                </div>
                 <div
                   ref={layersManagerRef}
-                  className="mt-3 max-h-[240px] overflow-y-auto pr-1 text-sm [&_.gjs-layer-title]:text-slate-600 dark:[&_.gjs-layer-title]:text-slate-200"
+                  className="mt-3 max-h-[240px] overflow-y-auto pr-1 text-sm [&_.gjs-layer-title]:text-slate-600 [&_.gjs-layer-title]:font-medium dark:[&_.gjs-layer-title]:text-slate-200"
                 />
               </div>
-              <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-4 dark:border-slate-800/70 dark:bg-slate-900/40">
-                <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Estilos</h3>
+              <div className="rounded-3xl border border-slate-200/80 bg-white/95 p-5 shadow-sm transition dark:border-slate-800/70 dark:bg-slate-900/60">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Estilos</h3>
+                  <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+                    Design
+                  </span>
+                </div>
                 <div
                   ref={styleManagerRef}
-                  className="mt-3 max-h-[360px] overflow-y-auto pr-1 text-sm [&_.gjs-sm-sector-title]:text-slate-700 dark:[&_.gjs-sm-sector-title]:text-slate-100"
+                  className="mt-3 max-h-[360px] overflow-y-auto pr-1 text-sm [&_.gjs-sm-sector-title]:text-slate-700 [&_.gjs-sm-sector-title]:tracking-[0.2em] [&_.gjs-sm-sector-title]:text-xs [&_.gjs-sm-sector-title]:font-semibold dark:[&_.gjs-sm-sector-title]:text-slate-100"
                 />
               </div>
             </div>

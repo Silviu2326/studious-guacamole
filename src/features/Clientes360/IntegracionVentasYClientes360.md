@@ -54,3 +54,4 @@ title: Integraciones entre los módulos Ventas & Leads y Clientes 360
 - **Implementación sugerida:** trigger `clientChurned` que crea/actualiza el registro en el pipeline con notas de motivos de baja y ofertas sugeridas.
 - **Beneficio:** Cierra el loop de gestión y aumenta la tasa de recuperación de clientes perdidos.
 
+

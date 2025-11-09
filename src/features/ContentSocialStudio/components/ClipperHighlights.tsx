@@ -119,3 +119,4 @@ export function ClipperHighlights({ clipper, loading }: ClipperHighlightsProps) 
   );
 }
 
+

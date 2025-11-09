@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { TableWithActions } from '../../../components/componentsreutilizables/TableWithActions';
 import { Badge } from '../../../components/componentsreutilizables/Badge';
 import { Button } from '../../../components/componentsreutilizables/Button';
-import { Input } from '../../../components/componentsreutilizables/Input';
 import { Select } from '../../../components/componentsreutilizables/Select';
 import { Card } from '../../../components/componentsreutilizables/Card';
-import { Edit3, Trash2, Plus, Copy, Eye, Users, User, Layout, Search, X } from 'lucide-react';
+import { Edit3, Trash2, Plus, Copy, User, Layout, Search, X } from 'lucide-react';
 import * as programasApi from '../api/programas';
 import * as categoriasApi from '../api/categorias';
 import { useAuth } from '../../../context/AuthContext';
 
 export function ProgramasList() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const isEntrenador = user?.role === 'entrenador';
   const [programas, setProgramas] = useState<programasApi.Programa[]>([]);
@@ -42,8 +43,8 @@ export function ProgramasList() {
   };
 
   const tipoBadge = (tipo: programasApi.Programa['tipo']) => {
-    const variants: Record<string, 'default' | 'secondary' | 'outline'> = {
-      personalizado: 'default',
+    const variants: Record<string, 'blue' | 'secondary' | 'outline'> = {
+      personalizado: 'blue',
       grupal: 'secondary',
       'plan-sala': 'outline',
     };
@@ -61,28 +62,28 @@ export function ProgramasList() {
       { 
         key: 'categoria', 
         label: 'Categoría',
-        render: (value: any, row: programasApi.Programa) => {
+        render: (_value: unknown, row: programasApi.Programa) => {
           const categoria = categorias.find(c => c.id === row.categoria);
           return categoria ? categoria.nombre : row.categoria;
         }
       },
-      { key: 'tipo', label: 'Tipo', render: (value: any, row: programasApi.Programa) => tipoBadge(row.tipo) },
+      { key: 'tipo', label: 'Tipo', render: (_value: unknown, row: programasApi.Programa) => tipoBadge(row.tipo) },
       {
         key: 'ejercicios',
         label: 'Ejercicios',
-        render: (value: any, row: programasApi.Programa) => `${row.ejercicios?.length || 0} ejercicios`,
+        render: (_value: unknown, row: programasApi.Programa) => `${row.ejercicios?.length || 0} ejercicios`,
       },
       {
         key: 'duracion',
         label: 'Duración',
-        render: (value: any, row: programasApi.Programa) =>
+        render: (_value: unknown, row: programasApi.Programa) =>
           row.duracionSemanas ? `${row.duracionSemanas} semanas` : '-',
       },
       {
         key: 'activo',
         label: 'Estado',
-        render: (value: any, row: programasApi.Programa) => (
-          <Badge variant={row.activo ? 'default' : 'secondary'}>
+        render: (_value: unknown, row: programasApi.Programa) => (
+          <Badge variant={row.activo ? 'green' : 'secondary'}>
             {row.activo ? 'Activo' : 'Inactivo'}
           </Badge>
         ),
@@ -124,7 +125,7 @@ export function ProgramasList() {
     <div className="space-y-6">
       {/* Toolbar superior */}
       <div className="flex items-center justify-end">
-        <Button onClick={() => window.location.href = '#editor'} iconLeft={Plus}>
+        <Button onClick={() => navigate('/programas-de-entreno/editor')} leftIcon={<Plus className="h-4 w-4" />}>
           Nuevo Programa
         </Button>
       </div>
@@ -149,12 +150,7 @@ export function ProgramasList() {
                 />
               </div>
               {hasFiltrosActivos && (
-                <Button
-                  variant="ghost"
-                  onClick={limpiarFiltros}
-                  iconLeft={X}
-                  size="sm"
-                >
+                <Button variant="ghost" onClick={limpiarFiltros} leftIcon={<X className="h-3.5 w-3.5" />} size="sm">
                   Limpiar filtros
                 </Button>
               )}
@@ -171,7 +167,7 @@ export function ProgramasList() {
                 </label>
                 <Select
                   value={filtros.categoria || ''}
-                  onChange={(v) => setFiltros({ ...filtros, categoria: v || undefined })}
+                  onChange={(event) => setFiltros({ ...filtros, categoria: event.target.value || undefined })}
                   options={[
                     { label: 'Todas', value: '' },
                     ...categorias.map((c) => ({ label: c.nombre, value: c.id })),
@@ -186,8 +182,8 @@ export function ProgramasList() {
                   </label>
                   <Select
                     value={filtros.tipo || ''}
-                    onChange={(v) =>
-                      setFiltros({ ...filtros, tipo: (v || undefined) as any })
+                    onChange={(event) =>
+                      setFiltros({ ...filtros, tipo: (event.target.value || undefined) as any })
                     }
                     options={[
                       { label: 'Todos', value: '' },
@@ -222,8 +218,8 @@ export function ProgramasList() {
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => window.location.href = `#editor?id=${row.id}`}
-              iconLeft={Edit3}
+              onClick={() => navigate(`/programas-de-entreno/editor?id=${row.id}`)}
+              leftIcon={<Edit3 className="h-4 w-4" />}
             >
               Editar
             </Button>
@@ -231,7 +227,7 @@ export function ProgramasList() {
               size="sm"
               variant="secondary"
               onClick={() => handleDuplicar(row)}
-              iconLeft={Copy}
+              leftIcon={<Copy className="h-4 w-4" />}
             >
               Duplicar
             </Button>
@@ -239,7 +235,7 @@ export function ProgramasList() {
               size="sm"
               variant="ghost"
               onClick={() => handleEliminar(row.id)}
-              iconLeft={Trash2}
+              leftIcon={<Trash2 className="h-4 w-4" />}
             >
               Eliminar
             </Button>

@@ -1,0 +1,359 @@
+{
+  "user_stories": [
+    {
+      "feature": "src/features/facturacin-cobros",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero generar facturas automáticamente cuando marco una sesión como completada para no tener que recordar facturar cada sesión individualmente. Descripción: al completar una sesión en la agenda, el sistema pregunta si desea generar factura automática. Si el cliente tiene paquete prepago, se descuenta automáticamente."
+    },
+    {
+      "feature": "src/features/facturacin-cobros",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero tener mis servicios más comunes guardados como plantillas rápidas para facturar con un solo clic los servicios que ofrezco regularmente. Descripción: lista de servicios comunes (sesión individual, paquete 10 sesiones, plan mensual, etc.) con precio pre-configurado. Selección rápida al crear factura."
+    },
+    {
+      "feature": "src/features/facturacin-cobros",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero configurar cobros mensuales automáticos para clientes con suscripción para no tener que crear manualmente la misma factura cada mes. Descripción: configurar frecuencia (mensual, semanal) y monto. El sistema genera y envía automáticamente facturas en las fechas programadas."
+    },
+    {
+      "feature": "src/features/facturacin-cobros",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero enviar un link de pago directo a mis clientes para que puedan pagar online con tarjeta o transferencia sin intermediarios. Descripción: cada factura genera un link único que se envía por email/WhatsApp. El cliente puede pagar directamente y el sistema actualiza el estado automáticamente."
+    },
+    {
+      "feature": "src/features/facturacin-cobros",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero que se envíe un recibo digital automáticamente cuando registro un pago para que mis clientes tengan comprobante inmediato sin trabajo adicional. Descripción: al registrar un cobro, el sistema envía automáticamente recibo PDF al email del cliente con detalles del pago."
+    },
+    {
+      "feature": "src/features/facturacin-cobros",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver de un vistazo cuánto he facturado y cobrado este mes para tener control rápido de mis ingresos sin revisar reportes complejos. Descripción: widget visual con ingresos del mes, pendientes de cobro, gráfico de tendencia mensual y próximos vencimientos. Vista simple y clara."
+    },
+    {
+      "feature": "src/features/facturacin-cobros",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver mis ingresos esperados vs ingresos reales del mes para planificar mejor mis finanzas personales. Descripción: calendario mensual mostrando facturas pendientes (ingresos esperados), cobros confirmados (ingresos reales) y proyección de fin de mes."
+    },
+    {
+      "feature": "src/features/facturacin-cobros",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero que el sistema envíe recordatorios automáticos antes del vencimiento para no tener que estar pendiente de enviar recordatorios manualmente. Descripción: configuración única de recordatorios automáticos (3 días antes, día de vencimiento, 3 días después). Se envían automáticamente por email/WhatsApp."
+    },
+    {
+      "feature": "src/features/facturacin-cobros",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero registrar un pago en efectivo en menos de 30 segundos para marcar rápidamente que un cliente pagó después de una sesión. Descripción: botón de 'Registrar Pago Rápido' en lista de facturas. Modal simple con monto, método y confirmar. Sin campos innecesarios."
+    },
+    {
+      "feature": "src/features/facturacin-cobros",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver todo el historial de pagos y facturas de un cliente en un solo lugar para resolver dudas rápidamente sobre pagos anteriores. Descripción: sección en el perfil del cliente con todas las facturas, pagos y saldo pendiente. Timeline visual de transacciones."
+    },
+    {
+      "feature": "src/features/facturacin-cobros",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero recibir notificaciones de facturas que llevan más de 7 días vencidas para hacer seguimiento oportuno a clientes morosos. Descripción: notificación en el sistema y opcional por email cuando una factura lleva más de X días vencida. Lista prioritaria de pendientes."
+    },
+    {
+      "feature": "src/features/facturacin-cobros",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero registrar pagos parciales con diferentes métodos para cuando un cliente paga parte en efectivo y parte con transferencia. Descripción: permitir registrar múltiples pagos parciales en una factura, cada uno con su propio método de pago y referencia."
+    },
+    {
+      "feature": "src/features/facturacin-cobros",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero aplicar descuentos porcentuales o de monto fijo fácilmente para hacer promociones o reconocer la fidelidad de clientes regulares. Descripción: campo de descuento visible al crear factura. Opciones porcentaje, monto fijo o motivo predefinido (referido, promoción, etc.)."
+    },
+    {
+      "feature": "src/features/facturacin-cobros",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero exportar un resumen de todas mis facturas y cobros del mes en Excel para facilitar la declaración de impuestos y contabilidad personal. Descripción: botón de exportar en reportes que genera archivo Excel con fecha, cliente, concepto, monto, método de pago y estado."
+    },
+    {
+      "feature": "src/features/facturacin-cobros",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver visualmente en la lista de clientes quiénes tienen pagos pendientes para identificar rápidamente situaciones de mora antes de agendar sesiones. Descripción: indicador visual (badge o ícono) en lista de clientes mostrando si tiene facturas vencidas o pendientes, con color según antigüedad."
+    },
+    {
+      "feature": "src/features/facturacin-cobros",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero agregar notas privadas en las facturas para recordar detalles importantes sobre acuerdos de pago o situaciones especiales. Descripción: campo de notas internas (no visible para el cliente) en cada factura, útil para registrar acuerdos de pago y recordatorios personales."
+    },
+    {
+      "feature": "src/features/facturacin-cobros",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver qué servicios generan más ingresos para enfocar mi estrategia en los servicios más rentables. Descripción: reporte visual que muestra ingresos desglosados por tipo de servicio (sesiones individuales, paquetes, planes, etc.) con gráfico comparativo."
+    },
+    {
+      "feature": "src/features/impuestos-export-contable/",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero registrar todos mis gastos deducibles con categorías claras (equipamiento, certificaciones, marketing, transporte, etc.) para tener un control completo de mis gastos y poder deducirlos en mi declaración de impuestos. Descripción: crear un sistema de registro de gastos con categorías predefinidas relevantes para entrenadores personales, incluyendo campos para fecha, concepto, importe, categoría y notas opcionales."
+    },
+    {
+      "feature": "src/features/impuestos-export-contable/",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero adjuntar fotos o PDFs de mis recibos y facturas a cada gasto registrado para tener toda la documentación justificativa organizada digitalmente y lista para Hacienda o mi gestor. Descripción: implementar funcionalidad de upload de archivos asociados a cada gasto registrado, almacenando los archivos de forma segura y fácil de recuperar."
+    },
+    {
+      "feature": "src/features/impuestos-export-contable/",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver automáticamente mi beneficio neto (ingresos - gastos) en cada periodo para entender cuánto dinero estoy ganando realmente después de descontar todos mis gastos. Descripción: añadir cálculo automático que reste los gastos de los ingresos y muestre el beneficio neto en el resumen fiscal, actualizándose en tiempo real al registrar nuevos ingresos o gastos."
+    },
+    {
+      "feature": "src/features/impuestos-export-contable/",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver una estimación de cuánto voy a tener que pagar en impuestos (IRPF, IVA) para poder planificar mis finanzas y no llevarme sorpresas al hacer la declaración. Descripción: crear calculadora que estime IRPF e IVA según el régimen fiscal del usuario y sus ingresos/gastos, mostrando un desglose claro y permitiendo ajustar porcentajes manualmente."
+    },
+    {
+      "feature": "src/features/impuestos-export-contable/",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver términos simples y claros en lugar de jerga contable técnica (manteniendo también los técnicos) para entender perfectamente qué significa cada dato sin necesitar conocimientos de contabilidad. Descripción: reemplazar terminología técnica por lenguaje claro y añadir tooltips explicativos en cada término."
+    },
+    {
+      "feature": "src/features/impuestos-export-contable/",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero recibir recordatorios automáticos antes de las fechas de pago trimestral de impuestos para no olvidarme nunca de presentar mis declaraciones y evitar multas. Descripción: implementar sistema de notificaciones que avise 15 días antes de cada vencimiento trimestral (Modelo 130, 303, etc.) e incluir calendario fiscal visible."
+    },
+    {
+      "feature": "src/features/impuestos-export-contable/",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver un resumen anual completo de todos mis ingresos, gastos, beneficios e impuestos para tener una visión global de mi año fiscal y preparar mi declaración de la renta. Descripción: crear vista de resumen anual que agrupe toda la información fiscal del año con gráficos, totales desglosados por trimestre e informe descargable."
+    },
+    {
+      "feature": "src/features/impuestos-export-contable/",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero exportar mis datos fiscales en formato Excel (.xlsx) para poder trabajar con ellos en mi ordenador o enviarlos a mi gestor en un formato familiar. Descripción: añadir opción de exportación a formato Excel con hojas separadas para ingresos, gastos, resumen fiscal y desglose mensual/trimestral."
+    },
+    {
+      "feature": "src/features/impuestos-export-contable/",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver gráficos visuales que comparen mis ingresos con mis gastos mes a mes para identificar rápidamente tendencias y meses donde gasto más de lo que ingreso. Descripción: implementar gráficos de barras o líneas que muestren evolución mensual de ingresos vs gastos con filtros por categoría y periodo."
+    },
+    {
+      "feature": "src/features/impuestos-export-contable/",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver de dónde vienen mis ingresos (sesiones presenciales, online, planes nutricionales, etc.) para entender qué servicios me generan más dinero y enfocar mi negocio. Descripción: crear visualización que categorice los ingresos por tipo de servicio o fuente, integrándose con los datos de facturación y mostrando porcentajes y totales."
+    },
+    {
+      "feature": "src/features/impuestos-export-contable/",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero tener categorías de gastos ya preparadas y relevantes para mi actividad para clasificar mis gastos rápidamente sin tener que pensar en qué categoría crear. Descripción: crear conjunto de categorías predefinidas como material deportivo, certificaciones, marketing, alquiler de espacio, software/apps, transporte, seguros, formación y otros, permitiendo categorías personalizadas."
+    },
+    {
+      "feature": "src/features/impuestos-export-contable/",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero marcar cada gasto como deducible o no deducible para saber exactamente qué gastos puedo incluir en mi declaración y cuáles no. Descripción: añadir campo booleano 'deducible' a cada gasto con ayuda contextual que explique criterios de deducibilidad y mostrar totales separados de gastos deducibles vs no deducibles."
+    },
+    {
+      "feature": "src/features/impuestos-export-contable/",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver iconos de ayuda y tooltips explicativos en cada campo y sección para entender qué debo introducir y qué significa cada dato sin salir de la aplicación. Descripción: implementar sistema de ayuda contextual con iconos '?' que muestren tooltips explicativos, incluyendo ejemplos prácticos en cada campo y enlaces a guías detalladas."
+    },
+    {
+      "feature": "src/features/impuestos-export-contable/",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver una tabla que compare mis gastos mes a mes por categoría para identificar en qué categorías estoy gastando más y controlar mejor mi presupuesto. Descripción: crear tabla comparativa mensual con gastos desglosados por categoría, resaltando aumentos significativos y permitiendo drill-down al detalle."
+    },
+    {
+      "feature": "src/features/impuestos-export-contable/",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver un dashboard que me muestre de un vistazo mi situación financiera (beneficio, impuestos pendientes, margen) para entender rápidamente si mi negocio va bien. Descripción: crear dashboard con KPIs clave como beneficio neto mensual, margen de beneficio, impuestos estimados pendientes, dinero disponible después de impuestos y alertas de problemas."
+    },
+    {
+      "feature": "src/features/impuestos-export-contable/",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero poder registrar un gasto rápidamente con foto del ticket desde mi móvil para no olvidarme de registrar gastos cuando estoy fuera y capturar el recibo inmediatamente. Descripción: optimizar interfaz para mobile con formulario simplificado, permitiendo captura de foto directa y extracción automática de datos básicos si es posible."
+    },
+    {
+      "feature": "src/features/impuestos-export-contable/",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver sugerencias de tipos de gastos que puedo deducir según mi actividad para asegurarme de que no estoy perdiendo oportunidades de deducción fiscal. Descripción: crear sección educativa que liste gastos típicamente deducibles para entrenadores personales con ejemplos concretos y checklist mensual de gastos a revisar."
+    },
+    {
+      "feature": "src/features/impuestos-export-contable/",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero recibir alertas cuando registre un gasto muy superior a mi media habitual para detectar posibles errores en la introducción de datos o gastos excesivos. Descripción: implementar sistema de alertas que compare cada gasto con la media histórica de su categoría y notifique si supera cierto umbral, permitiendo confirmar o corregir el gasto."
+    },
+    {
+      "feature": "src/features/impuestos-export-contable/",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero poder importar movimientos desde un CSV de mi banco para no tener que introducir manualmente cada transacción y ahorrar tiempo. Descripción: crear herramienta de importación de CSV bancario con mapeo de columnas configurable, previsualización, categorización automática sugerida y detección de duplicados."
+    },
+    {
+      "feature": "src/features/impuestos-export-contable/",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero generar un informe PDF completo y profesional con todos mis datos fiscales para enviarlo directamente a mi gestor sin tener que preparar nada más. Descripción: crear generador de informe PDF que incluya resumen ejecutivo, ingresos detallados, gastos con recibos adjuntos, cálculos fiscales y gráficos explicativos."
+    },
+    {
+      "feature": "src/features/pagos-pendientes-morosidad",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver de forma simple y clara qué clientes me deben dinero y cuánto para tener una visión rápida de mi situación financiera sin términos complejos como \"morosidad\" o \"clasificación de riesgo\". Descripción: reemplazar la vista actual por una lista simple con nombre del cliente, monto que debe, días desde el vencimiento y acciones rápidas, usando lenguaje amigable como \"Vencido hace X días\"."
+    },
+    {
+      "feature": "src/features/pagos-pendientes-morosidad",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero tener un botón que abra WhatsApp directamente con el cliente para recordarle el pago de forma rápida y personal sin tener que copiar números o escribir mensajes. Descripción: agregar un botón de WhatsApp en cada fila de cliente con deuda que abra la conversación con un mensaje pre-cargado personalizable antes de enviar."
+    },
+    {
+      "feature": "src/features/pagos-pendientes-morosidad",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero marcar un pago como recibido con un solo clic e indicar el método de pago para mantener mi registro actualizado sin procesos complicados. Descripción: simplificar el proceso de registrar pagos recibidos permitiendo seleccionar método (efectivo, transferencia, tarjeta, etc.) y añadir una nota opcional."
+    },
+    {
+      "feature": "src/features/pagos-pendientes-morosidad",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero generar un link de pago que pueda enviar a mi cliente para facilitar que me paguen de forma digital sin instrucciones complejas. Descripción: crear funcionalidad para generar enlaces de pago integrados con plataformas como Wompi o PayU que se puedan copiar y enviar por WhatsApp."
+    },
+    {
+      "feature": "src/features/pagos-pendientes-morosidad",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver un registro simple de cuándo contacté a cada cliente sobre su pago para no repetir recordatorios y saber cuándo fue la última vez que hablé con ellos. Descripción: simplificar el componente de seguimiento mostrando un timeline con notas breves y botón de \"Registrar contacto rápido\"."
+    },
+    {
+      "feature": "src/features/pagos-pendientes-morosidad",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero poder acordar un plan de pagos con un cliente que tiene dificultades económicas para mantener la relación y recuperar el dinero de forma gradual sin perder al cliente. Descripción: permitir dividir la deuda en cuotas definibles con fechas y montos, mostrando el estado del plan en el dashboard."
+    },
+    {
+      "feature": "src/features/pagos-pendientes-morosidad",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero poder pausar temporalmente la membresía de un cliente con deuda para evitar que la deuda siga creciendo mientras resolvemos el pago. Descripción: agregar opción para pausar membresías, detener nuevos cobros y mostrar claramente la pausa con fecha de reactivación."
+    },
+    {
+      "feature": "src/features/pagos-pendientes-morosidad",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver en el dashboard solo el total que me deben, la cantidad de clientes con deuda y quién me debe más para entender mi situación financiera de un vistazo sin métricas complejas. Descripción: rediseñar el dashboard mostrando métricas simples y alertas si alguien supera 30 días de retraso."
+    },
+    {
+      "feature": "src/features/pagos-pendientes-morosidad",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero agregar notas privadas sobre la situación financiera o personal del cliente para recordar contexto importante al hacer seguimiento. Descripción: añadir campo de notas privadas en el perfil de pago visible al contactar o revisar la deuda."
+    },
+    {
+      "feature": "src/features/pagos-pendientes-morosidad",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver si un cliente con deuda sigue asistiendo a las sesiones para decidir mi estrategia de cobro o si debo pausar su acceso. Descripción: integrar información de asistencia mostrando última asistencia y número de sesiones del mes."
+    },
+    {
+      "feature": "src/features/pagos-pendientes-morosidad",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero poder aplicar un descuento excepcional o condonar parte de una deuda para manejar casos especiales y mantener la relación. Descripción: permitir ajustar el monto de la deuda solicitando motivo y registrándolo en el historial."
+    },
+    {
+      "feature": "src/features/pagos-pendientes-morosidad",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero registrar el método de pago preferido de cada cliente para sugerirle directamente cómo pagar cuando le hago seguimiento. Descripción: agregar campo \"Método de pago preferido\" en el perfil del cliente y mostrarlo en la vista de deudas."
+    },
+    {
+      "feature": "src/features/pagos-pendientes-morosidad",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver un reporte mensual simple con cuánto me pagaron, cuánto quedó pendiente y quién me debe para tener claridad de mis ingresos reales sin métricas complejas. Descripción: crear vista mensual con totales cobrados, pendientes y lista de pagos recibidos o faltantes."
+    },
+    {
+      "feature": "src/features/pagos-pendientes-morosidad",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero programar recordarme contactar a un cliente en una fecha específica para no olvidarme del seguimiento cuando me dijo que pagaría. Descripción: permitir marcar recordatorios con fecha y nota opcional, mostrándolos en el dashboard."
+    },
+    {
+      "feature": "src/features/pagos-pendientes-morosidad",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero filtrar mi lista de deudas por vencidos hace más de 15 días, montos mayores a un valor o clientes sin contacto reciente para priorizar a quién contactar primero. Descripción: añadir filtros simples útiles eliminando opciones complejas que no aplican."
+    },
+    {
+      "feature": "src/features/pagos-pendientes-morosidad",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero marcar clientes de confianza que sé que me pagarán aunque se atrasen para enfocar mi atención en casos urgentes. Descripción: agregar etiqueta \"Cliente de confianza\" con indicador visual que reduzca alertas para esos clientes."
+    },
+    {
+      "feature": "src/features/pagos-pendientes-morosidad",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero exportar una lista simple en Excel con quién me debe, cuánto y desde cuándo para tener mi propio registro o compartirlo con mi contador. Descripción: crear botón de exportación a Excel/CSV con nombre, contacto, factura, monto, fecha de vencimiento y días de retraso."
+    },
+    {
+      "feature": "src/features/panel-financiero-overview",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero poder establecer mis propios objetivos financieros mensuales y anuales personalizados para tener metas realistas adaptadas a mi situación y motivarme a alcanzarlas. Descripción: permitir configurar objetivos en el panel y mostrar progreso visual."
+    },
+    {
+      "feature": "src/features/panel-financiero-overview",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero que los ingresos de sesiones y paquetes se registren automáticamente cuando marco un pago en la agenda para evitar duplicar trabajo y tener datos precisos. Descripción: integrar el sistema de pagos de la agenda con el panel financiero reflejando pagos en las métricas."
+    },
+    {
+      "feature": "src/features/panel-financiero-overview",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver un listado completo de todas mis transacciones con fecha, cliente, concepto y monto para tener un registro detallado de mis ingresos. Descripción: crear sección con tabla de transacciones y filtros por fecha, cliente y tipo de servicio."
+    },
+    {
+      "feature": "src/features/panel-financiero-overview",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver cuánto dinero me ha generado cada cliente en un período para identificar mis clientes más valiosos. Descripción: añadir vista de ranking de clientes por ingresos con filtros temporales."
+    },
+    {
+      "feature": "src/features/panel-financiero-overview",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero enviar recordatorios de pago por WhatsApp o Email directamente desde la sección de alertas para facilitar el cobro sin cambiar de aplicación. Descripción: integrar botones de acción con mensajes preconfigurados en la tabla de pagos pendientes."
+    },
+    {
+      "feature": "src/features/panel-financiero-overview",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero poder marcar los pagos pendientes con estados y añadir notas para llevar un control efectivo de las gestiones de cobro. Descripción: ampliar la funcionalidad de alertas permitiendo cambiar estado, añadir notas y ver historial."
+    },
+    {
+      "feature": "src/features/panel-financiero-overview",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero poder registrar mis gastos profesionales para conocer mis costes reales y calcular mi beneficio neto. Descripción: crear sección de gastos con categorías predefinidas y totales por período."
+    },
+    {
+      "feature": "src/features/panel-financiero-overview",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero que el sistema calcule automáticamente mi beneficio neto para saber cuánto gano realmente después de mis costes. Descripción: mostrar ingresos brutos y beneficio neto calculando ingresos menos gastos."
+    },
+    {
+      "feature": "src/features/panel-financiero-overview",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver un gráfico con la evolución de mis ingresos mes a mes durante el último año para identificar tendencias y patrones. Descripción: añadir gráfico de línea con los últimos 12 meses de ingresos."
+    },
+    {
+      "feature": "src/features/panel-financiero-overview",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero comparar mis ingresos del año actual con los del año anterior mes a mes para evaluar el crecimiento de mi negocio. Descripción: crear vista comparativa con dos líneas superpuestas por mes."
+    },
+    {
+      "feature": "src/features/panel-financiero-overview",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver qué tipo de servicio me genera más ingresos y cuál es más rentable para optimizar mi tiempo. Descripción: expandir la sección de ingresos con métricas de tiempo invertido e ingreso por hora por servicio."
+    },
+    {
+      "feature": "src/features/panel-financiero-overview",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver en la pantalla principal solo las métricas más importantes de forma clara para entender rápidamente el estado de mi negocio. Descripción: rediseñar el overview mostrando ingresos del mes, pendientes, próximo objetivo y comparativa con mes anterior."
+    },
+    {
+      "feature": "src/features/panel-financiero-overview",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero exportar un resumen de ingresos y gastos en formato Excel o PDF preparado para mi asesor fiscal para facilitar mis declaraciones. Descripción: crear función de exportación fiscal con información categorizada según normativa española."
+    },
+    {
+      "feature": "src/features/panel-financiero-overview",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver una proyección de ingresos simple basada en mis clientes activos y su frecuencia de pago para estimar mis ingresos del próximo mes. Descripción: calcular ingreso esperado con número de clientes activos, precio medio y frecuencia."
+    },
+    {
+      "feature": "src/features/panel-financiero-overview",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero configurar recordatorios automáticos que se envíen días antes del vencimiento de un pago para reducir impagos. Descripción: implementar recordatorios automáticos configurables (1, 3, 7 días antes) que se envíen por WhatsApp o Email."
+    },
+    {
+      "feature": "src/features/panel-financiero-overview",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver métricas sobre cuánto tiempo llevan mis clientes conmigo y su tasa de retención para evaluar la calidad de mi servicio. Descripción: añadir sección con antigüedad promedio, tasa de retención y altas/bajas del período."
+    },
+    {
+      "feature": "src/features/panel-financiero-overview",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero recibir un resumen semanal automático por email con mis ingresos, pagos pendientes y próximas sesiones para mantenerme informado sin entrar al sistema. Descripción: enviar cada lunes un email con métricas clave y alertas importantes."
+    }
+  ]
+}

@@ -68,3 +68,4 @@ export function WaitlistTable({ entries }: WaitlistTableProps) {
 }
 
 
+

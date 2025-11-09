@@ -21,8 +21,10 @@
     "test:report": "node tests/utils/generate-report.js"
   },
   "dependencies": {
+    "@craftjs/core": "^0.2.8",
     "@heroicons/react": "^2.2.0",
     "@supabase/supabase-js": "^2.57.4",
+    "@xyflow/react": "^12.9.2",
     "axios": "^1.13.1",
     "date-fns": "^4.1.0",
     "file-saver": "^2.0.5",

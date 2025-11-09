@@ -58,6 +58,7 @@ import PipelineDeVentaKanbanPage from './features/pipeline-de-venta-kanban/pages
 import PlantillasDeEntrenamientoPage from './features/plantillas-de-entrenamiento/pages/plantillas-de-entrenamientoPage';
 import PortalDelClienteAutoservicioPage from './features/portal-del-cliente-autoservicio/pages/portal-del-cliente-autoservicioPage';
 import ProgramasDeEntrenoPage from './features/programas-de-entreno/pages/programas-de-entrenoPage';
+import ProgramasDeEntrenoEditorPage from './features/programas-de-entreno/pages/ProgramasDeEntrenoEditorPage';
 import TurnosHorariosDelStaffPage from './features/turnos-horarios-del-staff/pages/turnos-horarios-del-staffPage';
 import CheckInsDeEntrenoPage from './features/check-ins-de-entreno/pages/check-ins-de-entrenoPage';
 import CheckInsNutricionalesPage from './features/check-ins-nutricionales/pages/check-ins-nutricionalesPage';
@@ -153,6 +154,7 @@ import OverviewMarketingPage from './features/OverviewMarketing/pages/OverviewMa
 import FunnelsAdquisicionPage from './features/FunnelsAdquisicion/pages/FunnelsAdquisicionPage';
 import FunnelsEditorPage from './features/FunnelsAdquisicion/pages/FunnelsEditorPage';
 import LandingPageEditorPage from './features/FunnelsAdquisicion/pages/LandingPageEditorPage';
+import LandingPageCraftEditorPage from './features/FunnelsAdquisicion/pages/LandingPageCraftEditorPage';
 import FunnelsLeadMagnetFactoryPage from './features/FunnelsAdquisicion/pages/LeadMagnetFactoryPage';
 
 function ProtectedRoute() {
@@ -191,6 +193,10 @@ function App() {
             <Route path="/dashboard/marketing/funnels-adquisicion" element={<FunnelsAdquisicionPage />} />
             <Route path="/dashboard/marketing/funnels-adquisicion/funnel-editor" element={<FunnelsEditorPage />} />
             <Route path="/dashboard/marketing/funnels-adquisicion/landing-page-editor" element={<LandingPageEditorPage />} />
+            <Route
+              path="/dashboard/marketing/funnels-adquisicion/landing-page-craft-editor"
+              element={<LandingPageCraftEditorPage />}
+            />
             <Route path="/dashboard/marketing/funnels-adquisicion/lead-magnet-factory" element={<FunnelsLeadMagnetFactoryPage />} />
             <Route path="/campanas-outreach" element={<CampanasOutreachPage />} />
             <Route path="/alertas-restricciones-alimentarias" element={<AlertasRestriccionesAlimentariasPage />} />
@@ -226,6 +232,7 @@ function App() {
             <Route path="/settings/policies" element={<PoliticasTerminosPage />} />
             <Route path="/portal-del-cliente-autoservicio" element={<PortalDelClienteAutoservicioPage />} />
             <Route path="/programas-de-entreno" element={<ProgramasDeEntrenoPage />} />
+            <Route path="/programas-de-entreno/editor" element={<ProgramasDeEntrenoEditorPage />} />
             <Route path="/suite-de-entreno" element={<SuiteDeEntrenoPage />} />
             <Route path="/suite-de-nutricion" element={<SuiteDeNutricionPage />} />
             <Route path="/turnos-horarios-del-staff" element={<TurnosHorariosDelStaffPage />} />

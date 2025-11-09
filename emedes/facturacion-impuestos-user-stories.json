@@ -1,6 +1,36 @@
 {
   "user_stories": [
     {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero poder cancelar o modificar toda una serie de reservas recurrentes a la vez para hacer cambios masivos sin tener que editar una por una."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver una lista simple de todas las sesiones del día con hora, cliente y tipo para tener una referencia rápida de mi agenda diaria sin abrir calendario."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver un resumen destacado de las sesiones de las próximas 24 horas en la página principal para tener visibilidad inmediata de mi día sin navegar a reservas."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero recibir una notificación instantánea cuando un cliente hace una nueva reserva para estar al tanto de cambios en mi agenda en tiempo real."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero recibir una notificación cuando un cliente cancela una reserva para saber inmediatamente que tengo un hueco libre y poder ofrecerlo."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero asignar colores diferentes a cada tipo de sesión en el calendario para identificar visualmente y rápidamente el tipo de entrenamiento."
+    },
+    {
       "feature": "src/features/facturacin-cobros",
       "persona": "Entrenador Personal",
       "description": "Como Entrenador Personal quiero generar facturas automáticamente cuando marco una sesión como completada para no tener que recordar facturar cada sesión individualmente. Descripción: al completar una sesión en la agenda, el sistema pregunta si desea generar factura automática. Si el cliente tiene paquete prepago, se descuenta automáticamente."

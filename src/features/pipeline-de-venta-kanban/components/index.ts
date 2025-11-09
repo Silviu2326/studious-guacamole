@@ -6,4 +6,10 @@ export { PipelineMetrics } from './PipelineMetrics';
 export { PhaseConfigurator } from './PhaseConfigurator';
 export { PipelineAutomation } from './PipelineAutomation';
 export { PipelineReports } from './PipelineReports';
+export { ServiceTypeSelector } from './ServiceTypeSelector';
+export { ScheduleCallModal } from './ScheduleCallModal';
+export { FollowUpAlertModal } from './FollowUpAlertModal';
+export { SendPriceModal } from './SendPriceModal';
+export { PriceCalculatorModal } from './PriceCalculatorModal';
+export { ConversionDashboard } from './ConversionDashboard';
 

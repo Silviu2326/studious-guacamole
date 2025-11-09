@@ -114,6 +114,7 @@ import LeadMagnetFactoryPage from './features/LeadMagnetFactory/pages/LeadMagnet
 import LibreriaDeCampanasPlaybooksPage from './features/LibreriaDeCampanasPlaybooks/pages/LibreriaDeCampanasPlaybooksPage';
 import LifecycleEmailSequencesPage from './features/LifecycleEmailSequences/pages/LifecycleEmailSequencesPage';
 import LeadInboxUnificadoYSlaPage from './features/LeadInboxUnificadoYSla/pages/LeadInboxUnificadoYSlaPage';
+import { TransformacionLeadsPage } from './features/transformacion-leads/pages';
 import LoyaltyProgramManagerPage from './features/LoyaltyProgramManager/pages/LoyaltyProgramManagerPage';
 import MarketingDeReferidosPage from './features/MarketingDeReferidos/pages/MarketingDeReferidosPage';
 import PartnershipsYInfluencersPage from './features/PartnershipsYInfluencers/pages/PartnershipsYInfluencersPage';
@@ -175,6 +176,7 @@ function App() {
             <Route path="/informe-de-ventas-retail" element={<InformeDeVentasRetailPage />} />
             <Route path="/inventario-stock" element={<InventarioStockPage />} />
             <Route path="/inventario/recepciones" element={<RecepcionesDeMaterialPage />} />
+            <Route path="/transformacion-leads" element={<TransformacionLeadsPage />} />
             <Route path="/leads" element={<LeadsPage />} />
             <Route path="/dashboard/analytics/inbox" element={<LeadInboxUnificadoYSlaPage />} />
             <Route path="/lista-de-espera-ausencias" element={<ListaEsperaAusenciasPage />} />

@@ -12,6 +12,7 @@ export interface ButtonProps {
   type?: 'button' | 'submit' | 'reset';
   className?: string;
   leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -25,6 +26,7 @@ export const Button: React.FC<ButtonProps> = ({
   type = 'button',
   className = '',
   leftIcon,
+  rightIcon,
 }) => {
   const baseClasses = "inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2";
   
@@ -65,6 +67,7 @@ export const Button: React.FC<ButtonProps> = ({
       ) : null}
       {leftIcon && !loading && <span className="mr-2">{leftIcon}</span>}
       {children}
+      {rightIcon && !loading && <span className="ml-2">{rightIcon}</span>}
     </button>
   );
 };

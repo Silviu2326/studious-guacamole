@@ -77,7 +77,7 @@ export const PhaseColumn: React.FC<PhaseColumnProps> = ({
           </div>
         </div>
 
-        {/* Lista de ventas */}
+        {/* Lista de ventas - US-14: Ordenar por días sin contacto */}
         <div className="space-y-3 max-h-[600px] overflow-y-auto px-4 pb-4">
           {column.sales.length === 0 ? (
             <Card className="p-8 text-center bg-white shadow-sm">
@@ -85,14 +85,27 @@ export const PhaseColumn: React.FC<PhaseColumnProps> = ({
               <p className="text-sm text-gray-600">No hay ventas en esta fase</p>
             </Card>
           ) : (
-            column.sales.map((sale) => (
-              <SaleCard
-                key={sale.id}
-                sale={sale}
-                onUpdate={(updates) => onSaleUpdate(sale.id, updates)}
-                onPhaseChange={(newPhase) => onSalePhaseChange(sale.id, newPhase)}
-              />
-            ))
+            // US-14: Ordenar por días sin contacto (mayor primero)
+            [...column.sales]
+              .sort((a, b) => {
+                const getDaysWithoutContact = (sale: typeof a) => {
+                  const lastContact = sale.lastContact || sale.lastActivity || sale.updatedAt;
+                  if (!lastContact) return 0;
+                  const now = new Date();
+                  const lastContactDate = new Date(lastContact);
+                  const diffTime = now.getTime() - lastContactDate.getTime();
+                  return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                };
+                return getDaysWithoutContact(b) - getDaysWithoutContact(a);
+              })
+              .map((sale) => (
+                <SaleCard
+                  key={sale.id}
+                  sale={sale}
+                  onUpdate={(updates) => onSaleUpdate(sale.id, updates)}
+                  onPhaseChange={(newPhase) => onSalePhaseChange(sale.id, newPhase)}
+                />
+              ))
           )}
         </div>
       </Card>

@@ -10,8 +10,13 @@ import { LeadTasks } from './LeadTasks';
 import { AppointmentScheduler } from './AppointmentScheduler';
 import { LeadChat } from './LeadChat';
 import { QuoteManager } from './QuoteManager';
+import { LeadTagSelector } from './LeadTagSelector';
+import { ReminderScheduler } from './ReminderScheduler';
+import { LeadTimeline } from './LeadTimeline';
 import { getUnreadCount } from '../api/chat';
 import { updateLead } from '../api';
+import { TagService } from '../services/tagService';
+import { TAG_COLORS } from '../types/tags';
 import { 
   User, 
   Mail, 
@@ -24,7 +29,8 @@ import {
   XCircle,
   Clock,
   MessageCircle,
-  FileText
+  FileText,
+  Tag as TagIcon
 } from 'lucide-react';
 
 interface LeadCardProps {
@@ -39,7 +45,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onUpdate, onStageChang
   const [showHistory, setShowHistory] = useState(false);
   const [showMessageComposer, setShowMessageComposer] = useState(false);
   const [showAppointmentScheduler, setShowAppointmentScheduler] = useState(false);
-  const [activeDetailTab, setActiveDetailTab] = useState<'info' | 'tasks' | 'chat' | 'quotes'>('info');
+  const [activeDetailTab, setActiveDetailTab] = useState<'info' | 'timeline' | 'tasks' | 'chat' | 'quotes'>('info');
   const [unreadChatCount, setUnreadChatCount] = useState(0);
 
   useEffect(() => {
@@ -213,6 +219,28 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onUpdate, onStageChang
               )}
             </div>
 
+            {/* US-04: Tags */}
+            {lead.tags && lead.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {TagService.getTagsByIds(lead.tags).slice(0, 3).map(tag => {
+                  const colors = TAG_COLORS[tag.color];
+                  return (
+                    <span
+                      key={tag.id}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${colors.bg} ${colors.text}`}
+                    >
+                      {tag.name}
+                    </span>
+                  );
+                })}
+                {lead.tags.length > 3 && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                    +{lead.tags.length - 3}
+                  </span>
+                )}
+              </div>
+            )}
+
             {/* Next follow up */}
             {lead.nextFollowUpDate && (
               <div className={`flex items-center gap-2 ${ds.typography.caption} ${hasFollowUpToday() ? 'text-orange-600 font-semibold' : ds.color.info}`}>
@@ -264,6 +292,16 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onUpdate, onStageChang
                   <Calendar className="w-4 h-4 mr-1.5" />
                   Agendar
                 </button>
+              </div>
+
+              {/* US-06: Recordatorio */}
+              <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
+                <ReminderScheduler
+                  leadId={lead.id}
+                  leadName={lead.name}
+                  userId={user?.id || 'unknown'}
+                  onReminderCreated={() => onUpdate({})}
+                />
               </div>
               
               {/* Acciones de contacto rápido */}
@@ -341,7 +379,8 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onUpdate, onStageChang
         <Tabs
           items={[
             { id: 'info', label: 'Información', icon: <User className="w-4 h-4" /> },
-            { id: 'tasks', label: 'Tareas', icon: <Clock className="w-4 h-4" /> },
+            { id: 'timeline', label: 'Historial', icon: <Clock className="w-4 h-4" /> },
+            { id: 'tasks', label: 'Tareas', icon: <Calendar className="w-4 h-4" /> },
             { 
               id: 'chat', 
               label: (
@@ -359,13 +398,25 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onUpdate, onStageChang
             { id: 'quotes', label: 'Presupuestos', icon: <FileText className="w-4 h-4" /> }
           ]}
           activeTab={activeDetailTab}
-          onTabChange={(tab) => setActiveDetailTab(tab as 'info' | 'tasks' | 'chat' | 'quotes')}
+          onTabChange={(tab) => setActiveDetailTab(tab as 'info' | 'timeline' | 'tasks' | 'chat' | 'quotes')}
           variant="pills"
         />
         
         <div className="mt-6">
           {activeDetailTab === 'info' && (
             <div className="space-y-6">
+              {/* US-04: Etiquetas */}
+              <div>
+                <h3 className={`${ds.typography.h3} ${ds.color.textPrimary} ${ds.color.textPrimaryDark} mb-4 flex items-center gap-2`}>
+                  <TagIcon className="w-5 h-5" />
+                  Etiquetas
+                </h3>
+                <LeadTagSelector
+                  selectedTags={lead.tags || []}
+                  onTagsChange={(tags) => onUpdate({ tags })}
+                />
+              </div>
+
               {/* Información básica */}
               <div>
             <h3 className={`${ds.typography.h3} ${ds.color.textPrimary} ${ds.color.textPrimaryDark} mb-4`}>
@@ -497,6 +548,12 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onUpdate, onStageChang
                   <ConversionProbability lead={lead} />
                 </div>
               )}
+            </div>
+          )}
+
+          {activeDetailTab === 'timeline' && (
+            <div>
+              <LeadTimeline lead={lead} onUpdate={() => onUpdate({})} />
             </div>
           )}
 

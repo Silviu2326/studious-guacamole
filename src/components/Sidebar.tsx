@@ -43,10 +43,12 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     if (path.includes('resumen-general')) return 'resumen-general';
     if (path.includes('tareas-alertas')) return 'tareas-alertas';
     if (path.includes('objetivos-rendimiento')) return 'objetivos-rendimiento';
-    if (path.includes('leads')) return 'leads';
+    // Rutas relacionadas con transformación de leads - todas apuntan a la vista unificada
+    if (path.includes('transformacion-leads') || path.includes('pipeline-de-venta-kanban') || 
+        path.includes('lead-inbox-unificado-sla') || path.includes('dashboard/analytics/inbox') ||
+        path.includes('/leads')) return 'transformacion-leads';
     if (path.includes('gestión-de-clientes') || path.includes('clientes')) return 'gestión-de-clientes';
     if (path.includes('portal-del-cliente-autoservicio')) return 'portal-del-cliente-autoservicio';
-    if (path.includes('pipeline-de-venta-kanban')) return 'pipeline-de-venta-kanban';
     if (path.includes('encuestas-satisfaccin-npscsat')) return 'encuestas-satisfaccin-npscsat';
     if (path.includes('campanas-outreach')) return 'campanas-outreach';
     if (path.includes('listas-inteligentes-segmentos-guardados')) return 'listas-inteligentes-segmentos-guardados';
@@ -192,9 +194,7 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
       title: 'CRM & Clientes',
       icon: Users,
       items: [
-        { id: 'leads', label: 'Leads', icon: UserPlus, path: '/leads' },
-        { id: 'lead-inbox-unificado-sla', label: 'Inbox Unificado & SLA', icon: Inbox, path: '/dashboard/analytics/inbox' },
-        { id: 'pipeline-de-venta-kanban', label: 'Pipeline de Venta', icon: Kanban, path: '/pipeline-de-venta-kanban' },
+        { id: 'transformacion-leads', label: 'Transformación de Leads', icon: TrendingUp, path: '/transformacion-leads' },
         { id: 'gestión-de-clientes', label: isEntrenador ? 'Mis Clientes' : 'Clientes', icon: Users, path: '/gestión-de-clientes' },
         { id: 'portal-del-cliente-autoservicio', label: 'Portal del Cliente', icon: UserCircle, path: '/portal-del-cliente-autoservicio' },
         { id: 'encuestas-satisfaccin-npscsat', label: 'Encuestas & Satisfacción', icon: MessageSquare, path: '/encuestas-satisfaccin-npscsat', gimnasioOnly: true },

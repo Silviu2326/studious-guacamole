@@ -1,12 +1,12 @@
 import { Phase, BusinessType } from '../types';
 
-// Fases por defecto para entrenadores
+// US-11: Fases actualizadas para entrenadores
 const entrenadorPhases: Phase[] = [
   {
     id: '1',
-    key: 'contactado',
-    name: 'Contactado',
-    description: 'Lead inicialmente contactado',
+    key: 'contacto_nuevo',
+    name: 'Contacto Nuevo',
+    description: 'Lead recién llegado, sin contacto previo',
     businessType: 'entrenador',
     order: 1,
     color: '#3B82F6',
@@ -16,9 +16,9 @@ const entrenadorPhases: Phase[] = [
   },
   {
     id: '2',
-    key: 'enviado_precio',
-    name: 'Enviado Precio',
-    description: 'Precio enviado al lead',
+    key: 'primera_charla',
+    name: 'Primera Charla',
+    description: 'Primera conversación realizada',
     businessType: 'entrenador',
     order: 2,
     color: '#8B5CF6',
@@ -28,9 +28,9 @@ const entrenadorPhases: Phase[] = [
   },
   {
     id: '3',
-    key: 'llamada',
-    name: 'Llamada',
-    description: 'Llamada realizada',
+    key: 'enviado_precio',
+    name: 'Enviado Precio',
+    description: 'Precio y propuesta enviados',
     businessType: 'entrenador',
     order: 3,
     color: '#F59E0B',
@@ -40,12 +40,36 @@ const entrenadorPhases: Phase[] = [
   },
   {
     id: '4',
-    key: 'cerrado',
-    name: 'Cerrado',
-    description: 'Venta cerrada',
+    key: 'llamada',
+    name: 'Llamada',
+    description: 'Llamada o reunión agendada',
     businessType: 'entrenador',
     order: 4,
+    color: '#EC4899',
+    isDefault: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: '5',
+    key: 'cliente',
+    name: 'Cliente',
+    description: 'Convertido a cliente exitosamente',
+    businessType: 'entrenador',
+    order: 5,
     color: '#10B981',
+    isDefault: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: '6',
+    key: 'descartado',
+    name: 'Descartado',
+    description: 'Lead descartado o perdido',
+    businessType: 'entrenador',
+    order: 6,
+    color: '#6B7280',
     isDefault: true,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -168,4 +192,3 @@ export const deletePhase = async (id: string): Promise<void> => {
     phaseList.splice(index, 1);
   }
 };
-

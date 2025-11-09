@@ -34,7 +34,9 @@ import {
   Users,
   TrendingUp,
   Target,
-  AlertCircle
+  AlertCircle,
+  Zap,
+  Bot
 } from 'lucide-react';
 
 interface NurturingSequenceManagerProps {
@@ -131,11 +133,18 @@ export const NurturingSequenceManager: React.FC<NurturingSequenceManagerProps> =
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-[#F1F5F9]">
-            Secuencias de Nurturing
-          </h2>
-          <p className="text-gray-600 dark:text-[#94A3B8] mt-1">
-            Automatiza el seguimiento de tus leads con secuencias personalizadas
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+              <Bot className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-[#F1F5F9]">
+              {businessType === 'entrenador' ? 'Respuestas Automáticas' : 'Secuencias de Nurturing'}
+            </h2>
+          </div>
+          <p className="text-gray-600 dark:text-[#94A3B8] mt-1 ml-14">
+            {businessType === 'entrenador' 
+              ? 'Configura mensajes automáticos que se envían a tus leads cuando llegan. Nunca pierdas una oportunidad por no responder a tiempo.'
+              : 'Automatiza el seguimiento de tus leads con secuencias personalizadas'}
           </p>
         </div>
         <Button
@@ -146,15 +155,25 @@ export const NurturingSequenceManager: React.FC<NurturingSequenceManagerProps> =
           }}
         >
           <Plus className="w-4 h-4 mr-2" />
-          Nueva Secuencia
+          {businessType === 'entrenador' ? 'Nueva Respuesta Automática' : 'Nueva Secuencia'}
         </Button>
       </div>
 
       {/* Tabs */}
       <Tabs
         items={[
-          { id: 'list', label: 'Mis Secuencias', icon: <BarChart3 className="w-4 h-4" /> },
-          { id: 'create', label: selectedSequence ? 'Editar Secuencia' : 'Crear Secuencia', icon: <Plus className="w-4 h-4" /> }
+          { 
+            id: 'list', 
+            label: businessType === 'entrenador' ? 'Mis Respuestas Automáticas' : 'Mis Secuencias', 
+            icon: <BarChart3 className="w-4 h-4" /> 
+          },
+          { 
+            id: 'create', 
+            label: selectedSequence 
+              ? (businessType === 'entrenador' ? 'Editar Respuesta Automática' : 'Editar Secuencia')
+              : (businessType === 'entrenador' ? 'Crear Respuesta Automática' : 'Crear Secuencia'), 
+            icon: <Plus className="w-4 h-4" /> 
+          }
         ]}
         activeTab={activeTab}
         onTabChange={(tab) => {
@@ -168,15 +187,50 @@ export const NurturingSequenceManager: React.FC<NurturingSequenceManagerProps> =
 
       {/* Content */}
       {activeTab === 'list' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sequences.length === 0 ? (
-            <div className="col-span-full text-center py-12">
-              <AlertCircle className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-[#94A3B8]">
-                No hay secuencias creadas. Crea tu primera secuencia para empezar.
-              </p>
-            </div>
-          ) : (
+        <div className="space-y-6">
+          {/* Info Card para entrenadores */}
+          {businessType === 'entrenador' && sequences.length === 0 && (
+            <Card variant="outlined" padding="lg" className="bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800">
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex-shrink-0">
+                  <Zap className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-[#F1F5F9] mb-2">
+                    ¿Qué son las Respuestas Automáticas?
+                  </h3>
+                  <p className="text-sm text-gray-700 dark:text-[#94A3B8] mb-3">
+                    Cuando un lead te contacta desde Instagram o WhatsApp, el sistema puede responder automáticamente en menos de 1 hora, incluso si estás ocupado con clientes.
+                  </p>
+                  <ul className="text-sm text-gray-700 dark:text-[#94A3B8] space-y-1 list-disc list-inside">
+                    <li>Envía un mensaje de bienvenida automático</li>
+                    <li>Si no responden, envía un seguimiento después de 2 días</li>
+                    <li>Programa una llamada si aún no hay respuesta</li>
+                  </ul>
+                  <p className="text-sm font-medium text-blue-700 dark:text-blue-400 mt-3">
+                    💡 <strong>Resultado:</strong> Nunca pierdes un lead por no responder a tiempo
+                  </p>
+                </div>
+              </div>
+            </Card>
+          )}
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {sequences.length === 0 ? (
+              <div className="col-span-full text-center py-12">
+                <Bot className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-600 dark:text-[#94A3B8] mb-2">
+                  {businessType === 'entrenador' 
+                    ? 'Aún no has creado ninguna respuesta automática.'
+                    : 'No hay secuencias creadas.'}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-500">
+                  {businessType === 'entrenador'
+                    ? 'Crea tu primera respuesta automática para empezar a no perder leads.'
+                    : 'Crea tu primera secuencia para empezar.'}
+                </p>
+              </div>
+            ) : (
             sequences.map((sequence) => (
               <Card key={sequence.id} variant="hover" padding="md">
                 <div className="space-y-4">
@@ -296,6 +350,7 @@ export const NurturingSequenceManager: React.FC<NurturingSequenceManagerProps> =
               </Card>
             ))
           )}
+          </div>
         </div>
       )}
 
@@ -690,4 +745,3 @@ const formatDelay = (delay: { value: number; unit: 'minutes' | 'hours' | 'days' 
   };
   return `${delay.value} ${unitLabels[delay.unit]}`;
 };
-

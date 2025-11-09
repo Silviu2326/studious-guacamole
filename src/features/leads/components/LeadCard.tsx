@@ -239,67 +239,73 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onUpdate, onStageChang
             )}
 
             {/* Acciones rápidas */}
-            <div className={`flex items-center gap-2 pt-2 border-t ${ds.color.borderLight} ${ds.color.borderLightDark}`} onClick={(e) => e.stopPropagation()}>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMessageComposer(true);
-                }}
-                className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200"
-                title="Enviar mensaje"
-              >
-                <MessageSquare className="w-4 h-4 mr-1" />
-                Mensaje
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowAppointmentScheduler(true);
-                }}
-                className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 transition-all duration-200"
-                title="Agendar consulta"
-              >
-                <Calendar className="w-4 h-4 mr-1" />
-                Agendar
-              </button>
-              {lead.phone && (
-                <>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleQuickAction('whatsapp');
-                    }}
-                    className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-[#94A3B8] hover:bg-gray-50 dark:hover:bg-[#1E1E2E] transition-all duration-200"
-                    title="Contactar por WhatsApp"
-                  >
-                    <MessageCircle className="w-4 h-4 mr-1" />
-                    WhatsApp
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleQuickAction('call');
-                    }}
-                    className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-[#94A3B8] hover:bg-gray-50 dark:hover:bg-[#1E1E2E] transition-all duration-200"
-                    title="Llamar"
-                  >
-                    <Phone className="w-4 h-4 mr-1" />
-                    Llamar
-                  </button>
-                </>
-              )}
-              {lead.email && (
+            <div className={`pt-3 border-t ${ds.color.borderLight} ${ds.color.borderLightDark} space-y-2`} onClick={(e) => e.stopPropagation()}>
+              {/* Acciones principales */}
+              <div className="flex items-center gap-2">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleQuickAction('email');
+                    setShowMessageComposer(true);
                   }}
-                  className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-[#94A3B8] hover:bg-gray-50 dark:hover:bg-[#1E1E2E] transition-all duration-200"
-                  title="Enviar email"
+                  className="flex-1 inline-flex items-center justify-center px-3 py-2.5 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 shadow-sm hover:shadow"
+                  title="Enviar mensaje"
                 >
-                  <Mail className="w-4 h-4 mr-1" />
-                  Email
+                  <MessageSquare className="w-4 h-4 mr-1.5" />
+                  Mensaje
                 </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowAppointmentScheduler(true);
+                  }}
+                  className="flex-1 inline-flex items-center justify-center px-3 py-2.5 text-sm font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 transition-all duration-200 shadow-sm hover:shadow"
+                  title="Agendar consulta"
+                >
+                  <Calendar className="w-4 h-4 mr-1.5" />
+                  Agendar
+                </button>
+              </div>
+              
+              {/* Acciones de contacto rápido */}
+              {(lead.phone || lead.email) && (
+                <div className="flex items-center gap-1.5 justify-center">
+                  {lead.phone && (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleQuickAction('whatsapp');
+                        }}
+                        className="inline-flex items-center justify-center p-2 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-200 border border-green-200 dark:border-green-800"
+                        title="Contactar por WhatsApp"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleQuickAction('call');
+                        }}
+                        className="inline-flex items-center justify-center p-2 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 border border-blue-200 dark:border-blue-800"
+                        title="Llamar"
+                      >
+                        <Phone className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                  {lead.email && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleQuickAction('email');
+                      }}
+                      className="inline-flex items-center justify-center p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-200 border border-gray-200 dark:border-gray-700"
+                      title="Enviar email"
+                    >
+                      <Mail className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -537,4 +543,3 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onUpdate, onStageChang
     </>
   );
 };
-

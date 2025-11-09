@@ -15,7 +15,10 @@ import {
   CheckCircle,
   XCircle,
   Eye,
-  DollarSign
+  DollarSign,
+  Receipt,
+  TrendingUp,
+  AlertCircle
 } from 'lucide-react';
 
 interface QuoteManagerProps {
@@ -256,11 +259,22 @@ export const QuoteManager: React.FC<QuoteManagerProps> = ({ lead, businessType }
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-[#F1F5F9]">
-            Presupuestos y Cotizaciones
-          </h2>
-          <p className="text-gray-600 dark:text-[#94A3B8] mt-1">
-            {lead ? `Presupuestos para ${lead.name}` : 'Gestiona todos los presupuestos'}
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+              <Receipt className="w-6 h-6 text-green-600 dark:text-green-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-[#F1F5F9]">
+              {businessType === 'entrenador' ? 'Propuestas y Precios' : 'Presupuestos y Cotizaciones'}
+            </h2>
+          </div>
+          <p className="text-gray-600 dark:text-[#94A3B8] mt-1 ml-14">
+            {businessType === 'entrenador' 
+              ? lead 
+                ? `Crea y envía propuestas de precios personalizadas a ${lead.name}. Cuando aprueben, conviértelos en cliente.`
+                : 'Crea propuestas de precios para tus leads. Cuando las aprueben, conviértelos en clientes.'
+              : lead 
+                ? `Presupuestos para ${lead.name}`
+                : 'Gestiona todos los presupuestos'}
           </p>
         </div>
         {lead && (
@@ -269,38 +283,90 @@ export const QuoteManager: React.FC<QuoteManagerProps> = ({ lead, businessType }
             onClick={handleCreate}
           >
             <Plus className="w-4 h-4 mr-2" />
-            Nuevo Presupuesto
+            {businessType === 'entrenador' ? 'Nueva Propuesta' : 'Nuevo Presupuesto'}
           </Button>
         )}
       </div>
 
+      {/* Info Card para entrenadores cuando no hay presupuestos */}
+      {businessType === 'entrenador' && quotes.length === 0 && !loading && (
+        <Card variant="outlined" padding="lg" className="bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800">
+          <div className="flex items-start gap-4">
+            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg flex-shrink-0">
+              <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900 dark:text-[#F1F5F9] mb-2">
+                ¿Por qué crear propuestas de precios?
+              </h3>
+              <p className="text-sm text-gray-700 dark:text-[#94A3B8] mb-3">
+                Cuando un lead muestra interés, crear una propuesta formal aumenta significativamente las probabilidades de conversión.
+              </p>
+              <ul className="text-sm text-gray-700 dark:text-[#94A3B8] space-y-1 list-disc list-inside mb-3">
+                <li><strong>Profesionalismo:</strong> Muestra que eres serio y organizado</li>
+                <li><strong>Claridad:</strong> El lead sabe exactamente qué incluye y cuánto cuesta</li>
+                <li><strong>Compromiso:</strong> Una propuesta aprobada es casi una venta cerrada</li>
+                <li><strong>Seguimiento:</strong> Puedes ver quién abrió tu propuesta y cuándo</li>
+              </ul>
+              <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                💡 <strong>Tip:</strong> Incluye descuentos por pago anticipado o planes de varios meses para incentivar la aprobación
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Filtros */}
-      <Card>
-        <div className={ds.spacing.md}>
-          <Select
-            label="Filtrar por Estado"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as any)}
-            options={[
-              { value: 'all', label: 'Todos' },
-              { value: 'draft', label: 'Borradores' },
-              { value: 'sent', label: 'Enviados' },
-              { value: 'approved', label: 'Aprobados' },
-              { value: 'rejected', label: 'Rechazados' }
-            ]}
-          />
-        </div>
-      </Card>
+      {quotes.length > 0 && (
+        <Card>
+          <div className={ds.spacing.md}>
+            <Select
+              label="Filtrar por Estado"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as any)}
+              options={[
+                { value: 'all', label: 'Todos' },
+                { value: 'draft', label: 'Borradores' },
+                { value: 'sent', label: 'Enviados' },
+                { value: 'approved', label: 'Aprobados' },
+                { value: 'rejected', label: 'Rechazados' }
+              ]}
+            />
+          </div>
+        </Card>
+      )}
 
       {/* Tabla de presupuestos */}
-      <Card>
-        <Table
-          data={quotes}
-          columns={columns}
-          loading={loading}
-          emptyMessage="No hay presupuestos"
-        />
-      </Card>
+      {quotes.length > 0 ? (
+        <Card>
+          <Table
+            data={quotes}
+            columns={columns}
+            loading={loading}
+            emptyMessage={businessType === 'entrenador' ? 'No hay propuestas creadas' : 'No hay presupuestos'}
+          />
+        </Card>
+      ) : !loading && (
+        <Card>
+          <div className="text-center py-12">
+            <Receipt className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+            <p className="text-gray-600 dark:text-[#94A3B8] mb-2">
+              {businessType === 'entrenador' 
+                ? lead
+                  ? `Aún no has creado ninguna propuesta para ${lead.name}.`
+                  : 'Aún no has creado ninguna propuesta de precios.'
+                : 'No hay presupuestos creados.'}
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-500">
+              {businessType === 'entrenador'
+                ? lead
+                  ? 'Crea tu primera propuesta para este lead y aumenta tus probabilidades de conversión.'
+                  : 'Selecciona un lead y crea una propuesta personalizada.'
+                : 'Crea tu primer presupuesto para empezar.'}
+            </p>
+          </div>
+        </Card>
+      )}
 
       {/* Modal de builder */}
       {selectedLead && (
@@ -321,4 +387,3 @@ export const QuoteManager: React.FC<QuoteManagerProps> = ({ lead, businessType }
     </div>
   );
 };
-

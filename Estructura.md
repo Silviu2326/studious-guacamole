@@ -11,7 +11,7 @@
     - Entrenador: objetivos de facturación personal, adherencia de sus clientes.
     - Gimnasio: objetivos comerciales globales, ocupación media, tasa de bajas.
 
-👉 El dashboard siempre existe para ambos, pero la métrica es distinta según el tipo de negocio. No hay versión única que valga para todos, así que es 🔀.
+👉 El dashboard sieempre existe para ambos, pero la métrica es distinta según el tipo de negocio. No hay versión única que valga para todos, así que es 🔀.
 
 ---
 

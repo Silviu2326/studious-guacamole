@@ -1,0 +1,555 @@
+{
+  "user_stories": [
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero ver mi agenda en formato semanal por defecto para visualizar rápidamente toda mi semana de trabajo de un vistazo. Vista semanal como predeterminada con días de lunes a domingo. Incluir horas desde las 6:00 hasta las 22:00 configurables. Cambio rápido a vista diaria o mensual. Grid claro con slots de 30 minutos."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero mover sesiones arrastrando y soltando en el calendario para reprogramar rápidamente cuando un cliente cancela o surge un cambio. Drag & drop de citas entre días y horarios. Validación de conflictos automática. Confirmación antes de mover. Notificación automática al cliente del cambio."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero ver de forma clara qué horarios tengo libres versus ocupados para saber al instante cuándo puedo agendar nuevas sesiones. Código de colores claro: verde (libre), azul (ocupado), gris (bloqueado). Indicador de disponibilidad porcentual por día. Vista rápida de próximos slots disponibles."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero navegar rápidamente entre semanas con flechas o calendario desplegable para planificar y revisar mi agenda del futuro y pasado fácilmente. Navegación con flechas ← →. Botón \"Hoy\" para volver al día actual. Mini calendario mensual para saltar a cualquier fecha. Atajos de teclado."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero crear una sesión 1:1 en menos de 30 segundos para no perder tiempo en procesos complicados cuando un cliente quiere agendar. Modal simplificado con campos esenciales: cliente (autocompletar), fecha/hora, tipo de sesión, duración. Valores por defecto inteligentes. Crear y duplicar para sesiones recurrentes."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero tener plantillas de sesiones frecuentes para crear citas aún más rápido sin repetir información. Guardar plantillas personalizadas con: nombre, duración, tipo, precio, notas predefinidas. Aplicar plantilla con 1 click. Editar plantillas fácilmente. Mínimo 5 plantillas disponibles."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero crear sesiones recurrentes para no tener que agendar una por una las sesiones habituales de mis clientes. Opciones de recurrencia: diaria, semanal (seleccionar días), quincenal, mensual. Fecha de inicio y fin. Opción \"hasta cancelar\". Editar serie completa o sesión individual."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero editar o cancelar una sesión con facilidad para gestionar cambios sin complicaciones. Click derecho o botón de acciones rápidas. Editar: cambiar fecha/hora/cliente. Cancelar: motivo de cancelación (cliente, entrenador, otro). Registro en historial. Notificación automática."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero ver la información completa de una sesión al hacer click para recordar rápidamente de qué cliente es y qué vamos a trabajar. Modal o panel lateral con: nombre del cliente, foto, tipo de sesión, horario, duración, notas previas, historial de sesiones anteriores. Acceso rápido a perfil del cliente."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero configurar mis horarios de trabajo habituales por día para que el sistema solo permita agendar en mis horas disponibles. Configurador semanal: establecer horarios por día (ej: Lunes 8:00-14:00 y 16:00-20:00). Copiar horarios entre días. Guardar plantillas de horarios (temporada alta/baja). Visualización clara en calendario."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero bloquear días completos o rangos de horas para que no se puedan agendar sesiones en esos momentos. Selector de rango de fechas. Bloqueo de día completo o parcial. Motivo del bloqueo (opcional). Vista de bloqueos futuros. Editar o eliminar bloqueos. Color distintivo en calendario."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero que mi agenda respete automáticamente tiempos de descanso entre sesiones para no agendar sesiones consecutivas sin respiro. Configurar tiempo mínimo entre sesiones (ej: 15 min). Aplicar automáticamente al crear o mover citas. Opción de override manual si es necesario. Indicador visual de buffer time."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero que se envíen recordatorios automáticos a mis clientes por WhatsApp para reducir los no-shows y cancelaciones de último momento. Recordatorios automáticos 24h y 2h antes de la sesión. Mensaje personalizable con variables (nombre, hora, lugar). Envío vía WhatsApp o SMS. Confirmación de lectura. Desactivar por cliente si prefiere."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero recibir un resumen diario de mis sesiones del día siguiente para planificar mentalmente mi jornada. Email o notificación cada noche con sesiones del día siguiente. Incluir: horarios, clientes, tipos de sesión, notas importantes. Opción de ver en app. Configurar hora de envío."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero que los clientes puedan confirmar su asistencia al recibir el recordatorio para saber con anticipación si vendrán o no. Botones en recordatorio: \"Confirmo\" / \"No puedo ir\". Actualización automática en agenda. Notificación al entrenador si cancela. Solicitar reprogramación. Estadísticas de confirmación por cliente."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero recibir una notificación 10 minutos antes de cada sesión para prepararme y no olvidar ninguna cita. Notificación push y sonido 10 min antes. Mostrar nombre del cliente y tipo de sesión. Botón de acceso rápido a detalles. Snooze de 5 min si estoy ocupado. Configurar tiempo de antelación."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero sincronizar mi agenda con Google Calendar o Outlook para tener todas mis citas en un solo lugar y evitar dobles reservas. Conexión con Google Calendar y Outlook. Sincronización bidireccional en tiempo real. Eventos externos bloquean horarios automáticamente. Elegir qué calendarios sincronizar. Desconexión fácil."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero generar un link público para que mis clientes agenden sesiones solos para ahorrar tiempo en ir y venir de mensajes coordinando horarios. Generar link personal tipo \"miagenda.com/nombre-entrenador\". Cliente ve horarios disponibles en tiempo real. Selecciona slot y tipo de sesión. Formulario simple (nombre, email, tel). Confirmación automática. Aparece en agenda del entrenador."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero que al crear una sesión se cree automáticamente un evento en mi calendario personal para no tener que duplicar el trabajo en dos sitios. Creación automática en calendario externo sincronizado. Incluir detalles: cliente, tipo, notas. Actualización automática si se modifica. Eliminación si se cancela. Opción de desactivar por sesión."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero ver el historial completo de sesiones de cada cliente para hacer seguimiento de su constancia y progreso. Vista por cliente con todas las sesiones: pasadas, presentes, futuras. Indicadores de asistencia (asistió/faltó/canceló). Filtros por fecha. Contador de sesiones totales. Tasa de asistencia porcentual. Notas de cada sesión."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero agregar notas rápidas después de cada sesión para recordar qué trabajamos y cómo le fue al cliente. Botón \"Agregar nota\" en sesión completada. Campos: qué se trabajó, cómo se sintió, observaciones, próximos pasos. Plantillas de notas frecuentes. Visible en historial del cliente. Búsqueda en notas."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero marcar las sesiones como \"completada\", \"no show\" o \"cancelada\" para llevar un registro real de lo que sucedió. Estados de sesión con colores: verde (completada), rojo (no show), amarillo (cancelada). Cambio manual o automático. Métricas de no-shows por cliente. Alertas si cliente tiene muchos no-shows. Política de cancelación configurable."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero ver estadísticas de cuántas sesiones no asistidas tiene cada cliente para identificar clientes problemáticos o con baja adherencia. Dashboard por cliente: total sesiones, asistidas, no shows, cancelaciones. Porcentaje de adherencia. Tendencia últimos 3 meses. Alertas automáticas si baja adherencia. Sugerencia de conversación con cliente."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero ver mi porcentaje de ocupación semanal para saber si tengo capacidad para más clientes o estoy al límite. Gráfico claro: X horas trabajadas / Y horas disponibles = Z% ocupación. Por semana y mes. Comparativa con períodos anteriores. Meta configurable. Proyección de ingresos según ocupación."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero ver métricas simples de mis sesiones para entender mejor mi negocio. Dashboard simple: total sesiones, por tipo, por horario, por día de semana. Gráficos visuales. Comparativa mes anterior. Ingresos generados. Promedio de sesiones por día. Tendencias."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero ver qué horarios son los más solicitados para optimizar mi disponibilidad y ofrecer más en esos momentos. Mapa de calor semanal mostrando slots más ocupados. Estadísticas por franja horaria. Lista de horarios con mayor demanda. Sugerencias de apertura de nuevos horarios. Análisis de tendencias."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero ver cuántos ingresos he generado y cuántos tengo pendientes por sesiones programadas para tener control de mi facturación. Dashboard financiero: ingresos del mes, sesiones cobradas vs pendientes, proyección del mes. Marcador de sesiones pagadas/no pagadas. Integración con gestión de pagos. Alertas de pagos pendientes. Filtros por cliente."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero tener una lista de espera para horarios populares para ofrecer slots cancelados rápidamente a otros clientes interesados. Sistema de lista de espera por horario. Cliente se apunta a horarios deseados. Notificación automática cuando se libera. Orden de prioridad (primero en lista). Gestión de lista por entrenador."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero configurar mi política de cancelación y que se aplique automáticamente para ser consistente y profesional con todos mis clientes. Configurar reglas: tiempo mínimo de cancelación (ej: 24h), penalizaciones, excepciones. Aplicación automática al crear sesiones. Notificación al cliente de la política. Registro de cancelaciones tardías. Estadísticas de cumplimiento."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero que el sistema me sugiera automáticamente reemplazar una sesión cancelada con clientes de la lista de espera para maximizar mi ocupación sin esfuerzo adicional. Al cancelarse una sesión, mostrar lista de espera para ese horario. Botón de notificar automáticamente. Mensaje predefinido a clientes en espera. Asignación con 1 click. Tiempo límite de respuesta. Si nadie acepta, pasar al siguiente."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero gestionar mi agenda fácilmente desde mi celular para poder agendar, modificar o consultar sesiones en cualquier momento y lugar. Web responsive optimizada para móvil. Vista semanal adaptada a pantalla pequeña. Gestos touch intuitivos. Acceso rápido a acciones frecuentes. Carga rápida. Funciona offline con sincronización posterior."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero recibir todas las notificaciones importantes en mi celular para estar al tanto de cancelaciones, nuevas reservas o recordatorios sin estar frente al computador. Notificaciones push configurables: nuevas reservas, cancelaciones, recordatorios, no shows, confirmaciones. Sonidos personalizados por tipo. Horario de no molestar. Ver y actuar desde notificación. Badge con contador."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero poder imprimir o exportar mi agenda semanal para tener un respaldo físico o compartir con recepción/asistente. Botón de exportar/imprimir. Formato PDF limpio y profesional. Incluir: horarios, clientes, tipos de sesión, notas. Rango de fechas configurable. Opción de ocultar información sensible. Enviar por email."
+    },
+    {
+      "feature": "src/features/agenda-calendario",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero tener un modo \"día completo\" que muestre únicamente las sesiones de hoy con mayor detalle para enfocarme solo en mi jornada actual sin distracciones. Vista de día simplificada: solo sesiones de hoy. Cards grandes con info del cliente, foto, hora, tipo. Botones de acción rápida. Siguiente sesión destacada. Countdown a próxima sesión. Checklist diario."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero crear eventos presenciales, retos y webinars virtuales desde una sola sección para organizar todas mis actividades grupales en un mismo lugar. Formularios específicos por tipo de evento con campos relevantes. Validación de campos obligatorios. Vista previa antes de publicar. Guardar como borrador."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero duplicar un evento existente para crear uno nuevo similar para ahorrar tiempo al organizar eventos recurrentes como clases semanales o retos mensuales. Botón \"Duplicar\" en cada evento. Copiar toda la información menos fecha y participantes. Permitir editar antes de guardar. Indicador de \"evento duplicado de...\"."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero guardar plantillas de mis eventos frecuentes para crearlos más rápido sin escribir todo cada vez. Botón \"Guardar como plantilla\" en eventos. Galería de plantillas personales. Crear evento desde plantilla. Editar/eliminar plantillas."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero establecer un precio o costo para cada evento para comunicar claramente la inversión necesaria y controlar los ingresos por evento. Campo de precio opcional. Indicador de \"evento gratuito\" o precio visible. Total de ingresos proyectados en métricas. Diferentes precios por tipo de cliente."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero cambiar el estado de un evento fácilmente para reflejar el estado real y mantener organizado mi calendario. Selector rápido de estado desde tarjeta. Confirmación al cancelar. Opción de notificar cambio a participantes. Histórico de cambios de estado."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero ver destacados mis próximos eventos de los siguientes 7 días para saber rápidamente qué tengo por delante y prepararme. Sección superior \"Próximos eventos\" con eventos de la semana. Countdown hasta el evento. Acceso rápido a lista de participantes. Vista compacta y clara."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero agregar participantes manualmente a un evento desde mi lista de clientes para inscribir a las personas que me confirman por WhatsApp o en persona. Botón \"Agregar participantes\" en evento. Selector con lista de clientes activos. Búsqueda por nombre. Agregar múltiples a la vez. Confirmación visual."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero ver la lista completa de participantes inscritos en cada evento para saber quién viene y cuántos lugares quedan disponibles. Sección \"Participantes\" en detalle del evento. Lista con foto y nombre. Indicador de confirmación. Contador visual X/Y participantes. Ordenar alfabéticamente."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero eliminar participantes de un evento si cancelan para mantener la lista actualizada y liberar espacios. Botón eliminar en cada participante. Confirmación antes de eliminar. Opción de mover a lista de espera. Registro de cancelaciones."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero activar una lista de espera cuando el evento está lleno para no perder interesados y llenar lugares si alguien cancela. Lista de espera automática al llegar a capacidad máxima. Notificación automática se se libera lugar. Mover manualmente de espera a confirmado. Contador de personas en espera."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero hacer check-in de asistencia el día del evento para registrar quién asistió realmente y tener estadísticas precisas. Modo \"Check-in\" el día del evento. Lista de inscritos con checkbox. Agregar asistentes no inscritos. Vista simple para uso en celular. Guardar registro de asistencia."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero exportar la lista de participantes a Excel o PDF para enviarla a recepción, hacer diplomas o tener un respaldo. Botón \"Exportar participantes\" con opciones Excel/PDF. Incluir: nombre, contacto, confirmación, asistencia. Formato listo para imprimir."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero ver el historial de eventos de cada cliente para saber qué tan activo es en actividades grupales y personalizar invitaciones. Desde perfil de cliente, lista de eventos a los que asistió. Filtrar por tipo de evento. % de asistencia vs inscripciones. Eventos favoritos."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero compartir un link público del evento para que mis clientes se inscriban solos para no tener que agregar manualmente a cada uno. Generar link único por evento. Página de inscripción con información del evento. Formulario simple. Límite de inscripciones automático. Desactivar inscripciones cuando está lleno."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero enviar invitaciones al evento a clientes específicos o grupos para comunicar de forma profesional y llenar el cupo. Botón \"Enviar invitaciones\" con selector de destinatarios. Plantilla de invitación personalizable. Envío por email y/o WhatsApp. Ver quién abrió la invitación."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero que el sistema envíe recordatorios automáticos a los participantes 24 horas y 2 horas antes del evento para reducir inasistencias y que nadie olvide. Configurar recordatorios automáticos al crear evento. Personalizar timing. Plantilla de recordatorio. Log de recordatorios enviados."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero solicitar confirmación de asistencia a los inscritos para saber con anticipación quién vendrá realmente. Botón \"Solicitar confirmación\" X días antes. Mensaje con opciones \"Confirmo / No puedo\". Actualizar estado del participante. Ver quién confirmó en tiempo real."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero enviar un mensaje grupal a todos los participantes del evento para comunicar cambios, instrucciones de último momento o motivar. Botón \"Enviar mensaje grupal\". Plantillas predefinidas. Envío masivo por WhatsApp o email. Historial de comunicaciones del evento."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero notificar automáticamente si cancelo o reprogramo un evento para avisar a todos los inscritos sin tener que hacerlo manualmente. Al cambiar estado a cancelado o modificar fecha, prompt de notificación. Plantilla auto-generada con razón del cambio. Envío automático a todos los participantes. Confirmación de envío."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero ver estadísticas de asistencia real vs inscritos en cada evento para entender si tengo problema de inasistencias y mejorar. Métrica \"X% de asistencia\" por evento. Comparativa con eventos anteriores. Identificar patrones. Gráfico de tendencia."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero solicitar feedback y valoración después de cada evento para saber si gustó y qué puedo mejorar. Envío automático de encuesta post-evento. 3-4 preguntas clave y valoración de estrellas. Ver resultados agregados. Comentarios destacados. Métrica de satisfacción."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero ver qué eventos han tenido más éxito para repetir lo que funciona y descartar lo que no. Ranking de eventos por participación, asistencia, valoración. Comparativa entre tipos de eventos. Mejores horarios/días. Insights y recomendaciones."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero hacer seguimiento del progreso de participantes en retos largos para motivar, reconocer logros y dar apoyo. Para eventos tipo reto, dashboard de progreso por participante. Métricas configurables. Ranking opcional. Envío de mensajes de motivación."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero ver mis métricas generales de eventos para evaluar si esta estrategia está funcionando. Dashboard con KPIs principales. Tendencia mensual. Comparativa con periodo anterior. Tipo de evento más popular. Ingresos totales por eventos."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero sincronizar mis eventos con mi calendario personal para tener todo en un solo lugar y evitar cruces de horario. Conexión con Google Calendar API. Sincronización bidireccional. Crear evento en calendario automáticamente. Actualizar si hay cambios. Opción de desactivar sincronización."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero agregar un checklist de materiales y preparación para cada evento para no olvidar nada el día del evento. Sección \"Preparación\" en evento. Lista de tareas/materiales. Checkbox para marcar completado. Recordatorio de preparación un día antes. Plantillas de checklists."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero ver un calendario mensual con todos mis eventos para tener una vista general y planificar mejor. Vista de calendario mensual/semanal. Eventos marcados con color según tipo. Click en día para ver eventos. Drag & drop para mover fecha. Filtros por tipo."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero ocultar o archivar eventos finalizados antiguos para mantener la lista limpia y enfocarme en lo actual. Auto-archivar eventos finalizados después de 60 días. Opción de archivar manualmente. Ver archivo cuando necesite. Buscar en archivo. Estadísticas incluyen archivados."
+    },
+    {
+      "feature": "src/features/eventos-retos",
+      "persona": "Entrenador personal",
+      "description": "Como Entrenador personal quiero que eventos presenciales se vinculen con mis ubicaciones o salas para gestionar mejor el uso de espacio. Selector de ubicación desde lista predefinida. Alerta de conflicto de horario en misma sala. Capacidad máxima según sala. Gestión de ubicaciones frecuentes."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero configurar mis horarios disponibles para cada día de la semana para que los clientes solo puedan reservar en los bloques horarios que tengo libres y evitar reservas fuera de mi horario laboral."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero marcar fechas específicas como no disponibles para que no se puedan hacer reservas en esos días y mantener mi agenda actualizada."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero configurar diferentes duraciones de sesión para ofrecer flexibilidad según el tipo de entrenamiento que el cliente necesite."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero crear plantillas de sesión con nombre, descripción, duración y precio para agilizar el proceso de reserva y tener precios diferenciados según el tipo de entrenamiento."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero establecer precios diferentes según el tipo de sesión, duración y modalidad para reflejar correctamente el valor de cada servicio que ofrezco."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero generar un enlace público personalizado que pueda compartir con mis clientes para que ellos puedan ver mi disponibilidad y reservar sesiones directamente sin mi intervención manual."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero elegir si las reservas de clientes se confirman automáticamente o requieren mi aprobación para tener control sobre mi agenda según mi preferencia de trabajo."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero cambiar la fecha y hora de una reserva ya confirmada para adaptarme a imprevistos sin tener que cancelar y crear una nueva reserva."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero que cuando reprograme una sesión el cliente reciba automáticamente una notificación con los nuevos datos para mantener una comunicación clara y evitar confusiones."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver todas mis reservas de la semana en una vista de calendario para tener una visión completa de mi agenda y planificar mejor mi tiempo."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver todas mis reservas del mes en una vista de calendario para planificar a largo plazo y ver patrones de ocupación."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero arrastrar una reserva desde una fecha u hora a otra en el calendario para reprogramar de forma visual y rápida sin formularios."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero que las sesiones marcadas como videollamada generen automáticamente un enlace de reunión para no tener que crear manualmente cada enlace y ahorrar tiempo."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero configurar qué plataforma usar para videollamadas para integrar mi herramienta preferida y que se generen enlaces automáticamente."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero que el recordatorio automático incluya el enlace de videollamada para que el cliente tenga acceso directo y no tenga que buscarlo."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero añadir notas después de cada sesión sobre qué trabajamos, rendimiento del cliente y observaciones para llevar un seguimiento detallado del progreso de cada cliente."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver todas las notas de sesiones anteriores de un cliente específico para revisar su evolución y preparar mejor las próximas sesiones."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero marcar manualmente una reserva como pagada cuando recibo pago en efectivo o transferencia para mantener mi control de pagos actualizado."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero enviar recordatorios automáticos a clientes con pagos pendientes para reducir la morosidad y automatizar el cobro."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero crear paquetes de múltiples sesiones con precio especial para fidelizar clientes y obtener pagos anticipados."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero que al crear una reserva se pueda aplicar un bono activo del cliente para descontar automáticamente del saldo de sesiones disponibles."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero enviar recordatorios y confirmaciones por WhatsApp además de email para asegurar que el cliente reciba la información en su canal preferido."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero que el cliente pueda confirmar su asistencia desde el recordatorio para saber con antelación si va a venir y poder gestionar cancelaciones."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero recibir yo también recordatorios de mis sesiones del día para no olvidar ninguna cita y estar preparado."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero marcar una reserva como no show cuando el cliente no se presenta para llevar un control de asistencia y aplicar políticas de penalización si corresponde."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero marcar automáticamente o manualmente una sesión como completada para diferenciar las sesiones realizadas de las pendientes en el historial."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero configurar una política de cancelación para establecer reglas claras y evitar cancelaciones de último momento."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero que el sistema no permita cancelaciones fuera del plazo establecido para hacer cumplir mi política sin tener que discutir con clientes."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver estadísticas de tasa de asistencia versus no shows por cliente para identificar clientes problemáticos y tomar decisiones."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver qué horarios generan más ingresos para optimizar mi disponibilidad en franjas más demandadas."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver cuánto ingreso genera cada cliente para identificar mis mejores clientes y darles atención especial."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero filtrar el historial de reservas por cliente específico para ver rápidamente todas las sesiones de un cliente en particular."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero filtrar el historial por estado para analizar patrones y problemas específicos."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero filtrar el historial por rango de fechas personalizado para hacer análisis de períodos específicos."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero exportar mi historial de reservas a Excel para hacer análisis personalizados o presentarlos a mi gestoría."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero configurar un tiempo de buffer automático entre sesiones para tener tiempo de descanso, limpieza o desplazamiento entre clientes."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero configurar un tiempo mínimo de anticipación para nuevas reservas para evitar reservas de último momento cuando no puedo prepararme adecuadamente."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero configurar hasta cuántos días en el futuro se puede reservar para no comprometer mi disponibilidad demasiado tiempo por adelantado."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver las notas previas del cliente al crear una nueva reserva para recordar aspectos importantes como lesiones, objetivos o preferencias."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero que los clientes puedan añadir observaciones al reservar para preparar mejor cada sesión según sus necesidades específicas."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero crear reservas recurrentes para agilizar la creación de sesiones regulares con clientes habituales."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero poder cancelar o modificar toda una serie de reservas recurrentes a la vez para hacer cambios masivos sin tener que editar una por una."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver una lista simple de todas las sesiones del día con hora, cliente y tipo para tener una referencia rápida de mi agenda diaria sin abrir calendario."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver un resumen destacado de las sesiones de las próximas 24 horas en la página principal para tener visibilidad inmediata de mi día sin navegar a reservas."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero recibir una notificación instantánea cuando un cliente hace una nueva reserva para estar al tanto de cambios en mi agenda en tiempo real."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero recibir una notificación cuando un cliente cancela una reserva para saber inmediatamente que tengo un hueco libre y poder ofrecerlo."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero asignar colores diferentes a cada tipo de sesión en el calendario para identificar visualmente y rápidamente el tipo de entrenamiento."
+    }
+  ]
+}
+

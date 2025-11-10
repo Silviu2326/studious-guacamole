@@ -99,3 +99,4 @@ export const InsightsSection: React.FC<InsightsSectionProps> = ({ insights }) =>
 export default InsightsSection;
 
 
+

@@ -6,17 +6,20 @@ import {
   CalendarRange,
   ChevronLeft,
   ChevronRight,
+  Dumbbell,
   FileSpreadsheet,
   Flame,
   Library,
   PlusCircle,
   Save,
+  ScrollText,
   Search,
   Sparkles,
 } from 'lucide-react';
 import { Button, Card, Tabs, Badge, Input, Select } from '../../../components/componentsreutilizables';
 
 type EditorView = 'weekly' | 'daily' | 'excel';
+type LibraryTab = 'templates' | 'exercises';
 
 const viewTabs = [
   {
@@ -45,6 +48,7 @@ export default function ProgramasDeEntrenoEditorPage() {
   const [selectedDay, setSelectedDay] = useState('Lunes');
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
+  const [libraryTab, setLibraryTab] = useState<LibraryTab>('templates');
 
   const dailyBlocks = useMemo(
     () => [
@@ -52,6 +56,60 @@ export default function ProgramasDeEntrenoEditorPage() {
       { id: 'main', title: 'Entrenamiento fuerza full body', duration: '35 min', focus: 'Strength' },
       { id: 'finish', title: 'Finisher HIIT', duration: '10 min', focus: 'Cardio' },
       { id: 'stretch', title: 'Stretching guiado', duration: '8 min', focus: 'Recovery' },
+    ],
+    [],
+  );
+
+  const templateExamples = useMemo(
+    () => [
+      {
+        id: 'hypertrophy-4d',
+        name: 'Hipertrofia · 4 días',
+        focus: 'Upper / Lower alterno',
+        duration: '45-60 min',
+      },
+      {
+        id: 'fat-loss-hiit',
+        name: 'Pérdida grasa HIIT',
+        focus: 'Circuitos + Finisher',
+        duration: '35-40 min',
+      },
+      {
+        id: 'mobility-reset',
+        name: 'Reset movilidad & core',
+        focus: 'Estabilidad + respiración',
+        duration: '30 min',
+      },
+    ],
+    [],
+  );
+
+  const exerciseExamples = useMemo(
+    () => [
+      {
+        id: 'front-squat',
+        name: 'Front squat con pausa',
+        target: 'Cuádriceps · Core',
+        equipment: 'Barra olímpica',
+      },
+      {
+        id: 'pullup-last',
+        name: 'Dominadas lastre progresivo',
+        target: 'Espalda · Bíceps',
+        equipment: 'Chaleco lastre',
+      },
+      {
+        id: 'kb-complex',
+        name: 'Complex kettlebell 6 movimientos',
+        target: 'Full body · Metcon',
+        equipment: 'Kettlebell 16-20kg',
+      },
+      {
+        id: 'tempo-pushup',
+        name: 'Push-ups tempo 3-1-3',
+        target: 'Pecho · Estabilidad',
+        equipment: 'Peso corporal',
+      },
     ],
     [],
   );
@@ -259,6 +317,27 @@ export default function ProgramasDeEntrenoEditorPage() {
                     Arrastra bloques prediseñados, ejercicios individuales o plantillas completas.
                   </p>
 
+                  <div className="mt-4">
+                    <Tabs
+                      items={[
+                        {
+                          id: 'templates',
+                          label: 'Plantillas',
+                          icon: <ScrollText className="h-3.5 w-3.5 text-indigo-500" />,
+                        },
+                        {
+                          id: 'exercises',
+                          label: 'Ejercicios',
+                          icon: <Dumbbell className="h-3.5 w-3.5 text-emerald-500" />,
+                        },
+                      ]}
+                      activeTab={libraryTab}
+                      onTabChange={(tabId) => setLibraryTab(tabId as LibraryTab)}
+                      variant="pills"
+                      size="sm"
+                    />
+                  </div>
+
                   <div className="mt-4 space-y-3">
                     <div className="relative">
                       <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -274,6 +353,49 @@ export default function ProgramasDeEntrenoEditorPage() {
                       ]}
                       defaultValue="todos"
                     />
+                  </div>
+
+                  <div className="mt-4 space-y-3">
+                    {libraryTab === 'templates'
+                      ? templateExamples.map((template) => (
+                          <button
+                            key={template.id}
+                            type="button"
+                            className="w-full rounded-2xl border border-slate-200/70 bg-white/90 p-4 text-left transition hover:border-indigo-300 hover:shadow-md dark:border-slate-800/70 dark:bg-slate-950/60 dark:hover:border-indigo-500/40"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{template.name}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-300">{template.focus}</p>
+                              </div>
+                              <Badge size="sm" variant="secondary">
+                                {template.duration}
+                              </Badge>
+                            </div>
+                            <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-indigo-600 dark:text-indigo-300">
+                              <span className="rounded-full bg-indigo-50 px-2 py-1 dark:bg-indigo-500/10">Personalizable</span>
+                              <span className="rounded-full bg-indigo-50 px-2 py-1 dark:bg-indigo-500/10">IA ready</span>
+                            </div>
+                          </button>
+                        ))
+                      : exerciseExamples.map((exercise) => (
+                          <button
+                            key={exercise.id}
+                            type="button"
+                            className="w-full rounded-2xl border border-slate-200/70 bg-white/90 p-4 text-left transition hover:border-emerald-300 hover:shadow-md dark:border-slate-800/70 dark:bg-slate-950/60 dark:hover:border-emerald-500/40"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{exercise.name}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-300">{exercise.target}</p>
+                              </div>
+                              <Badge size="sm" variant="green">
+                                Nuevo
+                              </Badge>
+                            </div>
+                            <p className="mt-3 text-[11px] text-slate-500 dark:text-slate-300">Equipo: {exercise.equipment}</p>
+                          </button>
+                        ))}
                   </div>
                 </Card>
 

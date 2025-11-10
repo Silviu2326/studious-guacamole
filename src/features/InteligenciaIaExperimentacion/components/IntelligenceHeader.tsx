@@ -49,3 +49,4 @@ export const IntelligenceHeader: React.FC<IntelligenceHeaderProps> = ({
 export default IntelligenceHeader;
 
 
+

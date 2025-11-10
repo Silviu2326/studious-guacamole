@@ -78,3 +78,4 @@ export function ForecastPanel({ entries }: ForecastPanelProps) {
 
 
 
+

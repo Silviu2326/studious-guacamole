@@ -1,4 +1,5 @@
 import { Cita, TipoCita, EstadoCita } from '../types';
+import { sincronizarCitaAutomaticamente, actualizarCitaAutomaticamente, eliminarCitaAutomaticamente } from './sincronizacionCalendario';
 
 export const getCitas = async (fechaInicio: Date, fechaFin: Date, role: 'entrenador' | 'gimnasio'): Promise<Cita[]> => {
   // Mock API - En producción, esto haría una llamada real
@@ -416,40 +417,214 @@ export const getCitas = async (fechaInicio: Date, fechaFin: Date, role: 'entrena
   });
 };
 
-export const crearCita = async (cita: Omit<Cita, 'id'>): Promise<Cita> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
+export const crearCita = async (cita: Omit<Cita, 'id'>, userId?: string): Promise<Cita> => {
+  return new Promise(async (resolve) => {
+    try {
+      // Por defecto, sincronizar calendario si no se especifica lo contrario
+      const sincronizar = cita.sincronizarCalendario !== false;
+      
+      // Intentar sincronizar con calendario externo si está activo
+      let eventoExternoId: string | undefined;
+      let conexionCalendarioId: string | undefined;
+      
+      if (sincronizar) {
+        const resultadoSincronizacion = await sincronizarCitaAutomaticamente(
+          {
+            titulo: cita.titulo,
+            tipo: cita.tipo,
+            fechaInicio: cita.fechaInicio,
+            fechaFin: cita.fechaFin,
+            clienteNombre: cita.clienteNombre,
+            notas: cita.notas,
+            ubicacion: cita.ubicacion,
+          },
+          userId
+        );
+        
+        if (resultadoSincronizacion) {
+          eventoExternoId = resultadoSincronizacion.eventoExternoId;
+          conexionCalendarioId = resultadoSincronizacion.conexionCalendarioId;
+        }
+      }
+
       const nuevaCita: Cita = {
         ...cita,
         id: Date.now().toString(),
+        sincronizarCalendario: sincronizar,
+        eventoExternoId,
+        conexionCalendarioId,
+        historial: [
+          {
+            id: `hist-${Date.now()}`,
+            fecha: new Date(),
+            tipo: 'creada',
+            usuarioId: undefined,
+          },
+          ...(cita.historial || []),
+        ],
       };
-      resolve(nuevaCita);
-    }, 300);
-  });
-};
-
-export const actualizarCita = async (id: string, cita: Partial<Cita>): Promise<Cita> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const citaActualizada: Cita = {
-        id,
-        titulo: 'Cita actualizada',
-        tipo: 'sesion-1-1',
-        estado: 'confirmada',
-        fechaInicio: new Date(),
-        fechaFin: new Date(),
+      
+      setTimeout(() => {
+        resolve(nuevaCita);
+      }, 300);
+    } catch (error) {
+      console.error('Error creando cita:', error);
+      // Si falla la sincronización, crear la cita sin sincronización
+      const nuevaCita: Cita = {
         ...cita,
+        id: Date.now().toString(),
+        sincronizarCalendario: false,
+        historial: [
+          {
+            id: `hist-${Date.now()}`,
+            fecha: new Date(),
+            tipo: 'creada',
+            usuarioId: undefined,
+          },
+          ...(cita.historial || []),
+        ],
       };
-      resolve(citaActualizada);
-    }, 300);
+      setTimeout(() => {
+        resolve(nuevaCita);
+      }, 300);
+    }
   });
 };
 
-export const eliminarCita = async (id: string): Promise<void> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve();
-    }, 300);
+export const actualizarCita = async (id: string, cita: Partial<Cita>, citaOriginal?: Cita, userId?: string): Promise<Cita> => {
+  return new Promise(async (resolve) => {
+    try {
+      // Si se proporciona la cita original, preservar todos sus datos y solo actualizar los campos proporcionados
+      let citaActualizada: Cita = citaOriginal
+        ? {
+            ...citaOriginal,
+            ...cita,
+            id, // Asegurar que el ID se mantenga
+            // Si se proporciona historial en cita, usarlo, sino preservar el historial original
+            historial: cita.historial || citaOriginal.historial || [],
+          }
+        : {
+            id,
+            titulo: 'Cita actualizada',
+            tipo: 'sesion-1-1',
+            estado: 'confirmada',
+            fechaInicio: new Date(),
+            fechaFin: new Date(),
+            historial: cita.historial || [],
+            ...cita,
+          };
+
+      // Si la cita se cancela y tiene evento externo, eliminarlo del calendario
+      if (citaActualizada.estado === 'cancelada' && citaActualizada.eventoExternoId && citaActualizada.conexionCalendarioId) {
+        const sincronizar = citaActualizada.sincronizarCalendario !== false;
+        
+        if (sincronizar) {
+          await eliminarCitaAutomaticamente(
+            citaActualizada.eventoExternoId,
+            citaActualizada.conexionCalendarioId,
+            userId
+          );
+          // Limpiar referencias al evento externo después de eliminarlo
+          citaActualizada.eventoExternoId = undefined;
+          citaActualizada.conexionCalendarioId = undefined;
+        }
+      } else if (citaActualizada.eventoExternoId && citaActualizada.conexionCalendarioId) {
+        // Si la cita tiene evento externo y se actualiza, sincronizar cambios
+        const sincronizar = citaActualizada.sincronizarCalendario !== false;
+        
+        if (sincronizar) {
+          await actualizarCitaAutomaticamente(
+            citaActualizada.eventoExternoId,
+            citaActualizada.conexionCalendarioId,
+            {
+              titulo: citaActualizada.titulo,
+              tipo: citaActualizada.tipo,
+              fechaInicio: citaActualizada.fechaInicio,
+              fechaFin: citaActualizada.fechaFin,
+              clienteNombre: citaActualizada.clienteNombre,
+              notas: citaActualizada.notas,
+              ubicacion: citaActualizada.ubicacion,
+            },
+            userId
+          );
+        }
+      } else if (citaActualizada.sincronizarCalendario !== false && citaOriginal && citaActualizada.estado !== 'cancelada') {
+        // Si no tenía evento externo pero se quiere sincronizar ahora
+        const resultadoSincronizacion = await sincronizarCitaAutomaticamente(
+          {
+            titulo: citaActualizada.titulo,
+            tipo: citaActualizada.tipo,
+            fechaInicio: citaActualizada.fechaInicio,
+            fechaFin: citaActualizada.fechaFin,
+            clienteNombre: citaActualizada.clienteNombre,
+            notas: citaActualizada.notas,
+            ubicacion: citaActualizada.ubicacion,
+          },
+          userId
+        );
+        
+        if (resultadoSincronizacion) {
+          citaActualizada.eventoExternoId = resultadoSincronizacion.eventoExternoId;
+          citaActualizada.conexionCalendarioId = resultadoSincronizacion.conexionCalendarioId;
+        }
+      }
+
+      setTimeout(() => {
+        resolve(citaActualizada);
+      }, 300);
+    } catch (error) {
+      console.error('Error actualizando cita:', error);
+      // Si falla la sincronización, actualizar la cita sin sincronización
+      const citaActualizada: Cita = citaOriginal
+        ? {
+            ...citaOriginal,
+            ...cita,
+            id,
+            historial: cita.historial || citaOriginal.historial || [],
+          }
+        : {
+            id,
+            titulo: 'Cita actualizada',
+            tipo: 'sesion-1-1',
+            estado: 'confirmada',
+            fechaInicio: new Date(),
+            fechaFin: new Date(),
+            historial: cita.historial || [],
+            ...cita,
+          };
+      setTimeout(() => {
+        resolve(citaActualizada);
+      }, 300);
+    }
+  });
+};
+
+export const eliminarCita = async (id: string, cita?: Cita, userId?: string): Promise<void> => {
+  return new Promise(async (resolve) => {
+    try {
+      // Si la cita tiene evento externo, eliminarlo del calendario
+      if (cita?.eventoExternoId && cita?.conexionCalendarioId) {
+        const sincronizar = cita.sincronizarCalendario !== false;
+        
+        if (sincronizar) {
+          await eliminarCitaAutomaticamente(
+            cita.eventoExternoId,
+            cita.conexionCalendarioId,
+            userId
+          );
+        }
+      }
+
+      setTimeout(() => {
+        resolve();
+      }, 300);
+    } catch (error) {
+      console.error('Error eliminando cita:', error);
+      // Continuar con la eliminación aunque falle la sincronización
+      setTimeout(() => {
+        resolve();
+      }, 300);
+    }
   });
 };
 

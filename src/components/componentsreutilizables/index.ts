@@ -34,6 +34,9 @@ export type { MetricCardsProps, MetricCardData } from './MetricCards';
 
 export { Badge } from './Badge';
 
+export { Switch } from './Switch';
+export type { SwitchProps } from './Switch';
+
 // Export example pages
 export { ExamplePage } from './ExamplePage';
 export { ButtonShowcase } from './ButtonShowcase';

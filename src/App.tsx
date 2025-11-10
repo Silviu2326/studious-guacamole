@@ -31,6 +31,7 @@ import { Layout } from './components/Layout';
 import { useState } from 'react';
 import { ExamplePage } from './components/componentsreutilizables';
 import AgendaCalendarioPage from './features/agenda-calendario/pages/agenda-calendarioPage';
+import ConfirmarSesionPage from './features/agenda-calendario/pages/ConfirmarSesionPage';
 import AlertasRestriccionesAlimentariasPage from './features/alertas-restricciones-alimentarias/pages/alertas-restricciones-alimentariasPage';
 import DisponibilidadTurnosStaffPage from './features/disponibilidad-turnos-staff/pages/disponibilidad-turnos-staffPage';
 import EditorDeEntrenoPage from './features/editor-de-entreno/pages/editor-de-entrenoPage';
@@ -39,7 +40,9 @@ import SuiteDeNutricionPage from './features/suite-de-nutricion/pages/suite-de-n
 import EncuestasSatisfaccinNPSCSATPage from './features/encuestas-satisfaccin-npscsat/pages/encuestas-satisfaccin-npscsatPage';
 import EventosRetosEspecialesPage from './features/eventos-retos-especiales';
 import EventosRetosPage from './features/eventos-retos/pages/eventos-retosPage';
+import { PublicEventRegistrationPage } from './features/eventos-retos/pages/PublicEventRegistrationPage';
 import { FacturacinCobrosPage } from './features/facturacin-cobros';
+import { PaginaPagoPublica } from './features/facturacin-cobros/pages/PaginaPagoPublica';
 import { GastosProveedoresPage } from './features/gastos-proveedores';
 import GestiónDeClientesPage from './features/gestión-de-clientes/pages/gestión-de-clientesPage';
 import InformeDeVentasRetailPage from './features/informe-de-ventas-retail/pages/informe-de-ventas-retailPage';
@@ -66,10 +69,14 @@ import RecetarioComidasGuardadasPage from './features/recetario-comidas-guardada
 import RecursosSalasMaterialPage from './features/recursos-salas-material/pages/recursos-salas-materialPage';
 import RenovacionesBajasPage from './features/renovaciones-bajas/pages/renovaciones-bajasPage';
 import ReservasOnlinePage from './features/reservas-online/pages/reservas-onlinePage';
+import ReservaPublicaPage from './features/reservas-online/pages/ReservaPublicaPage';
+import ConfirmarReservaPage from './features/reservas-online/pages/ConfirmarReservaPage';
 import ResumenGeneralPage from './features/resumen-general/pages/resumen-generalPage';
+import { NotificacionesNuevasReservasProvider } from './features/reservas-online/components';
 import SuscripcionesCuotasRecurrentesPage from './features/suscripciones-cuotas-recurrentes/pages/suscripciones-cuotas-recurrentesPage';
 import TareasAlertasPage from './features/tareas-alertas/pages/tareas-alertasPage';
 import TiendaOnlineCheckoutOnlinePage from './features/tienda-online-checkout-online/pages/tienda-online-checkout-onlinePage';
+import CheckoutPublicoPage from './features/tienda-online-checkout-online/pages/CheckoutPublicoPage';
 import AfiliadosReferidosPage from './features/afiliados-referidos/pages/afiliados-referidosPage';
 import AnaliticaDeAdquisicionPage from './features/analitica-de-adquisicion/pages/analitica-de-adquisicionPage';
 import CatalogoYPreciosPorSedePage from './features/catalogo-y-precios-por-sede/pages/catalogo-y-precios-por-sedePage';
@@ -173,6 +180,13 @@ function App() {
       <Routes>
         <Route path="/example" element={<ExamplePage />} />
         <Route path="/login" element={<RedirectIfAuthed />} />
+        {/** Páginas públicas (sin autenticación) */}
+        <Route path="/confirmar-sesion" element={<ConfirmarSesionPage />} />
+        <Route path="/confirmar-reserva/:token" element={<ConfirmarReservaPage />} />
+        <Route path="/evento-inscripcion/:publicLink" element={<PublicEventRegistrationPage />} />
+        <Route path="/reservar/:token" element={<ReservaPublicaPage />} />
+        <Route path="/pagar/:token" element={<PaginaPagoPublica />} />
+        <Route path="/checkout/:token" element={<CheckoutPublicoPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
           {/** Envuelve las páginas con Layout para mostrar Sidebar */}
@@ -339,8 +353,10 @@ export default App;
 function AppLayout() {
   const [activeView, setActiveView] = useState<string | undefined>(undefined);
   return (
-    <Layout activeView={activeView} onViewChange={setActiveView}>
-      <Outlet />
-    </Layout>
+    <NotificacionesNuevasReservasProvider>
+      <Layout activeView={activeView} onViewChange={setActiveView}>
+        <Outlet />
+      </Layout>
+    </NotificacionesNuevasReservasProvider>
   );
 }

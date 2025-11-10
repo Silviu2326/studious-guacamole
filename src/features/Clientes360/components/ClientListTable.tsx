@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
-import { Eye } from 'lucide-react';
+import { useMemo, useEffect, useState } from 'react';
+import { Eye, AlertCircle, DollarSign } from 'lucide-react';
 import { Badge, Button, Table, type TableColumn } from '../../../components/componentsreutilizables';
 import type { Client360Summary } from '../api';
+import { getMultipleClientsPaymentStatus, PaymentStatus } from '../../facturacin-cobros/utils/paymentStatus';
 
 interface ClientListTableProps {
   clients: Client360Summary[];
@@ -48,8 +49,53 @@ const satisfactionLabel: Record<Client360Summary['satisfactionLevel'], string> =
   bajo: 'En riesgo',
 };
 
+const getPaymentIndicator = (clientId: string, paymentStatuses: Map<string, PaymentStatus>) => {
+  const status = paymentStatuses.get(clientId);
+  if (!status || !status.hasPendingPayments) {
+    return null;
+  }
+
+  const { severity, overdueCount, pendingCount, oldestOverdueDays } = status;
+
+  // Determinar color y estilo según severidad
+  let colorClass = '';
+  let icon = <DollarSign className="w-3 h-3" />;
+  let tooltip = '';
+
+  if (severity === 'critical') {
+    colorClass = 'text-red-600 bg-red-50 border-red-200';
+    icon = <AlertCircle className="w-3 h-3" />;
+    tooltip = `¡CRÍTICO! ${overdueCount} factura(s) vencida(s) desde hace ${oldestOverdueDays} días`;
+  } else if (severity === 'danger') {
+    colorClass = 'text-orange-600 bg-orange-50 border-orange-200';
+    icon = <AlertCircle className="w-3 h-3" />;
+    tooltip = `${overdueCount} factura(s) vencida(s) desde hace ${oldestOverdueDays} días`;
+  } else if (severity === 'warning') {
+    if (overdueCount > 0) {
+      colorClass = 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      tooltip = `${overdueCount} factura(s) vencida(s) desde hace ${oldestOverdueDays} días`;
+    } else {
+      colorClass = 'text-blue-600 bg-blue-50 border-blue-200';
+      tooltip = `${pendingCount} factura(s) pendiente(s)`;
+    }
+  }
+
+  return (
+    <div
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs ${colorClass}`}
+      title={tooltip}
+    >
+      {icon}
+      <span className="font-semibold">
+        {overdueCount > 0 ? `${overdueCount} vencida${overdueCount > 1 ? 's' : ''}` : `${pendingCount} pendiente${pendingCount > 1 ? 's' : ''}`}
+      </span>
+    </div>
+  );
+};
+
 const columns = (
   selectedClientIds: string[],
+  paymentStatuses: Map<string, PaymentStatus>,
   onToggleClientSelection?: (clientId: string) => void,
   onViewClientProfile?: (clientId: string) => void,
 ): TableColumn<Client360Summary>[] => [
@@ -72,9 +118,12 @@ const columns = (
     label: 'Cliente',
     render: (_value, row) => (
       <div className="space-y-1">
-        <p className="font-semibold text-slate-900 dark:text-slate-100">
-          {row.name}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="font-semibold text-slate-900 dark:text-slate-100">
+            {row.name}
+          </p>
+          {getPaymentIndicator(row.id, paymentStatuses)}
+        </div>
         <p className="text-xs text-slate-500 dark:text-slate-400">
           {row.email}
         </p>
@@ -167,12 +216,28 @@ export function ClientListTable({
   onToggleClientSelection,
   onViewClientProfile,
 }: ClientListTableProps) {
+  const [paymentStatuses, setPaymentStatuses] = useState<Map<string, PaymentStatus>>(new Map());
   const tableData = useMemo(() => clients, [clients]);
+
+  useEffect(() => {
+    if (clients.length > 0) {
+      const loadPaymentStatuses = async () => {
+        try {
+          const clientIds = clients.map(c => c.id);
+          const statuses = await getMultipleClientsPaymentStatus(clientIds);
+          setPaymentStatuses(statuses);
+        } catch (error) {
+          console.error('Error cargando estados de pago:', error);
+        }
+      };
+      loadPaymentStatuses();
+    }
+  }, [clients]);
 
   return (
     <Table<Client360Summary>
       data={tableData}
-      columns={columns(selectedClientIds, onToggleClientSelection, onViewClientProfile)}
+      columns={columns(selectedClientIds, paymentStatuses, onToggleClientSelection, onViewClientProfile)}
       emptyMessage="No hay clientes que coincidan con los filtros activos"
       className="shadow-sm ring-1 ring-slate-200/70 dark:ring-slate-700/40"
       sortColumn={undefined}

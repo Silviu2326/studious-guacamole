@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Card, Table, TableColumn, Button, Badge, Modal, Input, Select, Textarea } from '../../../components/componentsreutilizables';
-import { FileText, Download, Trash2, Plus } from 'lucide-react';
+import { FileText, Download, Trash2, Plus, FileSpreadsheet } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { reportesApi } from '../api';
 import { ReportePersonalizado } from '../types';
+import { ExportacionFiscal } from './ExportacionFiscal';
 
 export const ReportesPersonalizados: React.FC = () => {
   const { user } = useAuth();
@@ -13,6 +14,7 @@ export const ReportesPersonalizados: React.FC = () => {
   const [nombreReporte, setNombreReporte] = useState('');
   const [tipoReporte, setTipoReporte] = useState('resumen');
   const [descripcion, setDescripcion] = useState('');
+  const [seccionActiva, setSeccionActiva] = useState<'reportes' | 'fiscal'>('fiscal');
 
   React.useEffect(() => {
     const cargarReportes = async () => {
@@ -117,24 +119,60 @@ export const ReportesPersonalizados: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-white shadow-sm">
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
-                <FileText className="w-5 h-5 text-white" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">
-                Reportes Personalizados
-              </h2>
-            </div>
-            <Button onClick={handleAbrirModal} leftIcon={<Plus className="w-4 h-4" />}>
-              Generar Nuevo Reporte
-            </Button>
+      {/* Tabs para cambiar entre secciones */}
+      <Card className="bg-white shadow-sm p-0">
+        <div className="border-b border-gray-200">
+          <div className="flex gap-2 p-4">
+            <button
+              onClick={() => setSeccionActiva('fiscal')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                seccionActiva === 'fiscal'
+                  ? 'bg-blue-100 text-blue-700 border-2 border-blue-500'
+                  : 'text-gray-600 hover:bg-gray-100 border-2 border-transparent'
+              }`}
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              Exportación Fiscal
+            </button>
+            <button
+              onClick={() => setSeccionActiva('reportes')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                seccionActiva === 'reportes'
+                  ? 'bg-blue-100 text-blue-700 border-2 border-blue-500'
+                  : 'text-gray-600 hover:bg-gray-100 border-2 border-transparent'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              Reportes Personalizados
+            </button>
           </div>
-          <Table data={reportes} columns={columns} loading={loading} emptyMessage="No hay reportes guardados" />
         </div>
       </Card>
+
+      {/* Contenido de Exportación Fiscal */}
+      {seccionActiva === 'fiscal' && <ExportacionFiscal />}
+
+      {/* Contenido de Reportes Personalizados */}
+      {seccionActiva === 'reportes' && (
+        <Card className="bg-white shadow-sm">
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-white" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Reportes Personalizados
+                </h2>
+              </div>
+              <Button onClick={handleAbrirModal} leftIcon={<Plus className="w-4 h-4" />}>
+                Generar Nuevo Reporte
+              </Button>
+            </div>
+            <Table data={reportes} columns={columns} loading={loading} emptyMessage="No hay reportes guardados" />
+          </div>
+        </Card>
+      )}
 
       <Modal
         isOpen={isModalOpen}

@@ -6,6 +6,8 @@ import {
   RetentionAlerts,
   ChurnAnalyticsComponent,
   ClientSegmentation,
+  PaymentRemindersPanel,
+  ReferralLinksPanel,
 } from '../components';
 import {
   Users,
@@ -17,10 +19,12 @@ import {
   Plus,
   Download,
   Upload,
+  CreditCard,
+  Link2,
 } from 'lucide-react';
 import { getChurnAnalytics } from '../api/analytics';
 
-type TabId = 'clients' | 'alerts' | 'analytics' | 'segmentation';
+type TabId = 'clients' | 'alerts' | 'analytics' | 'segmentation' | 'payment-reminders' | 'referrals';
 
 interface TabItem {
   id: TabId;
@@ -62,12 +66,15 @@ export default function GestiónDeClientesPage() {
     if (esEntrenador) {
       return [
         { id: 'clients', label: 'Mis Clientes', icon: Users },
+        { id: 'referrals', label: 'Referidos', icon: Link2 },
+        { id: 'payment-reminders', label: 'Recordatorios de Pago', icon: CreditCard },
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
       ];
     } else {
       return [
         { id: 'clients', label: 'Gestión de Socios', icon: Users },
         { id: 'alerts', label: 'Alertas Retención', icon: Bell },
+        { id: 'payment-reminders', label: 'Recordatorios de Pago', icon: CreditCard },
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
         { id: 'segmentation', label: 'Segmentación', icon: UserCog },
       ];
@@ -147,8 +154,12 @@ export default function GestiónDeClientesPage() {
     switch (tabActiva) {
       case 'clients':
         return <ClientsManager role={role} onClientSelected={setSelectedClientId} />;
+      case 'referrals':
+        return esEntrenador ? <ReferralLinksPanel /> : null;
       case 'alerts':
         return esEntrenador ? null : <RetentionAlerts />;
+      case 'payment-reminders':
+        return <PaymentRemindersPanel role={role} userId={user?.id} />;
       case 'analytics':
         return <ChurnAnalyticsComponent />;
       case 'segmentation':

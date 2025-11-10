@@ -7,9 +7,27 @@ import {
   Cancelaciones,
   ListaEspera,
   RecordatoriosReserva,
+  RecordatoriosEntrenador,
+  RecordatoriosPagoPendiente,
   AnalyticsReservas,
+  ConfiguracionHorarios,
+  GestionPlantillasSesion,
+  GestionEnlacePublico,
+  ConfiguracionAprobacionReservas,
+  ConfiguracionBufferTimeYTiempoMinimo,
+  ConfiguracionVideollamada,
+  CalendarioReservas,
+  NotasCliente,
+  GestionPaquetesSesiones,
+  ConfiguracionPoliticasCancelacion,
+  EstadisticasAsistenciaClientes,
+  IngresosPorHorario,
+  IngresosPorCliente,
+  ConfiguracionDiasMaximosReserva,
+  GestionReservasRecurrentes,
+  ListaSesionesDia,
 } from '../components';
-import { Calendar, Clock, DollarSign, TrendingUp, Users, Bell, XCircle, BarChart3 } from 'lucide-react';
+import { Calendar, Clock, DollarSign, TrendingUp, Users, Bell, XCircle, BarChart3, FileText, Link2, Settings, CalendarDays, Video, StickyNote, AlertCircle, Package, Shield, Activity, Timer, Award, RefreshCw, List } from 'lucide-react';
 import { Reserva } from '../types';
 import { getReservas } from '../api';
 
@@ -52,6 +70,25 @@ export default function ReservasOnlinePage() {
     
     if (!esEntrenador) {
       comunes.splice(3, 0, { id: 'lista-espera', label: 'Lista de Espera', icon: Users });
+    } else {
+      // Para entrenadores, agregar pestañas de configuración y calendario
+      comunes.splice(1, 0, { id: 'lista-dia', label: 'Lista del Día', icon: List });
+      comunes.splice(2, 0, { id: 'calendario', label: 'Calendario', icon: CalendarDays });
+      comunes.splice(3, 0, { id: 'reservas-recurrentes', label: 'Reservas Recurrentes', icon: RefreshCw });
+      comunes.splice(4, 0, { id: 'plantillas', label: 'Plantillas de Sesión', icon: FileText });
+      comunes.splice(5, 0, { id: 'horarios', label: 'Horarios Disponibles', icon: Clock });
+      comunes.splice(6, 0, { id: 'enlace-publico', label: 'Enlace Público', icon: Link2 });
+      comunes.splice(7, 0, { id: 'paquetes-sesiones', label: 'Paquetes de Sesiones', icon: Package });
+      comunes.splice(8, 0, { id: 'config-videollamada', label: 'Videollamada', icon: Video });
+      comunes.splice(9, 0, { id: 'config-aprobacion', label: 'Configuración', icon: Settings });
+      comunes.splice(10, 0, { id: 'config-buffer-tiempo', label: 'Buffer Time & Anticipación', icon: Clock });
+      comunes.splice(11, 0, { id: 'config-dias-maximos', label: 'Días Máximos Reserva', icon: CalendarDays });
+      comunes.splice(12, 0, { id: 'politicas-cancelacion', label: 'Políticas de Cancelación', icon: Shield });
+      comunes.splice(13, 0, { id: 'notas-cliente', label: 'Notas de Clientes', icon: StickyNote });
+      comunes.splice(14, 0, { id: 'recordatorios-pago', label: 'Recordatorios de Pago', icon: AlertCircle });
+      comunes.splice(15, 0, { id: 'estadisticas-asistencia', label: 'Estadísticas de Asistencia', icon: Activity });
+      comunes.splice(16, 0, { id: 'ingresos-horario', label: 'Ingresos por Horario', icon: Timer });
+      comunes.splice(17, 0, { id: 'ingresos-cliente', label: 'Ingresos por Cliente', icon: Award });
     }
     
     return comunes;
@@ -123,7 +160,19 @@ export default function ReservasOnlinePage() {
   const renderTabContent = () => {
     switch (tabActiva) {
       case 'nueva-reserva':
-        return <ReservasOnline role={role} onReservaCreada={handleReservaCreada} />;
+        return <ReservasOnline role={role} onReservaCreada={handleReservaCreada} entrenadorId={esEntrenador ? user?.id : undefined} />;
+      case 'lista-dia':
+        return esEntrenador && user?.id ? (
+          <ListaSesionesDia entrenadorId={user.id} />
+        ) : null;
+      case 'calendario':
+        return esEntrenador ? (
+          <CalendarioReservas role={role} entrenadorId={user?.id} />
+        ) : null;
+      case 'reservas-recurrentes':
+        return esEntrenador && user?.id ? (
+          <GestionReservasRecurrentes entrenadorId={user.id} />
+        ) : null;
       case 'historial':
         return <HistorialReservas role={role} />;
       case 'cancelaciones':
@@ -131,9 +180,69 @@ export default function ReservasOnlinePage() {
       case 'lista-espera':
         return <ListaEspera role={role} />;
       case 'recordatorios':
-        return <RecordatoriosReserva reservas={reservas} role={role} />;
+        return esEntrenador && user?.id ? (
+          <RecordatoriosEntrenador entrenadorId={user.id} />
+        ) : (
+          <RecordatoriosReserva reservas={reservas} role={role} />
+        );
       case 'analytics':
         return <AnalyticsReservas role={role} />;
+      case 'plantillas':
+        return esEntrenador && user?.id ? (
+          <GestionPlantillasSesion entrenadorId={user.id} />
+        ) : null;
+      case 'horarios':
+        return esEntrenador && user?.id ? (
+          <ConfiguracionHorarios entrenadorId={user.id} />
+        ) : null;
+      case 'enlace-publico':
+        return esEntrenador && user?.id ? (
+          <GestionEnlacePublico entrenadorId={user.id} />
+        ) : null;
+      case 'paquetes-sesiones':
+        return esEntrenador && user?.id ? (
+          <GestionPaquetesSesiones entrenadorId={user.id} />
+        ) : null;
+      case 'config-videollamada':
+        return esEntrenador && user?.id ? (
+          <ConfiguracionVideollamada entrenadorId={user.id} />
+        ) : null;
+      case 'config-aprobacion':
+        return esEntrenador && user?.id ? (
+          <ConfiguracionAprobacionReservas entrenadorId={user.id} />
+        ) : null;
+      case 'config-buffer-tiempo':
+        return esEntrenador && user?.id ? (
+          <ConfiguracionBufferTimeYTiempoMinimo entrenadorId={user.id} />
+        ) : null;
+      case 'config-dias-maximos':
+        return esEntrenador && user?.id ? (
+          <ConfiguracionDiasMaximosReserva entrenadorId={user.id} />
+        ) : null;
+      case 'politicas-cancelacion':
+        return esEntrenador && user?.id ? (
+          <ConfiguracionPoliticasCancelacion entrenadorId={user.id} />
+        ) : null;
+      case 'notas-cliente':
+        return esEntrenador && user?.id ? (
+          <NotasCliente entrenadorId={user.id} />
+        ) : null;
+      case 'recordatorios-pago':
+        return esEntrenador ? (
+          <RecordatoriosPagoPendiente role={role} />
+        ) : null;
+      case 'estadisticas-asistencia':
+        return esEntrenador && user?.id ? (
+          <EstadisticasAsistenciaClientes entrenadorId={user.id} />
+        ) : null;
+      case 'ingresos-horario':
+        return esEntrenador && user?.id ? (
+          <IngresosPorHorario entrenadorId={user.id} />
+        ) : null;
+      case 'ingresos-cliente':
+        return esEntrenador && user?.id ? (
+          <IngresosPorCliente entrenadorId={user.id} />
+        ) : null;
       default:
         return null;
     }

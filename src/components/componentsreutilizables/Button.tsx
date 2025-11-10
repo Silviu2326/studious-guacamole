@@ -12,6 +12,7 @@ export interface ButtonProps {
   type?: 'button' | 'submit' | 'reset';
   className?: string;
   leftIcon?: React.ReactNode;
+  iconLeft?: React.ReactNode; // Alias para compatibilidad
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -25,7 +26,10 @@ export const Button: React.FC<ButtonProps> = ({
   type = 'button',
   className = '',
   leftIcon,
+  iconLeft,
 }) => {
+  // Usar iconLeft si está presente, sino usar leftIcon
+  const icon = iconLeft || leftIcon;
   const baseClasses = "inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2";
   
   const variantClasses = {
@@ -63,7 +67,7 @@ export const Button: React.FC<ButtonProps> = ({
       {loading ? (
         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
       ) : null}
-      {leftIcon && !loading && <span className="mr-2">{leftIcon}</span>}
+      {icon && !loading && <span className="mr-2">{icon}</span>}
       {children}
     </button>
   );

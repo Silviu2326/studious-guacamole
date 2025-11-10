@@ -4,7 +4,7 @@ import { BarChart3, TrendingUp, TrendingDown, ArrowRight } from 'lucide-react';
 
 export interface MetricCardData {
   id: string;
-  title: string;
+  title: string | React.ReactNode;
   value: string | number;
   subtitle?: string;
   trend?: {

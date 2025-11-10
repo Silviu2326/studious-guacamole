@@ -59,7 +59,10 @@ export const FreezeSuscripcion: React.FC<FreezeSuscripcionProps> = ({
     }
   };
 
-  if (!suscripcion.permiteFreeze) {
+  // Permitir freeze para suscripciones PT o gimnasios que lo permitan
+  const puedeFreeze = suscripcion.tipo === 'pt-mensual' || suscripcion.permiteFreeze;
+  
+  if (!puedeFreeze) {
     return null;
   }
 
@@ -79,11 +82,21 @@ export const FreezeSuscripcion: React.FC<FreezeSuscripcionProps> = ({
                 <p className="text-sm text-gray-600">
                   Días restantes: {suscripcion.diasFreezeRestantes}
                 </p>
+                {suscripcion.reanudacionAutomatica && (
+                  <p className="text-sm text-green-600 font-medium">
+                    ✓ Reanudación automática activada
+                  </p>
+                )}
               </div>
             ) : (
-              <p className="text-base text-gray-600">
-                Pausa temporal de la suscripción sin perder los días restantes
-              </p>
+              <div className="space-y-1">
+                <p className="text-base text-gray-600">
+                  Pausa temporal de la suscripción sin perder los días restantes
+                </p>
+                <p className="text-sm text-gray-500">
+                  La suscripción se reanudará automáticamente después del período de pausa
+                </p>
+              </div>
             )}
           </div>
           {suscripcion.freezeActivo ? (

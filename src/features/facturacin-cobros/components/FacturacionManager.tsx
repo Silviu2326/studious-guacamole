@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, MetricCards, Table, TableColumn, Badge } from '../../../components/componentsreutilizables';
+import { Card, Button, MetricCards, Table, TableColumn, Badge, Modal, Textarea } from '../../../components/componentsreutilizables';
 import { Factura, EstadoFactura, TipoFactura, EstadisticasFacturacion } from '../types';
 import { facturasAPI } from '../api/facturas';
 import { CreadorFactura } from './CreadorFactura';
@@ -7,6 +7,14 @@ import { GestorCobros } from './GestorCobros';
 import { RecordatoriosPago } from './RecordatoriosPago';
 import { SeguimientoEstados } from './SeguimientoEstados';
 import { ReportesFacturacion } from './ReportesFacturacion';
+import { DashboardWidget } from './DashboardWidget';
+import { GestorSuscripcionesRecurrentes } from './GestorSuscripcionesRecurrentes';
+import { EnviarLinkPago } from './EnviarLinkPago';
+import { ConfigurarCobrosRecurrentes } from './ConfigurarCobrosRecurrentes';
+import { CalendarioIngresos } from './CalendarioIngresos';
+import { ModalPagoRapido } from './ModalPagoRapido';
+import { FacturasVencidas } from './FacturasVencidas';
+import { ReporteIngresosPorServicio } from './ReporteIngresosPorServicio';
 import { 
   FileText, 
   DollarSign, 
@@ -17,14 +25,27 @@ import {
   Clock,
   Plus,
   Download,
-  Eye
+  Eye,
+  Repeat,
+  Send,
+  CreditCard,
+  Calendar,
+  Zap,
+  FileText as FileTextIcon,
+  Edit,
+  BarChart3
 } from 'lucide-react';
 
 export const FacturacionManager: React.FC = () => {
   const [facturas, setFacturas] = useState<Factura[]>([]);
   const [loading, setLoading] = useState(false);
-  const [tabActiva, setTabActiva] = useState('facturas');
+  const [tabActiva, setTabActiva] = useState('dashboard');
   const [mostrarCreador, setMostrarCreador] = useState(false);
+  const [mostrarModalSuscripcion, setMostrarModalSuscripcion] = useState(false);
+  const [facturaParaLinkPago, setFacturaParaLinkPago] = useState<Factura | null>(null);
+  const [facturaParaPagoRapido, setFacturaParaPagoRapido] = useState<Factura | null>(null);
+  const [facturaParaNotasInternas, setFacturaParaNotasInternas] = useState<Factura | null>(null);
+  const [notasInternasEditando, setNotasInternasEditando] = useState('');
   const [estadisticas, setEstadisticas] = useState<EstadisticasFacturacion>({
     facturasPendientes: 0,
     montoPendiente: 0,
@@ -122,6 +143,14 @@ export const FacturacionManager: React.FC = () => {
     return tipos[tipo] || tipo;
   };
 
+  const handleEnviarLinkPago = (factura: Factura) => {
+    setFacturaParaLinkPago(factura);
+  };
+
+  const handlePagoRapido = (factura: Factura) => {
+    setFacturaParaPagoRapido(factura);
+  };
+
   const columnasFacturas: TableColumn<Factura>[] = [
     {
       key: 'numeroFactura',
@@ -168,6 +197,43 @@ export const FacturacionManager: React.FC = () => {
       render: (_, row) => obtenerBadgeEstado(row.estado)
     },
     {
+      key: 'notasInternas',
+      label: 'Notas',
+      width: 80,
+      render: (_, row) => {
+        if (row.notasInternas) {
+          return (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setFacturaParaNotasInternas(row);
+                setNotasInternasEditando(row.notasInternas || '');
+              }}
+              title="Ver/Editar notas internas"
+              className="text-amber-600 hover:text-amber-700"
+            >
+              <FileTextIcon className="w-4 h-4" />
+            </Button>
+          );
+        }
+        return (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setFacturaParaNotasInternas(row);
+              setNotasInternasEditando('');
+            }}
+            title="Agregar notas internas"
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <Edit className="w-4 h-4" />
+          </Button>
+        );
+      }
+    },
+    {
       key: 'acciones',
       label: 'Acciones',
       render: (_, row) => (
@@ -188,6 +254,28 @@ export const FacturacionManager: React.FC = () => {
           >
             <Download className="w-4 h-4" />
           </Button>
+          {(row.estado === 'pendiente' || row.estado === 'parcial' || row.estado === 'vencida') && (
+            <>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => handlePagoRapido(row)}
+                title="Registrar Pago Rápido"
+                className="flex items-center gap-1"
+              >
+                <Zap className="w-4 h-4" />
+                <span className="hidden sm:inline">Pago Rápido</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleEnviarLinkPago(row)}
+                title="Enviar link de pago"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            </>
+          )}
         </div>
       )
     }
@@ -249,9 +337,24 @@ export const FacturacionManager: React.FC = () => {
 
   const tabs = [
     {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: <TrendingUp className="w-4 h-4" />
+    },
+    {
+      id: 'calendario',
+      label: 'Calendario de Ingresos',
+      icon: <Calendar className="w-4 h-4" />
+    },
+    {
       id: 'facturas',
       label: 'Facturas',
       icon: <FileText className="w-4 h-4" />
+    },
+    {
+      id: 'suscripciones',
+      label: 'Suscripciones',
+      icon: <Repeat className="w-4 h-4" />
     },
     {
       id: 'cobros',
@@ -264,6 +367,11 @@ export const FacturacionManager: React.FC = () => {
       icon: <Bell className="w-4 h-4" />
     },
     {
+      id: 'facturas-vencidas',
+      label: 'Facturas Vencidas',
+      icon: <AlertCircle className="w-4 h-4" />
+    },
+    {
       id: 'seguimiento',
       label: 'Seguimiento',
       icon: <TrendingUp className="w-4 h-4" />
@@ -272,24 +380,44 @@ export const FacturacionManager: React.FC = () => {
       id: 'reportes',
       label: 'Reportes',
       icon: <TrendingUp className="w-4 h-4" />
+    },
+    {
+      id: 'ingresos-servicio',
+      label: 'Ingresos por Servicio',
+      icon: <BarChart3 className="w-4 h-4" />
     }
   ];
 
   return (
     <div className="space-y-6">
       {/* Toolbar */}
-      <div className="flex items-center justify-end">
-        <Button
-          variant="primary"
-          onClick={() => setMostrarCreador(true)}
-        >
-          <Plus size={20} className="mr-2" />
-          Nueva Factura
-        </Button>
+      <div className="flex items-center justify-between">
+        <div className="flex gap-2">
+          {tabActiva === 'suscripciones' && (
+            <Button
+              variant="primary"
+              onClick={() => setMostrarModalSuscripcion(true)}
+            >
+              <Plus size={20} className="mr-2" />
+              Nueva Suscripción
+            </Button>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="primary"
+            onClick={() => setMostrarCreador(true)}
+          >
+            <Plus size={20} className="mr-2" />
+            Nueva Factura
+          </Button>
+        </div>
       </div>
 
-      {/* Métricas */}
-      <MetricCards data={metricas} columns={4} />
+      {/* Métricas - Solo mostrar si no estamos en dashboard */}
+      {tabActiva !== 'dashboard' && (
+        <MetricCards data={metricas} columns={4} />
+      )}
 
       {/* Contenido principal */}
       <Card className="p-0 bg-white shadow-sm">
@@ -324,8 +452,16 @@ export const FacturacionManager: React.FC = () => {
           </div>
         </div>
 
-        <div className="px-6 pb-6">
-          <div className="mt-6">
+        <div className={tabActiva === 'dashboard' || tabActiva === 'calendario' ? 'p-6' : 'px-6 pb-6'}>
+          <div className={tabActiva === 'dashboard' || tabActiva === 'calendario' ? '' : 'mt-6'}>
+            {tabActiva === 'dashboard' && (
+              <DashboardWidget facturas={facturas} onRefresh={cargarFacturas} />
+            )}
+            
+            {tabActiva === 'calendario' && (
+              <CalendarioIngresos />
+            )}
+            
             {tabActiva === 'facturas' && (
               <Table
                 data={facturas}
@@ -333,6 +469,10 @@ export const FacturacionManager: React.FC = () => {
                 loading={loading}
                 emptyMessage="No hay facturas disponibles"
               />
+            )}
+            
+            {tabActiva === 'suscripciones' && (
+              <GestorSuscripcionesRecurrentes />
             )}
             
             {tabActiva === 'cobros' && (
@@ -343,12 +483,23 @@ export const FacturacionManager: React.FC = () => {
               <RecordatoriosPago facturas={facturas} onRefresh={cargarFacturas} />
             )}
             
+            {tabActiva === 'facturas-vencidas' && (
+              <FacturasVencidas onRefresh={() => {
+                cargarFacturas();
+                cargarEstadisticas();
+              }} />
+            )}
+            
             {tabActiva === 'seguimiento' && (
               <SeguimientoEstados facturas={facturas} onRefresh={cargarFacturas} />
             )}
             
             {tabActiva === 'reportes' && (
               <ReportesFacturacion facturas={facturas} />
+            )}
+            
+            {tabActiva === 'ingresos-servicio' && (
+              <ReporteIngresosPorServicio facturas={facturas} />
             )}
           </div>
         </div>
@@ -364,6 +515,114 @@ export const FacturacionManager: React.FC = () => {
             cargarEstadisticas();
           }}
         />
+      )}
+
+      {/* Modal de suscripción */}
+      {mostrarModalSuscripcion && (
+        <ConfigurarCobrosRecurrentes
+          isOpen={mostrarModalSuscripcion}
+          onClose={() => setMostrarModalSuscripcion(false)}
+          onSuscripcionCreada={() => {
+            setMostrarModalSuscripcion(false);
+          }}
+        />
+      )}
+
+      {/* Modal de envío de link de pago */}
+      {facturaParaLinkPago && (
+        <EnviarLinkPago
+          isOpen={!!facturaParaLinkPago}
+          onClose={() => setFacturaParaLinkPago(null)}
+          factura={facturaParaLinkPago}
+          onLinkEnviado={() => {
+            setFacturaParaLinkPago(null);
+            cargarFacturas();
+          }}
+        />
+      )}
+
+      {/* Modal de pago rápido */}
+      {facturaParaPagoRapido && (
+        <ModalPagoRapido
+          isOpen={!!facturaParaPagoRapido}
+          onClose={() => setFacturaParaPagoRapido(null)}
+          factura={facturaParaPagoRapido}
+          onPagoRegistrado={() => {
+            setFacturaParaPagoRapido(null);
+            cargarFacturas();
+            cargarEstadisticas();
+          }}
+        />
+      )}
+
+      {/* Modal de notas internas */}
+      {facturaParaNotasInternas && (
+        <Modal
+          isOpen={!!facturaParaNotasInternas}
+          onClose={() => {
+            setFacturaParaNotasInternas(null);
+            setNotasInternasEditando('');
+          }}
+          title={`Notas Internas - ${facturaParaNotasInternas.numeroFactura}`}
+          size="md"
+          footer={
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setFacturaParaNotasInternas(null);
+                  setNotasInternasEditando('');
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="primary"
+                onClick={async () => {
+                  if (!facturaParaNotasInternas) return;
+                  try {
+                    await facturasAPI.actualizarFactura(facturaParaNotasInternas.id, {
+                      notasInternas: notasInternasEditando || undefined
+                    });
+                    setFacturaParaNotasInternas(null);
+                    setNotasInternasEditando('');
+                    cargarFacturas();
+                  } catch (error) {
+                    console.error('Error al guardar notas internas:', error);
+                    alert('Error al guardar las notas internas');
+                  }
+                }}
+              >
+                Guardar
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-4">
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm text-amber-800">
+                <strong>Notas Privadas:</strong> Estas notas son solo visibles para ti y no se mostrarán al cliente.
+                Útiles para recordar acuerdos de pago, situaciones especiales o cualquier información importante.
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-2">
+                Cliente: {facturaParaNotasInternas.cliente.nombre}
+              </p>
+              <p className="text-sm text-gray-600 mb-4">
+                Monto: {formatearMoneda(facturaParaNotasInternas.total)} | 
+                Estado: {obtenerBadgeEstado(facturaParaNotasInternas.estado)}
+              </p>
+            </div>
+            <Textarea
+              label="Notas Internas"
+              value={notasInternasEditando}
+              onChange={(e) => setNotasInternasEditando(e.target.value)}
+              rows={6}
+              placeholder="Escribe aquí tus notas privadas sobre esta factura..."
+            />
+          </div>
+        </Modal>
       )}
     </div>
   );

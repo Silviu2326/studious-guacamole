@@ -8,7 +8,10 @@ import {
   ReportesMorosidad,
   ClasificadorRiesgo,
   EstrategiasCobro,
-  DashboardMorosidad
+  DashboardMorosidad,
+  PlanPagos,
+  ReporteMensualSimple,
+  RecordatoriosContacto
 } from '../components';
 import {
   LayoutDashboard,
@@ -18,7 +21,10 @@ import {
   BarChart3,
   Shield,
   Target,
-  DollarSign
+  DollarSign,
+  Calendar,
+  FileText,
+  Clock
 } from 'lucide-react';
 
 /**
@@ -69,6 +75,11 @@ export const PagosPendientesMorosidadPage: React.FC = () => {
       icon: TrendingUp
     },
     {
+      id: 'planes-pago',
+      label: 'Planes de Pago',
+      icon: Calendar
+    },
+    {
       id: 'riesgo',
       label: 'Clasificación Riesgo',
       icon: Shield
@@ -82,6 +93,16 @@ export const PagosPendientesMorosidadPage: React.FC = () => {
       id: 'reportes',
       label: 'Reportes',
       icon: BarChart3
+    },
+    {
+      id: 'reporte-mensual',
+      label: 'Reporte Mensual',
+      icon: FileText
+    },
+    {
+      id: 'recordatorios-contacto',
+      label: 'Recordatorios Contacto',
+      icon: Clock
     }
   ];
 
@@ -153,9 +174,12 @@ export const PagosPendientesMorosidadPage: React.FC = () => {
           {tabActiva === 'alertas' && <AlertasVencidos onRefresh={handleRefresh} />}
           {tabActiva === 'recordatorios' && <GestorRecordatorios onRefresh={handleRefresh} />}
           {tabActiva === 'seguimiento' && <SeguimientoPagos onRefresh={handleRefresh} />}
+          {tabActiva === 'planes-pago' && <PlanPagos onRefresh={handleRefresh} />}
           {tabActiva === 'riesgo' && <ClasificadorRiesgo onRefresh={handleRefresh} />}
           {tabActiva === 'estrategias' && <EstrategiasCobro onRefresh={handleRefresh} />}
           {tabActiva === 'reportes' && <ReportesMorosidad onRefresh={handleRefresh} />}
+          {tabActiva === 'reporte-mensual' && <ReporteMensualSimple onRefresh={handleRefresh} />}
+          {tabActiva === 'recordatorios-contacto' && <RecordatoriosContacto onRefresh={handleRefresh} />}
         </div>
       </div>
     </div>

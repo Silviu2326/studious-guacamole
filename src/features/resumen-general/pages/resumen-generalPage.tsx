@@ -19,6 +19,7 @@ import {
   getClientStatus,
 } from '../api';
 import { RefreshCw, LayoutDashboard } from 'lucide-react';
+import { ResumenSesiones24Horas } from '../../reservas-online/components';
 
 /**
  * Página principal de Resumen General
@@ -198,6 +199,11 @@ export default function ResumenGeneralPage() {
 
       {/* Métricas principales */}
       <DashboardOverview metrics={metrics} role={role} loading={loading} />
+
+      {/* Resumen de sesiones próximas 24 horas - Solo para entrenadores */}
+      {role === 'entrenador' && user?.id && (
+        <ResumenSesiones24Horas entrenadorId={user.id} />
+      )}
 
       {/* Accesos rápidos */}
       <QuickActions role={role} />

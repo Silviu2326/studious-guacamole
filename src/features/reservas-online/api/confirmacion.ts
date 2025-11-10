@@ -32,9 +32,10 @@ export const procesarPago = async (reservaId: string, metodoPago: string): Promi
   });
 };
 
-export const enviarConfirmacion = async (reservaId: string, tipo: 'email' | 'sms'): Promise<boolean> => {
+export const enviarConfirmacion = async (reservaId: string, tipo: 'email' | 'sms' | 'whatsapp'): Promise<boolean> => {
   return new Promise((resolve) => {
     setTimeout(() => {
+      console.log(`[Confirmacion] Enviando confirmación por ${tipo} para reserva ${reservaId}`);
       resolve(true);
     }, 300);
   });

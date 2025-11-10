@@ -4,7 +4,8 @@ import { Card, Table, Button, Badge } from '../../../components/componentsreutil
 import { Client } from '../types';
 import { getRiskClients } from '../api/clients';
 import { createRetentionAction } from '../api/retention';
-import { AlertTriangle, Mail, MessageSquare, Phone, Calendar, TrendingDown, Loader2, Package } from 'lucide-react';
+import { RetentionAssistantPanel } from './RetentionAssistantPanel';
+import { AlertTriangle, Mail, MessageSquare, Phone, Calendar, TrendingDown, Loader2, Package, Bot } from 'lucide-react';
 import { ConfirmModal } from '../../../components/componentsreutilizables';
 
 interface RiskClientsPanelProps {
@@ -18,6 +19,7 @@ export const RiskClientsPanel: React.FC<RiskClientsPanelProps> = ({ onClientClic
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [showRetentionModal, setShowRetentionModal] = useState(false);
   const [retentionType, setRetentionType] = useState<'email' | 'whatsapp' | 'sms' | 'call' | 'offer'>('email');
+  const [showAssistant, setShowAssistant] = useState(false);
 
   useEffect(() => {
     loadClients();
@@ -180,33 +182,46 @@ export const RiskClientsPanel: React.FC<RiskClientsPanelProps> = ({ onClientClic
 
   return (
     <>
-      <Card className="bg-white shadow-sm">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 rounded-xl ring-1 ring-orange-200/70">
-                <AlertTriangle size={20} className="text-orange-600" />
+      <div className="space-y-6">
+        <Card className="bg-white shadow-sm">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 rounded-xl ring-1 ring-orange-200/70">
+                  <AlertTriangle size={20} className="text-orange-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Clientes en Riesgo
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {clients.length} {user?.role === 'entrenador' ? 'clientes' : 'socios'} requieren atención
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">
-                  Clientes en Riesgo
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {clients.length} {user?.role === 'entrenador' ? 'clientes' : 'socios'} requieren atención
-                </p>
-              </div>
+              <Button
+                variant="primary"
+                onClick={() => setShowAssistant(!showAssistant)}
+              >
+                <Bot className="w-4 h-4 mr-2" />
+                {showAssistant ? 'Ocultar' : 'Mostrar'} Asistente Virtual
+              </Button>
             </div>
           </div>
-        </div>
-        <div className="p-6">
-          <Table
-            data={clients}
-            columns={columns}
-            loading={false}
-            emptyMessage="No hay clientes en riesgo"
-          />
-        </div>
-      </Card>
+          <div className="p-6">
+            <Table
+              data={clients}
+              columns={columns}
+              loading={false}
+              emptyMessage="No hay clientes en riesgo"
+            />
+          </div>
+        </Card>
+
+        {showAssistant && (
+          <RetentionAssistantPanel onSuggestionApplied={loadClients} />
+        )}
+      </div>
 
       {showRetentionModal && selectedClient && (
         <ConfirmModal

@@ -1,4 +1,5 @@
-import { Cuota, PagoRecurrente } from '../types';
+import { Cuota, PagoRecurrente, PagoFallido, GestionarPagoFallidoRequest } from '../types';
+import { getSuscripcionById } from './suscripciones';
 
 // Mock data
 const mockCuotas: Cuota[] = [
@@ -83,6 +84,24 @@ const mockCuotas: Cuota[] = [
     estado: 'pagada',
     metodoPago: 'tarjeta',
     referencia: 'TRF-2024-004',
+  },
+  {
+    id: 'cuota11',
+    suscripcionId: 'sub1',
+    monto: 150,
+    fechaVencimiento: '2024-11-01',
+    estado: 'fallida',
+    metodoPago: 'tarjeta',
+    notas: 'Tarjeta rechazada - fondos insuficientes',
+  },
+  {
+    id: 'cuota12',
+    suscripcionId: 'sub2',
+    monto: 280,
+    fechaVencimiento: '2024-11-15',
+    estado: 'fallida',
+    metodoPago: 'tarjeta',
+    notas: 'Tarjeta expirada',
   },
 ];
 
@@ -189,5 +208,120 @@ export const getHistorialPagos = async (
   return mockCuotas.filter(
     c => c.suscripcionId === suscripcionId && c.estado === 'pagada'
   );
+};
+
+// User Story 2: Obtener pagos fallidos
+export const getPagosFallidos = async (
+  entrenadorId?: string
+): Promise<PagoFallido[]> => {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  const cuotasFallidas = mockCuotas.filter(c => c.estado === 'fallida');
+  
+  const pagosFallidos: PagoFallido[] = [];
+  
+  for (const cuota of cuotasFallidas) {
+    try {
+      const suscripcion = await getSuscripcionById(cuota.suscripcionId);
+      
+      // Si se especifica entrenadorId, filtrar solo sus suscripciones
+      if (entrenadorId && suscripcion.entrenadorId !== entrenadorId) {
+        continue;
+      }
+      
+      // Solo para suscripciones PT (entrenadores)
+      if (suscripcion.tipo !== 'pt-mensual') {
+        continue;
+      }
+      
+      pagosFallidos.push({
+        cuotaId: cuota.id,
+        suscripcionId: cuota.suscripcionId,
+        clienteId: suscripcion.clienteId,
+        clienteNombre: suscripcion.clienteNombre,
+        clienteEmail: suscripcion.clienteEmail,
+        clienteTelefono: suscripcion.clienteTelefono,
+        monto: cuota.monto,
+        fechaVencimiento: cuota.fechaVencimiento,
+        fechaIntento: cuota.fechaVencimiento, // En producción sería la fecha del intento
+        motivoFallo: cuota.notas || 'Pago rechazado',
+        intentos: 1, // En producción se contaría desde la base de datos
+        metodoPago: cuota.metodoPago as 'tarjeta' | 'transferencia' | 'domiciliacion' | undefined,
+        entrenadorId: suscripcion.entrenadorId,
+      });
+    } catch (error) {
+      console.error(`Error obteniendo suscripción ${cuota.suscripcionId}:`, error);
+    }
+  }
+  
+  return pagosFallidos;
+};
+
+// User Story 2: Gestionar pago fallido
+export const gestionarPagoFallido = async (
+  data: GestionarPagoFallidoRequest
+): Promise<Cuota> => {
+  await new Promise(resolve => setTimeout(resolve, 400));
+  
+  const cuota = mockCuotas.find(c => c.id === data.cuotaId);
+  if (!cuota) {
+    throw new Error('Cuota no encontrada');
+  }
+  
+  switch (data.accion) {
+    case 'reintentar':
+      // Simular reintento de pago
+      // En producción, aquí se llamaría al procesador de pagos
+      const exito = Math.random() > 0.3; // 70% de éxito simulado
+      
+      if (exito) {
+        return {
+          ...cuota,
+          estado: 'pagada',
+          fechaPago: new Date().toISOString().split('T')[0],
+          metodoPago: cuota.metodoPago || data.nuevoMetodoPago,
+          referencia: `REF-${Date.now()}`,
+          notas: data.notas || cuota.notas,
+        };
+      } else {
+        return {
+          ...cuota,
+          estado: 'fallida',
+          notas: data.notas || cuota.notas || 'Reintento fallido',
+        };
+      }
+      
+    case 'actualizar_metodo':
+      // Actualizar método de pago y reintentar
+      if (!data.nuevoMetodoPago) {
+        throw new Error('Se requiere un nuevo método de pago');
+      }
+      
+      // En producción, aquí se actualizaría el método de pago en la suscripción
+      return {
+        ...cuota,
+        metodoPago: data.nuevoMetodoPago,
+        notas: data.notas || cuota.notas || `Método de pago actualizado a ${data.nuevoMetodoPago}`,
+      };
+      
+    case 'marcar_resuelto':
+      // Marcar como resuelto manualmente
+      return {
+        ...cuota,
+        estado: 'pagada',
+        fechaPago: new Date().toISOString().split('T')[0],
+        notas: data.notas || cuota.notas || 'Resuelto manualmente',
+      };
+      
+    case 'contactar_cliente':
+      // Solo registrar la acción, no cambiar el estado
+      return {
+        ...cuota,
+        notas: data.notas || cuota.notas || 'Cliente contactado',
+      };
+      
+    default:
+      return cuota;
+  }
 };
 

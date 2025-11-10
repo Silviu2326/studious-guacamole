@@ -5,6 +5,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { proyeccionesApi } from '../api';
 import { ProyeccionFinanciera } from '../types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { ProyeccionIngresosSimple } from './ProyeccionIngresosSimple';
 
 export const ProyeccionesFinancieras: React.FC = () => {
   const { user } = useAuth();
@@ -82,6 +83,9 @@ export const ProyeccionesFinancieras: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Proyección de ingresos simple para entrenadores */}
+      {isEntrenador && <ProyeccionIngresosSimple />}
+      
       {/* Gráfico de proyecciones */}
       <Card className="bg-white shadow-sm">
         <div className="p-4">

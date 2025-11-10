@@ -9,6 +9,7 @@ interface SelectorHuecosProps {
   role: 'entrenador' | 'gimnasio';
   onSeleccionarHueco: (disponibilidad: Disponibilidad) => void;
   huecoSeleccionado?: Disponibilidad;
+  entrenadorId?: string;
 }
 
 export const SelectorHuecos: React.FC<SelectorHuecosProps> = ({
@@ -16,6 +17,7 @@ export const SelectorHuecos: React.FC<SelectorHuecosProps> = ({
   role,
   onSeleccionarHueco,
   huecoSeleccionado,
+  entrenadorId,
 }) => {
   const [disponibilidad, setDisponibilidad] = useState<Disponibilidad[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,12 +25,12 @@ export const SelectorHuecos: React.FC<SelectorHuecosProps> = ({
   useEffect(() => {
     const cargarDisponibilidad = async () => {
       setLoading(true);
-      const disp = await getDisponibilidad(fecha, role);
+      const disp = await getDisponibilidad(fecha, role, entrenadorId);
       setDisponibilidad(disp);
       setLoading(false);
     };
     cargarDisponibilidad();
-  }, [fecha, role]);
+  }, [fecha, role, entrenadorId]);
 
   const formatearFecha = (fecha: Date) => {
     return fecha.toLocaleDateString('es-ES', {
@@ -84,9 +86,16 @@ export const SelectorHuecos: React.FC<SelectorHuecosProps> = ({
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-slate-600" />
-                    <span className="text-sm font-semibold text-gray-900">
-                      {hueco.horaInicio} - {hueco.horaFin}
-                    </span>
+                    <div>
+                      <span className="text-sm font-semibold text-gray-900">
+                        {hueco.horaInicio} - {hueco.horaFin}
+                      </span>
+                      {hueco.duracionMinutos && (
+                        <span className="text-xs text-gray-500 ml-2">
+                          ({hueco.duracionMinutos} min)
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {huecoSeleccionado?.id === hueco.id && (
                     <Check className="w-5 h-5 text-blue-600" />

@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Modal, Textarea } from '../../../components/componentsreutilizables';
 import { Reserva } from '../types';
 import { cancelarReserva } from '../api';
-import { XCircle, Calendar, Clock, DollarSign, AlertTriangle, Package } from 'lucide-react';
+import { verificarPoliticaCancelacion, aplicarPenalizacionesCancelacion } from '../api/politicasCancelacion';
+import { useAuth } from '../../../context/AuthContext';
+import { XCircle, Calendar, Clock, DollarSign, AlertTriangle, Package, Shield, Info } from 'lucide-react';
 
 interface CancelacionesProps {
   reservas: Reserva[];
@@ -15,25 +17,86 @@ export const Cancelaciones: React.FC<CancelacionesProps> = ({
   role,
   onCancelar,
 }) => {
+  const { user } = useAuth();
   const [reservaSeleccionada, setReservaSeleccionada] = useState<Reserva | null>(null);
   const [motivo, setMotivo] = useState('');
   const [procesando, setProcesando] = useState(false);
+  const [verificacionPolitica, setVerificacionPolitica] = useState<{
+    puedeCancelar: boolean;
+    esCancelacionUltimoMomento: boolean;
+    aplicarMulta: boolean;
+    montoMulta: number;
+    aplicarPenalizacionBono: boolean;
+    mensaje: string;
+  } | null>(null);
+  const [verificandoPolitica, setVerificandoPolitica] = useState(false);
 
   const reservasCancelables = reservas.filter(
     (r) => r.estado === 'confirmada' || r.estado === 'pendiente'
   );
 
+  // Verificar política cuando se selecciona una reserva (solo para entrenadores)
+  useEffect(() => {
+    const verificarPolitica = async () => {
+      if (!reservaSeleccionada || role !== 'entrenador' || !user?.id) {
+        setVerificacionPolitica(null);
+        return;
+      }
+
+      setVerificandoPolitica(true);
+      try {
+        const verificacion = await verificarPoliticaCancelacion(
+          user.id,
+          reservaSeleccionada.fecha,
+          reservaSeleccionada.horaInicio,
+          reservaSeleccionada.precio
+        );
+        setVerificacionPolitica(verificacion);
+      } catch (error) {
+        console.error('Error verificando política de cancelación:', error);
+        setVerificacionPolitica(null);
+      } finally {
+        setVerificandoPolitica(false);
+      }
+    };
+
+    verificarPolitica();
+  }, [reservaSeleccionada, role, user?.id]);
+
   const handleCancelar = async () => {
     if (!reservaSeleccionada) return;
 
+    // Bloquear cancelación si está fuera del plazo permitido
+    if (role === 'entrenador' && verificacionPolitica && !verificacionPolitica.puedeCancelar) {
+      alert('No se puede cancelar esta reserva. ' + verificacionPolitica.mensaje);
+      return;
+    }
+
     setProcesando(true);
     try {
-      await cancelarReserva(reservaSeleccionada.id, motivo);
+      // Aplicar penalizaciones si corresponde (solo para entrenadores)
+      if (role === 'entrenador' && user?.id && verificacionPolitica) {
+        await aplicarPenalizacionesCancelacion(
+          user.id,
+          reservaSeleccionada.id,
+          reservaSeleccionada.fecha,
+          reservaSeleccionada.horaInicio,
+          reservaSeleccionada.precio,
+          reservaSeleccionada.bonoId
+        );
+      }
+
+      // Pasar el entrenadorId si es un entrenador cancelando
+      // Esto permitirá enviar notificaciones apropiadas
+      const entrenadorIdParaNotificacion = role === 'entrenador' ? user?.id : undefined;
+      await cancelarReserva(reservaSeleccionada.id, motivo, entrenadorIdParaNotificacion, reservaSeleccionada);
       onCancelar(reservaSeleccionada.id);
       setReservaSeleccionada(null);
       setMotivo('');
+      setVerificacionPolitica(null);
     } catch (error) {
       console.error('Error al cancelar reserva:', error);
+      alert('Error al cancelar la reserva. Por favor, inténtalo de nuevo.');
     } finally {
       setProcesando(false);
     }
@@ -108,6 +171,7 @@ export const Cancelaciones: React.FC<CancelacionesProps> = ({
         onClose={() => {
           setReservaSeleccionada(null);
           setMotivo('');
+          setVerificacionPolitica(null);
         }}
         title="Cancelar Reserva"
         size="md"
@@ -118,6 +182,7 @@ export const Cancelaciones: React.FC<CancelacionesProps> = ({
               onClick={() => {
                 setReservaSeleccionada(null);
                 setMotivo('');
+                setVerificacionPolitica(null);
               }}
             >
               Cerrar
@@ -126,7 +191,11 @@ export const Cancelaciones: React.FC<CancelacionesProps> = ({
               variant="destructive"
               onClick={handleCancelar}
               loading={procesando}
-              disabled={!motivo.trim()}
+              disabled={
+                !motivo.trim() || 
+                (role === 'entrenador' && verificacionPolitica && !verificacionPolitica.puedeCancelar) ||
+                verificandoPolitica
+              }
             >
               Confirmar Cancelación
             </Button>
@@ -156,12 +225,73 @@ export const Cancelaciones: React.FC<CancelacionesProps> = ({
               </div>
             </div>
 
+            {/* Información de política de cancelación (solo para entrenadores) */}
+            {role === 'entrenador' && (
+              <>
+                {verificandoPolitica ? (
+                  <div className="flex items-center justify-center p-4 bg-gray-50 rounded-lg">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                    <span className="ml-2 text-sm text-gray-600">Verificando política de cancelación...</span>
+                  </div>
+                ) : verificacionPolitica ? (
+                  <div className={`p-4 rounded-lg border ${
+                    !verificacionPolitica.puedeCancelar
+                      ? 'bg-red-50 border-red-200'
+                      : verificacionPolitica.esCancelacionUltimoMomento
+                      ? 'bg-yellow-50 border-yellow-200'
+                      : 'bg-green-50 border-green-200'
+                  }`}>
+                    <div className="flex items-start gap-3">
+                      {!verificacionPolitica.puedeCancelar ? (
+                        <Shield className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                      ) : verificacionPolitica.esCancelacionUltimoMomento ? (
+                        <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                      ) : (
+                        <Info className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      )}
+                      <div className="flex-1">
+                        <p className={`text-sm font-medium mb-1 ${
+                          !verificacionPolitica.puedeCancelar
+                            ? 'text-red-900'
+                            : verificacionPolitica.esCancelacionUltimoMomento
+                            ? 'text-yellow-900'
+                            : 'text-green-900'
+                        }`}>
+                          {verificacionPolitica.puedeCancelar ? 'Política de Cancelación' : 'Cancelación no permitida'}
+                        </p>
+                        <p className={`text-sm ${
+                          !verificacionPolitica.puedeCancelar
+                            ? 'text-red-700'
+                            : verificacionPolitica.esCancelacionUltimoMomento
+                            ? 'text-yellow-700'
+                            : 'text-green-700'
+                        }`}>
+                          {verificacionPolitica.mensaje}
+                        </p>
+                        {verificacionPolitica.aplicarMulta && (
+                          <p className="text-sm font-semibold text-red-700 mt-2">
+                            Multa a aplicar: €{verificacionPolitica.montoMulta.toFixed(2)}
+                          </p>
+                        )}
+                        {verificacionPolitica.aplicarPenalizacionBono && reservaSeleccionada.bonoId && (
+                          <p className="text-sm font-semibold text-orange-700 mt-2">
+                            Se descontará una sesión del bono
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </>
+            )}
+
             <Textarea
               label="Motivo de Cancelación"
               value={motivo}
               onChange={(e) => setMotivo(e.target.value)}
               placeholder="Ingrese el motivo de la cancelación..."
               rows={4}
+              required
             />
           </div>
         )}

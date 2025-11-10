@@ -16,11 +16,13 @@ import {
   PanelFinanciero,
   MetricasIngresos,
   GastosEstructurales,
+  GastosProfesionales,
   RendimientoMensual,
   AlertasPagos,
   AnalisisRentabilidad,
   ProyeccionesFinancieras,
-  ReportesPersonalizados
+  ReportesPersonalizados,
+  Transacciones
 } from '../components';
 
 /**
@@ -57,6 +59,11 @@ export default function PanelFinancieroOverviewPage() {
       icon: DollarSign
     },
     {
+      id: 'transacciones',
+      label: 'Transacciones',
+      icon: Receipt
+    },
+    {
       id: 'rendimiento',
       label: 'Rendimiento',
       icon: TrendingUpIcon
@@ -78,6 +85,15 @@ export default function PanelFinancieroOverviewPage() {
     }
   ];
 
+  // Tabs adicionales para entrenadores
+  const tabsEntrenador = [
+    {
+      id: 'gastos-profesionales',
+      label: 'Gastos Profesionales',
+      icon: Receipt
+    }
+  ];
+
   // Tabs adicionales para gimnasios
   const tabsGimnasio = [
     {
@@ -93,7 +109,7 @@ export default function PanelFinancieroOverviewPage() {
   ];
 
   const tabs = isEntrenador 
-    ? tabsComunes 
+    ? [...tabsComunes.slice(0, 2), ...tabsEntrenador, ...tabsComunes.slice(2)]
     : [...tabsComunes.slice(0, 2), ...tabsGimnasio, ...tabsComunes.slice(2)];
 
   return (
@@ -167,7 +183,9 @@ export default function PanelFinancieroOverviewPage() {
         <div className="mt-6">
           {tabActiva === 'overview' && <PanelFinanciero />}
           {tabActiva === 'ingresos' && <MetricasIngresos />}
+          {tabActiva === 'transacciones' && <Transacciones />}
           {tabActiva === 'gastos' && <GastosEstructurales />}
+          {tabActiva === 'gastos-profesionales' && <GastosProfesionales />}
           {tabActiva === 'rendimiento' && <RendimientoMensual />}
           {tabActiva === 'alertas' && <AlertasPagos />}
           {tabActiva === 'rentabilidad' && <AnalisisRentabilidad />}

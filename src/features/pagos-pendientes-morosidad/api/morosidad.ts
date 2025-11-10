@@ -1,4 +1,6 @@
-import { PagoPendiente, FiltroMorosidad, EstadisticasMorosidad } from '../types';
+import { PagoPendiente, FiltroMorosidad, EstadisticasMorosidad, MetodoPago, EnlacePago, PlataformaPago, AjusteDeudaData } from '../types';
+import { getHistorialSesionesCliente } from '../../agenda-calendario/api/sesiones';
+import { seguimientoAPI } from './seguimiento';
 
 // Mock data para desarrollo
 const mockPagosPendientes: PagoPendiente[] = [
@@ -10,7 +12,8 @@ const mockPagosPendientes: PagoPendiente[] = [
       id: 'cliente1',
       nombre: 'Juan Pérez',
       email: 'juan@example.com',
-      telefono: '+57 300 123 4567'
+      telefono: '+57 300 123 4567',
+      metodoPagoPreferido: 'nequi'
     },
     fechaEmision: new Date('2024-01-15'),
     fechaVencimiento: new Date('2024-01-30'),
@@ -33,7 +36,9 @@ const mockPagosPendientes: PagoPendiente[] = [
       }
     ],
     fechaCreacion: new Date('2024-01-15'),
-    fechaActualizacion: new Date('2024-02-01')
+    fechaActualizacion: new Date('2024-02-01'),
+    membresiaId: 'membresia1',
+    clienteDeConfianza: true // Ejemplo de cliente de confianza
   },
   {
     id: '2',
@@ -43,7 +48,8 @@ const mockPagosPendientes: PagoPendiente[] = [
       id: 'cliente2',
       nombre: 'María García',
       email: 'maria@example.com',
-      telefono: '+57 300 234 5678'
+      telefono: '+57 300 234 5678',
+      metodoPagoPreferido: 'transferencia'
     },
     fechaEmision: new Date('2024-01-10'),
     fechaVencimiento: new Date('2024-01-25'),
@@ -75,7 +81,8 @@ const mockPagosPendientes: PagoPendiente[] = [
       }
     ],
     fechaCreacion: new Date('2024-01-10'),
-    fechaActualizacion: new Date('2024-02-04')
+    fechaActualizacion: new Date('2024-02-04'),
+    membresiaId: 'membresia2'
   },
   {
     id: '3',
@@ -85,7 +92,8 @@ const mockPagosPendientes: PagoPendiente[] = [
       id: 'cliente3',
       nombre: 'Carlos Rodríguez',
       email: 'carlos@example.com',
-      telefono: '+57 300 345 6789'
+      telefono: '+57 300 345 6789',
+      metodoPagoPreferido: 'efectivo'
     },
     fechaEmision: new Date('2024-01-05'),
     fechaVencimiento: new Date('2024-01-20'),
@@ -119,7 +127,8 @@ const mockPagosPendientes: PagoPendiente[] = [
       }
     ],
     fechaCreacion: new Date('2024-01-05'),
-    fechaActualizacion: new Date('2024-02-05')
+    fechaActualizacion: new Date('2024-02-05'),
+    membresiaId: 'membresia3'
   },
   {
     id: '4',
@@ -154,7 +163,8 @@ const mockPagosPendientes: PagoPendiente[] = [
       }
     ],
     fechaCreacion: new Date('2023-12-01'),
-    fechaActualizacion: new Date('2024-01-15')
+    fechaActualizacion: new Date('2024-01-15'),
+    membresiaId: 'membresia4'
   },
   {
     id: '5',
@@ -191,13 +201,14 @@ const mockPagosPendientes: PagoPendiente[] = [
       }
     ],
     fechaCreacion: new Date('2024-01-20'),
-    fechaActualizacion: new Date('2024-02-08')
+    fechaActualizacion: new Date('2024-02-08'),
+    membresiaId: 'membresia5'
   }
 ];
 
 export const morosidadAPI = {
   // Obtener todos los pagos pendientes
-  async obtenerPagosPendientes(filtros?: FiltroMorosidad): Promise<PagoPendiente[]> {
+  async obtenerPagosPendientes(filtros?: FiltroMorosidad, incluirAsistencia: boolean = true): Promise<PagoPendiente[]> {
     await new Promise(resolve => setTimeout(resolve, 500));
     
     let pagos = [...mockPagosPendientes];
@@ -230,9 +241,35 @@ export const morosidadAPI = {
       if (filtros.montoMax) {
         pagos = pagos.filter(p => p.montoPendiente <= filtros.montoMax!);
       }
+      // Nuevos filtros simples
+      if (filtros.vencidosMasDe15Dias) {
+        pagos = pagos.filter(p => p.diasRetraso > 15);
+      }
+      if (filtros.montoMayorA !== undefined) {
+        pagos = pagos.filter(p => p.montoPendiente > filtros.montoMayorA!);
+      }
+      if (filtros.sinContactoReciente) {
+        const hoy = new Date();
+        const hace7Dias = new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000);
+        pagos = pagos.filter(p => {
+          if (!p.ultimoContacto) return true; // Sin contacto = sin contacto reciente
+          return p.ultimoContacto < hace7Dias;
+        });
+      }
+      if (filtros.excluirClientesDeConfianza) {
+        pagos = pagos.filter(p => !p.clienteDeConfianza);
+      }
     }
     
-    return pagos.sort((a, b) => b.diasRetraso - a.diasRetraso);
+    const pagosOrdenados = pagos.sort((a, b) => b.diasRetraso - a.diasRetraso);
+    
+    // Enriquecer con información de asistencia y último contacto si se solicita
+    if (incluirAsistencia) {
+      const pagosConAsistencia = await morosidadAPI.enriquecerConAsistencia(pagosOrdenados);
+      return morosidadAPI.enriquecerConUltimoContacto(pagosConAsistencia);
+    }
+    
+    return morosidadAPI.enriquecerConUltimoContacto(pagosOrdenados);
   },
 
   // Obtener un pago pendiente por ID
@@ -316,6 +353,380 @@ export const morosidadAPI = {
       estado: 'pagado',
       montoPendiente: 0,
       fechaActualizacion: new Date()
+    };
+    
+    return mockPagosPendientes[index];
+  },
+
+  // Marcar como pagado con método de pago y nota
+  async marcarComoPagadoConMetodo(
+    id: string,
+    metodoPago: MetodoPago,
+    nota?: string
+  ): Promise<PagoPendiente> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    const index = mockPagosPendientes.findIndex(p => p.id === id);
+    if (index === -1) {
+      throw new Error('Pago pendiente no encontrado');
+    }
+    
+    mockPagosPendientes[index] = {
+      ...mockPagosPendientes[index],
+      estado: 'pagado',
+      montoPendiente: 0,
+      metodoPago,
+      fechaPago: new Date(),
+      notaPago: nota,
+      fechaActualizacion: new Date(),
+      historialAcciones: [
+        ...mockPagosPendientes[index].historialAcciones,
+        {
+          id: `acc-${Date.now()}`,
+          fecha: new Date(),
+          tipo: 'pago_completo',
+          descripcion: `Pago recibido mediante ${metodoPago}${nota ? `: ${nota}` : ''}`,
+          usuario: 'usuario_actual',
+          resultado: 'Pago completado exitosamente'
+        }
+      ]
+    };
+    
+    return mockPagosPendientes[index];
+  },
+
+  // Generar enlace de pago
+  async generarEnlacePago(
+    pagoPendienteId: string,
+    plataforma: PlataformaPago = 'wompi'
+  ): Promise<EnlacePago> {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const pago = mockPagosPendientes.find(p => p.id === pagoPendienteId);
+    if (!pago) {
+      throw new Error('Pago pendiente no encontrado');
+    }
+
+    // Generar referencia única
+    const referencia = `PAY-${pago.numeroFactura}-${Date.now()}`;
+    
+    // Simular URL de pago según la plataforma
+    let urlBase = '';
+    if (plataforma === 'wompi') {
+      urlBase = 'https://checkout.wompi.co/l/';
+    } else if (plataforma === 'payu') {
+      urlBase = 'https://checkout.payulatam.com/l/';
+    } else {
+      urlBase = 'https://payment.example.com/';
+    }
+    
+    const enlacePago: EnlacePago = {
+      id: `enlace-${Date.now()}`,
+      pagoPendienteId,
+      url: `${urlBase}${referencia}`,
+      plataforma,
+      estado: 'activo',
+      fechaCreacion: new Date(),
+      fechaExpiracion: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 días
+      monto: pago.montoPendiente,
+      referencia
+    };
+    
+    // En una implementación real, aquí se haría la llamada a la API de Wompi/PayU
+    // para generar el enlace real
+    
+    return enlacePago;
+  },
+
+  // Obtener enlaces de pago de un pago pendiente
+  async obtenerEnlacesPago(pagoPendienteId: string): Promise<EnlacePago[]> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // En una implementación real, esto consultaría la base de datos
+    // Por ahora retornamos un array vacío
+    return [];
+  },
+
+  // Pausar membresía de un cliente con deuda
+  async pausarMembresia(
+    pagoPendienteId: string,
+    fechaReactivacion?: Date,
+    motivoPausa?: string
+  ): Promise<PagoPendiente> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    const index = mockPagosPendientes.findIndex(p => p.id === pagoPendienteId);
+    if (index === -1) {
+      throw new Error('Pago pendiente no encontrado');
+    }
+    
+    const fechaPausa = new Date();
+    const fechaReactivacionFinal = fechaReactivacion || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 días por defecto
+    
+    mockPagosPendientes[index] = {
+      ...mockPagosPendientes[index],
+      membresiaPausada: {
+        pausada: true,
+        fechaPausa,
+        fechaReactivacion: fechaReactivacionFinal,
+        motivoPausa: motivoPausa || 'Pausada temporalmente por deuda pendiente'
+      },
+      fechaActualizacion: new Date(),
+      historialAcciones: [
+        ...mockPagosPendientes[index].historialAcciones,
+        {
+          id: `acc-${Date.now()}`,
+          fecha: new Date(),
+          tipo: 'pausa_membresia',
+          descripcion: `Membresía pausada hasta ${fechaReactivacionFinal.toLocaleDateString('es-ES')}. Motivo: ${motivoPausa || 'Deuda pendiente'}`,
+          usuario: 'usuario_actual',
+          resultado: 'Membresía pausada exitosamente'
+        }
+      ]
+    };
+    
+    // En una implementación real, aquí se actualizaría también el estado de la membresía
+    // para evitar nuevos cobros mientras esté pausada
+    
+    return mockPagosPendientes[index];
+  },
+
+  // Reanudar membresía de un cliente
+  async reanudarMembresia(pagoPendienteId: string): Promise<PagoPendiente> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    const index = mockPagosPendientes.findIndex(p => p.id === pagoPendienteId);
+    if (index === -1) {
+      throw new Error('Pago pendiente no encontrado');
+    }
+    
+    const pago = mockPagosPendientes[index];
+    if (!pago.membresiaPausada?.pausada) {
+      throw new Error('La membresía no está pausada');
+    }
+    
+    mockPagosPendientes[index] = {
+      ...mockPagosPendientes[index],
+      membresiaPausada: {
+        pausada: false,
+        fechaPausa: pago.membresiaPausada.fechaPausa,
+        fechaReactivacion: new Date(),
+        motivoPausa: pago.membresiaPausada.motivoPausa
+      },
+      fechaActualizacion: new Date(),
+      historialAcciones: [
+        ...mockPagosPendientes[index].historialAcciones,
+        {
+          id: `acc-${Date.now()}`,
+          fecha: new Date(),
+          tipo: 'reanudar_membresia',
+          descripcion: 'Membresía reanudada',
+          usuario: 'usuario_actual',
+          resultado: 'Membresía reanudada exitosamente'
+        }
+      ]
+    };
+    
+    // En una implementación real, aquí se reactivaría la membresía
+    // para reanudar los cobros
+    
+    return mockPagosPendientes[index];
+  },
+
+  // Actualizar notas privadas
+  async actualizarNotasPrivadas(
+    id: string,
+    notasPrivadas: string
+  ): Promise<PagoPendiente> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    const index = mockPagosPendientes.findIndex(p => p.id === id);
+    if (index === -1) {
+      throw new Error('Pago pendiente no encontrado');
+    }
+    
+    mockPagosPendientes[index] = {
+      ...mockPagosPendientes[index],
+      notasPrivadas: notasPrivadas.trim() || undefined,
+      fechaActualizacion: new Date()
+    };
+    
+    return mockPagosPendientes[index];
+  },
+
+  // Ajustar monto de deuda (aplicar descuento o condonación)
+  async ajustarMontoDeuda(
+    id: string,
+    ajuste: AjusteDeudaData
+  ): Promise<PagoPendiente> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    const index = mockPagosPendientes.findIndex(p => p.id === id);
+    if (index === -1) {
+      throw new Error('Pago pendiente no encontrado');
+    }
+    
+    const pago = mockPagosPendientes[index];
+    const montoOriginal = pago.montoPendiente;
+    const nuevoMonto = ajuste.nuevoMonto;
+    
+    if (nuevoMonto < 0) {
+      throw new Error('El nuevo monto no puede ser negativo');
+    }
+    
+    if (nuevoMonto > montoOriginal) {
+      throw new Error('El nuevo monto no puede ser mayor al monto pendiente actual');
+    }
+    
+    if (!ajuste.motivo || ajuste.motivo.trim().length === 0) {
+      throw new Error('El motivo del ajuste es obligatorio');
+    }
+    
+    const descuentoAplicado = montoOriginal - nuevoMonto;
+    const ajusteDeuda = {
+      montoOriginal,
+      montoAjustado: nuevoMonto,
+      descuentoAplicado,
+      motivo: ajuste.motivo.trim(),
+      fechaAjuste: new Date(),
+      usuarioAjuste: 'usuario_actual'
+    };
+    
+    mockPagosPendientes[index] = {
+      ...pago,
+      montoPendiente: nuevoMonto,
+      montoTotal: pago.montoTotal - descuentoAplicado, // Ajustar también el monto total
+      ajustesDeuda: [
+        ...(pago.ajustesDeuda || []),
+        ajusteDeuda
+      ],
+      fechaActualizacion: new Date(),
+      historialAcciones: [
+        ...pago.historialAcciones,
+        {
+          id: `acc-${Date.now()}`,
+          fecha: new Date(),
+          tipo: descuentoAplicado === montoOriginal ? 'condonacion' : 'descuento',
+          descripcion: `Ajuste de deuda: ${descuentoAplicado === montoOriginal ? 'Condonación total' : `Descuento de ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(descuentoAplicado)}`}. Motivo: ${ajuste.motivo.trim()}`,
+          usuario: 'usuario_actual',
+          resultado: `Monto ajustado de ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(montoOriginal)} a ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(nuevoMonto)}`
+        }
+      ]
+    };
+    
+    return mockPagosPendientes[index];
+  },
+
+  // Enriquecer pagos con información de asistencia
+  async enriquecerConAsistencia(pagos: PagoPendiente[]): Promise<PagoPendiente[]> {
+    const hoy = new Date();
+    const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    const pagosEnriquecidos = await Promise.all(
+      pagos.map(async (pago) => {
+        try {
+          // Obtener historial de sesiones del cliente
+          const { sesiones } = await getHistorialSesionesCliente(
+            pago.cliente.id,
+            {
+              fechaInicio: inicioMes,
+              fechaFin: finMes,
+              asistencia: 'asistio'
+            }
+          );
+
+          // Obtener todas las sesiones para encontrar la última asistencia
+          const { sesiones: todasLasSesiones } = await getHistorialSesionesCliente(
+            pago.cliente.id,
+            {
+              asistencia: 'asistio'
+            }
+          );
+
+          // Última sesión asistida
+          const ultimaAsistencia = todasLasSesiones.length > 0
+            ? todasLasSesiones[0].fechaInicio
+            : undefined;
+
+          // Sesiones del mes actual
+          const sesionesEsteMes = sesiones.length;
+
+          return {
+            ...pago,
+            asistencia: {
+              ultimaAsistencia,
+              sesionesEsteMes
+            }
+          };
+        } catch (error) {
+          console.error(`Error obteniendo asistencia para cliente ${pago.cliente.id}:`, error);
+          // Si hay error, retornar el pago sin información de asistencia
+          return {
+            ...pago,
+            asistencia: {
+              sesionesEsteMes: 0
+            }
+          };
+        }
+      })
+    );
+
+    return pagosEnriquecidos;
+  },
+
+  // Enriquecer pagos con información de último contacto
+  async enriquecerConUltimoContacto(pagos: PagoPendiente[]): Promise<PagoPendiente[]> {
+    try {
+      const todosSeguimientos = await seguimientoAPI.obtenerTodosSeguimientos();
+      
+      return pagos.map(pago => {
+        // Buscar el último seguimiento de tipo 'contacto' para este pago
+        const contactos = todosSeguimientos
+          .filter(s => s.pagoPendienteId === pago.id && s.tipo === 'contacto')
+          .sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
+        
+        const ultimoContacto = contactos.length > 0 ? contactos[0].fecha : undefined;
+        
+        return {
+          ...pago,
+          ultimoContacto
+        };
+      });
+    } catch (error) {
+      console.error('Error obteniendo último contacto:', error);
+      return pagos;
+    }
+  },
+
+  // Marcar/desmarcar cliente como de confianza
+  async toggleClienteDeConfianza(id: string, esDeConfianza: boolean): Promise<PagoPendiente> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    const index = mockPagosPendientes.findIndex(p => p.id === id);
+    if (index === -1) {
+      throw new Error('Pago pendiente no encontrado');
+    }
+    
+    mockPagosPendientes[index] = {
+      ...mockPagosPendientes[index],
+      clienteDeConfianza: esDeConfianza,
+      fechaActualizacion: new Date(),
+      historialAcciones: [
+        ...mockPagosPendientes[index].historialAcciones,
+        {
+          id: `acc-${Date.now()}`,
+          fecha: new Date(),
+          tipo: 'marcar_cliente_confianza',
+          descripcion: esDeConfianza 
+            ? 'Cliente marcado como de confianza' 
+            : 'Cliente desmarcado como de confianza',
+          usuario: 'usuario_actual',
+          resultado: esDeConfianza 
+            ? 'Las alertas para este cliente se reducirán' 
+            : 'Las alertas para este cliente se restaurarán'
+        }
+      ]
     };
     
     return mockPagosPendientes[index];

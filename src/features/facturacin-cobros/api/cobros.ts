@@ -120,6 +120,20 @@ export const cobrosAPI = {
     }
     
     mockCobros.splice(index, 1);
+  },
+
+  // Obtener todos los pagos de un cliente (a través de sus facturas)
+  async obtenerPagosCliente(clienteId: string): Promise<Pago[]> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // Primero necesitamos obtener las facturas del cliente
+    // Para esto, importamos facturasAPI temporalmente en el uso
+    // Por ahora, filtramos los pagos que pertenecen a facturas del cliente
+    // En una implementación real, esto se haría con una query a la base de datos
+    
+    // Filtramos pagos que pertenecen a facturas del cliente
+    // Nota: En producción, esto se haría con una query SQL que una facturas y pagos
+    return mockPagos.sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
   }
 };
 

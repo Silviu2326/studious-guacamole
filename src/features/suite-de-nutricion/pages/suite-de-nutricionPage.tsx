@@ -65,6 +65,7 @@ import {
   GeneradorListaCompra,
 } from '../../editor-de-dieta-meal-planner/components';
 import { type Dieta as DietaEditor, getDietas as getDietasEditor, eliminarDieta as eliminarDietaEditor } from '../../editor-de-dieta-meal-planner/api/editor';
+import { useNavigate } from 'react-router-dom';
 
 // Imports de Plantillas de Dieta
 import {
@@ -110,6 +111,7 @@ import { Receta, FiltrosRecetas } from '../../recetario-comidas-guardadas/types'
 export default function SuiteDeNutricionPage() {
   const { user } = useAuth();
   const esEntrenador = user?.role === 'entrenador';
+  const navigate = useNavigate();
   const [tabActiva, setTabActiva] = useState<string>('dietas');
   
   // Estado para Dietas Asignadas
@@ -510,8 +512,8 @@ export default function SuiteDeNutricionPage() {
                   }
                 }
               }}
-              onEditar={esEntrenador ? undefined : (dieta) => {
-                setDietaSeleccionadaAsignada(dieta);
+              onEditar={(dieta) => {
+                navigate(`/dietas-asignadas/editor/${dieta.id}`);
               }}
               onEliminar={handleEliminarDietaAsignada}
               onCrear={() => setMostrarAsignar(true)}

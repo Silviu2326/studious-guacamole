@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { Card, Button, Modal } from '../../../components/componentsreutilizables';
+import { Card, Modal } from '../../../components/componentsreutilizables';
 import {
   UtensilsCrossed,
   BarChart3,
@@ -33,17 +33,19 @@ import {
   AnalyticsNutricion as AnalyticsNutricionType,
   SeguimientoMacros as SeguimientoMacrosType,
 } from '../types';
+import { useNavigate } from 'react-router-dom';
 
 export default function DietasAsignadasPage() {
   const { user } = useAuth();
   const esEntrenador = user?.role === 'entrenador';
+  const navigate = useNavigate();
 
   const [dietas, setDietas] = useState<Dieta[]>([]);
   const [planes, setPlanes] = useState<PlanNutricional[]>([]);
   const [packs, setPacks] = useState<PackSemanal[]>([]);
   const [dietaSeleccionada, setDietaSeleccionada] = useState<Dieta | null>(null);
   const [planSeleccionado, setPlanSeleccionado] = useState<PlanNutricional | null>(null);
-  const [filtros, setFiltros] = useState<FiltrosDietas>({});
+  const [filtros] = useState<FiltrosDietas>({});
   const [cargando, setCargando] = useState(false);
   const [tabActiva, setTabActiva] = useState<string>(esEntrenador ? 'dietas' : 'planes');
   const [mostrarAsignar, setMostrarAsignar] = useState(false);
@@ -169,9 +171,8 @@ export default function DietasAsignadasPage() {
                   }
                 }
               }}
-              onEditar={esEntrenador ? undefined : (dieta) => {
-                setDietaSeleccionada(dieta);
-                // TODO: Implementar edición
+              onEditar={(dieta) => {
+                navigate(`/dietas-asignadas/editor/${dieta.id}`);
               }}
               onEliminar={handleEliminar}
               onCrear={() => setMostrarAsignar(true)}

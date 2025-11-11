@@ -1,6 +1,21 @@
 export { FiscalProfileForm } from './FiscalProfileForm';
 export { TaxSummaryReport } from './TaxSummaryReport';
+export { MonthlyExpenseComparisonTable } from './MonthlyExpenseComparisonTable';
+export { ExpenseFileUpload } from './ExpenseFileUpload';
+export { GestorGastosDeducibles } from './GestorGastosDeducibles';
 export { ExportControlsContainer } from './ExportControlsContainer';
-export { DateRangePicker } from './DateRangePicker';
 export { ExportHistory } from './ExportHistory';
+export { DateRangePicker } from './DateRangePicker';
+export { TaxCalculator } from './TaxCalculator';
+export { FiscalCalendarComponent } from './FiscalCalendar';
+export { AnnualSummaryComponent } from './AnnualSummary';
+export { TaxReminderBanner } from './TaxReminderBanner';
+export { IncomeExpensesChart } from './IncomeExpensesChart';
+export { IncomeBySourceChart } from './IncomeBySourceChart';
+export { FinancialDashboard } from './FinancialDashboard';
+export { MobileExpenseForm } from './MobileExpenseForm';
+export { ExpenseEducationSection } from './ExpenseEducationSection';
+export { ExpenseAlertModal } from './ExpenseAlertModal';
+export { BankCSVImport } from './BankCSVImport';
+export { TaxPDFReportGenerator } from './TaxPDFReportGenerator';
 

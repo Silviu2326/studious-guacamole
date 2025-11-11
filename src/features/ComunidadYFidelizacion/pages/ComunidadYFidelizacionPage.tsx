@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { HeartHandshake, Users, RefreshCw, Sparkles, Flame, Activity, MessageCircle, Rocket } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { HeartHandshake, Users, RefreshCw, Sparkles, Flame, Activity, MessageCircle } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { Badge, Button, Tabs } from '../../../components/componentsreutilizables';
 import { AdvocacyPrograms, FeedbackInsightsBoard, PulseOverview, TestimonialsShowcase } from '../components';
@@ -14,14 +14,51 @@ const PERIOD_LABEL: Record<CommunityFidelizacionSnapshot['period'], string> = {
   '12m': 'Últimos 12 meses',
 };
 
-type SectionTab = 'overview' | 'feedback' | 'engagement';
+type SectionTab = 'dashboard' | 'reviews' | 'feedback';
 
 export default function ComunidadYFidelizacionPage() {
   const { user } = useAuth();
   const [period, setPeriod] = useState<CommunityFidelizacionSnapshot['period']>('30d');
   const [snapshot, setSnapshot] = useState<CommunityFidelizacionSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
-  const [section, setSection] = useState<SectionTab>('overview');
+  const [section, setSection] = useState<SectionTab>('dashboard');
+  const anchorRef = useRef<string | null>(null);
+
+  const scrollToAnchor = useCallback((anchorId?: string) => {
+    if (!anchorId || typeof document === 'undefined') return;
+    requestAnimationFrame(() => {
+      const element = document.getElementById(anchorId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  }, []);
+
+  const navigateToSection = useCallback(
+    (target: SectionTab, anchorId?: string) => {
+      if (section === target) {
+        scrollToAnchor(anchorId);
+        return;
+      }
+
+      if (anchorId) {
+        anchorRef.current = anchorId;
+      } else {
+        anchorRef.current = null;
+      }
+
+      setSection(target);
+    },
+    [section, scrollToAnchor],
+  );
+
+  useEffect(() => {
+    if (anchorRef.current) {
+      const pendingAnchor = anchorRef.current;
+      anchorRef.current = null;
+      scrollToAnchor(pendingAnchor);
+    }
+  }, [section, scrollToAnchor]);
 
   const loadSnapshot = useCallback(async () => {
     setLoading(true);
@@ -51,19 +88,19 @@ export default function ComunidadYFidelizacionPage() {
   const sectionTabs = useMemo(
     () => [
       {
-        id: 'overview',
-        label: 'Radar comunidad',
+        id: 'dashboard',
+        label: 'Dashboard',
         icon: <Activity className="w-4 h-4" />,
       },
       {
-        id: 'feedback',
-        label: 'Feedback inteligente',
-        icon: <MessageCircle className="w-4 h-4" />,
+        id: 'reviews',
+        label: 'Review & Testimonial Engine',
+        icon: <HeartHandshake className="w-4 h-4" />,
       },
       {
-        id: 'engagement',
-        label: 'Engagement Hub',
-        icon: <Rocket className="w-4 h-4" />,
+        id: 'feedback',
+        label: 'Feedback Loop & Encuestas Inteligentes',
+        icon: <MessageCircle className="w-4 h-4" />,
       },
     ],
     [],
@@ -131,16 +168,35 @@ export default function ComunidadYFidelizacionPage() {
 
         {snapshot && (
           <>
-            {section === 'overview' && (
+            {section === 'dashboard' && (
               <section className="space-y-10">
                 <PulseOverview
                   summary={snapshot.summary}
                   pulseMetrics={snapshot.pulseMetrics}
+                  testimonials={snapshot.testimonials}
+                  insights={snapshot.insights}
+                  automations={snapshot.automations}
                   loading={loading}
                   periodLabel={PERIOD_LABEL[period]}
+                  onNavigateToReviews={(anchorId) => navigateToSection('reviews', anchorId)}
+                  onNavigateToFeedback={(anchorId) => navigateToSection('feedback', anchorId)}
+                  onNavigateToAutomations={() => navigateToSection('feedback', 'automations-board')}
                 />
+              </section>
+            )}
 
-                <TestimonialsShowcase testimonials={snapshot.testimonials} loading={loading} />
+            {section === 'reviews' && (
+              <section>
+                <div id="reviews-testimonials">
+                  <TestimonialsShowcase testimonials={snapshot.testimonials} loading={loading} />
+                </div>
+                <div className="mt-10">
+                  <AdvocacyPrograms
+                    programs={snapshot.programs}
+                    advocacyMoments={snapshot.advocacyMoments}
+                    loading={loading}
+                  />
+                </div>
               </section>
             )}
 
@@ -149,16 +205,6 @@ export default function ComunidadYFidelizacionPage() {
                 <FeedbackInsightsBoard
                   insights={snapshot.insights}
                   automations={snapshot.automations}
-                  loading={loading}
-                />
-              </section>
-            )}
-
-            {section === 'engagement' && (
-              <section>
-                <AdvocacyPrograms
-                  programs={snapshot.programs}
-                  advocacyMoments={snapshot.advocacyMoments}
                   loading={loading}
                 />
               </section>

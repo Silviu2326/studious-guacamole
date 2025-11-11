@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Card, Button, Table, TableColumn, Modal, Select, SelectOption, Badge } from '../../../components/componentsreutilizables';
 import { Factura, RecordatorioPago } from '../types';
 import { recordatoriosAPI } from '../api/recordatorios';
-import { Bell, Send, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { ConfiguracionRecordatoriosAutomaticos } from './ConfiguracionRecordatoriosAutomaticos';
+import { Bell, Send, CheckCircle, XCircle, Clock, Settings } from 'lucide-react';
 
 interface RecordatoriosPagoProps {
   facturas: Factura[];
@@ -10,6 +11,7 @@ interface RecordatoriosPagoProps {
 }
 
 export const RecordatoriosPago: React.FC<RecordatoriosPagoProps> = ({ facturas, onRefresh }) => {
+  const [tabActiva, setTabActiva] = useState<'manual' | 'automatico'>('manual');
   const [mostrarModal, setMostrarModal] = useState(false);
   const [facturaSeleccionada, setFacturaSeleccionada] = useState<Factura | null>(null);
   const [medio, setMedio] = useState<'email' | 'sms' | 'whatsapp'>('email');
@@ -208,36 +210,79 @@ export const RecordatoriosPago: React.FC<RecordatoriosPagoProps> = ({ facturas, 
 
   return (
     <div className="space-y-6">
-      {/* Facturas pendientes */}
-      <Card className="bg-white shadow-sm">
+      {/* Tabs */}
+      <Card className="p-0 bg-white shadow-sm">
+        <div className="px-4 py-3 border-b border-gray-200">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setTabActiva('manual')}
+              className={[
+                'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all',
+                tabActiva === 'manual'
+                  ? 'bg-blue-100 text-blue-900'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              ].join(' ')}
+            >
+              <Send className="w-4 h-4" />
+              <span>Recordatorios Manuales</span>
+            </button>
+            <button
+              onClick={() => setTabActiva('automatico')}
+              className={[
+                'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all',
+                tabActiva === 'automatico'
+                  ? 'bg-blue-100 text-blue-900'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              ].join(' ')}
+            >
+              <Settings className="w-4 h-4" />
+              <span>Configuración Automática</span>
+            </button>
+          </div>
+        </div>
+
         <div className="p-6">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">
-            Facturas Pendientes
-          </h4>
-          <Table
-            data={facturasConRecordatorios}
-            columns={columnas}
-            emptyMessage="No hay facturas pendientes"
-          />
+          {tabActiva === 'manual' && (
+            <div className="space-y-6">
+              {/* Facturas pendientes */}
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                  Facturas Pendientes
+                </h4>
+                <Table
+                  data={facturasConRecordatorios}
+                  columns={columnas}
+                  emptyMessage="No hay facturas pendientes"
+                />
+              </div>
+
+              {/* Historial de recordatorios */}
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                  Historial de Recordatorios
+                </h4>
+                <Table
+                  data={recordatorios}
+                  columns={columnasRecordatorios}
+                  emptyMessage="No hay recordatorios enviados"
+                />
+              </div>
+            </div>
+          )}
+
+          {tabActiva === 'automatico' && (
+            <ConfiguracionRecordatoriosAutomaticos
+              onConfiguracionGuardada={() => {
+                cargarRecordatorios();
+                onRefresh();
+              }}
+            />
+          )}
         </div>
       </Card>
 
-      {/* Historial de recordatorios */}
-      <Card className="bg-white shadow-sm">
-        <div className="p-6">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">
-            Historial de Recordatorios
-          </h4>
-          <Table
-            data={recordatorios}
-            columns={columnasRecordatorios}
-            emptyMessage="No hay recordatorios enviados"
-          />
-        </div>
-      </Card>
-
-      {/* Modal de envío */}
-      {mostrarModal && facturaSeleccionada && (
+      {/* Modal de envío - Solo mostrar en tab manual */}
+      {tabActiva === 'manual' && mostrarModal && facturaSeleccionada && (
         <Modal
           isOpen={true}
           onClose={cerrarModal}

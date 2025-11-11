@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { accountingExportApi, ExportRequest } from '../api';
+import { accountingExportApi, ExportRequest, taxSummaryApi, fiscalProfileApi } from '../api';
+import { expensesAPI } from '../api/expenses';
 import { saveAs } from 'file-saver';
+import { generateExcelExport } from '../utils/excelExport';
 
 export const useAccountingExport = () => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -11,7 +13,32 @@ export const useAccountingExport = () => {
     setError(null);
 
     try {
-      // Simular la generación de exportación
+      // Si es Excel, usar la función de exportación Excel
+      if (request.format === 'xlsx') {
+        // Obtener datos necesarios para el Excel
+        const [taxSummary, expenses, fiscalProfile] = await Promise.all([
+          taxSummaryApi.getSummary(request.dateFrom, request.dateTo),
+          expensesAPI.obtenerGastos({
+            fechaInicio: new Date(request.dateFrom),
+            fechaFin: new Date(request.dateTo)
+          }),
+          fiscalProfileApi.getProfile().catch(() => null)
+        ]);
+
+        // Generar el archivo Excel
+        await generateExcelExport({
+          taxSummary,
+          expenses,
+          dateFrom: new Date(request.dateFrom),
+          dateTo: new Date(request.dateTo),
+          fiscalProfile: fiscalProfile || undefined
+        });
+
+        console.log('Excel export generated successfully');
+        return;
+      }
+
+      // Para otros formatos, usar el flujo original
       const response = await accountingExportApi.createExport(request);
 
       // Simular descarga de archivo

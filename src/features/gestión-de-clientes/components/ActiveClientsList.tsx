@@ -3,7 +3,8 @@ import { useAuth } from '../../../context/AuthContext';
 import { Card, Table, Button, Badge } from '../../../components/componentsreutilizables';
 import { Client } from '../types';
 import { getActiveClients } from '../api/clients';
-import { Users, TrendingUp, Calendar, Loader2, Package } from 'lucide-react';
+import { Users, TrendingUp, Calendar, Loader2, Package, AlertCircle, DollarSign } from 'lucide-react';
+import { getMultipleClientsPaymentStatus, PaymentStatus } from '../../facturacin-cobros/utils/paymentStatus';
 
 interface ActiveClientsListProps {
   onClientClick?: (client: Client) => void;
@@ -13,10 +14,27 @@ export const ActiveClientsList: React.FC<ActiveClientsListProps> = ({ onClientCl
   const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [paymentStatuses, setPaymentStatuses] = useState<Map<string, PaymentStatus>>(new Map());
 
   useEffect(() => {
     loadClients();
   }, [user]);
+
+  useEffect(() => {
+    if (clients.length > 0) {
+      loadPaymentStatuses();
+    }
+  }, [clients]);
+
+  const loadPaymentStatuses = async () => {
+    try {
+      const clientIds = clients.map(c => c.id);
+      const statuses = await getMultipleClientsPaymentStatus(clientIds);
+      setPaymentStatuses(statuses);
+    } catch (error) {
+      console.error('Error cargando estados de pago:', error);
+    }
+  };
 
   const loadClients = async () => {
     setLoading(true);
@@ -40,6 +58,50 @@ export const ActiveClientsList: React.FC<ActiveClientsListProps> = ({ onClientCl
     return <Badge variant="gray">Regular</Badge>;
   };
 
+  const getPaymentIndicator = (clientId: string) => {
+    const status = paymentStatuses.get(clientId);
+    if (!status || !status.hasPendingPayments) {
+      return null;
+    }
+
+    const { severity, overdueCount, pendingCount, oldestOverdueDays } = status;
+
+    // Determinar color y estilo según severidad
+    let colorClass = '';
+    let icon = <DollarSign className="w-4 h-4" />;
+    let tooltip = '';
+
+    if (severity === 'critical') {
+      colorClass = 'text-red-600 bg-red-50 border-red-200';
+      icon = <AlertCircle className="w-4 h-4" />;
+      tooltip = `¡CRÍTICO! ${overdueCount} factura(s) vencida(s) desde hace ${oldestOverdueDays} días`;
+    } else if (severity === 'danger') {
+      colorClass = 'text-orange-600 bg-orange-50 border-orange-200';
+      icon = <AlertCircle className="w-4 h-4" />;
+      tooltip = `${overdueCount} factura(s) vencida(s) desde hace ${oldestOverdueDays} días`;
+    } else if (severity === 'warning') {
+      if (overdueCount > 0) {
+        colorClass = 'text-yellow-600 bg-yellow-50 border-yellow-200';
+        tooltip = `${overdueCount} factura(s) vencida(s) desde hace ${oldestOverdueDays} días`;
+      } else {
+        colorClass = 'text-blue-600 bg-blue-50 border-blue-200';
+        tooltip = `${pendingCount} factura(s) pendiente(s)`;
+      }
+    }
+
+    return (
+      <div
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${colorClass}`}
+        title={tooltip}
+      >
+        {icon}
+        <span className="text-xs font-semibold">
+          {overdueCount > 0 ? `${overdueCount} vencida${overdueCount > 1 ? 's' : ''}` : `${pendingCount} pendiente${pendingCount > 1 ? 's' : ''}`}
+        </span>
+      </div>
+    );
+  };
+
   const columns = [
     {
       key: 'name',
@@ -49,9 +111,12 @@ export const ActiveClientsList: React.FC<ActiveClientsListProps> = ({ onClientCl
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
             {value.charAt(0).toUpperCase()}
           </div>
-          <div>
-            <div className="text-sm font-medium text-gray-900">
-              {value}
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <div className="text-sm font-medium text-gray-900">
+                {value}
+              </div>
+              {getPaymentIndicator(row.id)}
             </div>
             {row.email && (
               <div className="text-sm text-gray-600">

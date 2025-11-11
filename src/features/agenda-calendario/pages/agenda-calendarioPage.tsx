@@ -7,10 +7,26 @@ import {
   VistaPersonal,
   VistaCentro,
   GestorHorarios,
+  ConfiguradorHorariosTrabajo,
   BloqueosAgenda,
   ReservasCitas,
   RecordatoriosAutomaticos,
+  ConfiguracionResumenDiario,
+  VistaResumenDiario,
   AnalyticsOcupacion,
+  ConfiguracionTiempoDescanso,
+  EstadisticasConfirmacion,
+  SincronizacionCalendario,
+  GestorEnlacesReserva,
+  HistorialCliente,
+  ClienteAutocomplete,
+  EstadisticasNoShows,
+  ConfiguracionPoliticaCancelacion,
+  EstadisticasCumplimientoPolitica,
+  DashboardMetricasSesiones,
+  MapaCalorHorarios,
+  DashboardFinanciero,
+  GestorListaEspera,
 } from '../components';
 import { getCitas, crearCita } from '../api/calendario';
 
@@ -21,6 +37,7 @@ export default function AgendaCalendarioPage() {
   const [tabActiva, setTabActiva] = useState<string>('calendario');
   const [citas, setCitas] = React.useState<any[]>([]);
   const [mostrarModalCita, setMostrarModalCita] = React.useState(false);
+  const [clienteSeleccionadoHistorial, setClienteSeleccionadoHistorial] = React.useState<{ id: string; nombre: string } | null>(null);
   const [formCita, setFormCita] = React.useState(() => ({
     titulo: '',
     tipo: esEntrenador ? 'sesion-1-1' : 'clase-colectiva',
@@ -51,11 +68,24 @@ export default function AgendaCalendarioPage() {
       { id: 'reservas', label: 'Reservas', icon: <CalendarDays className="w-4 h-4" /> },
       { id: 'bloqueos', label: 'Bloqueos', icon: <CalendarDays className="w-4 h-4" /> },
       { id: 'horarios', label: 'Gestión de Horarios', icon: <CalendarDays className="w-4 h-4" /> },
+      ...(esEntrenador ? [{ id: 'tiempo-descanso', label: 'Tiempo de Descanso', icon: <CalendarDays className="w-4 h-4" /> }] : []),
+      ...(esEntrenador ? [{ id: 'sincronizacion-calendario', label: 'Sincronización Calendario', icon: <CalendarDays className="w-4 h-4" /> }] : []),
+      ...(esEntrenador ? [{ id: 'enlaces-reserva', label: 'Enlaces de Reserva', icon: <CalendarDays className="w-4 h-4" /> }] : []),
       { id: 'recordatorios', label: 'Recordatorios', icon: <CalendarDays className="w-4 h-4" /> },
-      { id: 'analytics', label: 'Analytics', icon: <CalendarDays className="w-4 h-4" /> },
+      ...(esEntrenador ? [{ id: 'resumen-diario', label: 'Resumen Diario', icon: <CalendarDays className="w-4 h-4" /> }] : []),
+      ...(esEntrenador ? [{ id: 'estadisticas-confirmacion', label: 'Estadísticas Confirmación', icon: <CalendarDays className="w-4 h-4" /> }] : []),
+      ...(esEntrenador ? [{ id: 'estadisticas-no-shows', label: 'Estadísticas No-Shows', icon: <CalendarDays className="w-4 h-4" /> }] : []),
+      ...(esEntrenador ? [{ id: 'politica-cancelacion', label: 'Política de Cancelación', icon: <CalendarDays className="w-4 h-4" /> }] : []),
+      ...(esEntrenador ? [{ id: 'estadisticas-cumplimiento', label: 'Estadísticas Cumplimiento', icon: <CalendarDays className="w-4 h-4" /> }] : []),
+      ...(esEntrenador ? [{ id: 'historial-cliente', label: 'Historial Cliente', icon: <CalendarDays className="w-4 h-4" /> }] : []),
+      { id: 'analytics', label: 'Analytics Ocupación', icon: <CalendarDays className="w-4 h-4" /> },
+      ...(esEntrenador ? [{ id: 'dashboard-metricas', label: 'Dashboard Métricas', icon: <CalendarDays className="w-4 h-4" /> }] : []),
+      ...(esEntrenador ? [{ id: 'mapa-calor-horarios', label: 'Mapa de Calor Horarios', icon: <CalendarDays className="w-4 h-4" /> }] : []),
+      ...(esEntrenador ? [{ id: 'dashboard-financiero', label: 'Dashboard Financiero', icon: <CalendarDays className="w-4 h-4" /> }] : []),
+      ...(esEntrenador ? [{ id: 'lista-espera', label: 'Lista de Espera', icon: <CalendarDays className="w-4 h-4" /> }] : []),
     ];
     return comunes;
-  }, []);
+  }, [esEntrenador]);
 
   const handleCrearCita = async () => {
     const fechaCompleta = new Date(`${formCita.fecha}T${formCita.horaInicio}`);
@@ -107,13 +137,68 @@ export default function AgendaCalendarioPage() {
       case 'reservas':
         return <ReservasCitas />;
       case 'horarios':
-        return <GestorHorarios />;
+        return esEntrenador ? <ConfiguradorHorariosTrabajo /> : <GestorHorarios />;
       case 'bloqueos':
         return <BloqueosAgenda />;
+      case 'tiempo-descanso':
+        return esEntrenador ? <ConfiguracionTiempoDescanso /> : null;
+      case 'sincronizacion-calendario':
+        return esEntrenador ? <SincronizacionCalendario /> : null;
+      case 'enlaces-reserva':
+        return esEntrenador ? <GestorEnlacesReserva /> : null;
       case 'recordatorios':
         return <RecordatoriosAutomaticos />;
+      case 'resumen-diario':
+        return esEntrenador ? (
+          <div className="space-y-6">
+            <ConfiguracionResumenDiario />
+            <VistaResumenDiario />
+          </div>
+        ) : null;
+      case 'estadisticas-confirmacion':
+        return esEntrenador ? <EstadisticasConfirmacion /> : null;
+      case 'estadisticas-no-shows':
+        return esEntrenador ? <EstadisticasNoShows /> : null;
+      case 'politica-cancelacion':
+        return esEntrenador ? <ConfiguracionPoliticaCancelacion /> : null;
+      case 'estadisticas-cumplimiento':
+        return esEntrenador ? <EstadisticasCumplimientoPolitica /> : null;
+      case 'historial-cliente':
+        return esEntrenador ? (
+          <div className="space-y-6">
+            <Card className="bg-white shadow-sm">
+              <div className="p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Seleccionar Cliente</h2>
+                <ClienteAutocomplete
+                  value={clienteSeleccionadoHistorial?.id || ''}
+                  onChange={(id, nombre) => {
+                    setClienteSeleccionadoHistorial(id ? { id, nombre } : null);
+                  }}
+                  label="Cliente"
+                  placeholder="Buscar cliente para ver historial..."
+                  role="entrenador"
+                  userId={user?.id}
+                />
+              </div>
+            </Card>
+            {clienteSeleccionadoHistorial && (
+              <HistorialCliente
+                clienteId={clienteSeleccionadoHistorial.id}
+                clienteNombre={clienteSeleccionadoHistorial.nombre}
+              />
+            )}
+          </div>
+        ) : null;
       case 'analytics':
         return <AnalyticsOcupacion />;
+      case 'dashboard-metricas':
+        return esEntrenador ? <DashboardMetricasSesiones /> : null;
+      case 'mapa-calor-horarios':
+        return esEntrenador ? <MapaCalorHorarios /> : null;
+      case 'dashboard-financiero':
+        return esEntrenador ? <DashboardFinanciero /> : null;
+      case 'lista-espera':
+        return esEntrenador ? <GestorListaEspera /> : null;
       default:
         return null;
     }

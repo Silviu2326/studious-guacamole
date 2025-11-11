@@ -2,16 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button, Badge } from '../../../components/componentsreutilizables';
 import { Client360Profile } from '../types';
 import { getClientById } from '../api/clients';
+import { ClientEventHistory } from '../../eventos-retos/components/ClientEventHistory';
+import { HistorialPagosCliente } from '../../facturacin-cobros/components/HistorialPagosCliente';
+import { HabitsPanel } from './HabitsPanel';
+import { SessionSuggestions } from './SessionSuggestions';
+import { HealthIntegrationsPanel } from './HealthIntegrationsPanel';
+import { ChatPanel } from './ChatPanel';
+import { TimelinePanel } from './TimelinePanel';
+import { ReferralLinksPanel } from './ReferralLinksPanel';
+import { NutritionSharingPanel } from './NutritionSharingPanel';
+import { useAuth } from '../../../context/AuthContext';
 import { 
   User, Calendar, FileText, TrendingUp, DollarSign, Clock, Mail, Phone, 
   Loader2, AlertCircle, Target, MessageSquare, Camera, MapPin, 
   Birthday, Activity, BarChart3, Zap, Award, Heart, Scale, 
   ArrowUpRight, ArrowDownRight, Edit, Plus, Send, Download, Dumbbell,
-  CreditCard, CheckCircle, XCircle, Image as ImageIcon, Bell, TrendingDown
+  CreditCard, CheckCircle, XCircle, Image as ImageIcon, Bell, TrendingDown,
+  Trophy, Lightbulb, Smartphone, Clock as ClockIcon, Link2, Share2
 } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 
-type TabId = 'overview' | 'workouts' | 'history' | 'payments' | 'metrics' | 'communication' | 'goals' | 'photos' | 'documents';
+type TabId = 'overview' | 'workouts' | 'history' | 'payments' | 'metrics' | 'communication' | 'goals' | 'photos' | 'documents' | 'events' | 'habits' | 'suggestions' | 'health' | 'chat' | 'timeline' | 'referrals' | 'nutrition-sharing';
 
 interface TabItem {
   id: TabId;
@@ -53,6 +64,7 @@ const paymentData = [
 const COLORS = ['#3B82F6', '#6366F1', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981'];
 
 export const Client360ProfileComponent: React.FC<Client360ProfileProps> = ({ clientId, onClose }) => {
+  const { user } = useAuth();
   const [client, setClient] = useState<Client360Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
@@ -85,13 +97,21 @@ export const Client360ProfileComponent: React.FC<Client360ProfileProps> = ({ cli
   const tabItems: TabItem[] = [
     { id: 'overview', label: 'Resumen', icon: User },
     { id: 'workouts', label: 'Entrenamientos', icon: Dumbbell },
+    { id: 'habits', label: 'Hábitos', icon: Trophy },
+    { id: 'suggestions', label: 'Sugerencias', icon: Lightbulb },
+    { id: 'health', label: 'Salud', icon: Smartphone },
     { id: 'payments', label: 'Pagos', icon: CreditCard },
     { id: 'history', label: 'Historial', icon: Calendar },
+    { id: 'events', label: 'Eventos', icon: Calendar },
     { id: 'metrics', label: 'Métricas', icon: TrendingUp },
+    { id: 'chat', label: 'Chat', icon: MessageSquare },
+    { id: 'timeline', label: 'Línea de Tiempo', icon: ClockIcon },
     { id: 'communication', label: 'Comunicación', icon: MessageSquare },
     { id: 'goals', label: 'Objetivos', icon: Target },
     { id: 'photos', label: 'Fotos', icon: Camera },
     { id: 'documents', label: 'Documentos', icon: FileText },
+    { id: 'referrals', label: 'Referidos', icon: Link2 },
+    { id: 'nutrition-sharing', label: 'Nutrición Compartida', icon: Share2 },
   ];
 
   const getStatusBadge = () => {
@@ -469,97 +489,30 @@ export const Client360ProfileComponent: React.FC<Client360ProfileProps> = ({ cli
           </div>
         )}
 
+        {/* TAB: HABITS - Panel de Hábitos con Puntos y Badges */}
+        {activeTab === 'habits' && (
+          <HabitsPanel clienteId={clientId} />
+        )}
+
+        {/* TAB: SUGGESTIONS - Sugerencias Automáticas de Sesiones */}
+        {activeTab === 'suggestions' && (
+          <SessionSuggestions 
+            clienteId={clientId}
+            onSuggestionAccepted={(suggestion) => {
+              console.log('Sugerencia aceptada:', suggestion);
+              // Aquí se podría crear la sesión automáticamente o redirigir al editor
+            }}
+          />
+        )}
+
+        {/* TAB: HEALTH - Integraciones de Salud */}
+        {activeTab === 'health' && (
+          <HealthIntegrationsPanel clientId={clientId} />
+        )}
+
         {/* TAB: PAYMENTS */}
         {activeTab === 'payments' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-900">Historial de Pagos</h3>
-              <Button variant="primary" size="sm">
-                <Plus className="w-4 h-4 mr-2" />
-                Registrar Pago
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <Card variant="hover" className="p-4">
-                <div className="flex items-center gap-3">
-                  <DollarSign className="w-5 h-5 text-green-600" />
-                  <div>
-                    <p className="text-xs text-gray-600">Total Pagado</p>
-                    <p className="text-lg font-bold">€{mockPayments.reduce((acc, p) => acc + p.amount, 0).toLocaleString()}</p>
-                  </div>
-                </div>
-              </Card>
-              <Card variant="hover" className="p-4">
-                <div className="flex items-center gap-3">
-                  <CreditCard className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <p className="text-xs text-gray-600">Pagos Pendientes</p>
-                    <p className="text-lg font-bold">€0</p>
-                  </div>
-                </div>
-              </Card>
-              <Card variant="hover" className="p-4">
-                <div className="flex items-center gap-3">
-                  <TrendingUp className="w-5 h-5 text-purple-600" />
-                  <div>
-                    <p className="text-xs text-gray-600">Promedio Mensual</p>
-                    <p className="text-lg font-bold">€{Math.round(mockPayments.reduce((acc, p) => acc + p.amount, 0) / mockPayments.length)}</p>
-                  </div>
-                </div>
-              </Card>
-            </div>
-
-            <Card variant="hover" className="p-5">
-              <h4 className="text-md font-semibold text-gray-900 mb-4">Evolución de Pagos</h4>
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={paymentData}>
-                  <defs>
-                    <linearGradient id="colorPagos" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                  <XAxis dataKey="month" tick={{ fill: '#64748B', fontSize: 12 }} />
-                  <YAxis tick={{ fill: '#64748B', fontSize: 12 }} />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="pagos" stroke="#3B82F6" fillOpacity={1} fill="url(#colorPagos)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </Card>
-
-            <div className="space-y-3">
-              {mockPayments.map((payment) => (
-                <Card key={payment.id} variant="hover" className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-green-100 rounded-lg">
-                        <CreditCard className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-900">
-                          €{payment.amount.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          {new Date(payment.date).toLocaleDateString('es-ES')} • {payment.method} • {payment.invoice}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Badge variant="green">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Pagado
-                      </Badge>
-                      <Button variant="ghost" size="sm">
-                        <Download className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
+          <HistorialPagosCliente clienteId={clientId} />
         )}
 
         {/* TAB: HISTORY */}
@@ -614,6 +567,11 @@ export const Client360ProfileComponent: React.FC<Client360ProfileProps> = ({ cli
               </div>
             )}
           </div>
+        )}
+
+        {/* TAB: EVENTS - Historial de Eventos del Cliente (User Story 1) */}
+        {activeTab === 'events' && (
+          <ClientEventHistory clientId={clientId} />
         )}
 
         {/* TAB: METRICS */}
@@ -725,6 +683,21 @@ export const Client360ProfileComponent: React.FC<Client360ProfileProps> = ({ cli
               </Card>
             </div>
           </div>
+        )}
+
+        {/* TAB: CHAT - Sistema de chat con historial y archivos adjuntos */}
+        {activeTab === 'chat' && (
+          <ChatPanel
+            clienteId={clientId}
+            clienteName={client.name}
+            trainerId={user?.id || 'trainer_1'}
+            trainerName={user?.name || 'Entrenador'}
+          />
+        )}
+
+        {/* TAB: TIMELINE - Línea de tiempo visual con fotos y mediciones */}
+        {activeTab === 'timeline' && (
+          <TimelinePanel clienteId={clientId} />
         )}
 
         {/* TAB: COMMUNICATION */}
@@ -900,6 +873,26 @@ export const Client360ProfileComponent: React.FC<Client360ProfileProps> = ({ cli
               </div>
             )}
           </div>
+        )}
+
+        {/* TAB: REFERRALS - Enlaces de Referido */}
+        {activeTab === 'referrals' && (
+          <ReferralLinksPanel
+            clienteId={clientId}
+            clienteName={client.name}
+            onLinkCreated={(link) => {
+              console.log('Enlace de referido creado:', link);
+              // Aquí se podría actualizar el estado o mostrar una notificación
+            }}
+          />
+        )}
+
+        {/* TAB: NUTRITION-SHARING - Compartir Planes Nutricionales */}
+        {activeTab === 'nutrition-sharing' && (
+          <NutritionSharingPanel
+            clienteId={clientId}
+            clienteName={client.name}
+          />
         )}
       </div>
     </Card>

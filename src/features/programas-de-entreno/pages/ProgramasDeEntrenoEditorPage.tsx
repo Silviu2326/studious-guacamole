@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
+  Calendar,
   CalendarCheck,
   CalendarRange,
   ChevronLeft,
@@ -11,12 +12,17 @@ import {
   Flame,
   Library,
   PlusCircle,
-  Save,
   ScrollText,
+  Save,
   Search,
   Sparkles,
+  AlertCircle,
 } from 'lucide-react';
 import { Button, Card, Tabs, Badge, Input, Select } from '../../../components/componentsreutilizables';
+import { WeeklyEditorView } from '../components/WeeklyEditorView';
+import { DailyEditorView } from '../components/DailyEditorView';
+import { ExcelSummaryView } from '../components/ExcelSummaryView';
+import type { DayPlan } from '../types';
 
 type EditorView = 'weekly' | 'daily' | 'excel';
 type LibraryTab = 'templates' | 'exercises';
@@ -39,24 +45,292 @@ const viewTabs = [
   },
 ] as const satisfies { id: EditorView; label: string; icon: JSX.Element }[];
 
-const weekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-const timeSlots = ['06:00', '08:00', '10:00', '12:00', '16:00', '18:00', '20:00'];
+const weekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] as const;
 
 export default function ProgramasDeEntrenoEditorPage() {
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState<EditorView>('weekly');
-  const [selectedDay, setSelectedDay] = useState('Lunes');
+  const [selectedDay, setSelectedDay] = useState<(typeof weekDays)[number]>('Lunes');
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
   const [libraryTab, setLibraryTab] = useState<LibraryTab>('templates');
 
-  const dailyBlocks = useMemo(
-    () => [
-      { id: 'warmup', title: 'Calentamiento dinámico', duration: '10 min', focus: 'Mobility' },
-      { id: 'main', title: 'Entrenamiento fuerza full body', duration: '35 min', focus: 'Strength' },
-      { id: 'finish', title: 'Finisher HIIT', duration: '10 min', focus: 'Cardio' },
-      { id: 'stretch', title: 'Stretching guiado', duration: '8 min', focus: 'Recovery' },
-    ],
+  const currentDayIndex = weekDays.findIndex((day) => day === selectedDay);
+
+  const goToDay = useCallback(
+    (direction: -1 | 1) => {
+      const nextIndex = (currentDayIndex + direction + weekDays.length) % weekDays.length;
+      setSelectedDay(weekDays[nextIndex]);
+    },
+    [currentDayIndex],
+  );
+
+  const handleSelectDay = useCallback((day: (typeof weekDays)[number]) => {
+    setSelectedDay(day);
+  }, []);
+
+  const weeklyPlan = useMemo<Record<(typeof weekDays)[number], DayPlan>>(
+    () => ({
+      Lunes: {
+        microCycle: 'Semana 3 · Hipertrofia',
+        focus: 'Upper body power',
+        volume: '18 series',
+        intensity: 'RPE 7',
+        restorative: 'Movilidad torácica',
+        summary: ['Press inclin bench tempo 3-1-1', 'Dominadas lastradas progresivas', 'Core anti-rotación con bandas'],
+        sessions: [
+          {
+            id: 'mon-06',
+            time: '08:00',
+            block: 'Activation & mobility',
+            duration: '12 min',
+            modality: 'Mobility',
+            intensity: 'Ligera',
+            notes: 'Foam roller + band pull aparts',
+          },
+          {
+            id: 'mon-08',
+            time: '10:00',
+            block: 'Strength block',
+            duration: '38 min',
+            modality: 'Strength',
+            intensity: 'RPE 8',
+            notes: 'Superseries · Press + Dominadas',
+          },
+          {
+            id: 'mon-10',
+            time: '18:00',
+            block: 'Conditioning finisher',
+            duration: '15 min',
+            modality: 'MetCon',
+            intensity: 'Alta',
+            notes: 'Ski erg + battle rope EMOM',
+          },
+        ],
+      },
+      Martes: {
+        microCycle: 'Semana 3 · Hipertrofia',
+        focus: 'Lower body strength',
+        volume: '21 series',
+        intensity: 'RPE 7.5',
+        restorative: 'Respiración diafragmática',
+        summary: ['Back squat tempo 4-1-1', 'Sled push heavy intervals', 'Trabajo isométrico glúteo'],
+        sessions: [
+          {
+            id: 'tue-06',
+            time: '08:00',
+            block: 'Primer bloque fuerza',
+            duration: '40 min',
+            modality: 'Strength',
+            intensity: 'RPE 7',
+            notes: 'Back squat + split squat',
+          },
+          {
+            id: 'tue-08',
+            time: '12:00',
+            block: 'Acondicionamiento unilateral',
+            duration: '20 min',
+            modality: 'Accessory',
+            intensity: 'Moderada',
+            notes: 'Bulgarian split squat + hip thrust',
+          },
+          {
+            id: 'tue-10',
+            time: '18:00',
+            block: 'Recuperación activa',
+            duration: '10 min',
+            modality: 'Recovery',
+            intensity: 'Ligera',
+            notes: 'Mobility flow lower body',
+          },
+        ],
+      },
+      Miércoles: {
+        microCycle: 'Semana 3 · Hipertrofia',
+        focus: 'MetCon + Core',
+        volume: '16 series',
+        intensity: 'RPE 6.5',
+        restorative: 'Trabajo respiración nasal',
+        summary: ['Circuito kettlebell 6 movimientos', 'Intervals bike + burpees', 'Core anti-flexión & anti-rotación'],
+        sessions: [
+          {
+            id: 'wed-06',
+            time: '09:00',
+            block: 'Complex KB',
+            duration: '25 min',
+            modality: 'MetCon',
+            intensity: 'Alta',
+            notes: 'Complex 6 movimientos',
+          },
+          {
+            id: 'wed-08',
+            time: '12:00',
+            block: 'Intervals',
+            duration: '20 min',
+            modality: 'Cardio',
+            intensity: 'Moderada',
+            notes: 'Bike erg interval 30/30',
+          },
+          {
+            id: 'wed-10',
+            time: '19:00',
+            block: 'Core stability',
+            duration: '15 min',
+            modality: 'Core',
+            intensity: 'Ligera',
+            notes: 'Pallof press + hollow rocks',
+          },
+        ],
+      },
+      Jueves: {
+        microCycle: 'Semana 3 · Hipertrofia',
+        focus: 'Upper body hypertrophy',
+        volume: '20 series',
+        intensity: 'RPE 7',
+        restorative: 'Upper mobility flow',
+        summary: ['Press militar con tempo', 'Remo pecho apoyado', 'Farmer carry 40mts x 4'],
+        sessions: [
+          {
+            id: 'thu-06',
+            time: '07:30',
+            block: 'Warm-up & priming',
+            duration: '10 min',
+            modality: 'Mobility',
+            intensity: 'Ligera',
+            notes: 'Shoulder CARs + scap push ups',
+          },
+          {
+            id: 'thu-08',
+            time: '11:00',
+            block: 'Hypertrophy waves',
+            duration: '42 min',
+            modality: 'Strength',
+            intensity: 'RPE 7',
+            notes: 'Press militar + chest supported row',
+          },
+          {
+            id: 'thu-10',
+            time: '18:00',
+            block: 'Carry & grip',
+            duration: '12 min',
+            modality: 'Accessory',
+            intensity: 'Alta',
+            notes: 'Farmer carry + sandbag hold',
+          },
+        ],
+      },
+      Viernes: {
+        microCycle: 'Semana 3 · Hipertrofia',
+        focus: 'Lower body speed',
+        volume: '17 series',
+        intensity: 'RPE 6.5',
+        restorative: 'Cadera + movilidad dinámica',
+        summary: ['Trap bar deadlift speed', 'Pliometría reactiva', 'Sled drag backwards'],
+        sessions: [
+          {
+            id: 'fri-06',
+            time: '08:00',
+            block: 'Speed pull',
+            duration: '30 min',
+            modality: 'Strength',
+            intensity: 'Moderada',
+            notes: 'Trap bar 60% velocity sets',
+          },
+          {
+            id: 'fri-08',
+            time: '13:00',
+            block: 'Plyo contrast',
+            duration: '18 min',
+            modality: 'Plyo',
+            intensity: 'Alta',
+            notes: 'Depth jumps + bounds',
+          },
+          {
+            id: 'fri-10',
+            time: '19:00',
+            block: 'Posterior chain finisher',
+            duration: '12 min',
+            modality: 'Accessory',
+            intensity: 'Moderada',
+            notes: 'Sled drag backwards + hamstring',
+          },
+        ],
+      },
+      Sábado: {
+        microCycle: 'Semana 3 · Hipertrofia',
+        focus: 'Team MetCon',
+        volume: '12 series',
+        intensity: 'RPE 7.5',
+        restorative: 'Stretching global 15 min',
+        summary: ['Partner WOD estilo AMRAP', 'Bike + Wall ball ladder', 'Cooldown asistido'],
+        sessions: [
+          {
+            id: 'sat-06',
+            time: '10:00',
+            block: 'Partner AMRAP',
+            duration: '30 min',
+            modality: 'MetCon',
+            intensity: 'Alta',
+            notes: 'AMRAP 20 con pareja',
+          },
+          {
+            id: 'sat-08',
+            time: '12:00',
+            block: 'Bike + wall ball ladder',
+            duration: '20 min',
+            modality: 'Cardio',
+            intensity: 'Moderada',
+            notes: 'Bike erg + wall balls',
+          },
+          {
+            id: 'sat-10',
+            time: '13:00',
+            block: 'Assisted cooldown',
+            duration: '15 min',
+            modality: 'Recovery',
+            intensity: 'Ligera',
+            notes: 'Stretch con coach',
+          },
+        ],
+      },
+      Domingo: {
+        microCycle: 'Semana 3 · Hipertrofia',
+        focus: 'Recovery + Mobility',
+        volume: '8 series',
+        intensity: 'RPE 4',
+        restorative: 'Breath work + sauna',
+        summary: ['Yoga mobility session', 'Core estabilidad baja intensidad', 'Sauna + contrast shower'],
+        sessions: [
+          {
+            id: 'sun-06',
+            time: '09:00',
+            block: 'Mobility flow',
+            duration: '25 min',
+            modality: 'Mobility',
+            intensity: 'Ligera',
+            notes: 'Sesión guiada full body',
+          },
+          {
+            id: 'sun-08',
+            time: '11:00',
+            block: 'Core control',
+            duration: '15 min',
+            modality: 'Core',
+            intensity: 'Ligera',
+            notes: 'Respiración + plank series',
+          },
+          {
+            id: 'sun-10',
+            time: '18:00',
+            block: 'Sauna + contrast',
+            duration: '20 min',
+            modality: 'Recovery',
+            intensity: 'Regenerativa',
+            notes: 'Sauna 10’ + ducha fría 2’',
+          },
+        ],
+      },
+    }),
     [],
   );
 
@@ -114,137 +388,74 @@ export default function ProgramasDeEntrenoEditorPage() {
     [],
   );
 
-  const rightPanelContent = useMemo(() => {
-    if (activeView === 'weekly') {
-      return {
-        title: 'Resumen semanal',
-        description: 'Carga, objetivos y puntos críticos de la semana seleccionada.',
-        metrics: [
-          { label: 'Microciclo', value: 'Semana 3 · Hipertrofia' },
-          { label: 'Volumen total', value: '44 series' },
-          { label: 'Intensidad media', value: 'RPE 7.5' },
-          { label: 'Sesiones cardio', value: '2 moderadas' },
-        ],
-      };
-    }
+  const selectedDayPlan = weeklyPlan[selectedDay];
 
-    if (activeView === 'daily') {
-      return {
-        title: `Detalle día · ${selectedDay}`,
-        description: 'Ajusta repeticiones, cargas objetivo y feedback del cliente para esta sesión.',
-        metrics: [
-          { label: 'Bloques', value: `${dailyBlocks.length}` },
-          { label: 'Duración total', value: '63 min' },
-          { label: 'Focus', value: 'Fuerza + Metcon' },
-          { label: 'Notas cliente', value: 'Prefiere kettlebell swings' },
-        ],
-      };
-    }
+  const parseDurationInMinutes = useCallback((duration: string) => {
+    const match = duration.match(/\d+/);
+    return match ? Number(match[0]) : 0;
+  }, []);
 
-    return {
-      title: 'Importar / Exportar',
-      description: 'Gestiona plantillas Excel, sincroniza con otras apps o descarga reporte.',
-      metrics: [
-        { label: 'Formato activo', value: 'CSV · Plantilla híbrida' },
-        { label: 'Última importación', value: 'hoy · 08:42' },
-        { label: 'Validaciones', value: '3 ajustes pendientes' },
-        { label: 'Integraciones', value: 'Google Sheets, Notion' },
-      ],
-    };
-  }, [activeView, dailyBlocks.length, selectedDay]);
+  const weeklyOverview = useMemo(() => {
+    return weekDays.reduce(
+      (acc, day) => {
+        const plan = weeklyPlan[day];
+        acc.sessions += plan.sessions.length;
+        acc.exercises += plan.sessions.length * 3;
+        acc.duration += plan.sessions.reduce((total, session) => total + parseDurationInMinutes(session.duration), 0);
+        return acc;
+      },
+      { sessions: 0, exercises: 0, duration: 0 },
+    );
+  }, [parseDurationInMinutes, weekDays, weeklyPlan]);
+
+  const weeklyCalories = useMemo(() => Math.round(weeklyOverview.duration * 8), [weeklyOverview.duration]);
+
+  const weeklyTargets = useMemo(
+    () => ({
+      sessions: Math.max(3, Math.round(weeklyOverview.sessions * 0.75)),
+      duration: Math.max(180, Math.round(weeklyOverview.duration * 0.85)),
+      calories: Math.max(2500, Math.round(weeklyCalories * 1.1)),
+    }),
+    [weeklyCalories, weeklyOverview],
+  );
+
+  const todaysSessions = selectedDayPlan.sessions;
+  const nextSession = todaysSessions[0];
 
   const renderCanvas = () => {
     if (activeView === 'weekly') {
       return (
-        <div className="grid gap-4 md:grid-cols-7">
-          {weekDays.map((day) => (
-            <Card
-              key={day}
-              className="group min-h-[180px] border border-slate-200/80 bg-white/90 p-4 shadow-sm transition hover:border-indigo-300 hover:shadow-lg dark:border-slate-800/80 dark:bg-slate-950/50"
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{day}</h3>
-                <Badge size="sm" variant="secondary">
-                  3 bloques
-                </Badge>
-              </div>
-              <div className="mt-3 space-y-2 text-xs text-slate-600 dark:text-slate-300">
-                <p>• Fuerza tren superior (AMRAP)</p>
-                <p>• Trabajo core y estabilidad</p>
-                <p>• Cardio interválico (20’)</p>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="mt-4 w-full opacity-0 transition group-hover:opacity-100"
-                onClick={() => {
-                  setActiveView('daily');
-                  setSelectedDay(day);
-                }}
-              >
-                Ver detalle
-              </Button>
-            </Card>
-          ))}
-        </div>
+        <WeeklyEditorView
+          weekDays={weekDays}
+          weeklyPlan={weeklyPlan}
+          onViewDay={(day) => {
+            setSelectedDay(day as (typeof weekDays)[number]);
+            setActiveView('daily');
+          }}
+        />
       );
     }
 
-    if (activeView === 'daily') {
+    if (activeView === 'daily' && selectedDayPlan) {
       return (
-        <div className="space-y-4">
-          {dailyBlocks.map((block) => (
-            <Card
-              key={block.id}
-              className="flex flex-col gap-3 border border-slate-200/80 bg-white/95 p-5 shadow-sm hover:border-emerald-300 hover:shadow-lg dark:border-slate-800/80 dark:bg-slate-950/60"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{block.title}</h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-300">Foco: {block.focus}</p>
-                </div>
-                <Badge size="sm" variant="green">
-                  {block.duration}
-                </Badge>
-              </div>
-              <div className="flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-300">
-                <span className="rounded-full bg-slate-100 px-3 py-1 dark:bg-slate-800">3 ejercicios</span>
-                <span className="rounded-full bg-slate-100 px-3 py-1 dark:bg-slate-800">RPE objetivo 7</span>
-                <span className="rounded-full bg-slate-100 px-3 py-1 dark:bg-slate-800">Tempo controlado</span>
-              </div>
-            </Card>
-          ))}
-        </div>
+        <DailyEditorView
+          selectedDay={selectedDay}
+          weekDays={weekDays}
+          dayPlan={selectedDayPlan}
+          onPreviousDay={() => goToDay(-1)}
+          onNextDay={() => goToDay(1)}
+          onSelectDay={(day) => handleSelectDay(day as (typeof weekDays)[number])}
+          onBackToWeekly={() => setActiveView('weekly')}
+        />
       );
     }
 
-    return (
-      <Card className="border border-dashed border-slate-300/80 bg-white/95 p-8 text-center dark:border-slate-700/80 dark:bg-slate-950/50">
-        <div className="mx-auto max-w-xl space-y-4 text-slate-600 dark:text-slate-300">
-          <FileSpreadsheet className="mx-auto h-12 w-12 text-indigo-400" />
-          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-            Gestiona tu plan desde una vista estilo Excel
-          </h3>
-          <p className="text-sm">
-            Importa o exporta sesiones, copia y pega bloques completos y sincroniza con otras herramientas. Próximamente
-            podrás editar directamente celdas con fórmulas personalizadas.
-          </p>
-          <div className="flex justify-center gap-3">
-            <Button variant="primary" size="sm">
-              Importar plantilla
-            </Button>
-            <Button variant="secondary" size="sm">
-              Descargar ejemplo
-            </Button>
-          </div>
-        </div>
-      </Card>
-    );
+    return <ExcelSummaryView weekDays={weekDays} weeklyPlan={weeklyPlan} />;
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100/80 px-4 py-8 dark:from-[#050815] dark:via-[#0b1120] dark:to-[#020617]">
-      <div className="mx-auto flex max-w-[1500px] flex-col gap-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100/80 py-8 dark:from-[#050815] dark:via-[#0b1120] dark:to-[#020617]">
+      <div className="flex w-full flex-col gap-6 px-4 md:px-6 lg:px-8">
         {/* Top bar */}
         <header className="rounded-3xl border border-slate-200/70 bg-white/95 px-6 py-4 shadow-sm dark:border-slate-800/70 dark:bg-slate-950/60">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -260,6 +471,11 @@ export default function ProgramasDeEntrenoEditorPage() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              {rightCollapsed && (
+                <Button variant="ghost" size="sm" onClick={() => setRightCollapsed(false)}>
+                  Restaurar panel
+                </Button>
+              )}
               <Button variant="ghost" size="sm" leftIcon={<Sparkles className="h-4 w-4" />}>
                 Sugerir con IA
               </Button>
@@ -421,62 +637,132 @@ export default function ProgramasDeEntrenoEditorPage() {
           <main className="flex-1 space-y-4">{renderCanvas()}</main>
 
           {/* Right panel */}
-          <aside
-            className={`relative flex w-full flex-col gap-4 transition-all duration-300 lg:flex-shrink-0 ${
-              rightCollapsed ? 'lg:w-16' : 'lg:w-[320px]'
-            }`}
-          >
-            <button
-              type="button"
-              onClick={() => setRightCollapsed((prev) => !prev)}
-              className="absolute -left-3 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-indigo-300 hover:text-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-              aria-label={rightCollapsed ? 'Expandir panel derecho' : 'Colapsar panel derecho'}
-            >
-              {rightCollapsed ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-            </button>
-
-            {rightCollapsed ? (
-              <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-slate-200/70 bg-white/95 p-3 text-center shadow-sm dark:border-slate-800/70 dark:bg-slate-950/60">
-                <Sparkles className="h-5 w-5 text-indigo-500" />
-                <span className="text-[11px] font-medium text-slate-500 dark:text-slate-300">Insights</span>
-              </div>
-            ) : (
-              <>
-                <Card className="border border-slate-200/70 bg-white/95 p-5 dark:border-slate-800/70 dark:bg-slate-950/60">
-                  <div className="flex items-center justify-between gap-2">
-                    <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{rightPanelContent.title}</h2>
-                    <Badge size="sm" variant="secondary">
-                      Modo IA
-                    </Badge>
+          {!rightCollapsed && (
+            <aside className="w-full flex-shrink-0 lg:w-[340px] xl:w-[360px]">
+              <Card className="space-y-6 border border-slate-200/70 bg-white/95 p-6 shadow-lg dark:border-slate-800/70 dark:bg-slate-950/60">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Resumen</p>
+                    <h3 className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">Hoy</h3>
                   </div>
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-300">{rightPanelContent.description}</p>
+                  <button
+                    type="button"
+                    onClick={() => setRightCollapsed(true)}
+                    className="rounded-full border border-slate-200 p-2 text-slate-400 transition hover:border-indigo-300 hover:text-indigo-500 dark:border-slate-700 dark:hover:border-indigo-500"
+                    aria-label="Colapsar panel derecho"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
 
-                  <div className="mt-4 space-y-3 text-xs text-slate-600 dark:text-slate-300">
-                    {rightPanelContent.metrics.map((metric) => (
-                      <div
-                        key={metric.label}
-                        className="flex items-start justify-between gap-4 rounded-xl border border-slate-200/70 bg-white/90 px-3 py-2 dark:border-slate-800/70 dark:bg-slate-900/50"
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center dark:border-slate-800/70 dark:bg-slate-900/40">
+                  {todaysSessions.length === 0 ? (
+                    <div className="space-y-2">
+                      <Calendar className="mx-auto h-8 w-8 text-slate-300" />
+                      <p className="text-sm font-medium text-slate-600 dark:text-slate-300">No hay sesiones programadas para hoy</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-emerald-500">Siguiente sesión</p>
+                      <p className="text-base font-semibold text-slate-900 dark:text-slate-100">{nextSession.block}</p>
+                      <p>{nextSession.time} · {nextSession.duration}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Esta semana</p>
+                  <dl className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                    <div className="flex items-center justify-between">
+                      <dt>Sesiones</dt>
+                      <dd className="font-semibold text-indigo-600">{weeklyOverview.sessions}</dd>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <dt>Ejercicios</dt>
+                      <dd className="font-semibold text-indigo-600">{weeklyOverview.exercises}</dd>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <dt>Duración</dt>
+                      <dd className="font-semibold text-indigo-600">{weeklyOverview.duration} min</dd>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <dt>Calorías</dt>
+                      <dd className="font-semibold text-indigo-600">{weeklyCalories}</dd>
+                    </div>
+                  </dl>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Progreso</p>
+                  <div className="mt-3 space-y-4">
+                    {[
+                      {
+                        label: 'Sesiones',
+                        value: weeklyOverview.sessions,
+                        goal: weeklyTargets.sessions,
+                        suffix: '',
+                        gradient: 'from-emerald-500 to-emerald-400',
+                        highlight: 'text-emerald-600',
+                      },
+                      {
+                        label: 'Duración',
+                        value: weeklyOverview.duration,
+                        goal: weeklyTargets.duration,
+                        suffix: ' min',
+                        gradient: 'from-indigo-500 to-indigo-400',
+                        highlight: 'text-emerald-600',
+                      },
+                      {
+                        label: 'Calorías',
+                        value: weeklyCalories,
+                        goal: weeklyTargets.calories,
+                        suffix: '',
+                        gradient: 'from-amber-500 to-orange-400',
+                        highlight: weeklyCalories > weeklyTargets.calories ? 'text-red-500' : 'text-emerald-600',
+                      },
+                    ].map((item) => {
+                      const percentage = item.goal > 0 ? Math.min(100, (item.value / item.goal) * 100) : 0;
+                      return (
+                        <div key={item.label} className="space-y-1">
+                          <div className="flex items-center justify-between text-xs text-slate-500">
+                            <span>{item.label}</span>
+                            <span className={`font-semibold ${item.highlight}`}>
+                              {item.value}
+                              {item.suffix} / {item.goal}
+                              {item.suffix}
+                            </span>
+                          </div>
+                          <div className="h-2 rounded-full bg-slate-100">
+                            <div
+                              className={`h-full rounded-full bg-gradient-to-r ${item.gradient}`}
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Alertas</p>
+                  <div className="mt-3 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
+                    <AlertCircle className="h-5 w-5 text-amber-500" />
+                    <div>
+                      <p className="font-semibold">Volumen alto en la sesión del jueves</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-2 h-auto px-3 py-1 text-xs text-amber-600 hover:text-amber-700"
                       >
-                        <span className="font-medium text-slate-500 dark:text-slate-400">{metric.label}</span>
-                        <span className="text-right text-slate-800 dark:text-slate-100">{metric.value}</span>
-                      </div>
-                    ))}
+                        Reducir series
+                      </Button>
+                    </div>
                   </div>
-                </Card>
-
-                <Card className="border border-dashed border-indigo-200/70 bg-indigo-50/50 p-5 dark:border-indigo-500/40 dark:bg-indigo-950/20">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-indigo-700 dark:text-indigo-100">
-                    <Sparkles className="h-4 w-4" />
-                    Sugerencia IA
-                  </div>
-                  <p className="mt-3 text-xs text-indigo-800/90 dark:text-indigo-200">
-                    Detectamos bajos niveles de trabajo unilateral esta semana. Propón añadir Bulgarian split squats el jueves
-                    para compensar. Además, duplica la sesión de movilidad guiada para el domingo.
-                  </p>
-                </Card>
-              </>
-            )}
-          </aside>
+                </div>
+              </Card>
+            </aside>
+          )}
         </div>
       </div>
     </div>

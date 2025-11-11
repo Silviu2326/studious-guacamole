@@ -8,7 +8,7 @@ const mockFacturas: Factura[] = [
     fechaEmision: new Date('2024-01-15'),
     fechaVencimiento: new Date('2024-01-30'),
     cliente: {
-      id: 'cliente1',
+      id: 'client_1',
       nombre: 'Juan Pérez',
       email: 'juan@example.com',
       nit: '12345678-9',
@@ -43,7 +43,7 @@ const mockFacturas: Factura[] = [
     fechaEmision: new Date('2024-01-10'),
     fechaVencimiento: new Date('2024-01-25'),
     cliente: {
-      id: 'cliente2',
+      id: 'client_2',
       nombre: 'María García',
       email: 'maria@example.com',
       nit: '98765432-1'
@@ -96,8 +96,8 @@ const mockFacturas: Factura[] = [
     fechaEmision: new Date('2024-01-05'),
     fechaVencimiento: new Date('2024-01-20'),
     cliente: {
-      id: 'cliente3',
-      nombre: 'Carlos Rodríguez',
+      id: 'client_3',
+      nombre: 'Carlos López',
       email: 'carlos@example.com'
     },
     items: [

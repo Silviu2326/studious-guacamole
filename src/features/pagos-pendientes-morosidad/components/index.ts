@@ -7,4 +7,7 @@ export { ReportesMorosidad } from './ReportesMorosidad';
 export { ClasificadorRiesgo } from './ClasificadorRiesgo';
 export { EstrategiasCobro } from './EstrategiasCobro';
 export { DashboardMorosidad } from './DashboardMorosidad';
+export { PlanPagos } from './PlanPagos';
+export { ReporteMensualSimple } from './ReporteMensualSimple';
+export { RecordatoriosContacto } from './RecordatoriosContacto';
 

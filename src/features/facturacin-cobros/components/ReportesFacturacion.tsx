@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Button, Input, Select, SelectOption } from '../../../components/componentsreutilizables';
-import { Factura, TipoFactura, MetodoPago, ReporteFacturacion } from '../types';
+import { Factura, TipoFactura, MetodoPago, ReporteFacturacion, Pago } from '../types';
+import { cobrosAPI } from '../api/cobros';
 import { Download, Calendar } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 interface ReportesFacturacionProps {
   facturas: Factura[];
@@ -15,6 +17,35 @@ export const ReportesFacturacion: React.FC<ReportesFacturacionProps> = ({ factur
   });
   const [fechaFin, setFechaFin] = useState(new Date().toISOString().split('T')[0]);
   const [tipoFiltro, setTipoFiltro] = useState<string>('todos');
+  const [pagos, setPagos] = useState<Pago[]>([]);
+  const [loadingExport, setLoadingExport] = useState(false);
+
+  useEffect(() => {
+    cargarPagos();
+  }, [facturas]);
+
+  const cargarPagos = async () => {
+    try {
+      // Obtener todos los pagos de las facturas
+      const todosLosPagos: Pago[] = [];
+      for (const factura of facturas) {
+        if (factura.pagos && factura.pagos.length > 0) {
+          todosLosPagos.push(...factura.pagos);
+        } else {
+          // Si no tiene pagos en la factura, intentar obtenerlos de la API
+          try {
+            const pagosFactura = await cobrosAPI.obtenerPagosFactura(factura.id);
+            todosLosPagos.push(...pagosFactura);
+          } catch (error) {
+            console.error(`Error al cargar pagos de factura ${factura.id}:`, error);
+          }
+        }
+      }
+      setPagos(todosLosPagos);
+    } catch (error) {
+      console.error('Error al cargar pagos:', error);
+    }
+  };
 
   const formatearMoneda = (valor: number) => {
     return new Intl.NumberFormat('es-CO', {
@@ -102,9 +133,165 @@ export const ReportesFacturacion: React.FC<ReportesFacturacionProps> = ({ factur
     online: 'Online'
   };
 
-  const handleExportar = () => {
-    // TODO: Implementar exportación a PDF/Excel
-    alert('Funcionalidad de exportación próximamente disponible');
+  const handleExportar = async () => {
+    setLoadingExport(true);
+    try {
+      // Filtrar facturas y pagos por el rango de fechas seleccionado
+      const facturasFiltradas = facturas.filter(f => {
+        const fechaEmision = new Date(f.fechaEmision);
+        const inicio = new Date(fechaInicio);
+        const fin = new Date(fechaFin);
+        fin.setHours(23, 59, 59);
+        return fechaEmision >= inicio && fechaEmision <= fin;
+      });
+
+      // Obtener todos los pagos del mes
+      const pagosDelMes: Pago[] = [];
+      for (const factura of facturasFiltradas) {
+        try {
+          const pagosFactura = await cobrosAPI.obtenerPagosFactura(factura.id);
+          // Filtrar pagos por rango de fechas
+          const inicio = new Date(fechaInicio);
+          const fin = new Date(fechaFin);
+          fin.setHours(23, 59, 59);
+          const pagosFiltrados = pagosFactura.filter(p => {
+            const fechaPago = new Date(p.fecha);
+            return fechaPago >= inicio && fechaPago <= fin;
+          });
+          pagosDelMes.push(...pagosFiltrados);
+        } catch (error) {
+          // Si hay error, usar los pagos de la factura directamente
+          if (factura.pagos && factura.pagos.length > 0) {
+            const inicio = new Date(fechaInicio);
+            const fin = new Date(fechaFin);
+            fin.setHours(23, 59, 59);
+            const pagosFiltrados = factura.pagos.filter(p => {
+              const fechaPago = new Date(p.fecha);
+              return fechaPago >= inicio && fechaPago <= fin;
+            });
+            pagosDelMes.push(...pagosFiltrados);
+          }
+        }
+      }
+
+      // Preparar datos para Excel
+      // Crear un mapa de facturas para acceso rápido
+      const facturasMap = new Map(facturasFiltradas.map(f => [f.id, f]));
+
+      // Combinar facturas y pagos en un solo array con fecha para ordenamiento
+      interface DatoExportacionConFecha {
+        fechaOrden: Date;
+        Fecha: string;
+        Cliente: string;
+        Concepto: string;
+        Monto: number;
+        'Método de Pago': string;
+        Estado: string;
+        'Número de Factura': string;
+        'Tipo': string;
+      }
+
+      const datosExportacion: DatoExportacionConFecha[] = [];
+
+      // Agregar facturas (como filas principales)
+      facturasFiltradas.forEach(factura => {
+        // Obtener concepto de los items
+        const concepto = factura.items.map(item => 
+          `${item.descripcion} (${item.cantidad}x)`
+        ).join(', ') || 'Sin concepto';
+
+        // Estado de la factura
+        const estadoFactura = {
+          pendiente: 'Pendiente',
+          parcial: 'Parcial',
+          pagada: 'Pagada',
+          vencida: 'Vencida',
+          cancelada: 'Cancelada'
+        }[factura.estado] || factura.estado;
+
+        // Método de pago de la factura (si existe)
+        const metodoPagoFactura = factura.metodoPago ? metodosPago[factura.metodoPago] : 'No especificado';
+
+        datosExportacion.push({
+          fechaOrden: factura.fechaEmision,
+          Fecha: factura.fechaEmision.toLocaleDateString('es-ES'),
+          Cliente: factura.cliente.nombre,
+          Concepto: concepto,
+          Monto: factura.total,
+          'Método de Pago': metodoPagoFactura,
+          Estado: estadoFactura,
+          'Número de Factura': factura.numeroFactura,
+          'Tipo': tiposFactura[factura.tipo]
+        });
+      });
+
+      // Agregar pagos individuales (si hay pagos registrados)
+      pagosDelMes.forEach(pago => {
+        const factura = facturasMap.get(pago.facturaId);
+        if (factura) {
+          const concepto = `Pago - ${factura.numeroFactura}`;
+          const metodoPago = metodosPago[pago.metodoPago] || pago.metodoPago;
+
+          datosExportacion.push({
+            fechaOrden: pago.fecha,
+            Fecha: pago.fecha.toLocaleDateString('es-ES'),
+            Cliente: factura.cliente.nombre,
+            Concepto: concepto,
+            Monto: pago.monto,
+            'Método de Pago': metodoPago,
+            Estado: 'Pagado',
+            'Número de Factura': factura.numeroFactura,
+            'Tipo': tiposFactura[factura.tipo]
+          });
+        }
+      });
+
+      // Ordenar por fecha
+      datosExportacion.sort((a, b) => a.fechaOrden.getTime() - b.fechaOrden.getTime());
+
+      // Remover fechaOrden antes de exportar
+      const datosParaExcel = datosExportacion.map(({ fechaOrden, ...rest }) => rest);
+
+      // Crear workbook y worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(datosParaExcel);
+
+      // Ajustar ancho de columnas
+      const columnWidths = [
+        { wch: 12 }, // Fecha
+        { wch: 25 }, // Cliente
+        { wch: 40 }, // Concepto
+        { wch: 15 }, // Monto
+        { wch: 18 }, // Método de Pago
+        { wch: 12 }, // Estado
+        { wch: 18 }, // Número de Factura
+        { wch: 15 }  // Tipo
+      ];
+      ws['!cols'] = columnWidths;
+
+      // Formatear columna de monto como moneda
+      const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+      for (let row = 1; row <= range.e.r; row++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: row, c: 3 }); // Columna D (Monto)
+        if (!ws[cellAddress]) continue;
+        ws[cellAddress].z = '#,##0.00';
+      }
+
+      // Agregar worksheet al workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Facturas y Cobros');
+
+      // Generar nombre de archivo
+      const mes = new Date(fechaInicio).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+      const nombreArchivo = `Reporte_Facturacion_${mes.replace(' ', '_')}.xlsx`;
+
+      // Guardar archivo
+      XLSX.writeFile(wb, nombreArchivo);
+    } catch (error) {
+      console.error('Error al exportar a Excel:', error);
+      alert('Error al exportar el reporte a Excel');
+    } finally {
+      setLoadingExport(false);
+    }
   };
 
   return (
@@ -132,9 +319,14 @@ export const ReportesFacturacion: React.FC<ReportesFacturacionProps> = ({ factur
               onChange={(e) => setTipoFiltro(e.target.value)}
             />
             <div className="flex items-end">
-              <Button variant="primary" onClick={handleExportar} fullWidth>
+              <Button 
+                variant="primary" 
+                onClick={handleExportar} 
+                fullWidth 
+                loading={loadingExport}
+              >
                 <Download className="w-4 h-4 mr-2" />
-                Exportar Reporte
+                Exportar a Excel
               </Button>
             </div>
           </div>

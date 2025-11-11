@@ -31,11 +31,20 @@ import { Layout } from './components/Layout';
 import { useState } from 'react';
 import { ExamplePage } from './components/componentsreutilizables';
 import AgendaCalendarioPage from './features/agenda-calendario/pages/agenda-calendarioPage';
+import ConfirmarSesionPage from './features/agenda-calendario/pages/ConfirmarSesionPage';
+import ConfirmarReservaPage from './features/reservas-online/pages/ConfirmarReservaPage';
+import { PublicEventRegistrationPage } from './features/eventos-retos/pages/PublicEventRegistrationPage';
+import ReservaPublicaPage from './features/reservas-online/pages/ReservaPublicaPage';
+import { PaginaPagoPublica } from './features/facturacin-cobros/pages/PaginaPagoPublica';
+import CheckoutPublicoPage from './features/tienda-online-checkout-online/pages/CheckoutPublicoPage';
+
 import AlertasRestriccionesAlimentariasPage from './features/alertas-restricciones-alimentarias/pages/alertas-restricciones-alimentariasPage';
 import DisponibilidadTurnosStaffPage from './features/disponibilidad-turnos-staff/pages/disponibilidad-turnos-staffPage';
 import EditorDeEntrenoPage from './features/editor-de-entreno/pages/editor-de-entrenoPage';
 import SuiteDeEntrenoPage from './features/suite-de-entreno/pages/suite-de-entrenoPage';
 import SuiteDeNutricionPage from './features/suite-de-nutricion/pages/suite-de-nutricionPage';
+import DietasAsignadasPage from './features/dietas-asignadas/pages/dietas-asignadasPage';
+import DietaEditorPage from './features/dietas-asignadas/pages/DietaEditorPage';
 import EncuestasSatisfaccinNPSCSATPage from './features/encuestas-satisfaccin-npscsat/pages/encuestas-satisfaccin-npscsatPage';
 import EventosRetosEspecialesPage from './features/eventos-retos-especiales';
 import EventosRetosPage from './features/eventos-retos/pages/eventos-retosPage';
@@ -175,6 +184,13 @@ function App() {
       <Routes>
         <Route path="/example" element={<ExamplePage />} />
         <Route path="/login" element={<RedirectIfAuthed />} />
+        <Route path="/confirmar-sesion" element={<ConfirmarSesionPage />} />
+        <Route path="/confirmar-reserva/:token" element={<ConfirmarReservaPage />} />
+        <Route path="/evento-inscripcion/:publicLink" element={<PublicEventRegistrationPage />} />
+        <Route path="/reservar/:token" element={<ReservaPublicaPage />} />
+        <Route path="/pagar/:token" element={<PaginaPagoPublica />} />
+        <Route path="/checkout/:token" element={<CheckoutPublicoPage />} />
+
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
           {/** Envuelve las páginas con Layout para mostrar Sidebar */}
@@ -235,6 +251,8 @@ function App() {
             <Route path="/programas-de-entreno/editor" element={<ProgramasDeEntrenoEditorPage />} />
             <Route path="/suite-de-entreno" element={<SuiteDeEntrenoPage />} />
             <Route path="/suite-de-nutricion" element={<SuiteDeNutricionPage />} />
+            <Route path="/dietas-asignadas" element={<DietasAsignadasPage />} />
+            <Route path="/dietas-asignadas/editor/:dietaId" element={<DietaEditorPage />} />
             <Route path="/turnos-horarios-del-staff" element={<TurnosHorariosDelStaffPage />} />
             <Route path="/check-ins-de-entreno" element={<CheckInsDeEntrenoPage />} />
             <Route path="/check-ins-nutricionales" element={<CheckInsNutricionalesPage />} />

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Badge, Button } from '../../../components/componentsreutilizables';
 import { PagoPendiente, AlertaMorosidad } from '../types';
 import { morosidadAPI } from '../api/morosidad';
-import { AlertTriangle, Bell, X, CheckCircle, Clock, DollarSign } from 'lucide-react';
+import { AlertTriangle, Bell, X, CheckCircle, Clock, DollarSign, ShieldCheck } from 'lucide-react';
 
 interface AlertasVencidosProps {
   onRefresh?: () => void;
@@ -35,20 +35,39 @@ export const AlertasVencidos: React.FC<AlertasVencidosProps> = ({ onRefresh }) =
 
   const generarAlertas = (pagosData: PagoPendiente[]): AlertaMorosidad[] => {
     return pagosData
-      .filter(p => p.diasRetraso > 0)
-      .map(p => ({
-        id: `alerta-${p.id}`,
-        pagoPendienteId: p.id,
-        nivel: p.nivelMorosidad,
-        titulo: `Factura ${p.numeroFactura} vencida`,
-        descripcion: `${p.cliente.nombre} tiene un pago pendiente de ${p.diasRetraso} días. Monto: ${p.montoPendiente.toLocaleString('es-CO')} COP`,
-        fechaGeneracion: new Date(),
-        estado: 'activa',
-        accionesRecomendadas: obtenerAccionesRecomendadas(p),
-        prioridad: p.nivelMorosidad === 'negro' || p.nivelMorosidad === 'rojo' ? 'critica' : 
-                   p.nivelMorosidad === 'naranja' ? 'alta' :
-                   p.nivelMorosidad === 'amarillo' ? 'media' : 'baja'
-      }));
+      .filter(p => {
+        // Para clientes de confianza, solo mostrar alertas si tienen más de 30 días de retraso
+        // o si el nivel de morosidad es crítico (rojo o negro)
+        if (p.clienteDeConfianza) {
+          return p.diasRetraso > 30 || p.nivelMorosidad === 'rojo' || p.nivelMorosidad === 'negro';
+        }
+        // Para clientes normales, mostrar todas las alertas
+        return p.diasRetraso > 0;
+      })
+      .map(p => {
+        // Reducir prioridad para clientes de confianza
+        let prioridad: 'baja' | 'media' | 'alta' | 'critica';
+        if (p.clienteDeConfianza) {
+          // Clientes de confianza solo generan alertas de prioridad media o baja
+          prioridad = p.nivelMorosidad === 'negro' || p.nivelMorosidad === 'rojo' ? 'media' : 'baja';
+        } else {
+          prioridad = p.nivelMorosidad === 'negro' || p.nivelMorosidad === 'rojo' ? 'critica' : 
+                     p.nivelMorosidad === 'naranja' ? 'alta' :
+                     p.nivelMorosidad === 'amarillo' ? 'media' : 'baja';
+        }
+
+        return {
+          id: `alerta-${p.id}`,
+          pagoPendienteId: p.id,
+          nivel: p.nivelMorosidad,
+          titulo: `Factura ${p.numeroFactura} vencida${p.clienteDeConfianza ? ' (Cliente de confianza)' : ''}`,
+          descripcion: `${p.cliente.nombre} tiene un pago pendiente de ${p.diasRetraso} días. Monto: ${p.montoPendiente.toLocaleString('es-CO')} COP`,
+          fechaGeneracion: new Date(),
+          estado: 'activa',
+          accionesRecomendadas: obtenerAccionesRecomendadas(p),
+          prioridad
+        };
+      });
   };
 
   const obtenerAccionesRecomendadas = (pago: PagoPendiente): string[] => {
@@ -150,14 +169,25 @@ export const AlertasVencidos: React.FC<AlertasVencidosProps> = ({ onRefresh }) =
                         {obtenerIconoPrioridad(alerta.prioridad)}
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <h4 className="text-lg font-semibold text-gray-900">
                             {alerta.titulo}
                           </h4>
+                          {pago?.clienteDeConfianza && (
+                            <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                              <ShieldCheck className="w-3 h-3" />
+                              <span>Cliente de confianza</span>
+                            </div>
+                          )}
                           <Badge variant={alerta.nivel === 'negro' || alerta.nivel === 'rojo' ? 'red' : alerta.nivel === 'naranja' ? 'yellow' : 'green'} size="sm">
                             {alerta.nivel.toUpperCase()}
                           </Badge>
                         </div>
+                        {pago?.clienteDeConfianza && (
+                          <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded px-2 py-1 mt-1 inline-block">
+                            Este cliente está marcado como de confianza. Las alertas se reducen para enfocar en casos más urgentes.
+                          </p>
+                        )}
                         <p className="text-gray-600 mb-2">
                           {alerta.descripcion}
                         </p>

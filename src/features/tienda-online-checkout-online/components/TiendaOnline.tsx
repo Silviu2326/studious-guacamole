@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button, Select, Badge } from '../../../components/componentsreutilizables';
 import { Producto, FiltrosProductos, CarritoItem } from '../types';
 import { getProductos } from '../api/productos';
-import { Search, ShoppingCart, Package, Zap, Download, Loader2, Filter, X } from 'lucide-react';
+import { getEstadisticasValoraciones } from '../api/valoraciones';
+import { ValoracionEstrella } from './ValoracionesProducto';
+import { Search, ShoppingCart, Package, Zap, Download, Loader2, Filter, X, Tag, Sparkles, Repeat } from 'lucide-react';
 
 interface TiendaOnlineProps {
   rol: 'entrenador' | 'gimnasio';
@@ -22,6 +24,7 @@ export const TiendaOnline: React.FC<TiendaOnlineProps> = ({
   const [filtros, setFiltros] = useState<FiltrosProductos>({});
   const [busqueda, setBusqueda] = useState('');
   const [filtrosAvanzados, setFiltrosAvanzados] = useState(false);
+  const [cargandoValoraciones, setCargandoValoraciones] = useState(false);
 
   useEffect(() => {
     cargarProductos();
@@ -32,10 +35,29 @@ export const TiendaOnline: React.FC<TiendaOnlineProps> = ({
     try {
       const data = await getProductos(rol, filtros);
       setProductos(data);
+      
+      // Cargar estadísticas de valoraciones para cada producto
+      setCargandoValoraciones(true);
+      const productosConValoraciones = await Promise.all(
+        data.map(async (producto) => {
+          try {
+            const estadisticas = await getEstadisticasValoraciones(producto.id);
+            return {
+              ...producto,
+              estadisticasValoraciones: estadisticas,
+            };
+          } catch (error) {
+            console.error(`Error cargando valoraciones para producto ${producto.id}:`, error);
+            return producto;
+          }
+        })
+      );
+      setProductos(productosConValoraciones);
     } catch (error) {
       console.error('Error cargando productos:', error);
     } finally {
       setCargando(false);
+      setCargandoValoraciones(false);
     }
   };
 
@@ -54,7 +76,16 @@ export const TiendaOnline: React.FC<TiendaOnlineProps> = ({
 
   const categorias = Array.from(
     new Set(productos.map((p) => p.categoria))
-  );
+  ).sort();
+
+  const handleCategoriaClick = (categoria: string) => {
+    if (filtros.categoria === categoria) {
+      // Si la categoría ya está seleccionada, la deseleccionamos
+      setFiltros({ ...filtros, categoria: undefined });
+    } else {
+      setFiltros({ ...filtros, categoria });
+    }
+  };
 
   const tipos = [
     { value: 'servicio', label: 'Servicios' },
@@ -86,6 +117,42 @@ export const TiendaOnline: React.FC<TiendaOnlineProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Navegación por Categorías - Destacada para entrenadores */}
+      {rol === 'entrenador' && categorias.length > 0 && (
+        <Card className="bg-white shadow-sm">
+          <div className="p-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Categorías de Entrenamiento
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={handleLimpiarFiltros}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                  !filtros.categoria
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                Todas
+              </button>
+              {categorias.map((categoria) => (
+                <button
+                  key={categoria}
+                  onClick={() => handleCategoriaClick(categoria)}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                    filtros.categoria === categoria
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  {categoria}
+                </button>
+              ))}
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Sistema de Filtros */}
       <Card className="mb-6 bg-white shadow-sm">
         <div className="space-y-4">
@@ -234,22 +301,80 @@ export const TiendaOnline: React.FC<TiendaOnlineProps> = ({
                     <h3 className="text-lg font-semibold text-gray-900 flex-1">
                       {producto.nombre}
                     </h3>
-                    <Badge variant={getTipoBadge(producto.tipo) as any}>
-                      {getTipoIcono(producto.tipo)}
-                      <span className="ml-1 capitalize text-xs">
-                        {producto.tipo.replace('-', ' ')}
-                      </span>
-                    </Badge>
+                    <div className="flex flex-col gap-1 items-end">
+                      {producto.metadatos?.suscripcion?.esSuscripcion && (
+                        <Badge variant="info" className="text-xs">
+                          <Repeat size={12} className="mr-1" />
+                          Suscripción
+                        </Badge>
+                      )}
+                      {producto.metadatos?.esBono && (
+                        <Badge variant="success" className="text-xs">
+                          <Sparkles size={12} className="mr-1" />
+                          Bono
+                        </Badge>
+                      )}
+                      {producto.metadatos?.opcionesPersonalizables && producto.metadatos.opcionesPersonalizables.length > 0 && (
+                        <Badge variant="secondary" className="text-xs">
+                          <Tag size={12} className="mr-1" />
+                          Personalizable
+                        </Badge>
+                      )}
+                      <Badge variant={getTipoBadge(producto.tipo) as any}>
+                        {getTipoIcono(producto.tipo)}
+                        <span className="ml-1 capitalize text-xs">
+                          {producto.tipo.replace('-', ' ')}
+                        </span>
+                      </Badge>
+                    </div>
                   </div>
 
                   <p className="text-sm text-gray-600 line-clamp-2">
                     {producto.descripcion}
                   </p>
 
+                  {/* Valoraciones */}
+                  {producto.estadisticasValoraciones && producto.estadisticasValoraciones.totalValoraciones > 0 && (
+                    <div className="py-2 border-t border-gray-100">
+                      <ValoracionEstrella
+                        promedio={producto.estadisticasValoraciones.promedio}
+                        totalValoraciones={producto.estadisticasValoraciones.totalValoraciones}
+                        size="sm"
+                        mostrarTotal={true}
+                      />
+                    </div>
+                  )}
+
+                  {/* Información de descuentos disponibles */}
+                  {producto.metadatos?.descuentosPorCantidad && producto.metadatos.descuentosPorCantidad.length > 0 && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-2">
+                      <div className="flex items-center gap-1 mb-1">
+                        <Tag size={12} className="text-green-600" />
+                        <span className="text-xs font-semibold text-green-700">
+                          Descuentos por cantidad:
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        {producto.metadatos.descuentosPorCantidad.map((desc, idx) => (
+                          <p key={idx} className="text-xs text-green-600">
+                            {desc.cantidadMinima}+ unidades: {desc.porcentajeDescuento}% descuento
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between pt-2">
-                    <span className="text-xl font-bold text-blue-600">
-                      €{producto.precio.toFixed(2)}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-xl font-bold text-blue-600">
+                        €{producto.precio.toFixed(2)}
+                      </span>
+                      {producto.metadatos?.sesiones && (
+                        <span className="text-xs text-gray-500">
+                          {producto.metadatos.sesiones} {producto.metadatos.sesiones === 1 ? 'sesión' : 'sesiones'}
+                        </span>
+                      )}
+                    </div>
                     {producto.stock !== undefined && (
                       <span className="text-xs text-gray-500">
                         Stock: {producto.stock}

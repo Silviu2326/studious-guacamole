@@ -229,7 +229,6 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     { id: 'funnels-adquisicion', label: 'Funnels & Adquisición', icon: Layers, path: '/dashboard/marketing/funnels-adquisicion' },
     { id: 'campanas-automatizacion', label: 'Campañas & Automatización', icon: Workflow, path: '/dashboard/marketing/campanas-automatizacion' },
     { id: 'content-social-studio', label: 'Content & Social Studio', icon: SparklesIcon, path: '/dashboard/content/social-studio' },
-    { id: 'review-testimonial-engine', label: 'Reviews & Testimonios', icon: Star, path: '/dashboard/reviews' },
     { id: 'comunidad-fidelizacion', label: 'Comunidad & Fidelización', icon: HeartHandshake, path: '/comunidad-fidelizacion' },
     { id: 'inteligencia-ia-experimentacion', label: 'IA & Experimentación', icon: Brain, path: '/dashboard/intelligence/ia-experimentacion' },
   ];
@@ -240,7 +239,6 @@ const marketingGimnasioItems: NavItem[] = [
     { id: 'campanas-promociones', label: 'Campañas & Promociones', icon: Megaphone, path: '/dashboard/marketing/campanas-promociones' },
     { id: 'campanas-automatizacion', label: 'Campañas & Automatización', icon: Workflow, path: '/dashboard/marketing/campanas-automatizacion' },
     { id: 'landing-pages-simples', label: 'Landing Pages Simples', icon: Globe, path: '/dashboard/marketing/landing-pages-simples' },
-    { id: 'resenas-testimonios', label: 'Gestión de Reseñas & Testimonios', icon: Star, path: '/dashboard/marketing/resenas-testimonios' },
     { id: 'comunidad-fidelizacion', label: 'Comunidad & Fidelización', icon: HeartHandshake, path: '/comunidad-fidelizacion' },
     { id: 'campanas-retencion-riesgo', label: 'Campañas Retención & Riesgo de Baja', icon: AlertCircle, path: '/dashboard/marketing/retencion-riesgo' },
     { id: 'planner-redes-sociales-simple', label: 'Redes Sociales (Planner simple)', icon: Calendar, path: '/dashboard/marketing/social-planner-simple' },
@@ -277,7 +275,6 @@ const marketingGimnasioItems: NavItem[] = [
     { id: 'video-studio', label: 'Video Marketing & Automation', icon: Video, path: '/dashboard/content/video-studio' },
     { id: 'hub-contenidos-ugc', label: 'Hub de Contenidos & UGC', icon: Image, path: '/dashboard/contenido/ugc-hub' },
     // Confianza & Social Proof
-    { id: 'review-testimonial-engine', label: 'Review & Testimonial Engine', icon: Star, path: '/dashboard/reviews' },
     { id: 'comunidad-fidelizacion', label: 'Comunidad & Fidelización', icon: HeartHandshake, path: '/comunidad-fidelizacion' },
     { id: 'feedback-encuestas', label: 'Feedback Loop & Encuestas Inteligentes', icon: MessageSquare, path: '/dashboard/feedback/surveys' },
     // Publicidad & Retargeting

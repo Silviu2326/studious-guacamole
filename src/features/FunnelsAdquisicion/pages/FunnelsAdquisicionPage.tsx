@@ -3,14 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Layers, Rocket, Sparkles, Target } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { Badge, Button, Card, MetricCards, Tabs } from '../../../components/componentsreutilizables';
-import { WorkspaceBlueprints } from '../components';
 import { FunnelsAdquisicionService } from '../services/funnelsAdquisicionService';
-import {
-  AcquisitionFunnelPerformance,
-  AcquisitionKPI,
-  AcquisitionWorkspaceBlueprint,
-  FunnelsAcquisitionPeriod,
-} from '../types';
+import { AcquisitionFunnelPerformance, AcquisitionKPI, FunnelsAcquisitionPeriod } from '../types';
 
 const periodTabs = [
   { id: '7d', label: 'Últimos 7 días' },
@@ -39,8 +33,6 @@ export default function FunnelsAdquisicionPage() {
   const [activeSection, setActiveSection] = useState<SectionTabId>('builder');
   const [kpis, setKpis] = useState<AcquisitionKPI[]>([]);
   const [funnels, setFunnels] = useState<AcquisitionFunnelPerformance[]>([]);
-  const [blueprints, setBlueprints] = useState<AcquisitionWorkspaceBlueprint[]>([]);
-  const [activeWorkspace, setActiveWorkspace] = useState<string>('funnels-builder');
 
   const loadSnapshot = useCallback(async () => {
     setLoadingSnapshot(true);
@@ -48,7 +40,6 @@ export default function FunnelsAdquisicionPage() {
       const snapshot = await FunnelsAdquisicionService.getSnapshot(period);
       setKpis(snapshot.kpis);
       setFunnels(snapshot.funnels);
-      setBlueprints(snapshot.workspaceBlueprints);
     } catch (error) {
       console.error('[FunnelsAdquisicionPage] Error cargando datos:', error);
     } finally {
@@ -59,26 +50,6 @@ export default function FunnelsAdquisicionPage() {
   useEffect(() => {
     loadSnapshot();
   }, [loadSnapshot]);
-
-  useEffect(() => {
-    if (blueprints.length > 0 && !blueprints.some((blueprint) => blueprint.id === activeWorkspace)) {
-      setActiveWorkspace(blueprints[0].id);
-    }
-  }, [blueprints, activeWorkspace]);
-
-  const workspaceTabs = useMemo(
-    () =>
-      blueprints.map((workspace) => ({
-        id: workspace.id,
-        label: workspace.title,
-      })),
-    [blueprints],
-  );
-
-  const currentBlueprint = useMemo(
-    () => blueprints.find((workspace) => workspace.id === activeWorkspace),
-    [blueprints, activeWorkspace],
-  );
 
   const currencyFormatter = useMemo(
     () =>
@@ -358,26 +329,6 @@ export default function FunnelsAdquisicionPage() {
                 </tbody>
               </table>
             </div>
-          </div>
-
-          <div className="rounded-2xl border border-gray-200/60 bg-white/90 p-6 shadow-sm backdrop-blur-sm dark:border-slate-800/60 dark:bg-slate-900/60">
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <div className="flex items-center gap-3">
-                <Target className="w-5 h-5 text-indigo-500" />
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">
-                  Workspaces de ejecución: crea, captura y segmenta
-                </h2>
-              </div>
-            </div>
-            <Tabs
-              items={workspaceTabs}
-              activeTab={activeWorkspace}
-              onTabChange={(tabId) => setActiveWorkspace(tabId)}
-              variant="underline"
-              size="md"
-              className="mb-6"
-            />
-            <WorkspaceBlueprints blueprint={currentBlueprint} loading={loadingSnapshot} />
           </div>
 
           <div className="rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white p-6 shadow-lg flex flex-wrap items-center justify-between gap-4">

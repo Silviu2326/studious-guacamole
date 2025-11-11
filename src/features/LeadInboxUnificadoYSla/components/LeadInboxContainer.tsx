@@ -1,14 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../../../components/componentsreutilizables';
 import { getLeads, Lead } from '../api/inbox';
-import { Inbox, AlertCircle, Loader2 } from 'lucide-react';
+import { Inbox, AlertCircle, Loader2, Settings, Bell } from 'lucide-react';
 import { InboxMetrics } from './InboxMetrics';
 import { LeadCard } from './LeadCard';
 import { LeadFilters } from './LeadFilters';
 import { SLAMonitoringPanel } from './SLAMonitoringPanel';
 import { ChannelStats } from './ChannelStats';
+import { ConversationView } from './ConversationView';
+import { NotificationSettings } from './NotificationSettings';
+import { ResponseTimeStats } from './ResponseTimeStats';
+import { ConversationService } from '../services/conversationService';
+import { NotificationService } from '../services/notificationService';
+import { useAuth } from '../../../context/AuthContext';
 
 export const LeadInboxContainer: React.FC = () => {
+  const { user } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,6 +24,10 @@ export const LeadInboxContainer: React.FC = () => {
   const [channelFilter, setChannelFilter] = useState<Lead['sourceChannel'] | 'all'>('all');
   const [slaFilter, setSlaFilter] = useState<Lead['slaStatus'] | 'all'>('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [selectedChannel, setSelectedChannel] = useState<'instagram' | 'whatsapp'>('whatsapp');
+  const [leadsWithHours, setLeadsWithHours] = useState<Map<string, number>>(new Map());
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
 
   useEffect(() => {
     loadLeads();
@@ -28,6 +39,15 @@ export const LeadInboxContainer: React.FC = () => {
     try {
       const response = await getLeads();
       setLeads(response.data);
+      
+      // Calculate hours without response for each lead
+      const hoursMap = new Map<string, number>();
+      for (const lead of response.data) {
+        const messages = await ConversationService.getConversation(lead.id);
+        const hours = ConversationService.getHoursWithoutResponse(messages);
+        hoursMap.set(lead.id, hours);
+      }
+      setLeadsWithHours(hoursMap);
     } catch (err: any) {
       setError(err.message || 'Error al cargar los leads');
     } finally {
@@ -83,11 +103,34 @@ export const LeadInboxContainer: React.FC = () => {
     const matchesSLA = slaFilter === 'all' || lead.slaStatus === slaFilter;
     
     return matchesSearch && matchesStatus && matchesChannel && matchesSLA;
+  }).sort((a, b) => {
+    // US-03: Sort by urgency - leads without response for 24+ hours first
+    const hoursA = leadsWithHours.get(a.id) || 0;
+    const hoursB = leadsWithHours.get(b.id) || 0;
+    
+    // Critical leads (24+ hours) first
+    if (hoursA >= 24 && hoursB < 24) return -1;
+    if (hoursB >= 24 && hoursA < 24) return 1;
+    
+    // Then by hours without response (descending)
+    if (hoursA !== hoursB) return hoursB - hoursA;
+    
+    // Finally by update time (most recent first)
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
 
-  const handleLeadSelect = (leadId: string) => {
-    console.log('Ver conversación del lead:', leadId);
-    // En producción, abrir modal o navegar a vista detallada
+  const handleLeadSelect = (leadId: string, channel: 'instagram' | 'whatsapp') => {
+    const lead = leads.find(l => l.id === leadId);
+    if (lead) {
+      setSelectedLead(lead);
+      setSelectedChannel(channel);
+    }
+  };
+
+  const handleCloseConversation = () => {
+    setSelectedLead(null);
+    // Reload leads to update hours without response
+    loadLeads();
   };
 
   if (error) {
@@ -113,11 +156,24 @@ export const LeadInboxContainer: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header with notification settings */}
+      <div className="flex items-center justify-between">
+        <div />
+        <button
+          onClick={() => setShowNotificationSettings(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <Bell className="w-4 h-4" />
+          Notificaciones
+        </button>
+      </div>
+
       {/* Métricas */}
       <InboxMetrics {...metrics} />
 
-      {/* Grid con SLA Monitoring y Channel Stats */}
+      {/* Grid con Response Time Stats y SLA Monitoring */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ResponseTimeStats userId={user?.id || 'unknown'} />
         <SLAMonitoringPanel
           totalLeads={metrics.totalLeads}
           onTime={leads.filter(l => l.slaStatus === 'on_time').length}
@@ -126,8 +182,10 @@ export const LeadInboxContainer: React.FC = () => {
           avgResponseTime={metrics.avgResponseTime}
           slaTarget={60}
         />
-        <ChannelStats leads={leads} />
       </div>
+
+      {/* Channel Stats */}
+      <ChannelStats leads={leads} />
 
       {/* Filtros */}
       <LeadFilters
@@ -170,10 +228,26 @@ export const LeadInboxContainer: React.FC = () => {
                 key={lead.id}
                 lead={lead}
                 onSelect={handleLeadSelect}
+                hoursWithoutResponse={leadsWithHours.get(lead.id) || 0}
               />
             ))}
           </div>
         </>
+      )}
+
+      {/* Conversation View Modal */}
+      {selectedLead && (
+        <ConversationView
+          leadId={selectedLead.id}
+          leadName={selectedLead.name}
+          channel={selectedChannel}
+          onClose={handleCloseConversation}
+        />
+      )}
+
+      {/* Notification Settings Modal */}
+      {showNotificationSettings && (
+        <NotificationSettings onClose={() => setShowNotificationSettings(false)} />
       )}
     </div>
   );

@@ -21,4 +21,7 @@ export * from './LeadChat';
 export * from './AssignmentRulesManager';
 export * from './QuoteManager';
 export * from './QuoteBuilder';
+export * from './LeadTagSelector';
+export * from './ReminderScheduler';
+export * from './LeadTimeline';
 

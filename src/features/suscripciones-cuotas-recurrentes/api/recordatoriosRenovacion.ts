@@ -6,9 +6,112 @@ import {
 } from '../types';
 import { getSuscripciones } from './suscripciones';
 
+const BASE_DATE = new Date();
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const formatDate = (date: Date) => date.toISOString().split('T')[0];
+const addDays = (days: number) =>
+  formatDate(new Date(BASE_DATE.getTime() + days * DAY_IN_MS));
+
 // Mock data
-const mockRecordatorios: RecordatorioRenovacion[] = [];
-const mockConfiguraciones: Map<string, ConfiguracionRecordatorios> = new Map();
+const mockRecordatorios: RecordatorioRenovacion[] = [
+  {
+    id: 'rec-sub1-7',
+    suscripcionId: 'sub1',
+    clienteId: 'c1',
+    clienteNombre: 'Juan Pérez',
+    clienteEmail: 'juan@example.com',
+    clienteTelefono: '+34600123456',
+    fechaRenovacion: addDays(9),
+    diasAnticipacion: 7,
+    monto: 280,
+    estado: 'enviado',
+    fechaEnvio: addDays(-1),
+    canalesEnvio: ['email'],
+    entrenadorId: 'trainer1',
+    fechaCreacion: addDays(-1),
+  },
+  {
+    id: 'rec-sub2-3',
+    suscripcionId: 'sub2',
+    clienteId: 'c2',
+    clienteNombre: 'María García',
+    clienteEmail: 'maria@example.com',
+    clienteTelefono: '+34600234567',
+    fechaRenovacion: addDays(4),
+    diasAnticipacion: 3,
+    monto: 195,
+    estado: 'pendiente',
+    canalesEnvio: ['email', 'whatsapp'],
+    entrenadorId: 'trainer1',
+    fechaCreacion: addDays(-1),
+  },
+  {
+    id: 'rec-sub6-5',
+    suscripcionId: 'sub6',
+    clienteId: 'c6',
+    clienteNombre: 'Elena Sánchez',
+    clienteEmail: 'elena@example.com',
+    clienteTelefono: '+34600345678',
+    fechaRenovacion: addDays(14),
+    diasAnticipacion: 5,
+    monto: 520,
+    estado: 'pendiente',
+    canalesEnvio: ['email'],
+    entrenadorId: 'trainer1',
+    fechaCreacion: addDays(-2),
+  },
+  {
+    id: 'rec-sub5-10',
+    suscripcionId: 'sub5',
+    clienteId: 'grp1-owner',
+    clienteNombre: 'Equipo Elite',
+    clienteEmail: 'grupo@example.com',
+    fechaRenovacion: addDays(11),
+    diasAnticipacion: 10,
+    monto: 540,
+    estado: 'enviado',
+    fechaEnvio: addDays(-10),
+    canalesEnvio: ['email'],
+    entrenadorId: 'trainer1',
+    fechaCreacion: addDays(-10),
+  },
+  {
+    id: 'rec-sub4-1',
+    suscripcionId: 'sub4',
+    clienteId: 'c4',
+    clienteNombre: 'Ana Martínez',
+    clienteEmail: 'ana@example.com',
+    clienteTelefono: '+34600567890',
+    fechaRenovacion: addDays(20),
+    diasAnticipacion: 1,
+    monto: 55,
+    estado: 'fallido',
+    canalesEnvio: ['sms'],
+    fechaCreacion: addDays(-1),
+  },
+];
+
+const mockConfiguraciones: Map<string, ConfiguracionRecordatorios> = new Map([
+  [
+    'sub1',
+    {
+      suscripcionId: 'sub1',
+      activo: true,
+      diasAnticipacion: [7, 3, 1],
+      canalesEnvio: ['email'],
+    },
+  ],
+  [
+    'sub2',
+    {
+      suscripcionId: 'sub2',
+      activo: true,
+      diasAnticipacion: [5, 2],
+      canalesEnvio: ['email', 'whatsapp'],
+      plantillaEmail: 'Hola {{cliente}}, recuerda tu renovación en {{fechaRenovacion}}.',
+    },
+  ],
+]);
 
 /**
  * Obtiene las configuraciones de recordatorios para una suscripción

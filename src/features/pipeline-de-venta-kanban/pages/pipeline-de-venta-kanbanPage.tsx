@@ -156,7 +156,7 @@ export default function PipelineDeVentaKanbanPage() {
                   </h1>
                   <p className="text-gray-600">
                     {esEntrenador
-                      ? 'Gestiona tu pipeline de ventas personal: contactado → enviado precio → llamada → cerrado. Sigue el progreso de cada lead en tiempo real.'
+                      ? 'Gestiona tu pipeline de ventas personal: Contacto nuevo → Primera charla → Enviado precio → Llamada → Cliente. Sigue el progreso de cada lead en tiempo real con etapas simples y visuales.'
                       : 'Sistema completo de gestión de pipeline comercial. Gestiona tours, ofertas, matrículas y altas. Visualiza y optimiza tu proceso de ventas.'}
                   </p>
                 </div>

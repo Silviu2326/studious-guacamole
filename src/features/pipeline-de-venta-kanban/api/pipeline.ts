@@ -3,23 +3,31 @@ import { getPhases } from './phases';
 
 // Datos mock para ventas
 const mockSales: Sale[] = [
-  // Entrenador - Contactado
+  // US-11: Entrenador - Contacto Nuevo
   {
     id: '1',
     leadId: 'lead1',
     leadName: 'Juan Pérez',
     leadEmail: 'juan@example.com',
     leadPhone: '+34 600 123 456',
-    phase: 'contactado',
+    phase: 'contacto_nuevo',
     businessType: 'entrenador',
-    probability: 40,
+    probability: 20,
     value: 500,
-    notes: ['Interesado en entrenamiento personal'],
-    tags: ['caliente'],
+    serviceType: '1-1',
+    notes: ['Lead nuevo de Instagram'],
+    tags: ['instagram'],
     interactions: [],
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
     updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
     lastActivity: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+    lastContact: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // US-14
+    phaseHistory: [{
+      id: 'hist-1',
+      toPhase: 'contacto_nuevo',
+      movedBy: 'system',
+      movedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
+    }]
   },
   {
     id: '2',
@@ -27,18 +35,32 @@ const mockSales: Sale[] = [
     leadName: 'María García',
     leadEmail: 'maria@example.com',
     leadPhone: '+34 611 234 567',
-    phase: 'contactado',
+    phase: 'primera_charla',
     businessType: 'entrenador',
-    probability: 30,
+    probability: 40,
     value: 600,
-    notes: [],
-    tags: [],
+    serviceType: 'online',
+    notes: ['Primera charla realizada, interesada'],
+    tags: ['caliente'],
     interactions: [],
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
     updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
     lastActivity: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+    lastContact: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // US-14
+    phaseHistory: [{
+      id: 'hist-2a',
+      toPhase: 'contacto_nuevo',
+      movedBy: 'system',
+      movedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+    }, {
+      id: 'hist-2b',
+      fromPhase: 'contacto_nuevo',
+      toPhase: 'primera_charla',
+      movedBy: 'trainer1',
+      movedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
+    }]
   },
-  // Entrenador - Enviado Precio
+  // Entrenador - Enviado Precio - US-15: Más de 3 días sin contacto
   {
     id: '3',
     leadId: 'lead3',
@@ -49,14 +71,34 @@ const mockSales: Sale[] = [
     businessType: 'entrenador',
     probability: 60,
     value: 750,
+    serviceType: 'nutricion',
     notes: ['Precio enviado el lunes'],
     tags: ['interesado'],
     interactions: [],
     createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
     updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
     lastActivity: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    lastContact: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // US-14: 5 días sin contacto
+    phaseHistory: [{
+      id: 'hist-3a',
+      toPhase: 'contacto_nuevo',
+      movedBy: 'system',
+      movedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+    }, {
+      id: 'hist-3b',
+      fromPhase: 'contacto_nuevo',
+      toPhase: 'primera_charla',
+      movedBy: 'trainer1',
+      movedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000)
+    }, {
+      id: 'hist-3c',
+      fromPhase: 'primera_charla',
+      toPhase: 'enviado_precio',
+      movedBy: 'trainer1',
+      movedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+    }]
   },
-  // Entrenador - Llamada
+  // Entrenador - Llamada - US-16: Con llamada agendada
   {
     id: '4',
     leadId: 'lead4',
@@ -67,12 +109,81 @@ const mockSales: Sale[] = [
     businessType: 'entrenador',
     probability: 80,
     value: 800,
-    notes: ['Llamada realizada, muy interesada'],
+    serviceType: 'combo',
+    notes: ['Llamada agendada para mañana'],
     tags: ['caliente', 'prioridad'],
     interactions: [],
     createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
     updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
     lastActivity: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+    lastContact: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // US-14
+    scheduledCall: { // US-16
+      id: 'call-4',
+      saleId: '4',
+      scheduledDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000), // Mañana
+      reminderSent: false,
+      completed: false,
+      notes: 'Llamada de seguimiento sobre la propuesta',
+      createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
+    },
+    phaseHistory: [{
+      id: 'hist-4a',
+      toPhase: 'contacto_nuevo',
+      movedBy: 'system',
+      movedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    }, {
+      id: 'hist-4b',
+      fromPhase: 'contacto_nuevo',
+      toPhase: 'primera_charla',
+      movedBy: 'trainer1',
+      movedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+    }, {
+      id: 'hist-4c',
+      fromPhase: 'primera_charla',
+      toPhase: 'enviado_precio',
+      movedBy: 'trainer1',
+      movedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+    }, {
+      id: 'hist-4d',
+      fromPhase: 'enviado_precio',
+      toPhase: 'llamada',
+      movedBy: 'trainer1',
+      movedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      reason: 'Lead muy interesado, agendar llamada'
+    }]
+  },
+  // Entrenador - Cliente
+  {
+    id: 'ent-10',
+    leadId: 'lead10',
+    leadName: 'Roberto Díaz',
+    leadEmail: 'roberto@example.com',
+    leadPhone: '+34 699 111 222',
+    phase: 'cliente',
+    businessType: 'entrenador',
+    probability: 100,
+    value: 900,
+    serviceType: '1-1',
+    notes: ['Cliente cerrado!'],
+    tags: ['cerrado'],
+    interactions: [],
+    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
+    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    lastActivity: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    lastContact: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // US-14
+    phaseHistory: [{
+      id: 'hist-10a',
+      toPhase: 'contacto_nuevo',
+      movedBy: 'system',
+      movedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
+    }, {
+      id: 'hist-10b',
+      fromPhase: 'contacto_nuevo',
+      toPhase: 'cliente',
+      movedBy: 'trainer1',
+      movedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      reason: '¡Cerrado! Comenzó esta semana'
+    }]
   },
   // Gimnasio - Tour Hecho
   {
@@ -210,7 +321,8 @@ export const getPipeline = async (
   });
 };
 
-export const moveSale = async (saleId: string, newPhase: PipelinePhase): Promise<Sale> => {
+// US-12: Movimiento de ventas con historial
+export const moveSale = async (saleId: string, newPhase: PipelinePhase, reason?: string): Promise<Sale> => {
   await new Promise(resolve => setTimeout(resolve, 200));
   
   const sale = mockSales.find(s => s.id === saleId);
@@ -218,9 +330,24 @@ export const moveSale = async (saleId: string, newPhase: PipelinePhase): Promise
     throw new Error('Venta no encontrada');
   }
   
+  const oldPhase = sale.phase;
   sale.phase = newPhase;
   sale.updatedAt = new Date();
   sale.lastActivity = new Date();
+  
+  // Agregar entrada al historial
+  if (!sale.phaseHistory) {
+    sale.phaseHistory = [];
+  }
+  
+  sale.phaseHistory.push({
+    id: `hist-${Date.now()}`,
+    fromPhase: oldPhase,
+    toPhase: newPhase,
+    movedBy: 'user', // En producción, usar el ID del usuario actual
+    movedAt: new Date(),
+    reason
+  });
   
   return sale;
 };

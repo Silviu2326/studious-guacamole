@@ -1,64 +1,109 @@
 import { Renovacion } from '../types';
 
+const BASE_DATE = new Date();
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const formatDate = (date: Date) => date.toISOString().split('T')[0];
+const addDays = (days: number) =>
+  formatDate(new Date(BASE_DATE.getTime() + days * DAY_IN_MS));
+const addMonths = (months: number) => {
+  const date = new Date(BASE_DATE);
+  date.setMonth(date.getMonth() + months);
+  return formatDate(date);
+};
+
 // Mock data
 const mockRenovaciones: Renovacion[] = [
   {
-    id: 'ren1',
+    id: 'ren-sub1',
     suscripcionId: 'sub1',
-    fechaRenovacion: '2024-11-01',
-    monto: 150,
-    estado: 'programada',
-  },
-  {
-    id: 'ren2',
-    suscripcionId: 'sub2',
-    fechaRenovacion: '2024-10-15',
+    fechaRenovacion: addDays(9),
     monto: 280,
-    estado: 'procesada',
-    fechaProcesamiento: '2024-10-15',
-  },
-  {
-    id: 'ren3',
-    suscripcionId: 'sub3',
-    fechaRenovacion: '2024-11-01',
-    monto: 80,
     estado: 'programada',
   },
   {
-    id: 'ren4',
-    suscripcionId: 'sub5',
-    fechaRenovacion: '2024-11-01',
-    monto: 120,
+    id: 'ren-sub2',
+    suscripcionId: 'sub2',
+    fechaRenovacion: addDays(4),
+    monto: 195,
     estado: 'programada',
   },
   {
-    id: 'ren5',
+    id: 'ren-sub6',
     suscripcionId: 'sub6',
-    fechaRenovacion: '2024-11-01',
-    monto: 480,
+    fechaRenovacion: addDays(14),
+    monto: 520,
     estado: 'programada',
   },
   {
-    id: 'ren6',
+    id: 'ren-sub10',
+    suscripcionId: 'sub10',
+    fechaRenovacion: addDays(12),
+    monto: 99,
+    estado: 'programada',
+  },
+  {
+    id: 'ren-sub11',
+    suscripcionId: 'sub11',
+    fechaRenovacion: addDays(-18),
+    monto: 180,
+    estado: 'procesada',
+    fechaProcesamiento: addDays(-18),
+  },
+  {
+    id: 'ren-sub5',
+    suscripcionId: 'sub5',
+    fechaRenovacion: addDays(11),
+    monto: 540,
+    estado: 'programada',
+  },
+  {
+    id: 'ren-sub5-m1',
+    suscripcionId: 'sub5-m1',
+    fechaRenovacion: addDays(11),
+    monto: 180,
+    estado: 'programada',
+  },
+  {
+    id: 'ren-sub5-m2',
+    suscripcionId: 'sub5-m2',
+    fechaRenovacion: addDays(11),
+    monto: 180,
+    estado: 'programada',
+  },
+  {
+    id: 'ren-sub3',
+    suscripcionId: 'sub3',
+    fechaRenovacion: addDays(18),
+    monto: 85,
+    estado: 'programada',
+  },
+  {
+    id: 'ren-sub4',
+    suscripcionId: 'sub4',
+    fechaRenovacion: addDays(20),
+    monto: 55,
+    estado: 'programada',
+  },
+  {
+    id: 'ren-sub7',
     suscripcionId: 'sub7',
-    fechaRenovacion: '2025-01-01',
+    fechaRenovacion: addMonths(2),
     monto: 240,
     estado: 'programada',
   },
   {
-    id: 'ren7',
-    suscripcionId: 'sub9',
-    fechaRenovacion: '2025-01-01',
-    monto: 1440,
-    estado: 'programada',
+    id: 'ren-sub8',
+    suscripcionId: 'sub8',
+    fechaRenovacion: addDays(-12),
+    monto: 50,
+    estado: 'fallida',
   },
   {
-    id: 'ren8',
-    suscripcionId: 'sub3',
-    fechaRenovacion: '2024-10-01',
-    monto: 80,
-    estado: 'procesada',
-    fechaProcesamiento: '2024-09-30',
+    id: 'ren-sub9',
+    suscripcionId: 'sub9',
+    fechaRenovacion: addMonths(1),
+    monto: 1440,
+    estado: 'programada',
   },
 ];
 

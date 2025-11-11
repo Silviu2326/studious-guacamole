@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { CalendarDays, Plus, X } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
-import { Card, Tabs, Button, MetricCards, Modal, Input, Select, Textarea } from '../../../components/componentsreutilizables';
+import { Card, Button, Modal, Input, Select, Textarea } from '../../../components/componentsreutilizables';
 import {
   AgendaCalendar,
   VistaPersonal,
@@ -34,7 +34,8 @@ export default function AgendaCalendarioPage() {
   const { user } = useAuth();
   const esEntrenador = user?.role === 'entrenador';
   const role = esEntrenador ? 'entrenador' : 'gimnasio';
-  const [tabActiva, setTabActiva] = useState<string>('calendario');
+  const [tabPrimaria, setTabPrimaria] = useState<string>('grupo-calendario');
+  const [tabSecundaria, setTabSecundaria] = useState<string>('calendario');
   const [citas, setCitas] = React.useState<any[]>([]);
   const [mostrarModalCita, setMostrarModalCita] = React.useState(false);
   const [clienteSeleccionadoHistorial, setClienteSeleccionadoHistorial] = React.useState<{ id: string; nombre: string } | null>(null);
@@ -62,30 +63,110 @@ export default function AgendaCalendarioPage() {
     cargarCitas();
   }, [role]);
 
-  const tabs = useMemo(() => {
-    const comunes = [
-      { id: 'calendario', label: 'Calendario', icon: <CalendarDays className="w-4 h-4" /> },
-      { id: 'reservas', label: 'Reservas', icon: <CalendarDays className="w-4 h-4" /> },
-      { id: 'bloqueos', label: 'Bloqueos', icon: <CalendarDays className="w-4 h-4" /> },
-      { id: 'horarios', label: 'Gestión de Horarios', icon: <CalendarDays className="w-4 h-4" /> },
-      ...(esEntrenador ? [{ id: 'tiempo-descanso', label: 'Tiempo de Descanso', icon: <CalendarDays className="w-4 h-4" /> }] : []),
-      ...(esEntrenador ? [{ id: 'sincronizacion-calendario', label: 'Sincronización Calendario', icon: <CalendarDays className="w-4 h-4" /> }] : []),
-      ...(esEntrenador ? [{ id: 'enlaces-reserva', label: 'Enlaces de Reserva', icon: <CalendarDays className="w-4 h-4" /> }] : []),
-      { id: 'recordatorios', label: 'Recordatorios', icon: <CalendarDays className="w-4 h-4" /> },
-      ...(esEntrenador ? [{ id: 'resumen-diario', label: 'Resumen Diario', icon: <CalendarDays className="w-4 h-4" /> }] : []),
-      ...(esEntrenador ? [{ id: 'estadisticas-confirmacion', label: 'Estadísticas Confirmación', icon: <CalendarDays className="w-4 h-4" /> }] : []),
-      ...(esEntrenador ? [{ id: 'estadisticas-no-shows', label: 'Estadísticas No-Shows', icon: <CalendarDays className="w-4 h-4" /> }] : []),
-      ...(esEntrenador ? [{ id: 'politica-cancelacion', label: 'Política de Cancelación', icon: <CalendarDays className="w-4 h-4" /> }] : []),
-      ...(esEntrenador ? [{ id: 'estadisticas-cumplimiento', label: 'Estadísticas Cumplimiento', icon: <CalendarDays className="w-4 h-4" /> }] : []),
-      ...(esEntrenador ? [{ id: 'historial-cliente', label: 'Historial Cliente', icon: <CalendarDays className="w-4 h-4" /> }] : []),
-      { id: 'analytics', label: 'Analytics Ocupación', icon: <CalendarDays className="w-4 h-4" /> },
-      ...(esEntrenador ? [{ id: 'dashboard-metricas', label: 'Dashboard Métricas', icon: <CalendarDays className="w-4 h-4" /> }] : []),
-      ...(esEntrenador ? [{ id: 'mapa-calor-horarios', label: 'Mapa de Calor Horarios', icon: <CalendarDays className="w-4 h-4" /> }] : []),
-      ...(esEntrenador ? [{ id: 'dashboard-financiero', label: 'Dashboard Financiero', icon: <CalendarDays className="w-4 h-4" /> }] : []),
-      ...(esEntrenador ? [{ id: 'lista-espera', label: 'Lista de Espera', icon: <CalendarDays className="w-4 h-4" /> }] : []),
+  const tabsPrimarios = useMemo(() => {
+    const createIcon = () => <CalendarDays className="w-4 h-4" />;
+
+    const grupos = [
+      {
+        id: 'grupo-calendario',
+        label: 'Calendario',
+        icon: createIcon(),
+        subTabs: [
+          { id: 'calendario', label: 'Calendario', icon: createIcon() },
+          { id: 'reservas', label: 'Reservas', icon: createIcon() },
+          { id: 'bloqueos', label: 'Bloqueos', icon: createIcon() },
+        ],
+      },
+      {
+        id: 'grupo-disponibilidad',
+        label: 'Disponibilidad',
+        icon: createIcon(),
+        subTabs: [
+          { id: 'horarios', label: esEntrenador ? 'Horario Personal' : 'Gestión de Horarios', icon: createIcon() },
+          ...(esEntrenador
+            ? [
+                { id: 'tiempo-descanso', label: 'Tiempo de Descanso', icon: createIcon() },
+                { id: 'sincronizacion-calendario', label: 'Sincronización', icon: createIcon() },
+                { id: 'enlaces-reserva', label: 'Enlaces de Reserva', icon: createIcon() },
+              ]
+            : []),
+        ],
+      },
+      {
+        id: 'grupo-automatizaciones',
+        label: 'Automatizaciones',
+        icon: createIcon(),
+        subTabs: [
+          { id: 'recordatorios', label: 'Recordatorios', icon: createIcon() },
+          ...(esEntrenador ? [{ id: 'resumen-diario', label: 'Resumen Diario', icon: createIcon() }] : []),
+        ],
+      },
+      {
+        id: 'grupo-clientes',
+        label: 'Clientes',
+        icon: createIcon(),
+        subTabs: [
+          ...(esEntrenador ? [{ id: 'historial-cliente', label: 'Historial Cliente', icon: createIcon() }] : []),
+          ...(esEntrenador ? [{ id: 'lista-espera', label: 'Lista de Espera', icon: createIcon() }] : []),
+        ],
+      },
+      {
+        id: 'grupo-politicas',
+        label: 'Políticas',
+        icon: createIcon(),
+        subTabs: [
+          ...(esEntrenador ? [{ id: 'politica-cancelacion', label: 'Política de Cancelación', icon: createIcon() }] : []),
+        ],
+      },
+      {
+        id: 'grupo-analitica',
+        label: 'Analítica',
+        icon: createIcon(),
+        subTabs: [
+          { id: 'analytics', label: 'Analytics Ocupación', icon: createIcon() },
+          ...(esEntrenador
+            ? [
+                { id: 'estadisticas-confirmacion', label: 'Confirmaciones', icon: createIcon() },
+                { id: 'estadisticas-no-shows', label: 'No-Shows', icon: createIcon() },
+                { id: 'estadisticas-cumplimiento', label: 'Cumplimiento', icon: createIcon() },
+                { id: 'dashboard-metricas', label: 'Dashboard Métricas', icon: createIcon() },
+                { id: 'mapa-calor-horarios', label: 'Mapa de Calor', icon: createIcon() },
+                { id: 'dashboard-financiero', label: 'Dashboard Financiero', icon: createIcon() },
+              ]
+            : []),
+        ],
+      },
     ];
-    return comunes;
+
+    return grupos
+      .map((grupo) => ({
+        ...grupo,
+        subTabs: grupo.subTabs.filter(Boolean),
+      }))
+      .filter((grupo) => grupo.subTabs.length > 0);
   }, [esEntrenador]);
+
+  React.useEffect(() => {
+    if (!tabsPrimarios.length) {
+      return;
+    }
+
+    let currentPrimary = tabPrimaria;
+    if (!tabsPrimarios.some((tab) => tab.id === currentPrimary)) {
+      currentPrimary = tabsPrimarios[0].id;
+      setTabPrimaria(currentPrimary);
+    }
+
+    const selectedPrimary = tabsPrimarios.find((tab) => tab.id === currentPrimary);
+    const subTabs = selectedPrimary?.subTabs ?? [];
+
+    if (!subTabs.some((sub) => sub.id === tabSecundaria)) {
+      const fallback = subTabs[0]?.id;
+      if (fallback && tabSecundaria !== fallback) {
+        setTabSecundaria(fallback);
+      }
+    }
+  }, [tabsPrimarios, tabPrimaria, tabSecundaria]);
 
   const handleCrearCita = async () => {
     const fechaCompleta = new Date(`${formCita.fecha}T${formCita.horaInicio}`);
@@ -111,7 +192,7 @@ export default function AgendaCalendarioPage() {
     const citaCreada = await crearCita(nuevaCita);
     setCitas([...citas, citaCreada]);
     setMostrarModalCita(false);
-    setFormCita(prev => ({
+    setFormCita(() => ({
       titulo: '',
       tipo: esEntrenador ? 'sesion-1-1' : 'clase-colectiva',
       fecha: '',
@@ -125,8 +206,12 @@ export default function AgendaCalendarioPage() {
     }));
   };
 
+  const subTabsActivos = useMemo(() => {
+    return tabsPrimarios.find((tab) => tab.id === tabPrimaria)?.subTabs ?? [];
+  }, [tabsPrimarios, tabPrimaria]);
+
   const renderTabContent = () => {
-    switch (tabActiva) {
+    switch (tabSecundaria) {
       case 'calendario':
         return (
           <>
@@ -251,31 +336,69 @@ export default function AgendaCalendarioPage() {
         <div className="space-y-6">
           {/* Sistema de Tabs */}
           <Card className="p-0 bg-white shadow-sm">
-            <div className="px-4 py-3">
+            <div className="px-4 py-3 space-y-3">
               <div
                 role="tablist"
                 aria-label="Secciones"
                 className="flex items-center gap-2 rounded-2xl bg-slate-100 p-1"
               >
-                {tabs.map((tab) => (
+                {tabsPrimarios.map((tab) => (
                   <button
                     key={tab.id}
-                    onClick={() => setTabActiva(tab.id)}
+                    onClick={() => {
+                      setTabPrimaria(tab.id);
+                      const primeraSub = tab.subTabs[0]?.id;
+                      if (primeraSub) {
+                        setTabSecundaria(primeraSub);
+                      }
+                    }}
                     className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all ${
-                      tabActiva === tab.id
+                      tabPrimaria === tab.id
                         ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
                     }`}
                     role="tab"
-                    aria-selected={tabActiva === tab.id}
+                    aria-selected={tabPrimaria === tab.id}
                   >
-                    <span className={tabActiva === tab.id ? 'opacity-100' : 'opacity-70'}>
+                    <span className={tabPrimaria === tab.id ? 'opacity-100' : 'opacity-70'}>
                       {tab.icon}
                     </span>
                     <span>{tab.label}</span>
                   </button>
                 ))}
               </div>
+              {subTabsActivos.length > 1 && (
+                <div
+                  role="tablist"
+                  aria-label="Subsecciones"
+                  className="flex flex-wrap items-center gap-2 rounded-2xl bg-slate-50 p-1"
+                >
+                  {subTabsActivos.map((subTab) => (
+                    <button
+                      key={subTab.id}
+                      onClick={() => setTabSecundaria(subTab.id)}
+                      className={`inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm transition-all ${
+                        tabSecundaria === subTab.id
+                          ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
+                      }`}
+                      role="tab"
+                      aria-selected={tabSecundaria === subTab.id}
+                    >
+                      <span className={tabSecundaria === subTab.id ? 'opacity-100' : 'opacity-70'}>
+                        {subTab.icon}
+                      </span>
+                      <span>{subTab.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {subTabsActivos.length === 1 && (
+                <div className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-1.5 text-sm font-medium text-slate-600">
+                  <span className="opacity-70">{subTabsActivos[0].icon}</span>
+                  <span>{subTabsActivos[0].label}</span>
+                </div>
+              )}
             </div>
           </Card>
 

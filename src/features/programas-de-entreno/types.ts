@@ -18,3 +18,4 @@ export type DayPlan = {
   sessions: DaySession[];
 };
 
+

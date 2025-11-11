@@ -22,6 +22,19 @@ export interface Lead {
   updatedAt: Date;
   lastContactDate?: Date;
   nextFollowUpDate?: Date;
+  reminders?: LeadReminder[]; // US-06
+}
+
+// US-06: Recordatorios
+export interface LeadReminder {
+  id: string;
+  leadId: string;
+  dueDate: Date;
+  message: string;
+  completed: boolean;
+  snoozedUntil?: Date;
+  createdBy: string;
+  createdAt: Date;
 }
 
 export type LeadSource =

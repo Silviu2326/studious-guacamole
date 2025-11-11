@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { Card, MetricCards } from '../../../components/componentsreutilizables';
 import {
@@ -27,6 +27,7 @@ import {
   GestionReservasRecurrentes,
   ListaSesionesDia,
 } from '../components';
+import type { LucideIcon } from 'lucide-react';
 import { Calendar, Clock, DollarSign, TrendingUp, Users, Bell, XCircle, BarChart3, FileText, Link2, Settings, CalendarDays, Video, StickyNote, AlertCircle, Package, Shield, Activity, Timer, Award, RefreshCw, List } from 'lucide-react';
 import { Reserva } from '../types';
 import { getReservas } from '../api';
@@ -41,9 +42,12 @@ import { getReservas } from '../api';
 export default function ReservasOnlinePage() {
   const { user } = useAuth();
   const esEntrenador = user?.role === 'entrenador';
-  const role = esEntrenador ? 'entrenador' : 'gimnasio';
+  const role: 'entrenador' | 'gimnasio' = esEntrenador ? 'entrenador' : 'gimnasio';
   
-  const [tabActiva, setTabActiva] = useState<string>('nueva-reserva');
+  const [activeTab, setActiveTab] = useState<{ main: string; sub: string }>({
+    main: 'gestion-reservas',
+    sub: 'nueva-reserva',
+  });
   const [reservas, setReservas] = useState<Reserva[]>([]);
 
   useEffect(() => {
@@ -59,44 +63,138 @@ export default function ReservasOnlinePage() {
     cargarReservas();
   }, [role]);
 
-  const tabItems = useMemo(() => {
-    const comunes = [
-      { id: 'nueva-reserva', label: 'Nueva Reserva', icon: Calendar },
-      { id: 'historial', label: 'Historial', icon: Clock },
-      { id: 'cancelaciones', label: 'Cancelaciones', icon: XCircle },
-      { id: 'recordatorios', label: 'Recordatorios', icon: Bell },
-      { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+  type RoleValue = 'entrenador' | 'gimnasio';
+
+  interface SubTabDefinition {
+    id: string;
+    label: string;
+    icon: LucideIcon;
+    roles?: RoleValue[];
+  }
+
+  interface TabGroupDefinition {
+    id: string;
+    label: string;
+    icon: LucideIcon;
+    roles?: RoleValue[];
+    subTabs: SubTabDefinition[];
+  }
+
+  const tabGroups = useMemo(() => {
+    const groups: TabGroupDefinition[] = [
+      {
+        id: 'gestion-reservas',
+        label: 'Gestión',
+        icon: Calendar,
+        subTabs: [
+          { id: 'nueva-reserva', label: 'Nueva Reserva', icon: Calendar },
+          { id: 'lista-dia', label: 'Lista del Día', icon: List, roles: ['entrenador'] },
+          { id: 'calendario', label: 'Calendario', icon: CalendarDays, roles: ['entrenador'] },
+          { id: 'reservas-recurrentes', label: 'Reservas Recurrentes', icon: RefreshCw, roles: ['entrenador'] },
+        ],
+      },
+      {
+        id: 'seguimiento',
+        label: 'Seguimiento',
+        icon: Clock,
+        subTabs: [
+          { id: 'historial', label: 'Historial', icon: Clock },
+          { id: 'cancelaciones', label: 'Cancelaciones', icon: XCircle },
+          { id: 'lista-espera', label: 'Lista de Espera', icon: Users, roles: ['gimnasio'] },
+        ],
+      },
+      {
+        id: 'clientes',
+        label: 'Clientes',
+        icon: Users,
+        subTabs: [
+          { id: 'recordatorios', label: 'Recordatorios', icon: Bell },
+          { id: 'recordatorios-pago', label: 'Recordatorios de Pago', icon: AlertCircle, roles: ['entrenador'] },
+          { id: 'notas-cliente', label: 'Notas de Clientes', icon: StickyNote, roles: ['entrenador'] },
+        ],
+      },
+      {
+        id: 'insights',
+        label: 'Insights',
+        icon: BarChart3,
+        subTabs: [
+          { id: 'analytics', label: 'Analytics', icon: TrendingUp },
+          { id: 'estadisticas-asistencia', label: 'Asistencia', icon: Activity, roles: ['entrenador'] },
+          { id: 'ingresos-horario', label: 'Ingresos por Horario', icon: Timer, roles: ['entrenador'] },
+          { id: 'ingresos-cliente', label: 'Ingresos por Cliente', icon: Award, roles: ['entrenador'] },
+        ],
+      },
+      {
+        id: 'configuracion',
+        label: 'Configuración',
+        icon: Settings,
+        subTabs: [
+          { id: 'plantillas', label: 'Plantillas de Sesión', icon: FileText, roles: ['entrenador'] },
+          { id: 'horarios', label: 'Horarios Disponibles', icon: Clock, roles: ['entrenador'] },
+          { id: 'enlace-publico', label: 'Enlace Público', icon: Link2, roles: ['entrenador'] },
+          { id: 'paquetes-sesiones', label: 'Paquetes de Sesiones', icon: Package, roles: ['entrenador'] },
+          { id: 'config-videollamada', label: 'Videollamada', icon: Video, roles: ['entrenador'] },
+          { id: 'config-aprobacion', label: 'Aprobación de Reservas', icon: Settings, roles: ['entrenador'] },
+          { id: 'config-buffer-tiempo', label: 'Buffer & Anticipación', icon: Clock, roles: ['entrenador'] },
+          { id: 'config-dias-maximos', label: 'Días Máximos', icon: CalendarDays, roles: ['entrenador'] },
+          { id: 'politicas-cancelacion', label: 'Políticas de Cancelación', icon: Shield, roles: ['entrenador'] },
+        ],
+      },
     ];
-    
-    if (!esEntrenador) {
-      comunes.splice(3, 0, { id: 'lista-espera', label: 'Lista de Espera', icon: Users });
-    } else {
-      // Para entrenadores, agregar pestañas de configuración y calendario
-      comunes.splice(1, 0, { id: 'lista-dia', label: 'Lista del Día', icon: List });
-      comunes.splice(2, 0, { id: 'calendario', label: 'Calendario', icon: CalendarDays });
-      comunes.splice(3, 0, { id: 'reservas-recurrentes', label: 'Reservas Recurrentes', icon: RefreshCw });
-      comunes.splice(4, 0, { id: 'plantillas', label: 'Plantillas de Sesión', icon: FileText });
-      comunes.splice(5, 0, { id: 'horarios', label: 'Horarios Disponibles', icon: Clock });
-      comunes.splice(6, 0, { id: 'enlace-publico', label: 'Enlace Público', icon: Link2 });
-      comunes.splice(7, 0, { id: 'paquetes-sesiones', label: 'Paquetes de Sesiones', icon: Package });
-      comunes.splice(8, 0, { id: 'config-videollamada', label: 'Videollamada', icon: Video });
-      comunes.splice(9, 0, { id: 'config-aprobacion', label: 'Configuración', icon: Settings });
-      comunes.splice(10, 0, { id: 'config-buffer-tiempo', label: 'Buffer Time & Anticipación', icon: Clock });
-      comunes.splice(11, 0, { id: 'config-dias-maximos', label: 'Días Máximos Reserva', icon: CalendarDays });
-      comunes.splice(12, 0, { id: 'politicas-cancelacion', label: 'Políticas de Cancelación', icon: Shield });
-      comunes.splice(13, 0, { id: 'notas-cliente', label: 'Notas de Clientes', icon: StickyNote });
-      comunes.splice(14, 0, { id: 'recordatorios-pago', label: 'Recordatorios de Pago', icon: AlertCircle });
-      comunes.splice(15, 0, { id: 'estadisticas-asistencia', label: 'Estadísticas de Asistencia', icon: Activity });
-      comunes.splice(16, 0, { id: 'ingresos-horario', label: 'Ingresos por Horario', icon: Timer });
-      comunes.splice(17, 0, { id: 'ingresos-cliente', label: 'Ingresos por Cliente', icon: Award });
+
+    return groups
+      .filter((group) => !group.roles || group.roles.includes(role))
+      .map((group) => ({
+        ...group,
+        subTabs: group.subTabs.filter((subTab) => !subTab.roles || subTab.roles.includes(role)),
+      }))
+      .filter((group) => group.subTabs.length > 0);
+  }, [role]);
+
+  useEffect(() => {
+    if (tabGroups.length === 0) {
+      return;
     }
-    
-    return comunes;
-  }, [esEntrenador]);
+
+    const currentGroup = tabGroups.find((group) => group.id === activeTab.main);
+
+    if (!currentGroup) {
+      const [firstGroup] = tabGroups;
+      setActiveTab({
+        main: firstGroup.id,
+        sub: firstGroup.subTabs[0]?.id ?? '',
+      });
+      return;
+    }
+
+    const hasCurrentSub = currentGroup.subTabs.some((sub) => sub.id === activeTab.sub);
+    if (!hasCurrentSub) {
+      setActiveTab((prev) => ({
+        ...prev,
+        sub: currentGroup.subTabs[0]?.id ?? prev.sub,
+      }));
+    }
+  }, [tabGroups, activeTab.main, activeTab.sub]);
+
+  const selectSubTab = useCallback(
+    (subTabId: string) => {
+      const group = tabGroups.find((tabGroup) =>
+        tabGroup.subTabs.some((subTab) => subTab.id === subTabId),
+      );
+
+      if (group) {
+        setActiveTab({
+          main: group.id,
+          sub: subTabId,
+        });
+      }
+    },
+    [tabGroups],
+  );
 
   const handleReservaCreada = (reserva: Reserva) => {
     setReservas([...reservas, reserva]);
-    setTabActiva('historial');
+    selectSubTab('historial');
   };
 
   const handleCancelar = (reservaId: string) => {
@@ -104,7 +202,6 @@ export default function ReservasOnlinePage() {
   };
 
   const reservasConfirmadas = reservas.filter((r) => r.estado === 'confirmada').length;
-  const reservasCanceladas = reservas.filter((r) => r.estado === 'cancelada').length;
   const ingresosTotales = reservas.filter((r) => r.pagado).reduce((sum, r) => sum + r.precio, 0);
   const tasaOcupacion = reservas.length > 0 
     ? Math.round((reservasConfirmadas / reservas.length) * 100) 
@@ -157,8 +254,36 @@ export default function ReservasOnlinePage() {
     },
   ];
 
+  const activeGroup = useMemo(
+    () => tabGroups.find((group) => group.id === activeTab.main),
+    [tabGroups, activeTab.main],
+  );
+
+  const handleMainTabClick = useCallback(
+    (groupId: string) => {
+      if (groupId === activeTab.main) {
+        return;
+      }
+      const group = tabGroups.find((tabGroup) => tabGroup.id === groupId);
+      if (group && group.subTabs.length > 0) {
+        setActiveTab({
+          main: groupId,
+          sub: group.subTabs[0].id,
+        });
+      }
+    },
+    [activeTab.main, tabGroups],
+  );
+
+  const handleSubTabClick = useCallback(
+    (subTabId: string) => {
+      setActiveTab((prev) => (prev.sub === subTabId ? prev : { ...prev, sub: subTabId }));
+    },
+    [],
+  );
+
   const renderTabContent = () => {
-    switch (tabActiva) {
+    switch (activeTab.sub) {
       case 'nueva-reserva':
         return <ReservasOnline role={role} onReservaCreada={handleReservaCreada} entrenadorId={esEntrenador ? user?.id : undefined} />;
       case 'lista-dia':
@@ -283,35 +408,56 @@ export default function ReservasOnlinePage() {
           {/* Sistema de Tabs */}
           <Card className="p-0 bg-white shadow-sm">
             <div className="px-4 py-3">
-              <div
-                role="tablist"
-                aria-label="Secciones reservas"
-                className="flex items-center gap-2 rounded-2xl bg-slate-100 p-1"
-              >
-                {tabItems.map(({ id, label, icon: Icon }) => {
-                  const activo = tabActiva === id;
+              <nav aria-label="Secciones principales reservas" className="flex flex-wrap items-center gap-2 rounded-2xl bg-slate-100 p-1">
+                {tabGroups.map(({ id, label, icon: Icon }) => {
+                  const isActive = activeTab.main === id;
                   return (
                     <button
                       key={id}
                       role="tab"
-                      aria-selected={activo}
-                      onClick={() => setTabActiva(id)}
+                      aria-selected={isActive}
+                      onClick={() => handleMainTabClick(id)}
                       className={[
                         'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all',
-                        activo
+                        isActive
                           ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-white/70',
                       ].join(' ')}
                     >
-                      <Icon
-                        size={18}
-                        className={activo ? 'opacity-100' : 'opacity-70'}
-                      />
+                      <Icon size={18} className={isActive ? 'opacity-100' : 'opacity-70'} />
                       <span>{label}</span>
                     </button>
                   );
                 })}
-              </div>
+              </nav>
+              {activeGroup && (
+                <div
+                  role="tablist"
+                  aria-label={`Subsecciones ${activeGroup.label.toLowerCase()}`}
+                  className="mt-3 flex flex-wrap items-center gap-2"
+                >
+                  {activeGroup.subTabs.map(({ id, label, icon: Icon }) => {
+                    const isActive = activeTab.sub === id;
+                    return (
+                      <button
+                        key={id}
+                        role="tab"
+                        aria-selected={isActive}
+                        onClick={() => handleSubTabClick(id)}
+                        className={[
+                          'inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-sm transition-all',
+                          isActive
+                            ? 'border-slate-200 bg-slate-900 text-white shadow-sm'
+                            : 'border-transparent bg-white text-slate-600 hover:border-slate-200 hover:text-slate-900',
+                        ].join(' ')}
+                      >
+                        <Icon size={16} className={isActive ? 'opacity-100' : 'opacity-70'} />
+                        <span>{label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </Card>
 

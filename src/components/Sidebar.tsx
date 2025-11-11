@@ -52,6 +52,7 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     if (path.includes('gestión-de-clientes') || path.includes('clientes')) return 'gestión-de-clientes';
     if (path.includes('portal-del-cliente-autoservicio')) return 'portal-del-cliente-autoservicio';
     if (path.includes('pipeline-de-venta-kanban')) return 'pipeline-de-venta-kanban';
+    if (path.includes('transformacion-leads')) return 'transformacion-leads';
     if (path.includes('clientes-360')) return 'clientes-360';
     if (path.includes('ventas-leads')) return 'ventas-leads';
     if (path.includes('encuestas-satisfaccin-npscsat')) return 'encuestas-satisfaccin-npscsat';
@@ -320,25 +321,20 @@ const marketingGimnasioItems: NavItem[] = [
         : marketingFullItems;
 
   const crmBaseItems: NavItem[] = [
-    { id: 'leads', label: 'Leads', icon: UserPlus, path: '/leads' },
-    { id: 'lead-inbox-unificado-sla', label: 'Inbox Unificado & SLA', icon: Inbox, path: '/dashboard/analytics/inbox' },
-    { id: 'pipeline-de-venta-kanban', label: 'Pipeline de Venta', icon: Kanban, path: '/pipeline-de-venta-kanban' },
-    { id: 'clientes-360', label: 'Clientes 360', icon: UserCircle, path: '/clientes-360' },
+    { id: 'transformacion-leads', label: 'Transformación de Leads', icon: ArrowRightLeft, path: '/transformacion-leads' },
     { id: 'ventas-leads', label: 'Ventas & Leads', icon: TrendingUp, path: '/ventas-leads', gimnasioOnly: true },
     { id: 'gestión-de-clientes', label: isPersonalRole ? 'Mis Clientes' : 'Clientes', icon: Users, path: '/gestión-de-clientes' },
-    { id: 'portal-del-cliente-autoservicio', label: 'Portal del Cliente', icon: UserCircle, path: '/portal-del-cliente-autoservicio' },
     { id: 'encuestas-satisfaccin-npscsat', label: 'Encuestas & Satisfacción', icon: MessageSquare, path: '/encuestas-satisfaccin-npscsat', gimnasioOnly: true },
     { id: 'campanas-outreach', label: 'Campañas / Outreach', icon: Megaphone, path: '/campanas-outreach', gimnasioOnly: true },
     { id: 'listas-inteligentes-segmentos-guardados', label: 'Listas Inteligentes', icon: ListFilter, path: '/listas-inteligentes-segmentos-guardados', gimnasioOnly: true },
   ];
 
   const crmItems: NavItem[] = isGimnasio
-    ? crmBaseItems.filter(item => item.id === 'clientes-360' || item.id === 'ventas-leads')
+    ? crmBaseItems.filter(item => item.id === 'ventas-leads')
     : crmBaseItems;
 
   const agendaBaseItems: NavItem[] = [
     { id: 'agenda', label: 'Agenda / Calendario', icon: CalendarDays, path: '/agenda' },
-    { id: 'agenda-reservas', label: 'Agenda & Reservas', icon: CalendarDays, path: '/agenda-reservas' },
     { id: 'reservas-online', label: 'Reservas Online', icon: CalendarCheck, path: '/reservas-online' },
     { id: 'eventos-retos', label: 'Eventos & Retos', icon: Trophy, path: '/eventos-retos' },
     { id: 'lista-de-espera-ausencias', label: 'Lista de Espera & Ausencias', icon: UsersList, path: '/lista-de-espera-ausencias', gimnasioOnly: true },
@@ -358,7 +354,6 @@ const marketingGimnasioItems: NavItem[] = [
   const membresiasBaseItems: NavItem[] = [
     { id: 'membresias-planes', label: 'Membresías & Planes', icon: Ticket, path: '/membresias-planes', gimnasioOnly: true },
     { id: 'catalogo-planes', label: isPersonalRole ? 'Bonos PT' : 'Catálogo de Planes', icon: Package, path: '/catalogo-planes' },
-    { id: 'membresias-activas', label: isPersonalRole ? 'Membresías PT' : 'Membresías Activas', icon: Ticket, path: '/membresias-activas' },
     { id: 'renovaciones-bajas', label: isPersonalRole ? 'Renovaciones' : 'Renovaciones & Bajas', icon: RotateCcw, path: '/renovaciones-bajas' },
   ];
 
@@ -373,7 +368,6 @@ const marketingGimnasioItems: NavItem[] = [
       ].filter(Boolean) as NavItem[]
     : [
         { id: 'panel-financiero-overview', label: isPersonalRole ? 'Panel Financiero' : 'Panel Financiero / Overview', icon: PieChart, path: '/panel-financiero-overview' },
-        { id: 'dynamic-pricing-ofertas-inteligentes', label: 'Precios Dinámicos', icon: Sparkles, path: '/dashboard/monetizacion/precios-dinamicos' },
         { id: 'facturacin-cobros', label: 'Facturación & Cobros', icon: Receipt, path: '/facturacin-cobros' },
         { id: 'pagos-pendientes-morosidad', label: 'Pagos Pendientes / Morosidad', icon: DollarSign, path: '/pagos-pendientes-morosidad' },
         { id: 'suscripciones-cuotas-recurrentes', label: isPersonalRole ? 'Suscripciones PT' : 'Suscripciones & Cuotas', icon: RefreshCw, path: '/suscripciones-cuotas-recurrentes' },

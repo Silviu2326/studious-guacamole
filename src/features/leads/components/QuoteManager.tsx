@@ -387,3 +387,4 @@ export const QuoteManager: React.FC<QuoteManagerProps> = ({ lead, businessType }
     </div>
   );
 };
+

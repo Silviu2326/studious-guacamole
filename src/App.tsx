@@ -37,6 +37,7 @@ import { PublicEventRegistrationPage } from './features/eventos-retos/pages/Publ
 import ReservaPublicaPage from './features/reservas-online/pages/ReservaPublicaPage';
 import { PaginaPagoPublica } from './features/facturacin-cobros/pages/PaginaPagoPublica';
 import CheckoutPublicoPage from './features/tienda-online-checkout-online/pages/CheckoutPublicoPage';
+import { TransformacionLeadsPage } from './features/transformacion-leads/pages';
 
 import AlertasRestriccionesAlimentariasPage from './features/alertas-restricciones-alimentarias/pages/alertas-restricciones-alimentariasPage';
 import DisponibilidadTurnosStaffPage from './features/disponibilidad-turnos-staff/pages/disponibilidad-turnos-staffPage';
@@ -300,6 +301,8 @@ function App() {
             <Route path="/dashboard/marketing/referrals" element={<ReferidosYAfiliadosPage />} />
             <Route path="/dashboard/marketing/retargeting" element={<RetargetingYPixelManagerPage />} />
             <Route path="/dashboard/reviews" element={<ReviewYTestimonialEnginePage />} />
+            <Route path="/transformacion-leads" element={<TransformacionLeadsPage />} />
+
             <Route path="/dashboard/audiencias" element={<SegmentacionDinamicaYAudienciasPage />} />
             <Route path="/client/preferences/communication" element={<SmsemailPreferenceCenterPage />} />
             <Route path="/dashboard/contenido-premium" element={<GestionDeContenidosPremiumPage />} />

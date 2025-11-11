@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, MetricCards } from '../../../components/componentsreutilizables';
 import { PipelineMetrics as PipelineMetricsType, BusinessType } from '../types';
 import { getPipelineMetrics } from '../api/metrics';
+import { ConversionDashboard } from './ConversionDashboard';
 import { 
   TrendingUp, 
   DollarSign, 
@@ -88,6 +89,11 @@ export const PipelineMetrics: React.FC<PipelineMetricsProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* US-19: Dashboard de conversión */}
+      {businessType === 'entrenador' && (
+        <ConversionDashboard businessType={businessType} userId={userId} />
+      )}
+
       <MetricCards data={metricCards} columns={4} />
 
       {/* Métricas por fase */}

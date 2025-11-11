@@ -1,14 +1,108 @@
-import React, { useState } from 'react';
-import { Card, Table, Badge, Select } from '../../../components/componentsreutilizables';
-import { LineChart, TrendingUp, TrendingDown, BarChart3, Activity } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Card, Table, Badge, Select, Modal, Button, Textarea } from '../../../components/componentsreutilizables';
+import { LineChart, TrendingUp, TrendingDown, BarChart3, Activity, MessageSquare, Edit2, Trash2 } from 'lucide-react';
 import type { SelectOption } from '../../../components/componentsreutilizables';
+import { useAuth } from '../../../context/AuthContext';
 
 interface Props {
   modo: 'entrenador' | 'gimnasio';
 }
 
+interface Annotation {
+  id: string;
+  semana: string;
+  valor: number;
+  texto: string;
+  fechaCreacion: string;
+  autor: string;
+  autorId: string;
+}
+
 export const AnalizadorTendencias: React.FC<Props> = ({ modo }) => {
+  const { user } = useAuth();
   const [periodo, setPeriodo] = useState<string>('30d');
+  const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const [showAnnotationModal, setShowAnnotationModal] = useState(false);
+  const [selectedSemana, setSelectedSemana] = useState<string | null>(null);
+  const [selectedValor, setSelectedValor] = useState<number | null>(null);
+  const [annotationText, setAnnotationText] = useState('');
+  const [editingAnnotation, setEditingAnnotation] = useState<Annotation | null>(null);
+
+  // Cargar anotaciones desde localStorage al montar
+  useEffect(() => {
+    const stored = localStorage.getItem(`adherencia-annotations-${modo}`);
+    if (stored) {
+      try {
+        setAnnotations(JSON.parse(stored));
+      } catch (e) {
+        console.error('Error cargando anotaciones:', e);
+      }
+    }
+  }, [modo]);
+
+  // Guardar anotaciones en localStorage cuando cambien
+  useEffect(() => {
+    if (annotations.length > 0 || localStorage.getItem(`adherencia-annotations-${modo}`)) {
+      localStorage.setItem(`adherencia-annotations-${modo}`, JSON.stringify(annotations));
+    }
+  }, [annotations, modo]);
+
+  const handleAddAnnotation = (semana: string, valor: number) => {
+    setSelectedSemana(semana);
+    setSelectedValor(valor);
+    setAnnotationText('');
+    setEditingAnnotation(null);
+    setShowAnnotationModal(true);
+  };
+
+  const handleEditAnnotation = (annotation: Annotation) => {
+    setEditingAnnotation(annotation);
+    setSelectedSemana(annotation.semana);
+    setSelectedValor(annotation.valor);
+    setAnnotationText(annotation.texto);
+    setShowAnnotationModal(true);
+  };
+
+  const handleSaveAnnotation = () => {
+    if (!annotationText.trim() || !selectedSemana || selectedValor === null || !user) return;
+
+    if (editingAnnotation) {
+      // Editar anotación existente
+      setAnnotations(annotations.map(ann =>
+        ann.id === editingAnnotation.id
+          ? { ...ann, texto: annotationText.trim(), fechaCreacion: new Date().toISOString() }
+          : ann
+      ));
+    } else {
+      // Crear nueva anotación
+      const newAnnotation: Annotation = {
+        id: `ann-${Date.now()}`,
+        semana: selectedSemana,
+        valor: selectedValor,
+        texto: annotationText.trim(),
+        fechaCreacion: new Date().toISOString(),
+        autor: user.name || 'Usuario',
+        autorId: user.id || 'unknown',
+      };
+      setAnnotations([...annotations, newAnnotation]);
+    }
+
+    setShowAnnotationModal(false);
+    setAnnotationText('');
+    setSelectedSemana(null);
+    setSelectedValor(null);
+    setEditingAnnotation(null);
+  };
+
+  const handleDeleteAnnotation = (id: string) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar esta anotación?')) {
+      setAnnotations(annotations.filter(ann => ann.id !== id));
+    }
+  };
+
+  const getAnnotationsForSemana = (semana: string) => {
+    return annotations.filter(ann => ann.semana === semana);
+  };
 
   const periodos: SelectOption[] = [
     { value: '7d', label: 'Últimos 7 días' },
@@ -114,45 +208,104 @@ export const AnalizadorTendencias: React.FC<Props> = ({ modo }) => {
             )}
           </div>
         </div>
-        {datos.map((item, idx) => (
-          <div key={idx} className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-medium text-gray-700 w-16">{item.semana}</span>
-              <div className="flex-1 grid grid-cols-2 gap-2 ml-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-gray-200 rounded-full h-6 relative overflow-hidden">
-                      <div
-                        className="absolute left-0 top-0 h-full bg-blue-500 rounded-full flex items-center justify-end pr-2"
-                        style={{ width: `${(item.adherence / maxValue) * 100}%` }}
-                      >
-                        <span className="text-xs font-semibold text-white">
-                          {item.adherence}%
-                        </span>
-                      </div>
+        {datos.map((item, idx) => {
+          const semanaAnnotations = getAnnotationsForSemana(item.semana);
+          return (
+            <div key={idx} className="space-y-2 relative group">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2 w-16">
+                  <span className="font-medium text-gray-700">{item.semana}</span>
+                  {semanaAnnotations.length > 0 && (
+                    <div className="relative">
+                      <MessageSquare size={14} className="text-blue-600 cursor-pointer" />
+                      <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+                        {semanaAnnotations.length}
+                      </span>
                     </div>
-                  </div>
+                  )}
                 </div>
-                {modo === 'gimnasio' && (
-                  <div>
+                <div className="flex-1 grid grid-cols-2 gap-2 ml-4">
+                  <div className="relative">
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 bg-gray-200 rounded-full h-6 relative overflow-hidden">
+                      <div className="flex-1 bg-gray-200 rounded-full h-6 relative overflow-hidden cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
+                        onClick={() => handleAddAnnotation(item.semana, item.adherence)}
+                        title="Haz clic para añadir una anotación">
                         <div
-                          className="absolute left-0 top-0 h-full bg-green-500 rounded-full flex items-center justify-end pr-2"
-                          style={{ width: `${(item.ocupation / maxValue) * 100}%` }}
+                          className="absolute left-0 top-0 h-full bg-blue-500 rounded-full flex items-center justify-end pr-2"
+                          style={{ width: `${(item.adherence / maxValue) * 100}%` }}
                         >
                           <span className="text-xs font-semibold text-white">
-                            {item.ocupation}%
+                            {item.adherence}%
                           </span>
                         </div>
                       </div>
                     </div>
+                    {/* Mostrar anotaciones para esta semana */}
+                    {semanaAnnotations.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {semanaAnnotations.map(ann => (
+                          <div
+                            key={ann.id}
+                            className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-xs relative group/ann"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1">
+                                <p className="text-gray-800">{ann.texto}</p>
+                                <p className="text-gray-500 text-[10px] mt-1">
+                                  {ann.autor} • {new Date(ann.fechaCreacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
+                                </p>
+                              </div>
+                              <div className="flex gap-1 opacity-0 group-hover/ann:opacity-100 transition-opacity">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditAnnotation(ann);
+                                  }}
+                                  className="p-1 hover:bg-blue-200 rounded"
+                                  title="Editar"
+                                >
+                                  <Edit2 size={12} className="text-blue-600" />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteAnnotation(ann.id);
+                                  }}
+                                  className="p-1 hover:bg-red-200 rounded"
+                                  title="Eliminar"
+                                >
+                                  <Trash2 size={12} className="text-red-600" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
+                  {modo === 'gimnasio' && (
+                    <div className="relative">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-gray-200 rounded-full h-6 relative overflow-hidden cursor-pointer hover:ring-2 hover:ring-green-400 transition-all"
+                          onClick={() => handleAddAnnotation(item.semana, item.ocupation)}
+                          title="Haz clic para añadir una anotación">
+                          <div
+                            className="absolute left-0 top-0 h-full bg-green-500 rounded-full flex items-center justify-end pr-2"
+                            style={{ width: `${(item.ocupation / maxValue) * 100}%` }}
+                          >
+                            <span className="text-xs font-semibold text-white">
+                              {item.ocupation}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
@@ -236,6 +389,69 @@ export const AnalizadorTendencias: React.FC<Props> = ({ modo }) => {
         </div>
         <Table columns={columns} data={formattedData} />
       </Card>
+
+      {/* Modal para añadir/editar anotaciones */}
+      <Modal
+        isOpen={showAnnotationModal}
+        onClose={() => {
+          setShowAnnotationModal(false);
+          setAnnotationText('');
+          setSelectedSemana(null);
+          setSelectedValor(null);
+          setEditingAnnotation(null);
+        }}
+        title={editingAnnotation ? 'Editar Anotación' : 'Añadir Anotación'}
+        size="md"
+        footer={
+          <div className="flex gap-3 justify-end">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowAnnotationModal(false);
+                setAnnotationText('');
+                setSelectedSemana(null);
+                setSelectedValor(null);
+                setEditingAnnotation(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSaveAnnotation}
+              disabled={!annotationText.trim()}
+            >
+              {editingAnnotation ? 'Guardar Cambios' : 'Añadir Anotación'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <p className="text-sm text-gray-600 mb-2">
+              <span className="font-semibold">Semana:</span> {selectedSemana}
+            </p>
+            <p className="text-sm text-gray-600 mb-4">
+              <span className="font-semibold">Valor:</span> {selectedValor}%
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Anotación
+            </label>
+            <Textarea
+              value={annotationText}
+              onChange={(e) => setAnnotationText(e.target.value)}
+              placeholder="Describe el cambio brusco o contexto relevante para esta semana..."
+              rows={4}
+              className="w-full"
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              Esta anotación será visible para todo tu equipo y ayudará a contextualizar cambios en la adherencia.
+            </p>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

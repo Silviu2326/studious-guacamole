@@ -1,3 +1,10 @@
+export interface Macronutriente {
+  nombre: 'proteínas' | 'carbohidratos' | 'grasas';
+  consumoReal: number; // gramos
+  objetivoDiario: number; // gramos
+  porcentajeCumplimiento: number;
+}
+
 export interface AdherenciaNutricional {
   clienteId: string;
   periodo: string;
@@ -8,10 +15,33 @@ export interface AdherenciaNutricional {
   cumplimientoHorarios: number;
   fotosSubidas: number;
   pesoRegistrado: boolean;
+  macronutrientes?: Macronutriente[]; // Datos de macronutrientes para el gráfico
 }
 
 export async function getAdherenciaNutricional(clienteId: string, periodo?: 'dia' | 'semana' | 'mes'): Promise<AdherenciaNutricional | null> {
   await new Promise(resolve => setTimeout(resolve, 200));
+  
+  // Datos de macronutrientes: consumo real vs objetivo diario
+  const macronutrientes: Macronutriente[] = [
+    {
+      nombre: 'proteínas',
+      consumoReal: 145, // gramos consumidos
+      objetivoDiario: 160, // gramos objetivo
+      porcentajeCumplimiento: 90.6, // (145/160) * 100
+    },
+    {
+      nombre: 'carbohidratos',
+      consumoReal: 280, // gramos consumidos
+      objetivoDiario: 300, // gramos objetivo
+      porcentajeCumplimiento: 93.3, // (280/300) * 100
+    },
+    {
+      nombre: 'grasas',
+      consumoReal: 65, // gramos consumidos
+      objetivoDiario: 80, // gramos objetivo
+      porcentajeCumplimiento: 81.3, // (65/80) * 100
+    },
+  ];
   
   return {
     clienteId,
@@ -23,6 +53,7 @@ export async function getAdherenciaNutricional(clienteId: string, periodo?: 'dia
     cumplimientoHorarios: 78,
     fotosSubidas: 35,
     pesoRegistrado: true,
+    macronutrientes,
   };
 }
 

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../../../components/componentsreutilizables';
 import { TrendingUp, TrendingDown, BarChart3, Activity } from 'lucide-react';
 import { getTendenciasAdherencia } from '../api/adherencia';
+import { getRegistrosPeso } from '../api/peso';
+import { Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart } from 'recharts';
 
 interface AnalizadorTendenciasProps {
   clienteId: string;
@@ -13,19 +15,63 @@ export const AnalizadorTendencias: React.FC<AnalizadorTendenciasProps> = ({
   dias = 30,
 }) => {
   const [tendencias, setTendencias] = useState<Array<{ fecha: string; adherencia: number }>>([]);
+  const [datosCombinados, setDatosCombinados] = useState<Array<{ fecha: string; adherencia: number | null; peso: number | null }>>([]);
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
-    cargarTendencias();
+    cargarDatos();
   }, [clienteId, dias]);
 
-  const cargarTendencias = async () => {
+  const cargarDatos = async () => {
     setCargando(true);
     try {
-      const data = await getTendenciasAdherencia(clienteId, dias);
-      setTendencias(data);
+      const [tendenciasData, pesoData] = await Promise.all([
+        getTendenciasAdherencia(clienteId, dias),
+        getRegistrosPeso(clienteId),
+      ]);
+      
+      setTendencias(tendenciasData);
+      
+      // Convertir registros de peso al formato necesario
+      const pesoFormateado = pesoData.map(r => ({
+        fecha: r.fecha,
+        peso: r.peso,
+      }));
+      
+      // Combinar datos por fecha
+      const datosCombinadosMap = new Map<string, { fecha: string; adherencia: number | null; peso: number | null }>();
+      
+      // Agregar datos de adherencia
+      tendenciasData.forEach(t => {
+        datosCombinadosMap.set(t.fecha, {
+          fecha: t.fecha,
+          adherencia: t.adherencia,
+          peso: null,
+        });
+      });
+      
+      // Agregar datos de peso
+      pesoFormateado.forEach(p => {
+        const existente = datosCombinadosMap.get(p.fecha);
+        if (existente) {
+          existente.peso = p.peso;
+        } else {
+          datosCombinadosMap.set(p.fecha, {
+            fecha: p.fecha,
+            adherencia: null,
+            peso: p.peso,
+          });
+        }
+      });
+      
+      // Filtrar y ordenar por fecha - solo incluir fechas que tengan al menos uno de los dos valores
+      const datosCombinadosArray = Array.from(datosCombinadosMap.values())
+        .filter(d => d.adherencia !== null || d.peso !== null)
+        .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+      
+      setDatosCombinados(datosCombinadosArray);
     } catch (error) {
-      console.error('Error al cargar tendencias:', error);
+      console.error('Error al cargar datos:', error);
     } finally {
       setCargando(false);
     }
@@ -154,9 +200,110 @@ export const AnalizadorTendencias: React.FC<AnalizadorTendenciasProps> = ({
           </div>
         </div>
 
+        {/* Gráfico Combinado: Peso y Adherencia */}
+        {datosCombinados.length > 0 && (
+          <div className="space-y-4">
+            <h4 className="text-lg font-semibold text-gray-900">
+              Evolución de Peso y Adherencia Nutricional
+            </h4>
+            <p className="text-sm text-gray-600">
+              Gráfico combinado que muestra la evolución del peso junto a la adherencia nutricional para identificar si los cambios de peso siguen el plan alimentario.
+            </p>
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <ResponsiveContainer width="100%" height={400}>
+                <ComposedChart
+                  data={datosCombinados}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                  <XAxis
+                    dataKey="fecha"
+                    tick={{ fill: '#64748B', fontSize: 12 }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    tickFormatter={(value) => {
+                      const date = new Date(value);
+                      return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+                    }}
+                  />
+                  <YAxis
+                    yAxisId="adherencia"
+                    orientation="left"
+                    tick={{ fill: '#64748B', fontSize: 12 }}
+                    label={{ value: 'Adherencia (%)', angle: -90, position: 'insideLeft', style: { fill: '#3B82F6' } }}
+                    domain={[0, 100]}
+                  />
+                  <YAxis
+                    yAxisId="peso"
+                    orientation="right"
+                    tick={{ fill: '#64748B', fontSize: 12 }}
+                    label={{ value: 'Peso (kg)', angle: 90, position: 'insideRight', style: { fill: '#10B981' } }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'white',
+                      border: '1px solid #E2E8F0',
+                      borderRadius: '8px',
+                      padding: '12px',
+                    }}
+                    formatter={(value: number, name: string) => {
+                      if (name === 'adherencia') {
+                        return [`${value.toFixed(1)}%`, 'Adherencia Nutricional'];
+                      }
+                      if (name === 'peso') {
+                        return [`${value.toFixed(1)} kg`, 'Peso'];
+                      }
+                      return [value, name];
+                    }}
+                    labelFormatter={(label) => {
+                      return new Date(label).toLocaleDateString('es-ES', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric',
+                      });
+                    }}
+                  />
+                  <Legend
+                    wrapperStyle={{ paddingTop: '20px' }}
+                    formatter={(value) => {
+                      if (value === 'adherencia') return 'Adherencia Nutricional (%)';
+                      if (value === 'peso') return 'Peso (kg)';
+                      return value;
+                    }}
+                  />
+                  <Line
+                    yAxisId="adherencia"
+                    type="monotone"
+                    dataKey="adherencia"
+                    stroke="#3B82F6"
+                    strokeWidth={2}
+                    dot={{ fill: '#3B82F6', r: 4 }}
+                    activeDot={{ r: 6 }}
+                    name="adherencia"
+                    connectNulls={false}
+                  />
+                  <Line
+                    yAxisId="peso"
+                    type="monotone"
+                    dataKey="peso"
+                    stroke="#10B981"
+                    strokeWidth={2}
+                    dot={{ fill: '#10B981', r: 4 }}
+                    activeDot={{ r: 6 }}
+                    name="peso"
+                    connectNulls={false}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {/* Evolución Diaria (solo adherencia) */}
         <div className="space-y-2">
           <h4 className="text-lg font-semibold text-gray-900">
-            Evolución Diaria
+            Evolución Diaria de Adherencia
           </h4>
           <div className="space-y-2">
             {tendencias.slice(-7).map((tendencia, index) => {

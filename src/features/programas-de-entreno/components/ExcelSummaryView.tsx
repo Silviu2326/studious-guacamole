@@ -26,6 +26,7 @@ import {
   X,
   ZoomIn,
   ZoomOut,
+  AlertCircle,
 } from 'lucide-react';
 import { Button, Input } from '../../../components/componentsreutilizables';
 import type { DayPlan } from '../types';
@@ -49,6 +50,11 @@ type ExcelSheet = {
 type ExcelSummaryViewProps = {
   weekDays: readonly string[];
   weeklyPlan: Record<string, DayPlan>;
+  onUpdateDayPlan?: (day: string, updates: Partial<DayPlan>) => void;
+  weeklyTargets?: {
+    duration: number;
+    calories: number;
+  };
 };
 
 const EXCEL_ROW_OFFSET = 2;
@@ -58,7 +64,7 @@ const parseFirstNumber = (value: string) => {
   return match ? Number(match[0].replace(',', '.')) : null;
 };
 
-export function ExcelSummaryView({ weekDays, weeklyPlan }: ExcelSummaryViewProps) {
+export function ExcelSummaryView({ weekDays, weeklyPlan, onUpdateDayPlan, weeklyTargets }: ExcelSummaryViewProps) {
   const [activeSheet, setActiveSheet] = useState(0);
   const [selectedCell, setSelectedCell] = useState<string | null>(null);
   const [editingCell, setEditingCell] = useState<string | null>(null);
@@ -84,6 +90,8 @@ export function ExcelSummaryView({ weekDays, weeklyPlan }: ExcelSummaryViewProps
       E: { value: 'INTENSIDAD', bold: true, backgroundColor: '#f3f4f6' },
       F: { value: 'DURACIÓN', bold: true, backgroundColor: '#f3f4f6' },
       G: { value: 'CALORÍAS', bold: true, backgroundColor: '#f3f4f6' },
+      H: { value: 'OBJ. DURACIÓN', bold: true, backgroundColor: '#e0f2fe' },
+      I: { value: 'OBJ. CALORÍAS', bold: true, backgroundColor: '#e0f2fe' },
     };
 
     const summaryRows: ExcelRow[] = [summaryHeader];
@@ -102,15 +110,22 @@ export function ExcelSummaryView({ weekDays, weeklyPlan }: ExcelSummaryViewProps
       }
       const totalMinutes = sessions.reduce((total, session) => total + (parseFirstNumber(session.duration) ?? 0), 0);
       const calories = Math.round(totalMinutes * 8);
+      
+      // Verificar si excede objetivos semanales
+      const exceedsDuration = weeklyTargets && totalMinutes > weeklyTargets.duration;
+      const exceedsCalories = weeklyTargets && calories > weeklyTargets.calories;
+      const dayBackgroundColor = (exceedsDuration || exceedsCalories) ? '#fee2e2' : undefined;
 
       summaryRows.push({
-        A: { value: day, bold: true },
-        B: { value: sessions.length },
-        C: { value: totalExercises },
-        D: { value: totalVolume },
-        E: { value: intensityValue ?? '—' },
-        F: { value: totalMinutes },
-        G: { value: calories },
+        A: { value: day, bold: true, backgroundColor: dayBackgroundColor },
+        B: { value: sessions.length, backgroundColor: dayBackgroundColor },
+        C: { value: totalExercises, backgroundColor: dayBackgroundColor },
+        D: { value: totalVolume, backgroundColor: dayBackgroundColor },
+        E: { value: intensityValue ?? '—', backgroundColor: dayBackgroundColor },
+        F: { value: totalMinutes, backgroundColor: dayBackgroundColor },
+        G: { value: calories, backgroundColor: dayBackgroundColor },
+        H: { value: plan?.targetDuration ?? '—', backgroundColor: dayBackgroundColor },
+        I: { value: plan?.targetCalories ?? '—', backgroundColor: dayBackgroundColor },
       });
     });
 
@@ -126,6 +141,9 @@ export function ExcelSummaryView({ weekDays, weeklyPlan }: ExcelSummaryViewProps
       { sessions: 0, exercises: 0, volume: 0, duration: 0, calories: 0 },
     );
 
+    const totalTargetDuration = weekDays.reduce((sum, day) => sum + (weeklyPlan[day]?.targetDuration ?? 0), 0);
+    const totalTargetCalories = weekDays.reduce((sum, day) => sum + (weeklyPlan[day]?.targetCalories ?? 0), 0);
+
     summaryRows.push({
       A: { value: 'TOTAL', bold: true, backgroundColor: '#dbeafe' },
       B: { value: totals.sessions, bold: true, backgroundColor: '#dbeafe' },
@@ -138,6 +156,8 @@ export function ExcelSummaryView({ weekDays, weeklyPlan }: ExcelSummaryViewProps
       },
       F: { value: totals.duration, bold: true, backgroundColor: '#dbeafe' },
       G: { value: totals.calories, bold: true, backgroundColor: '#dbeafe' },
+      H: { value: totalTargetDuration || '—', bold: true, backgroundColor: '#dbeafe' },
+      I: { value: totalTargetCalories || '—', bold: true, backgroundColor: '#dbeafe' },
     });
 
     const detailHeader: ExcelRow = {
@@ -168,7 +188,7 @@ export function ExcelSummaryView({ weekDays, weeklyPlan }: ExcelSummaryViewProps
     return [
       {
         name: 'Resumen semanal',
-        columns: ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
+        columns: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],
         data: summaryRows,
       },
       {
@@ -177,7 +197,7 @@ export function ExcelSummaryView({ weekDays, weeklyPlan }: ExcelSummaryViewProps
         data: detailRows,
       },
     ];
-  }, [weekDays, weeklyPlan]);
+  }, [weekDays, weeklyPlan, weeklyTargets]);
 
   const currentSheet = sheets[activeSheet] ?? sheets[0];
 
@@ -207,6 +227,38 @@ export function ExcelSummaryView({ weekDays, weeklyPlan }: ExcelSummaryViewProps
   };
 
   const handleCellSave = () => {
+    if (editingCell && onUpdateDayPlan) {
+      const [rowIndexRaw, column] = editingCell.split('-');
+      const rowIndex = Number(rowIndexRaw);
+      
+      // Solo procesar si estamos en la hoja de resumen y no es la fila de encabezado o total
+      if (activeSheet === 0 && rowIndex > 0 && rowIndex <= weekDays.length) {
+        const day = weekDays[rowIndex - 1];
+        const trimmedValue = cellValue.trim();
+        
+        // Permitir valores vacíos para limpiar el objetivo
+        if (trimmedValue === '' || trimmedValue === '—') {
+          if (column === 'H') {
+            onUpdateDayPlan(day, { targetDuration: undefined });
+          } else if (column === 'I') {
+            onUpdateDayPlan(day, { targetCalories: undefined });
+          }
+        } else {
+          // Intentar parsear como número
+          const numericValue = parseFirstNumber(trimmedValue);
+          if (numericValue !== null && numericValue >= 0) {
+            if (column === 'H') {
+              // Actualizar objetivo de duración
+              onUpdateDayPlan(day, { targetDuration: numericValue });
+            } else if (column === 'I') {
+              // Actualizar objetivo de calorías
+              onUpdateDayPlan(day, { targetCalories: numericValue });
+            }
+          }
+        }
+      }
+    }
+    
     setEditingCell(null);
     setCellValue('');
   };
@@ -566,15 +618,34 @@ export function ExcelSummaryView({ weekDays, weeklyPlan }: ExcelSummaryViewProps
                       const cell = row[column] ?? { value: '' };
                       const isSelected = selectedCell === cellId;
                       const isEditing = editingCell === cellId;
+                      
+                      // Verificar si esta celda es editable (objetivos en columnas H o I)
+                      const isEditableGoal = !isHeaderRow && rowIndex > 0 && rowIndex <= weekDays.length && (column === 'H' || column === 'I');
+                      
+                      // Verificar si el día excede objetivos semanales
+                      const dayIndex = rowIndex - 1;
+                      const day = dayIndex >= 0 && dayIndex < weekDays.length ? weekDays[dayIndex] : null;
+                      const plan = day ? weeklyPlan[day] : null;
+                      const totalMinutes = plan ? plan.sessions.reduce((total, session) => total + (parseFirstNumber(session.duration) ?? 0), 0) : 0;
+                      const calories = Math.round(totalMinutes * 8);
+                      const exceedsDuration = weeklyTargets && day && totalMinutes > weeklyTargets.duration;
+                      const exceedsCalories = weeklyTargets && day && calories > weeklyTargets.calories;
+                      const showWarning = day && ((column === 'F' && exceedsDuration) || (column === 'G' && exceedsCalories));
 
                       return (
                         <div
                           key={column}
                           className={`group relative min-w-[96px] flex-1 cursor-pointer border-r border-slate-200 px-3 py-2 text-sm transition ${
                             isHeaderRow ? 'bg-slate-100 font-semibold' : 'bg-white'
-                          } ${isSelected ? 'bg-sky-100 ring-1 ring-sky-300' : ''}`}
+                          } ${isSelected ? 'bg-sky-100 ring-1 ring-sky-300' : ''} ${
+                            showWarning ? 'ring-2 ring-red-400 bg-red-50' : ''
+                          } ${isEditableGoal ? 'bg-blue-50/50 hover:bg-blue-100/50' : ''}`}
                           onClick={() => handleCellClick(cellId)}
-                          onDoubleClick={() => handleCellEdit(cellId)}
+                          onDoubleClick={() => {
+                            if (isEditableGoal) {
+                              handleCellEdit(cellId);
+                            }
+                          }}
                         >
                           {isEditing ? (
                             <input
@@ -584,20 +655,26 @@ export function ExcelSummaryView({ weekDays, weeklyPlan }: ExcelSummaryViewProps
                               onChange={(event) => setCellValue(event.target.value)}
                               onKeyDown={handleKeyDown}
                               value={cellValue}
+                              type={column === 'H' || column === 'I' ? 'number' : 'text'}
                             />
                           ) : (
                             <div className="flex items-center justify-between gap-2">
-                              <span
-                                className={`truncate ${cell.bold ? 'font-semibold' : ''}`}
-                                style={{
-                                  backgroundColor: cell.backgroundColor,
-                                  fontStyle: cell.italic ? 'italic' : 'normal',
-                                  textDecoration: cell.underline ? 'underline' : 'none',
-                                }}
-                              >
-                                {cell.value}
-                              </span>
-                              {!isHeaderRow && (
+                              <div className="flex items-center gap-1 flex-1 min-w-0">
+                                {showWarning && (
+                                  <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                                )}
+                                <span
+                                  className={`truncate ${cell.bold ? 'font-semibold' : ''} ${showWarning ? 'text-red-700 font-semibold' : ''}`}
+                                  style={{
+                                    backgroundColor: cell.backgroundColor,
+                                    fontStyle: cell.italic ? 'italic' : 'normal',
+                                    textDecoration: cell.underline ? 'underline' : 'none',
+                                  }}
+                                >
+                                  {cell.value}
+                                </span>
+                              </div>
+                              {!isHeaderRow && !isEditableGoal && (
                                 <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
                                   <button
                                     className="rounded p-1 text-sky-600 transition hover:bg-sky-100"
@@ -620,6 +697,11 @@ export function ExcelSummaryView({ weekDays, weeklyPlan }: ExcelSummaryViewProps
                                     <Dumbbell className="h-3 w-3" />
                                   </button>
                                 </div>
+                              )}
+                              {isEditableGoal && (
+                                <span className="text-xs text-blue-600 opacity-0 transition group-hover:opacity-100">
+                                  Doble clic para editar
+                                </span>
                               )}
                             </div>
                           )}

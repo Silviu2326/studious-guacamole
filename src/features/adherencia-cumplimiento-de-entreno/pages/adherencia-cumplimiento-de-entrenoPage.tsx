@@ -9,6 +9,7 @@ import { MetricasAdherencia } from '../components/Metrics/MetricasAdherencia';
 import { AlertasAdherencia } from '../components/AlertasAdherencia';
 import { AnalizadorTendencias } from '../components/AnalizadorTendencias';
 import { OptimizadorAdherencia } from '../components/OptimizadorAdherencia';
+import { ConfiguracionResumenSemanal } from '../components/ConfiguracionResumenSemanal';
 import { 
   Activity, 
   BarChart3, 

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, MetricCards } from '../../../components/componentsreutilizables';
 import { Target, TrendingUp, CheckCircle, AlertCircle } from 'lucide-react';
 import { getAdherenciaNutricional, AdherenciaNutricional } from '../api/adherencia';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface CalculadoraAdherenciaProps {
   clienteId: string;
@@ -116,6 +117,132 @@ export const CalculadoraAdherencia: React.FC<CalculadoraAdherenciaProps> = ({
       </Card>
 
       <MetricCards data={metricas} columns={4} />
+
+      {/* Gráfico de Comparación de Macronutrientes */}
+      {adherencia.macronutrientes && adherencia.macronutrientes.length > 0 && (
+        <Card className="p-4 bg-white shadow-sm">
+          <div className="space-y-4">
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                Comparación de Macronutrientes
+              </h4>
+              <p className="text-sm text-gray-600">
+                Consumo real vs objetivos diarios de proteínas, carbohidratos y grasas
+              </p>
+            </div>
+            
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart
+                data={adherencia.macronutrientes.map(macro => ({
+                  nombre: macro.nombre.charAt(0).toUpperCase() + macro.nombre.slice(1),
+                  'Consumo Real (g)': macro.consumoReal,
+                  'Objetivo Diario (g)': macro.objetivoDiario,
+                  porcentaje: macro.porcentajeCumplimiento,
+                }))}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                <XAxis 
+                  dataKey="nombre" 
+                  tick={{ fill: '#64748B', fontSize: 12 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis 
+                  tick={{ fill: '#64748B', fontSize: 12 }}
+                  label={{ value: 'Gramos (g)', angle: -90, position: 'insideLeft', style: { fill: '#64748B' } }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'white', 
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '8px',
+                    padding: '12px'
+                  }}
+                  formatter={(value: number, name: string) => {
+                    if (name === 'Consumo Real (g)' || name === 'Objetivo Diario (g)') {
+                      return [`${value.toFixed(0)} g`, name];
+                    }
+                    return [value, name];
+                  }}
+                />
+                <Legend 
+                  wrapperStyle={{ paddingTop: '20px' }}
+                  formatter={(value) => {
+                    if (value === 'Consumo Real (g)') return 'Consumo Real';
+                    if (value === 'Objetivo Diario (g)') return 'Objetivo Diario';
+                    return value;
+                  }}
+                />
+                <Bar 
+                  dataKey="Consumo Real (g)" 
+                  fill="#3B82F6" 
+                  radius={[8, 8, 0, 0]}
+                  name="Consumo Real"
+                />
+                <Bar 
+                  dataKey="Objetivo Diario (g)" 
+                  fill="#10B981" 
+                  radius={[8, 8, 0, 0]}
+                  name="Objetivo Diario"
+                />
+              </BarChart>
+            </ResponsiveContainer>
+
+            {/* Resumen de cumplimiento por macronutriente */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+              {adherencia.macronutrientes.map((macro) => {
+                const necesitaAjuste = macro.porcentajeCumplimiento < 80;
+                return (
+                  <div
+                    key={macro.nombre}
+                    className={`p-4 rounded-lg border-2 ${
+                      necesitaAjuste
+                        ? 'border-orange-200 bg-orange-50'
+                        : 'border-green-200 bg-green-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold text-gray-900 capitalize">
+                        {macro.nombre}
+                      </span>
+                      {necesitaAjuste && (
+                        <AlertCircle className="w-4 h-4 text-orange-600" />
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs text-gray-600">
+                        <span>Real:</span>
+                        <span className="font-medium">{macro.consumoReal}g</span>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-600">
+                        <span>Objetivo:</span>
+                        <span className="font-medium">{macro.objetivoDiario}g</span>
+                      </div>
+                      <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-200">
+                        <span className="text-xs font-medium text-gray-700">Cumplimiento:</span>
+                        <span
+                          className={`text-sm font-bold ${
+                            necesitaAjuste ? 'text-orange-600' : 'text-green-600'
+                          }`}
+                        >
+                          {macro.porcentajeCumplimiento.toFixed(1)}%
+                        </span>
+                      </div>
+                      {necesitaAjuste && (
+                        <p className="text-xs text-orange-700 mt-2 font-medium">
+                          ⚠️ Necesita ajustes
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </Card>
+      )}
 
       <Card className="p-4 bg-white shadow-sm">
         <div className="space-y-4">

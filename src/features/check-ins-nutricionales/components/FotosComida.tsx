@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, Button } from '../../../components/componentsreutilizables';
 import { Camera, X, Image as ImageIcon, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { FotoComida, subirFotoComida, evaluarFoto } from '../api/fotos';
+import { FotoComida, subirFotoComida, evaluarFoto, getFotosPorCheckIn } from '../api/fotos';
 
 interface FotosComidaProps {
   clienteId: string;
@@ -14,14 +14,34 @@ interface FotosComidaProps {
 export const FotosComida: React.FC<FotosComidaProps> = ({
   clienteId,
   checkInId,
-  fotos = [],
+  fotos: fotosProp = [],
   onFotoSubida,
   soloLectura = false,
 }) => {
+  const [fotos, setFotos] = useState<FotoComida[]>(fotosProp);
   const [preview, setPreview] = useState<string | null>(null);
   const [subiendo, setSubiendo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [tipoComida, setTipoComida] = useState<'desayuno' | 'almuerzo' | 'merienda' | 'cena' | 'snack'>('desayuno');
+
+  useEffect(() => {
+    if (checkInId && fotosProp.length === 0) {
+      cargarFotos();
+    } else if (fotosProp.length > 0) {
+      setFotos(fotosProp);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkInId, fotosProp]);
+
+  const cargarFotos = async () => {
+    if (!checkInId) return;
+    try {
+      const fotosCargadas = await getFotosPorCheckIn(checkInId);
+      setFotos(fotosCargadas);
+    } catch (error) {
+      console.error('Error al cargar fotos:', error);
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -46,8 +66,11 @@ export const FotosComida: React.FC<FotosComidaProps> = ({
         tipoComida
       );
       
-      if (foto && onFotoSubida) {
-        onFotoSubida(foto);
+      if (foto) {
+        setFotos([...fotos, foto]);
+        if (onFotoSubida) {
+          onFotoSubida(foto);
+        }
       }
       
       setPreview(null);

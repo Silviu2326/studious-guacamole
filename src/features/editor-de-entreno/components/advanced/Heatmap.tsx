@@ -101,3 +101,5 @@ export const Heatmap: React.FC<HeatmapProps> = ({ planificacion, datos }) => {
 
 
 
+
+

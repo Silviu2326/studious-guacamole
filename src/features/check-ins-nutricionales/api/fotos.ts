@@ -73,6 +73,37 @@ export async function getFotosComida(clienteId: string, fecha?: string): Promise
   return resultado;
 }
 
+export async function getFotosPorCheckIn(checkInId: string): Promise<FotoComida[]> {
+  await new Promise(resolve => setTimeout(resolve, 200));
+  
+  return fotosComidaMock.filter(f => f.checkInId === checkInId);
+}
+
+export async function getFotosPorTipoComida(
+  clienteId: string, 
+  tipoComida: string, 
+  fechaExcluida?: string
+): Promise<FotoComida[]> {
+  await new Promise(resolve => setTimeout(resolve, 200));
+  
+  let resultado = fotosComidaMock.filter(
+    f => f.clienteId === clienteId && f.tipoComida === tipoComida
+  );
+  
+  if (fechaExcluida) {
+    resultado = resultado.filter(f => f.fecha !== fechaExcluida);
+  }
+  
+  // Ordenar por fecha descendente (más recientes primero)
+  resultado.sort((a, b) => {
+    const fechaA = new Date(a.fecha).getTime();
+    const fechaB = new Date(b.fecha).getTime();
+    return fechaB - fechaA;
+  });
+  
+  return resultado;
+}
+
 export async function evaluarFoto(fotoId: string, evaluacion: 'cumple' | 'parcial' | 'no_cumple', comentario?: string): Promise<boolean> {
   await new Promise(resolve => setTimeout(resolve, 300));
   

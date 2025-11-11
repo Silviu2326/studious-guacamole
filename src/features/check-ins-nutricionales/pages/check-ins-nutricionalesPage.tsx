@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { Card, MetricCards, Select } from '../../../components/componentsreutilizables';
+import { Card, MetricCards, Select, Button } from '../../../components/componentsreutilizables';
 import { 
   CheckInsNutricion,
   SeguimientoPeso,
   HistorialNutricional,
   CalculadoraAdherencia,
   AnalizadorTendencias,
+  ConfiguracionRecordatorios,
+  ConfiguracionAlertas,
 } from '../components';
 import { getCheckInsNutricionales } from '../api/checkins';
 import { getAnalyticsNutricional } from '../api/adherencia';
-import { ClipboardCheck, Users, TrendingUp, AlertTriangle, Camera, Scale } from 'lucide-react';
+import { ClipboardCheck, Users, TrendingUp, AlertTriangle, Camera, Scale, Bell, Download } from 'lucide-react';
+import { iniciarVerificacionRecordatoriosCheckInNutricional } from '../api/recordatorios';
+import { iniciarVerificacionAlertas, verificarYCrearAlertas } from '../api/alertas';
+import { exportarReporteExcel, exportarReportePDF } from '../api/exportacion';
 
 export default function CheckInsNutricionalesPage() {
   const { user } = useAuth();
@@ -18,12 +23,56 @@ export default function CheckInsNutricionalesPage() {
   const [tabActiva, setTabActiva] = useState<string>('checkins');
   const [clienteSeleccionado, setClienteSeleccionado] = useState<string>('');
   const [analytics, setAnalytics] = useState<any>(null);
+  const [mostrarConfigRecordatorios, setMostrarConfigRecordatorios] = useState(false);
+  const [mostrarConfigAlertas, setMostrarConfigAlertas] = useState(false);
+  const [exportando, setExportando] = useState(false);
 
   useEffect(() => {
     if (clienteSeleccionado) {
       cargarAnalytics();
+      // Iniciar verificación de recordatorios para este cliente
+      if (user?.id) {
+        const intervalIdRecordatorios = iniciarVerificacionRecordatoriosCheckInNutricional(user.id, clienteSeleccionado);
+        
+        // Iniciar verificación de alertas automáticas
+        const obtenerDatosParaAlertas = async () => {
+          const checkIns = await getCheckInsNutricionales(clienteSeleccionado);
+          const analyticsData = await getAnalyticsNutricional(clienteSeleccionado);
+          
+          // Calcular días sin check-ins
+          const ahora = new Date();
+          const ultimoCheckIn = checkIns.length > 0 
+            ? new Date(Math.max(...checkIns.map(ci => new Date(ci.fecha || ci.createdAt || '').getTime())))
+            : null;
+          
+          const diasSinCheckIns = ultimoCheckIn
+            ? Math.floor((ahora.getTime() - ultimoCheckIn.getTime()) / (1000 * 60 * 60 * 24))
+            : 999; // Si no hay check-ins, considerar muchos días
+          
+          return {
+            diasSinCheckIns,
+            adherenciaActual: analyticsData?.promedioAdherencia || 0,
+          };
+        };
+        
+        const intervalIdAlertas = iniciarVerificacionAlertas(
+          user.id,
+          clienteSeleccionado,
+          obtenerDatosParaAlertas
+        );
+        
+        // Verificar alertas inmediatamente al cargar
+        obtenerDatosParaAlertas().then(datos => {
+          verificarYCrearAlertas(user.id, clienteSeleccionado, datos);
+        });
+        
+        return () => {
+          clearInterval(intervalIdRecordatorios);
+          clearInterval(intervalIdAlertas);
+        };
+      }
     }
-  }, [clienteSeleccionado]);
+  }, [clienteSeleccionado, user?.id]);
 
   const cargarAnalytics = async () => {
     if (!clienteSeleccionado) return;
@@ -32,6 +81,32 @@ export default function CheckInsNutricionalesPage() {
       setAnalytics(data);
     } catch (error) {
       console.error('Error al cargar analytics:', error);
+    }
+  };
+
+  const handleExportar = async (formato: 'pdf' | 'excel') => {
+    if (!clienteSeleccionado) return;
+    
+    setExportando(true);
+    try {
+      const clienteNombre = clientesMock.find(c => c.value === clienteSeleccionado)?.label || clienteSeleccionado;
+      
+      if (formato === 'pdf') {
+        await exportarReportePDF({
+          clienteId: clienteSeleccionado,
+          nombreCliente: clienteNombre,
+        });
+      } else {
+        await exportarReporteExcel({
+          clienteId: clienteSeleccionado,
+          nombreCliente: clienteNombre,
+        });
+      }
+    } catch (error) {
+      console.error('Error al exportar reporte:', error);
+      alert('Error al exportar el reporte. Por favor, intenta nuevamente.');
+    } finally {
+      setExportando(false);
     }
   };
 
@@ -182,17 +257,55 @@ export default function CheckInsNutricionalesPage() {
         <div className="space-y-6">
           {/* Selector de Cliente */}
           <Card className="p-4 bg-white shadow-sm">
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Seleccionar Cliente
-              </label>
-              <Select
-                value={clienteSeleccionado}
-                onChange={(e) => setClienteSeleccionado(e.target.value)}
-                options={clientesMock}
-                placeholder="Selecciona un cliente"
-                className="w-full"
-              />
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Seleccionar Cliente
+                </label>
+                <Select
+                  value={clienteSeleccionado}
+                  onChange={(e) => setClienteSeleccionado(e.target.value)}
+                  options={clientesMock}
+                  placeholder="Selecciona un cliente"
+                  className="w-full"
+                />
+              </div>
+              {clienteSeleccionado && (
+                <div className="pt-6 flex gap-2">
+                  <Button
+                    variant="primary"
+                    onClick={() => handleExportar('excel')}
+                    loading={exportando}
+                    disabled={exportando}
+                  >
+                    <Download size={18} className="mr-2" />
+                    Exportar Excel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={() => handleExportar('pdf')}
+                    loading={exportando}
+                    disabled={exportando}
+                  >
+                    <Download size={18} className="mr-2" />
+                    Exportar PDF
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setMostrarConfigRecordatorios(true)}
+                  >
+                    <Bell size={18} className="mr-2" />
+                    Recordatorios
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setMostrarConfigAlertas(true)}
+                  >
+                    <AlertTriangle size={18} className="mr-2" />
+                    Alertas
+                  </Button>
+                </div>
+              )}
             </div>
           </Card>
 
@@ -235,6 +348,24 @@ export default function CheckInsNutricionalesPage() {
           <div className="mt-6">{renderTabContent()}</div>
         </div>
       </div>
+
+      {/* Modal de Configuración de Recordatorios */}
+      {clienteSeleccionado && user?.id && (
+        <>
+          <ConfiguracionRecordatorios
+            isOpen={mostrarConfigRecordatorios}
+            onClose={() => setMostrarConfigRecordatorios(false)}
+            entrenadorId={user.id}
+            clienteId={clienteSeleccionado}
+          />
+          <ConfiguracionAlertas
+            isOpen={mostrarConfigAlertas}
+            onClose={() => setMostrarConfigAlertas(false)}
+            entrenadorId={user.id}
+            clienteId={clienteSeleccionado}
+          />
+        </>
+      )}
     </div>
   );
 }

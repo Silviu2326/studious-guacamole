@@ -1,0 +1,709 @@
+{
+  "user_stories": [
+    {
+      "id": "US-CA-001",
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver métricas como mensajes enviados, tasa de respuesta de clientes, recordatorios automáticos activos y clientes con comunicación pendiente",
+      "reason": "Entender cómo está funcionando mi comunicación con los clientes y qué necesito mejorar",
+      "description": "Reemplazar métricas genéricas de marketing (campañas activas, ingresos atribuidos) por métricas específicas de comunicación entre entrenador y clientes que muestren el estado real de la interacción."
+    },
+    {
+      "id": "US-CA-002",
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador personal",
+      "goal": "Configurar recordatorios automáticos que se envíen por WhatsApp o SMS antes de cada sesión (24h, 2h antes)",
+      "reason": "Reducir las ausencias y asegurarme de que los clientes lleguen puntuales sin tener que recordarles manualmente",
+      "description": "Sistema para crear plantillas de recordatorios de sesiones que se envíen automáticamente según el calendario de reservas, con personalización por cliente y posibilidad de activar/desactivar por cliente."
+    },
+    {
+      "id": "US-CA-003",
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador personal",
+      "goal": "Crear una secuencia automática de mensajes de bienvenida que se active cuando un lead se convierte en cliente",
+      "reason": "Dar una excelente primera impresión y proporcionar información importante sin tener que escribir los mismos mensajes repetidamente",
+      "description": "Sistema de secuencias de bienvenida con múltiples mensajes programados (día 1: bienvenida, día 2: qué esperar, día 3: preparación primera sesión) que se envíen automáticamente por email o WhatsApp."
+    },
+    {
+      "id": "US-CA-004",
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador personal",
+      "goal": "Automatizar el seguimiento cuando un cliente falta a una sesión sin avisar",
+      "reason": "Mostrar que me importa su progreso y recuperar la sesión sin tener que contactar manualmente a cada uno",
+      "description": "Automatización que detecte ausencias no justificadas y envíe mensajes personalizados preguntando si todo está bien y ofreciendo reagendar, con diferentes tonos según la frecuencia de ausencias."
+    },
+    {
+      "id": "US-CA-005",
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador personal",
+      "goal": "Tener plantillas predefinidas para situaciones como confirmar sesión, recordar pago pendiente, felicitar por progreso o sugerir ajuste de plan",
+      "reason": "Ahorrar tiempo escribiendo mensajes similares y mantener consistencia en la comunicación",
+      "description": "Biblioteca de plantillas de mensajes personalizables con variables (nombre cliente, fecha sesión, etc.) que pueda usar desde cualquier conversación o enviar en masa a grupos de clientes."
+    },
+    {
+      "id": "US-CA-006",
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador personal",
+      "goal": "Programar mensajes automáticos que se envíen cada 2 semanas o 1 mes preguntando por el progreso y cómo se sienten los clientes",
+      "reason": "Mantener el engagement y detectar problemas antes de que se conviertan en abandono",
+      "description": "Sistema de mensajes programados que se envíen automáticamente según la frecuencia configurada, con opción de personalizar el contenido y ajustar la frecuencia por cliente o grupo de clientes."
+    },
+    {
+      "id": "US-CA-007",
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador personal",
+      "goal": "Configurar una secuencia automática que se active cuando un cliente no viene a sesiones durante X días",
+      "reason": "Recuperar clientes que están perdiendo el hábito antes de que abandonen completamente",
+      "description": "Automatización que detecte inactividad (sin sesiones en X días) y envíe una secuencia progresiva de mensajes motivacionales, ofertas especiales o invitaciones a retomar, con posibilidad de pausar si el cliente responde."
+    },
+    {
+      "id": "US-CA-008",
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador personal",
+      "goal": "Enviar automáticamente mensajes de felicitación en cumpleaños y aniversarios de inicio de entrenamiento",
+      "reason": "Fortalecer la relación personal con los clientes y hacerlos sentir valorados",
+      "description": "Sistema que detecte fechas importantes de cada cliente y envíe mensajes personalizados automáticamente, con posibilidad de incluir ofertas especiales o recordatorios de sesiones."
+    },
+    {
+      "id": "US-CA-009",
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador personal",
+      "goal": "Enviar recordatorios automáticos cuando un pago está próximo a vencer o vencido",
+      "reason": "Reducir la morosidad sin tener que estar pendiente manualmente de cada cliente",
+      "description": "Automatización que detecte pagos pendientes o próximos a vencer y envíe recordatorios amables por WhatsApp o email, con diferentes mensajes según los días de retraso."
+    },
+    {
+      "id": "US-CA-010",
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver un resumen de todos los mensajes automáticos enviados, tasas de apertura, respuestas y efectividad",
+      "reason": "Entender qué mensajes funcionan mejor y optimizar mi comunicación",
+      "description": "Dashboard que muestre estadísticas de mensajes automáticos: cuántos se enviaron, cuántos se abrieron, cuántos generaron respuesta, y comparativa entre diferentes tipos de mensajes."
+    },
+    {
+      "id": "US-CA-011",
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador personal",
+      "goal": "Agrupar clientes por criterios y enviarles mensajes específicos",
+      "reason": "Personalizar la comunicación según el estado y necesidades de cada grupo sin enviar mensajes genéricos a todos",
+      "description": "Sistema de segmentación que permita crear grupos de clientes según criterios (días desde última sesión, tipo de plan, adherencia, etc.) y enviar mensajes masivos personalizados a cada segmento."
+    },
+    {
+      "id": "US-CA-012",
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador personal",
+      "goal": "Crear y programar envío de newsletters con consejos, novedades, retos o contenido educativo",
+      "reason": "Mantener a los clientes informados y comprometidos sin tener que contactarlos individualmente",
+      "description": "Editor de newsletters con plantillas, posibilidad de programar envío recurrente (semanal, quincenal, mensual) y tracking de aperturas y clics para medir engagement."
+    },
+    {
+      "id": "US-CA-013",
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador personal",
+      "goal": "Configurar mensajes automáticos que se envíen cuando recibo mensajes fuera de mi horario de atención",
+      "reason": "Informar a los clientes cuándo responderé y gestionar expectativas sin tener que estar disponible 24/7",
+      "description": "Sistema de respuestas automáticas que detecte mensajes entrantes fuera del horario configurado y envíe una respuesta automática informando el horario de atención y tiempo estimado de respuesta."
+    },
+    {
+      "id": "US-CA-014",
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador personal",
+      "goal": "Crear y enviar campañas promocionales como descuento en bonos, promoción de verano o invitación a clase grupal",
+      "reason": "Aumentar ventas y engagement sin tener que contactar a cada cliente manualmente",
+      "description": "Sistema para crear campañas promocionales con mensajes personalizados, seleccionar destinatarios (todos, segmentos específicos, clientes inactivos), programar envío y medir resultados."
+    },
+    {
+      "id": "US-CA-015",
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador personal",
+      "goal": "Sincronizar los mensajes automáticos con el sistema de reservas",
+      "reason": "Que la comunicación esté sincronizada automáticamente con las acciones de los clientes sin tener que configurarlo manualmente",
+      "description": "Integración que conecte las automatizaciones con el sistema de reservas para que los mensajes se activen según cambios en el calendario (nueva sesión → recordatorio, cancelación → seguimiento, etc.)."
+    },
+    {
+      "id": "US-CA-016",
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver en un solo lugar todas mis automatizaciones con su estado y poder activarlas o pausarlas fácilmente",
+      "reason": "Tener control total sobre mi comunicación automatizada sin tener que buscar en diferentes secciones",
+      "description": "Panel centralizado que muestre todas las automatizaciones configuradas, su estado (activa, pausada, finalizada), próximos envíos programados y permita gestionarlas desde un único lugar."
+    },
+    {
+      "id": "US-CA-017",
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador personal",
+      "goal": "Recibir notificaciones cuando un cliente no responde a mensajes críticos como recordatorios de pago o seguimiento de ausencias",
+      "reason": "Poder contactarlo de forma más directa o personal antes de que la situación empeore",
+      "description": "Sistema de alertas que detecte cuando mensajes importantes no han sido abiertos o respondidos después de X tiempo y notifique al entrenador para que tome acción manual."
+    },
+    {
+      "id": "US-CA-018",
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador personal",
+      "goal": "Configurar horarios de envío preferidos por cliente o grupo",
+      "reason": "Aumentar las tasas de apertura y no molestar a los clientes con mensajes a horas inadecuadas",
+      "description": "Sistema que permita configurar horarios de envío preferidos por cliente o grupo, y que los mensajes automáticos se programen dentro de esas ventanas de tiempo."
+    },
+    {
+      "id": "US-CA-019",
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador personal",
+      "goal": "Configurar una secuencia completa de onboarding con múltiples pasos y lógica condicional",
+      "reason": "Asegurar que los nuevos clientes tengan toda la información necesaria y se sientan bienvenidos desde el inicio",
+      "description": "Constructor de secuencias de múltiples pasos con lógica condicional (si responde X, enviar Y), delays entre mensajes, y posibilidad de pausar si el cliente responde o toma acción."
+    },
+    {
+      "id": "US-CA-020",
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador personal",
+      "goal": "Exportar reportes con estadísticas de mensajes enviados, tasas de respuesta, efectividad de automatizaciones y costos",
+      "reason": "Analizar el ROI de mi tiempo invertido en comunicación y presentar resultados si es necesario",
+      "description": "Funcionalidad de exportación de reportes en diferentes formatos (PDF, Excel) que incluya métricas de comunicación, comparativas de períodos, y análisis de efectividad de cada tipo de automatización."
+    },
+    {
+      "id": "US-02",
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador personal",
+      "goal": "Solicitar un testimonio directamente desde el perfil de un cliente",
+      "reason": "Recopilar testimonios de forma rápida y contextual cuando el cliente está satisfecho",
+      "description": "Botón en el perfil del cliente para solicitar testimonio con mensaje predefinido personalizable, que se envía por WhatsApp o email. Seguimiento del estado (pendiente, recibido, publicado)."
+    },
+    {
+      "id": "US-03",
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador personal",
+      "goal": "Usar plantillas de mensajes para solicitar testimonios",
+      "reason": "Ahorrar tiempo y mantener un tono profesional consistente",
+      "description": "Plantillas predefinidas para diferentes momentos: después de alcanzar un objetivo, al completar un programa, después de X sesiones. Posibilidad de personalizar antes de enviar."
+    },
+    {
+      "id": "US-04",
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador personal",
+      "goal": "Recibir testimonios por WhatsApp, email, formulario web o redes sociales",
+      "reason": "Facilitar que mis clientes compartan su experiencia en el canal que prefieran",
+      "description": "Sistema que acepta testimonios desde múltiples fuentes: link de formulario, WhatsApp, email, captura manual, importación desde Google Reviews o redes sociales. Todos se centralizan en un solo lugar."
+    },
+    {
+      "id": "US-05",
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador personal",
+      "goal": "Tener una biblioteca organizada de todos mis testimonios con filtros",
+      "reason": "Encontrar rápidamente testimonios relevantes para usar en marketing o redes sociales",
+      "description": "Vista de todos los testimonios con filtros por cliente, fecha, tipo (texto, video, audio), puntuación, y etiquetas. Búsqueda por palabras clave. Vista de testimonio individual con opción de editar, aprobar para publicación, o rechazar."
+    },
+    {
+      "id": "US-06",
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador personal",
+      "goal": "Compartir testimonios directamente en mis redes sociales",
+      "reason": "Generar contenido de marketing auténtico sin esfuerzo adicional",
+      "description": "Botón para compartir testimonio en Instagram, Facebook, Twitter, o copiar como texto/listo para pegar. Opción de generar imagen con diseño atractivo incluyendo foto del cliente (si autorizada), nombre, testimonio y mi marca."
+    },
+    {
+      "id": "US-07",
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador personal",
+      "goal": "Exportar testimonios en formato JSON, CSV o código HTML",
+      "reason": "Usarlos en mi página web, landing pages, o materiales de marketing",
+      "description": "Opción de exportar testimonios seleccionados o todos, en diferentes formatos. Incluir datos relevantes: nombre, testimonio, puntuación, fecha, foto (si disponible). Código HTML listo para insertar en web."
+    },
+    {
+      "id": "US-08",
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador personal",
+      "goal": "Recibir recordatorios cuando pedir testimonios a clientes satisfechos",
+      "reason": "No olvidarme de recopilar testimonios en los momentos óptimos",
+      "description": "Sistema que detecta momentos ideales (cliente alcanza objetivo, completa programa, da feedback positivo, cumple X sesiones) y sugiere solicitar testimonio. Notificación in-app y opción de enviar recordatorio automático al cliente."
+    },
+    {
+      "id": "US-09",
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador personal",
+      "goal": "Enviar automáticamente una encuesta corta después de cada sesión",
+      "reason": "Obtener feedback inmediato y detectar problemas a tiempo",
+      "description": "Encuesta automática que se envía 2-4 horas después de cada sesión por WhatsApp o email. Pregunta simple de satisfacción (1-5 estrellas) y opcional comentario. Resultados se muestran en dashboard y alerta si hay feedback negativo."
+    },
+    {
+      "id": "US-10",
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador personal",
+      "goal": "Crear encuestas usando plantillas predefinidas para entrenadores personales",
+      "reason": "Recopilar feedback estructurado sin complicaciones",
+      "description": "Plantillas listas para usar: satisfacción post-sesión, progreso mensual, satisfacción con programa, NPS trimestral. Solo seleccionar plantilla, elegir clientes, y enviar. Personalización opcional de preguntas."
+    },
+    {
+      "id": "US-11",
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador personal",
+      "goal": "Recibir alertas inmediatas cuando un cliente da feedback negativo",
+      "reason": "Poder actuar rápidamente y evitar que el cliente se vaya",
+      "description": "Notificación urgente (in-app, email, WhatsApp) cuando un cliente da puntuación baja (<3 estrellas) o comentario negativo. Mostrar historial del cliente, últimas sesiones, y sugerencias de acción. Botón rápido para contactar al cliente."
+    },
+    {
+      "id": "US-12",
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador personal",
+      "goal": "Usar plantillas de respuesta para abordar feedback negativo",
+      "reason": "Responder de forma profesional y constructiva rápidamente",
+      "description": "Plantillas de mensajes para diferentes tipos de feedback negativo: insatisfacción con sesión, progreso lento, problemas de comunicación, etc. Personalizables antes de enviar. Sugerencias de próximos pasos según el tipo de problema."
+    },
+    {
+      "id": "US-13",
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver el historial completo de feedback de cada cliente",
+      "reason": "Identificar tendencias, mejoras o problemas recurrentes",
+      "description": "Sección en el perfil del cliente mostrando todos los feedbacks y testimonios históricos: fechas, puntuaciones, comentarios, tendencia (mejorando/empeorando). Gráfico de evolución de satisfacción a lo largo del tiempo."
+    },
+    {
+      "id": "US-14",
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador personal",
+      "goal": "Identificar automáticamente clientes promotores",
+      "reason": "Poder pedirles referidos y testimonios de forma estratégica",
+      "description": "Sistema que identifica clientes promotores basado en: alta satisfacción consistente, asistencia regular, cumplimiento de objetivos, feedback positivo. Lista de promotores con sugerencias de cuándo pedir referido o testimonio."
+    },
+    {
+      "id": "US-15",
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador personal",
+      "goal": "Gestionar un programa de referidos donde clientes satisfechos me traen nuevos clientes",
+      "reason": "Crecer mi negocio de forma orgánica y recompensar a clientes leales",
+      "description": "Sistema para crear programa de referidos: definir recompensa (descuento, sesión gratis, etc.), generar link único por cliente, trackear referidos, gestionar recompensas. Dashboard con estadísticas de referidos y clientes que más refieren."
+    },
+    {
+      "id": "US-16",
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver métricas de retención y satisfacción calculadas con datos reales de mis clientes",
+      "reason": "Tener información precisa sobre la salud de mi negocio",
+      "description": "Métricas calculadas automáticamente: tasa de retención, satisfacción promedio, NPS, clientes en riesgo, clientes promotores. Todo basado en datos reales: sesiones, feedback, asistencia, pagos. Comparativas con periodos anteriores."
+    },
+    {
+      "id": "US-18",
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver un listado de solicitudes de testimonios pendientes",
+      "reason": "Hacer seguimiento y recordar a clientes que no han respondido",
+      "description": "Vista de todas las solicitudes de testimonios: enviadas, pendientes, recibidas, rechazadas. Filtros por estado y fecha. Opción de reenviar recordatorio o cancelar solicitud. Notificación cuando se recibe respuesta."
+    },
+    {
+      "id": "US-19",
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador personal",
+      "goal": "Importar testimonios desde Google Reviews y otras plataformas",
+      "reason": "Centralizar todos mis testimonios en un solo lugar",
+      "description": "Conectar con Google My Business, Facebook, Instagram para importar reseñas automáticamente. Sincronización periódica. Opción de solicitar que clientes dejen reseña en estas plataformas directamente desde la app."
+    },
+    {
+      "id": "US-20",
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador personal",
+      "goal": "Recibir un reporte mensual automático con métricas de satisfacción y fidelización",
+      "reason": "Hacer seguimiento de mi progreso y identificar áreas de mejora",
+      "description": "Reporte PDF/email mensual con: satisfacción promedio, testimonios recopilados, clientes promotores, feedback negativo resuelto, tendencias, comparativa con mes anterior. Envío automático el primer día de cada mes. Opción de descargar desde dashboard."
+    },
+    {
+      "id": "US-CSS-001",
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador personal",
+      "goal": "Ver métricas específicas como leads generados desde redes sociales, consultas recibidas por contenido publicado, y tasa de conversión de contenido a clientes",
+      "reason": "Entender qué tipo de contenido realmente me ayuda a conseguir nuevos clientes y optimizar mi estrategia de marketing",
+      "description": "Reemplazar métricas genéricas de marketing por métricas específicas para entrenadores: leads generados, consultas agendadas desde contenido, clientes convertidos desde redes sociales, y engagement que se traduce en negocio real."
+    },
+    {
+      "id": "US-CSS-002",
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador personal",
+      "goal": "Que la IA genere ideas de contenido basándose en los programas de entrenamiento que tengo creados y asignados a clientes",
+      "reason": "Crear contenido educativo relevante que muestre mi expertise y ayude a educar tanto a clientes actuales como a potenciales clientes",
+      "description": "Integración con programas de entrenamiento para que la IA sugiera contenido como \"Ejercicio del mes: Sentadilla profunda\" basado en ejercicios que enseño, o \"Beneficios del entrenamiento funcional\" si tengo programas funcionales activos."
+    },
+    {
+      "id": "US-CSS-003",
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador personal",
+      "goal": "Tener plantillas predefinidas para tipos de contenido comunes como consejo de ejercicio, transformación de cliente, mito vs realidad, rutina rápida o motivación diaria",
+      "reason": "Ahorrar tiempo creando contenido y mantener consistencia en mi marca personal",
+      "description": "Biblioteca de plantillas de contenido específicas para fitness con estructuras predefinidas (formato, hooks, CTAs) que pueda personalizar rápidamente según el tema que quiera tratar."
+    },
+    {
+      "id": "US-CSS-004",
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador personal",
+      "goal": "Programar automáticamente mis publicaciones en los horarios donde mi audiencia está más activa",
+      "reason": "Maximizar el alcance y engagement sin tener que estar pendiente de publicar manualmente",
+      "description": "Sistema que analice el mejor momento para publicar según mi audiencia (mañana temprano para motivación, tarde para tips, fin de semana para transformaciones) y programe automáticamente el contenido en esos horarios."
+    },
+    {
+      "id": "US-CSS-005",
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador personal",
+      "goal": "Crear fácilmente contenido destacando los logros y transformaciones de mis clientes con su permiso",
+      "reason": "Generar contenido social proof que demuestre resultados reales y atraiga nuevos clientes",
+      "description": "Herramienta que me permita seleccionar un cliente, ver sus métricas de progreso (peso, medidas, fotos antes/después si autoriza), y generar automáticamente un post destacando su logro con plantillas profesionales y solicitud de permiso integrada."
+    },
+    {
+      "id": "US-CSS-006",
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador personal",
+      "goal": "Que la IA analice las preguntas más frecuentes que recibo de clientes y genere ideas de contenido educativo para responderlas",
+      "reason": "Crear contenido valioso que resuelva dudas comunes y posicionarme como experto",
+      "description": "Integración con inbox/mensajes para identificar preguntas frecuentes y generar ideas de contenido (posts, reels, carruseles) que respondan esas dudas de forma educativa y atractiva."
+    },
+    {
+      "id": "US-CSS-007",
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador personal",
+      "goal": "Crear secuencias de contenido que guíen a potenciales clientes desde el descubrimiento hasta la consulta inicial",
+      "reason": "Automatizar mi estrategia de marketing y convertir más leads en clientes",
+      "description": "Sistema que me permita crear secuencias de contenido (día 1: introducción, día 3: valor educativo, día 5: testimonial, día 7: CTA a consulta) que se publiquen automáticamente y se integren con mis embudos de captación."
+    },
+    {
+      "id": "US-CSS-008",
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador personal",
+      "goal": "Tener una biblioteca organizada donde guardar videos cortos de ejercicios, tips y contenido educativo que pueda reutilizar",
+      "reason": "Ahorrar tiempo creando contenido nuevo y tener material listo para publicar cuando lo necesite",
+      "description": "Biblioteca mejorada con categorías específicas (ejercicios, tips nutricionales, motivación, técnica) donde pueda guardar clips, organizarlos por tema, y reutilizarlos fácilmente en nuevas publicaciones con diferentes hooks o CTAs."
+    },
+    {
+      "id": "US-CSS-009",
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador personal",
+      "goal": "Configurar mi voz personal (tono, especialización, valores) y que la IA genere copy coherente con mi estilo",
+      "reason": "Mantener autenticidad en mi contenido mientras ahorro tiempo escribiendo",
+      "description": "Configuración de perfil de marca personal donde defina mi especialización (hipertrofia, pérdida de peso, rehabilitación, etc.), tono (motivacional, técnico, cercano), y valores, para que la IA genere copy que suene como yo."
+    },
+    {
+      "id": "US-CSS-010",
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador personal",
+      "goal": "Crear y programar contenido que promocione mis servicios, planes disponibles y ofertas especiales de forma natural",
+      "reason": "Generar ventas sin sonar demasiado comercial o agresivo",
+      "description": "Plantillas y herramientas para crear contenido promocional que se integre con mis servicios (mostrar planes disponibles, ofertas, bonos) de forma educativa y atractiva, programado estratégicamente en el calendario."
+    },
+    {
+      "id": "US-CSS-011",
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador personal",
+      "goal": "Ver analytics que me muestren qué contenido específico generó consultas agendadas o leads",
+      "reason": "Entender qué funciona mejor y crear más contenido similar que me traiga clientes",
+      "description": "Dashboard de analytics que muestre qué posts, reels o stories generaron leads reales (consultas agendadas, mensajes de interés), permitiéndome identificar patrones y duplicar contenido exitoso."
+    },
+    {
+      "id": "US-CSS-012",
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador personal",
+      "goal": "Generar ideas de contenido educativo y motivacional dirigido específicamente a mis clientes actuales",
+      "reason": "Mantenerlos comprometidos, educados y motivados entre sesiones, reduciendo abandono",
+      "description": "Sistema que genere ideas de contenido interno (tips de nutrición, ejercicios complementarios, motivación) que pueda compartir directamente con mis clientes o publicar en redes para mantenerlos comprometidos."
+    },
+    {
+      "id": "US-CSS-013",
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador personal",
+      "goal": "Que el sistema sugiera contenido relacionado con los temas que trataré en próximas sesiones con clientes",
+      "reason": "Preparar a mis clientes y crear contenido relevante basado en mi actividad real",
+      "description": "Integración con agenda que analice próximas sesiones y sugiera contenido relacionado (si tengo sesión de técnica de sentadilla, sugerir post sobre sentadilla) para publicar antes o después de la sesión."
+    },
+    {
+      "id": "US-CSS-014",
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador personal",
+      "goal": "Seleccionar un ejercicio de mi biblioteca y generar rápidamente un reel o video corto educativo sobre ese ejercicio",
+      "reason": "Crear contenido de valor sin tener que grabar y editar desde cero cada vez",
+      "description": "Herramienta que me permita seleccionar un ejercicio de mi biblioteca, añadir un hook, tips clave, y generar automáticamente un formato de video/reel listo para publicar con plantillas visuales profesionales."
+    },
+    {
+      "id": "US-CSS-016",
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador personal",
+      "goal": "Recibir sugerencias de contenido basadas en tendencias actuales de fitness filtradas por mi especialización",
+      "reason": "Mantenerme relevante y crear contenido que resuene con mi audiencia",
+      "description": "Sistema que analice tendencias de fitness en redes sociales, las filtre según mi especialización y audiencia, y me sugiera ideas de contenido adaptadas a esas tendencias con mi propio ángulo y expertise."
+    },
+    {
+      "id": "US-CSS-017",
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador personal",
+      "goal": "Tener herramientas específicas para crear carruseles educativos sobre rutinas rápidas, mitos del fitness o series de tips",
+      "reason": "Crear contenido educativo de alto valor que se comparta mucho y posicione mi expertise",
+      "description": "Editor especializado para crear carruseles con plantillas predefinidas (rutina de 5 ejercicios, 7 mitos del fitness, 10 tips de nutrición) que pueda personalizar fácilmente con mis propios ejercicios y conocimiento."
+    },
+    {
+      "id": "US-CSS-018",
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador personal",
+      "goal": "Crear y programar contenido temático para fechas importantes con antelación",
+      "reason": "Estar preparado para momentos clave donde la gente busca entrenadores y maximizar oportunidades de captación",
+      "description": "Calendario de contenido temático con plantillas y sugerencias para fechas importantes, permitiéndome programar con semanas de antelación contenido relevante que aproveche esos momentos de alta demanda."
+    },
+    {
+      "id": "US-CSS-019",
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador personal",
+      "goal": "Recibir un resumen semanal que muestre qué publiqué, cuánto engagement tuvo y cuántos leads o clientes generó",
+      "reason": "Entender rápidamente el ROI de mi tiempo invertido en contenido y ajustar mi estrategia",
+      "description": "Reporte semanal automatizado que consolide métricas de contenido (publicaciones, engagement, alcance) con resultados de negocio (leads, consultas, conversiones) para darme una visión clara del impacto de mi marketing de contenido."
+    },
+    {
+      "id": "US-CSS-020",
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador personal",
+      "goal": "Tomar un contenido exitoso y adaptarlo automáticamente para diferentes plataformas",
+      "reason": "Maximizar el alcance de mi mejor contenido sin tener que recrearlo manualmente para cada plataforma",
+      "description": "Herramienta que me permita seleccionar contenido exitoso y generar automáticamente versiones adaptadas para diferentes formatos y plataformas, manteniendo el mensaje pero optimizando para cada canal."
+    },
+    {
+      "id": "US-FA-001",
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador personal",
+      "goal": "Ver métricas relevantes como consultas generadas, conversión de consulta a primera sesión, clientes nuevos del período y tasa de retención",
+      "reason": "Entender cómo está funcionando mi estrategia de captación y qué canales me traen mejores clientes",
+      "description": "Reemplazar KPIs genéricos de marketing digital (ROAS, CTR emails) por métricas específicas del negocio de entrenamiento personal que muestren el flujo real desde consulta hasta cliente activo."
+    },
+    {
+      "id": "US-FA-002",
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador personal",
+      "goal": "Ver y gestionar funnels específicos como consulta gratuita → primera sesión → plan mensual o redes sociales → consulta online → bono de sesiones",
+      "reason": "Entender qué camino de conversión funciona mejor y optimizar cada etapa del proceso de captación",
+      "description": "Adaptar los funnels para mostrar el flujo real de un entrenador: desde la primera interacción (consulta, redes, referido) hasta la conversión en cliente activo, con métricas de conversión por etapa."
+    },
+    {
+      "id": "US-FA-003",
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador personal",
+      "goal": "Ver cuántas consultas gratuitas se convierten en primera sesión pagada y luego en clientes con plan activo",
+      "reason": "Identificar en qué punto pierdo más prospectos y mejorar ese momento crítico",
+      "description": "Mostrar funnel de conversión con etapas: Consulta solicitada → Consulta realizada → Primera sesión pagada → Cliente activo, con tasas de conversión entre cada etapa."
+    },
+    {
+      "id": "US-FA-004",
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador personal",
+      "goal": "Crear y gestionar recursos descargables como guías de entrenamiento o calculadoras de objetivos",
+      "reason": "Captar leads interesados en entrenamiento y nutrirlos antes de ofrecerles una consulta",
+      "description": "Sistema para crear, publicar y medir performance de lead magnets específicos del sector fitness, conectados con el sistema de leads y nurturing."
+    },
+    {
+      "id": "US-FA-005",
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador personal",
+      "goal": "Ver de dónde vienen mis mejores clientes: Instagram Ads, Google local, referidos, contenido orgánico o eventos",
+      "reason": "Saber dónde debo invertir más tiempo y presupuesto para crecer",
+      "description": "Dashboard que muestre el origen de cada lead y cliente, con métricas de conversión y valor por canal, adaptado a los canales reales que usa un entrenador."
+    },
+    {
+      "id": "US-FA-006",
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador personal",
+      "goal": "Crear y gestionar eventos como retos, webinars o talleres como herramientas de captación",
+      "reason": "Atraer nuevos prospectos y convertir participantes en clientes",
+      "description": "Sistema para crear eventos, gestionar inscripciones, ver métricas de conversión de participantes a clientes y automatizar el seguimiento post-evento."
+    },
+    {
+      "id": "US-FA-007",
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador personal",
+      "goal": "Saber qué clientes tienen mayor valor de vida y retención según el canal de captación",
+      "reason": "Priorizar los canales que me traen clientes de mayor calidad, no solo cantidad",
+      "description": "Métricas que muestren no solo cuántos leads vienen de cada canal, sino el valor promedio del cliente, tasa de retención y duración de la relación comercial por origen."
+    },
+    {
+      "id": "US-FA-008",
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador personal",
+      "goal": "Que el sistema me recuerde automáticamente seguir con leads que solicitaron consulta pero no la agendaron, o que la hicieron pero no compraron",
+      "reason": "No perder oportunidades y mejorar mi tasa de conversión sin tener que recordarlo manualmente",
+      "description": "Sistema de alertas y tareas automáticas que identifique leads en riesgo de no convertirse y sugiera acciones de seguimiento personalizadas según el tiempo transcurrido."
+    },
+    {
+      "id": "US-FA-009",
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador personal",
+      "goal": "Ver qué porcentaje de clientes que compran su primera sesión se convierten en planes mensuales o bonos",
+      "reason": "Entender si mi estrategia de venta post-primera-sesión está funcionando y cómo mejorarla",
+      "description": "Métrica específica que muestre la conversión de primera sesión única a cliente con plan recurrente o bono, con comparativa por período y sugerencias de mejora."
+    },
+    {
+      "id": "US-FA-010",
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador personal",
+      "goal": "Ver el rendimiento de mis publicaciones en redes sociales que generan consultas",
+      "reason": "Saber qué tipo de contenido funciona mejor para atraer clientes y replicarlo",
+      "description": "Integración con métricas de redes sociales que muestre qué publicaciones generan más consultas, engagement que se convierte en leads y ROI de tiempo invertido en cada red."
+    },
+    {
+      "id": "US-FA-012",
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador personal",
+      "goal": "Ver cuántos clientes nuevos vienen de referidos, quiénes son mis mejores embajadores y el valor generado",
+      "reason": "Optimizar mi programa de referidos y recompensar a los clientes que más me ayudan a crecer",
+      "description": "Sistema de tracking de referidos que muestre origen, conversión, valor de cliente referido y métricas de programa de referidos con sugerencias de mejora."
+    },
+    {
+      "id": "US-FA-013",
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador personal",
+      "goal": "Comparar mis métricas de captación entre diferentes períodos",
+      "reason": "Identificar si estoy mejorando o empeorando y qué factores influyen",
+      "description": "Funcionalidad de comparación de períodos que muestre cambios en consultas, conversiones, clientes nuevos y valor promedio, con explicaciones de las variaciones."
+    },
+    {
+      "id": "US-01",
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver una explicación clara y simple de qué puedo hacer en esta sección al entrar",
+      "reason": "Entender rápidamente si esta sección me ayuda a resolver mis necesidades de marketing y crecimiento",
+      "description": "Reemplazar el texto técnico actual por una descripción clara que explique que aquí puedo crear campañas de marketing automatizadas, probar qué mensajes funcionan mejor con mis clientes, y obtener recomendaciones inteligentes para hacer crecer mi negocio."
+    },
+    {
+      "id": "US-02",
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver un resumen rápido de métricas importantes como campañas activas, leads generados esta semana y experimentos en curso",
+      "reason": "Tener una visión rápida del estado de mi marketing sin tener que navegar por las pestañas",
+      "description": "Agregar un panel de métricas resumidas en el header mostrando: número de campañas activas, leads generados en últimos 7 días, experimentos en ejecución y próxima acción recomendada, con diseño compacto y visual."
+    },
+    {
+      "id": "US-03",
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver un botón que diga Crear Campaña de Marketing en lugar de Nuevo Playbook IA",
+      "reason": "Entender inmediatamente qué voy a hacer al hacer clic, sin tener que adivinar qué es un playbook",
+      "description": "Cambiar el texto del botón a algo más claro como \"Crear Campaña\" o \"Nueva Campaña de Marketing\", con un tooltip o descripción corta que explique que puedo crear campañas automatizadas de email, WhatsApp, redes sociales, etc."
+    },
+    {
+      "id": "US-04",
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver un botón que diga Probar Estrategia o Test A/B en lugar de Lanzar Experimento",
+      "reason": "Entender que puedo probar diferentes mensajes o enfoques para ver cuál funciona mejor con mis clientes",
+      "description": "Cambiar el texto a algo más comprensible como \"Probar Mensajes\" o \"Test de Estrategias\", con explicación de que puedo enviar dos versiones diferentes y ver cuál genera más respuestas o conversiones."
+    },
+    {
+      "id": "US-05",
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver recomendaciones específicas como clientes inactivos a reactivar o mejores momentos para publicar",
+      "reason": "Saber qué acciones tomar ahora mismo para mejorar mi negocio",
+      "description": "Agregar una sección de recomendaciones inteligentes en el header que analice mis datos y sugiera acciones concretas con botones de acción rápida."
+    },
+    {
+      "id": "US-06",
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver un enlace rápido a mis campañas que más leads o clientes han generado",
+      "reason": "Poder duplicarlas o crear variaciones rápidamente sin tener que buscar en la lista completa",
+      "description": "Agregar un dropdown o sección en el header con Mis Top 3 Campañas mostrando las campañas más exitosas con métricas clave y botón para duplicar o ver detalles."
+    },
+    {
+      "id": "US-07",
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver cuántos experimentos tengo corriendo y cuáles están listos para revisar resultados",
+      "reason": "No olvidarme de revisar qué estrategias funcionaron mejor y aplicar los ganadores",
+      "description": "Agregar un indicador visual en el header mostrando número de experimentos activos, experimentos completados pendientes de revisión, y acceso rápido a ver resultados con badge de notificación."
+    },
+    {
+      "id": "US-08",
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver una explicación simple con ejemplos de qué es un playbook o campaña de marketing",
+      "reason": "Entender que es una secuencia automatizada de mensajes que me ayuda a conseguir objetivos como captar clientes o reactivar inactivos",
+      "description": "Agregar un tooltip o modal informativo accesible desde el header que explique con ejemplos concretos cómo funciona un playbook enfocado en entrenadores personales."
+    },
+    {
+      "id": "US-09",
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver un botón o enlace a plantillas predefinidas de campañas como captar clientes de Año Nuevo o reactivar inactivos",
+      "reason": "Poder crear campañas rápidamente usando plantillas probadas en lugar de empezar desde cero",
+      "description": "Agregar un botón Ver Plantillas o dropdown en el header que muestre las plantillas más populares para entrenadores con descripción breve y acceso directo a activarlas."
+    },
+    {
+      "id": "US-10",
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver qué campañas se van a enviar hoy o esta semana desde esta sección",
+      "reason": "Tener control sobre qué mensajes van a recibir mis clientes y poder ajustar si es necesario",
+      "description": "Agregar una sección Próximos Envíos en el header mostrando las próximas acciones programadas con fecha/hora y opción de pausar o editar rápidamente."
+    },
+    {
+      "id": "US-11",
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver un badge o etiqueta que diga algo como Centro de Marketing o Marketing Inteligente en lugar de Engagement Hub",
+      "reason": "Entender inmediatamente que esta sección es sobre marketing y crecimiento",
+      "description": "Cambiar el badge actual por texto más comprensible y orientado al entrenador, manteniendo el diseño visual pero con mensaje claro."
+    },
+    {
+      "id": "US-12",
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver notificaciones visuales si tengo campañas pausadas, errores en envíos o experimentos que terminaron y necesitan revisión",
+      "reason": "No perder oportunidades o dejar problemas sin resolver",
+      "description": "Agregar un sistema de alertas en el header con iconos mostrando campañas pausadas, errores de envío y experimentos completados con resultados listos, incluyendo badge con contador."
+    },
+    {
+      "id": "US-13",
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver botones de acción rápida para objetivos comunes como captar nuevos clientes, reactivar inactivos o aumentar retención",
+      "reason": "Crear campañas directamente enfocadas en lo que necesito ahora sin múltiples pasos",
+      "description": "Agregar botones de acción rápida en el header con los objetivos más comunes y abrir un asistente guiado para crear esa campaña específica con plantillas y sugerencias precargadas."
+    },
+    {
+      "id": "US-14",
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver un resumen visual de qué tipos de campañas o mensajes están funcionando mejor",
+      "reason": "Enfocar mi tiempo y esfuerzo en las estrategias que más resultados me dan",
+      "description": "Agregar un gráfico pequeño o métricas comparativas en el header mostrando qué canales y campañas generan más leads o conversiones, con acceso a ver detalles."
+    },
+    {
+      "id": "US-15",
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver una guía rápida o tutorial la primera vez que entro a esta sección",
+      "reason": "Entender cómo usar todas las funcionalidades sin tener que explorar por prueba y error",
+      "description": "Implementar un tour guiado o modal de bienvenida que explique las funciones principales y sea accesible desde un botón ¿Cómo funciona? en el header."
+    },
+    {
+      "id": "US-16",
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver mis objetivos de marketing del mes y el progreso hacia ellos",
+      "reason": "Saber si estoy en camino de alcanzar mis metas y qué acciones tomar si no",
+      "description": "Agregar una sección de objetivos en el header mostrando metas como nuevos clientes, clientes reactivados y leads generados con barra de progreso e integración con datos reales."
+    },
+    {
+      "id": "US-17",
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador personal",
+      "goal": "Tener un campo de búsqueda en el header para encontrar rápidamente una campaña o experimento específico",
+      "reason": "No tener que buscar en listas largas cuando sé el nombre de lo que busco",
+      "description": "Agregar un campo de búsqueda en el header que permita buscar por nombre de campaña, experimento o palabras clave, con resultados en tiempo real y acceso directo."
+    },
+    {
+      "id": "US-18",
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver un resumen de cuánto dinero he ganado o cuántos clientes he conseguido gracias a mis campañas de marketing",
+      "reason": "Entender el valor real de invertir tiempo en marketing y justificar continuar usando estas herramientas",
+      "description": "Agregar una métrica destacada en el header mostrando ROI estimado o clientes generados por campañas en el último mes, con comparativa respecto al mes anterior."
+    },
+    {
+      "id": "US-19",
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador personal",
+      "goal": "Ver insights sobre tendencias de marketing en el sector de entrenamiento personal",
+      "reason": "Estar al día con qué estrategias están usando otros entrenadores exitosos y poder aplicarlas",
+      "description": "Agregar un enlace o sección en el header a tendencias del sector mostrando insights agregados sobre estrategias exitosas, mejores momentos para publicar y tipos de contenido que generan más leads."
+    }
+  ]
+}
+

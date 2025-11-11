@@ -3,6 +3,22 @@ export interface CheckInEntreno {
   clienteId: string;
   sesionId?: string;
   ejercicioId?: string;
+  // Métricas de dispositivos wearables asociadas al check-in
+  wearableMetrics?: {
+    source: 'garmin' | 'fitbit' | 'apple' | 'whoop' | 'otro';
+    heartRateBpm?: number;
+    hrvMs?: number;
+    capturedAt?: string;
+    raw?: Record<string, any>;
+  };
+  // Adjuntos multimedia (fotos / videos) para técnica o molestias
+  media?: Array<{
+    id: string;
+    type: 'image' | 'video';
+    url: string;
+    thumbnailUrl?: string;
+    createdAt: string;
+  }>;
   serie?: number;
   fecha: string;
   semaforo: 'rojo' | 'amarillo' | 'verde';
@@ -11,6 +27,8 @@ export interface CheckInEntreno {
   rpe?: number;
   observaciones?: string;
   ajusteAplicado?: boolean;
+  // Campos extras definidos por plantillas personalizadas
+  camposPersonalizados?: Record<string, any>;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -39,6 +57,13 @@ export async function getCheckIns(clienteId?: string, sesionId?: string): Promis
       rpe: 8,
       observaciones: 'Primera serie muy cómoda',
       ajusteAplicado: false,
+      media: [],
+      wearableMetrics: {
+        source: 'garmin',
+        heartRateBpm: 92,
+        hrvMs: 58,
+        capturedAt: new Date(ahora.getTime() - 2 * 60 * 60 * 1000).toISOString(),
+      },
       createdAt: new Date(ahora.getTime() - 2 * 60 * 60 * 1000).toISOString(),
       updatedAt: new Date(ahora.getTime() - 2 * 60 * 60 * 1000).toISOString(),
     },
@@ -54,6 +79,13 @@ export async function getCheckIns(clienteId?: string, sesionId?: string): Promis
       rpe: 9,
       observaciones: 'Intensidad adecuada',
       ajusteAplicado: false,
+      media: [],
+      wearableMetrics: {
+        source: 'garmin',
+        heartRateBpm: 104,
+        hrvMs: 52,
+        capturedAt: new Date(ahora.getTime() - 90 * 60 * 1000).toISOString(),
+      },
       createdAt: new Date(ahora.getTime() - 90 * 60 * 1000).toISOString(),
       updatedAt: new Date(ahora.getTime() - 90 * 60 * 1000).toISOString(),
     },
@@ -69,6 +101,13 @@ export async function getCheckIns(clienteId?: string, sesionId?: string): Promis
       rpe: 12,
       observaciones: 'Notando algo de cansancio',
       ajusteAplicado: false,
+      media: [],
+      wearableMetrics: {
+        source: 'garmin',
+        heartRateBpm: 118,
+        hrvMs: 46,
+        capturedAt: new Date(ahora.getTime() - 60 * 60 * 1000).toISOString(),
+      },
       createdAt: new Date(ahora.getTime() - 60 * 60 * 1000).toISOString(),
       updatedAt: new Date(ahora.getTime() - 60 * 60 * 1000).toISOString(),
     },
@@ -82,6 +121,7 @@ export async function crearCheckIn(checkIn: Omit<CheckInEntreno, 'id' | 'created
   const nuevoCheckIn: CheckInEntreno = {
     ...checkIn,
     id: `checkin_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    media: checkIn.media || [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -124,6 +164,13 @@ export async function getHistorialCheckIns(clienteId: string, dias?: number): Pr
         rpe,
         observaciones: serie === 1 ? 'Inicio de sesión' : `Serie ${serie}`,
         ajusteAplicado: semaforo === 'rojo' && Math.random() > 0.5,
+        media: [],
+        wearableMetrics: {
+          source: 'garmin',
+          heartRateBpm: 80 + Math.floor(Math.random() * 60),
+          hrvMs: 40 + Math.floor(Math.random() * 30),
+          capturedAt: new Date(fecha.getTime() - serie * 30 * 60 * 1000).toISOString(),
+        },
         createdAt: fecha.toISOString(),
         updatedAt: fecha.toISOString(),
       };
@@ -248,5 +295,115 @@ export async function getCheckInsAnalytics(clienteId?: string): Promise<{
     frecuenciaDolor: Math.round(frecuenciaDolor * 10) / 10,
     tendenciaGeneral,
   });
+}
+
+/**
+ * Analytics agregado para múltiples clientes (mock).
+ * Devuelve métricas por cliente y un resumen comparativo.
+ */
+export async function getCheckInsAnalyticsClientes(clienteIds: string[]): Promise<{
+  porCliente: Array<{
+    clienteId: string;
+    nombre?: string;
+    totalCheckIns: number;
+    promedioSemaforo: number;
+    dolorLumbarCount: number;
+    promedioRPE: number;
+    distribucionSemaforos: { verde: number; amarillo: number; rojo: number };
+    tendenciaGeneral: 'mejora' | 'estable' | 'empeora';
+  }>;
+  comparativo: {
+    totalClientes: number;
+    totalCheckIns: number;
+    promedioSemaforoGlobal: number;
+    promedioRPEGlobal: number;
+    rankingPorRiesgo: Array<{ clienteId: string; scoreRiesgo: number }>;
+    distribucionGlobal: { verde: number; amarillo: number; rojo: number };
+  };
+}> {
+  if (!clienteIds || clienteIds.length === 0) {
+    return {
+      porCliente: [],
+      comparativo: {
+        totalClientes: 0,
+        totalCheckIns: 0,
+        promedioSemaforoGlobal: 0,
+        promedioRPEGlobal: 0,
+        rankingPorRiesgo: [],
+        distribucionGlobal: { verde: 0, amarillo: 0, rojo: 0 },
+      },
+    };
+  }
+
+  // Reutilizamos el mock individual para generar datos por cliente
+  const porCliente = await Promise.all(
+    clienteIds.map(async (id) => {
+      const a = await getCheckInsAnalytics(id);
+      return {
+        clienteId: id,
+        totalCheckIns: a.totalCheckIns,
+        promedioSemaforo: a.promedioSemaforo,
+        dolorLumbarCount: a.dolorLumbarCount,
+        promedioRPE: a.promedioRPE,
+        distribucionSemaforos: a.distribucionSemaforos,
+        tendenciaGeneral: a.tendenciaGeneral,
+      };
+    })
+  );
+
+  const totalCheckIns = porCliente.reduce((s, c) => s + c.totalCheckIns, 0);
+  const totalVerde = porCliente.reduce((s, c) => s + c.distribucionSemaforos.verde, 0);
+  const totalAmarillo = porCliente.reduce((s, c) => s + c.distribucionSemaforos.amarillo, 0);
+  const totalRojo = porCliente.reduce((s, c) => s + c.distribucionSemaforos.rojo, 0);
+  const promedioSemaforoGlobal =
+    totalCheckIns > 0 ? (totalVerde * 3 + totalAmarillo * 2 + totalRojo * 1) / totalCheckIns : 0;
+  const promedioRPEGlobal =
+    porCliente.length > 0
+      ? Math.round(
+          (porCliente.reduce((s, c) => s + (isFinite(c.promedioRPE) ? c.promedioRPE : 0), 0) / porCliente.length) * 10
+        ) / 10
+      : 0;
+
+  // Score de riesgo simple: pondera rojo>amarillo por check-in
+  const rankingPorRiesgo = porCliente
+    .map((c) => {
+      const scoreTotal = c.distribucionSemaforos.rojo * 2 + c.distribucionSemaforos.amarillo * 1;
+      const scoreRiesgo = c.totalCheckIns > 0 ? Math.round((scoreTotal / c.totalCheckIns) * 100) / 100 : 0;
+      return { clienteId: c.clienteId, scoreRiesgo };
+    })
+    .sort((a, b) => b.scoreRiesgo - a.scoreRiesgo);
+
+  return {
+    porCliente,
+    comparativo: {
+      totalClientes: clienteIds.length,
+      totalCheckIns,
+      promedioSemaforoGlobal: Math.round(promedioSemaforoGlobal * 100) / 100,
+      promedioRPEGlobal,
+      rankingPorRiesgo,
+      distribucionGlobal: { verde: totalVerde, amarillo: totalAmarillo, rojo: totalRojo },
+    },
+  };
+}
+
+// Objetivos/semanales del plan de entrenamiento asignado (mock)
+export interface ObjetivosPlanSemanal {
+  sesionesObjetivo: number; // sesiones/semana
+  duracionMinutosObjetivo: number; // minutos/semana
+  rpePromedioObjetivo: number; // objetivo de carga interna aproximada
+}
+
+export async function getObjetivosPlanSemana(clienteId?: string): Promise<ObjetivosPlanSemanal | null> {
+  if (!clienteId) return null;
+  // Mock simple basado en frecuencia típica
+  const frecuenciasPosibles = [3, 4, 5];
+  const sesionesObjetivo = frecuenciasPosibles[Math.floor(Math.random() * frecuenciasPosibles.length)];
+  const duracionMinutosObjetivo = sesionesObjetivo * (35 + Math.floor(Math.random() * 21)); // 35-55m por sesión
+  const rpePromedioObjetivo = 7 + Math.random() * 1.5; // 7.0 - 8.5
+  return {
+    sesionesObjetivo,
+    duracionMinutosObjetivo,
+    rpePromedioObjetivo: Math.round(rpePromedioObjetivo * 10) / 10,
+  };
 }
 

@@ -12,6 +12,8 @@ export interface CheckInNutricional {
   observaciones?: string;
   feedbackEntrenador?: string;
   ajusteAplicado?: boolean;
+  // Campos extras definidos por plantillas personalizadas
+  camposAdicionales?: Record<string, any>;
   createdAt?: string;
   updatedAt?: string;
 }

@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { Card, Tabs, MetricCards, Select, Button } from '../../../components/componentsreutilizables';
-import { CheckInsEntreno } from '../components';
+import { CheckInsEntreno, AnalyticsAgregadoClientes, ConfiguracionSemaforos } from '../components';
 import { getCheckInsAnalytics, getCheckIns } from '../api/checkins';
 import { ClipboardCheck, Users, TrendingUp, AlertTriangle } from 'lucide-react';
 
 export default function CheckInsDeEntrenoPage() {
   const { user } = useAuth();
   const esEntrenador = user?.role === 'entrenador';
+  const esCoordinador = user?.role === 'coordinador';
   const [tabActiva, setTabActiva] = useState<string>('checkins');
   const [clienteSeleccionado, setClienteSeleccionado] = useState<string>('');
   const [analytics, setAnalytics] = useState<any>(null);
@@ -35,6 +36,24 @@ export default function CheckInsDeEntrenoPage() {
       label: 'Analytics',
       icon: <TrendingUp className="w-4 h-4" />,
     },
+    ...(esCoordinador
+      ? [
+          {
+            id: 'cartera',
+            label: 'Cartera (Agregado)',
+            icon: <Users className="w-4 h-4" />,
+          },
+        ]
+      : []),
+    ...(esEntrenador
+      ? [
+          {
+            id: 'config',
+            label: 'Config. Semáforos',
+            icon: <AlertTriangle className="w-4 h-4" />,
+          },
+        ]
+      : []),
   ];
 
   const metricas = analytics
@@ -380,13 +399,32 @@ export default function CheckInsDeEntrenoPage() {
             )}
           </div>
         );
+      case 'cartera':
+        return (
+          <div className="space-y-6">
+            <AnalyticsAgregadoClientes optionsClientes={clientesMock} />
+          </div>
+        );
+      case 'config':
+        return (
+          <div className="space-y-6">
+            {user?.id ? (
+              <ConfiguracionSemaforos entrenadorId={user.id} />
+            ) : (
+              <Card className="p-8 text-center bg-white shadow-sm">
+                <AlertTriangle size={48} className="mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-600">No se pudo cargar el usuario</p>
+              </Card>
+            )}
+          </div>
+        );
 
       default:
         return null;
     }
   };
 
-  if (!esEntrenador) {
+  if (!esEntrenador && !esCoordinador) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
         <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
@@ -396,7 +434,7 @@ export default function CheckInsDeEntrenoPage() {
               Acceso Restringido
             </h3>
             <p className="text-gray-600">
-              Esta página está disponible solo para entrenadores personales
+              Esta página está disponible solo para entrenadores personales o coordinadores
             </p>
           </Card>
         </div>

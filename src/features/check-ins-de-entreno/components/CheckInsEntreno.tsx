@@ -8,6 +8,9 @@ import { HistorialCheckIns } from './HistorialCheckIns';
 import { AlertasDolor } from './AlertasDolor';
 import { AnalizadorPatrones } from './AnalizadorPatrones';
 import { AjustadorAutomatico } from './AjustadorAutomatico';
+import { CamposPersonalizadosCheckIn } from './CamposPersonalizadosCheckIn';
+import { GestorPlantillasCheckIn } from './GestorPlantillasCheckIn';
+import { AnalyticsCheckInsVsPlan } from './AnalyticsCheckInsVsPlan';
 import {
   CheckInEntreno,
   crearCheckIn,
@@ -15,9 +18,36 @@ import {
   getCheckIns,
   getHistorialCheckIns,
   getCheckInsAnalytics,
+  getObjetivosPlanSemana,
 } from '../api/checkins';
+import { getConfigSemaforos, evaluarSemaforo, ConfigSemaforos } from '../api/semaforos';
+import { useAuth } from '../../../context/AuthContext';
 import { getAlertas, resolverAlerta, crearAlerta } from '../api/alertas';
 import { analizarPatrones, AnalisisPatrones } from '../api/patrones';
+import {
+  getPlantillaActivaPorCliente,
+  PlantillaCheckIn,
+} from '../api/plantillas';
+import {
+  getWearableLinkStatus,
+  fetchRecentWearableMetrics,
+  linkWearableSource,
+  correlateSensationsWithMetrics,
+  WearableMetricSample,
+} from '../api/wearables';
+import {
+  getConfigRecordatorios,
+  setConfigRecordatorios,
+  ConfigRecordatoriosCheckIn,
+  iniciarVerificacionRecordatoriosCheckIn,
+} from '../api/recordatorios';
+import {
+  getConfigReglas,
+  setConfigReglas,
+  evaluarYAplicarReglas,
+  ConfigReglasAutomaticas,
+  ReglaAutomatica,
+} from '../api/reglas';
 
 interface CheckInsEntrenoProps {
   clienteId?: string;
@@ -28,6 +58,8 @@ export const CheckInsEntreno: React.FC<CheckInsEntrenoProps> = ({
   clienteId,
   sesionId,
 }) => {
+  const { user } = useAuth();
+  const [configSemaforos, setConfigSemaforos] = useState<ConfigSemaforos | null>(null);
   const [checkIns, setCheckIns] = useState<CheckInEntreno[]>([]);
   const [historial, setHistorial] = useState<any[]>([]);
   const [alertas, setAlertas] = useState<any[]>([]);
@@ -43,6 +75,18 @@ export const CheckInsEntreno: React.FC<CheckInsEntrenoProps> = ({
   });
   const [serieActual, setSerieActual] = useState(1);
   const [rpeRegistrado, setRpeRegistrado] = useState<number | null>(null);
+  const [plantillaActiva, setPlantillaActiva] = useState<PlantillaCheckIn | null>(null);
+  const [camposPersonalizados, setCamposPersonalizados] = useState<Record<string, any>>({});
+  const [mostrarGestorPlantillas, setMostrarGestorPlantillas] = useState(false);
+  const [configRecordatorios, setConfigRecordatoriosState] = useState<ConfigRecordatoriosCheckIn | null>(null);
+  const [timerRecordatorios, setTimerRecordatorios] = useState<NodeJS.Timeout | null>(null);
+  const [mediaAdjunta, setMediaAdjunta] = useState<Array<{ id: string; type: 'image' | 'video'; url: string; thumbnailUrl?: string }>>([]);
+  const [analytics, setAnalytics] = useState<any | null>(null);
+  const [objetivos, setObjetivos] = useState<any | null>(null);
+  const [wearableStatus, setWearableStatus] = useState<{ linked: boolean; source?: string; lastSyncAt?: string } | null>(null);
+  const [wearableSamples, setWearableSamples] = useState<WearableMetricSample[]>([]);
+  const [attachLatestWearable, setAttachLatestWearable] = useState<boolean>(true);
+  const [reglasConfig, setReglasConfig] = useState<ConfigReglasAutomaticas | null>(null);
 
   useEffect(() => {
     cargarDatos();
@@ -51,18 +95,44 @@ export const CheckInsEntreno: React.FC<CheckInsEntrenoProps> = ({
   const cargarDatos = async () => {
     if (!clienteId) return;
 
-    const [checkInsData, historialData, alertasData, analisisData] = await Promise.all([
+    const [checkInsData, historialData, alertasData, analisisData, tplActiva, objetivosPlan, analyticsData] = await Promise.all([
       getCheckIns(clienteId, sesionId),
       getHistorialCheckIns(clienteId, 30),
       getAlertas(clienteId, false),
       analizarPatrones(clienteId),
+      getPlantillaActivaPorCliente(clienteId),
+      getObjetivosPlanSemana(clienteId),
+      getCheckInsAnalytics(clienteId),
     ]);
 
     setCheckIns(checkInsData);
     setHistorial(historialData);
     setAlertas(alertasData);
     setAnalisis(analisisData);
+    setPlantillaActiva(tplActiva);
+    setCamposPersonalizados({});
+    setObjetivos(objetivosPlan);
+    setAnalytics(analyticsData);
+
+    // Wearables
+    const status = await getWearableLinkStatus(clienteId);
+    setWearableStatus(status);
+    if (status.linked) {
+      const samples = await fetchRecentWearableMetrics(clienteId);
+      setWearableSamples(samples);
+    } else {
+      setWearableSamples([]);
+    }
+    // Reglas automáticas
+    const reglas = await getConfigReglas(clienteId);
+    setReglasConfig(reglas);
   };
+
+  useEffect(() => {
+    if (user?.id) {
+      getConfigSemaforos(user.id).then(setConfigSemaforos);
+    }
+  }, [user?.id]);
 
   const handleEvaluarSensaciones = async (sensacion: string, dolorLumbar: boolean) => {
     const nuevoCheckIn: Omit<CheckInEntreno, 'id' | 'createdAt' | 'updatedAt'> = {
@@ -70,7 +140,33 @@ export const CheckInsEntreno: React.FC<CheckInsEntrenoProps> = ({
       sensaciones: sensacion,
       dolorLumbar,
       serie: serieActual,
-      semaforo: dolorLumbar ? 'rojo' : sensacion.toLowerCase().includes('mal') || sensacion.toLowerCase().includes('regular') ? 'amarillo' : 'verde',
+      semaforo: configSemaforos
+        ? evaluarSemaforo(
+            { rpe: checkInActual.rpe, dolorLumbar, sensaciones: sensacion },
+            configSemaforos
+          )
+        : dolorLumbar
+        ? 'rojo'
+        : sensacion.toLowerCase().includes('mal') || sensacion.toLowerCase().includes('regular')
+        ? 'amarillo'
+        : 'verde',
+      camposPersonalizados: Object.keys(camposPersonalizados).length ? camposPersonalizados : undefined,
+      media: mediaAdjunta.length
+        ? mediaAdjunta.map((m) => ({
+            ...m,
+            createdAt: new Date().toISOString(),
+          }))
+        : undefined,
+      wearableMetrics:
+        attachLatestWearable && wearableSamples.length > 0
+          ? {
+              source: wearableSamples[wearableSamples.length - 1].source,
+              heartRateBpm: wearableSamples[wearableSamples.length - 1].heartRateBpm,
+              hrvMs: wearableSamples[wearableSamples.length - 1].hrvMs,
+              capturedAt: wearableSamples[wearableSamples.length - 1].capturedAt,
+              raw: wearableSamples[wearableSamples.length - 1].raw,
+            }
+          : undefined,
     } as any;
 
     const checkInGuardado = await crearCheckIn(nuevoCheckIn);
@@ -78,7 +174,7 @@ export const CheckInsEntreno: React.FC<CheckInsEntrenoProps> = ({
       await cargarDatos();
 
       if (dolorLumbar) {
-        await crearAlerta({
+        const alerta = await crearAlerta({
           checkInId: checkInGuardado.id!,
           tipo: 'dolor_lumbar',
           severidad: 'alta',
@@ -87,7 +183,21 @@ export const CheckInsEntreno: React.FC<CheckInsEntrenoProps> = ({
           resuelta: false,
           recomendacion: 'Considerar modificar el ejercicio o reducir la intensidad',
         });
-        await cargarDatos();
+        // Aplicar reglas automáticas si corresponden
+        if (alerta && clienteId) {
+          const res = await evaluarYAplicarReglas(clienteId, alerta, checkInGuardado.id!);
+          if (res.aplicado) {
+            await actualizarCheckIn(checkInGuardado.id!, { ajusteAplicado: true });
+          }
+          // Resolver alerta si está así configurado
+          const cfg = reglasConfig || (await getConfigReglas(clienteId));
+          if (cfg.autoResolverAlerta && alerta.id) {
+            await resolverAlerta(alerta.id);
+          }
+          await cargarDatos();
+        } else {
+          await cargarDatos();
+        }
       }
 
       setCheckInActual({
@@ -98,6 +208,7 @@ export const CheckInsEntreno: React.FC<CheckInsEntrenoProps> = ({
         dolorLumbar: false,
       });
       setSerieActual(serieActual + 1);
+      setMediaAdjunta([]);
       setMostrarModal(false);
     }
   };
@@ -107,25 +218,102 @@ export const CheckInsEntreno: React.FC<CheckInsEntrenoProps> = ({
       const nuevoCheckIn: Omit<CheckInEntreno, 'id' | 'createdAt' | 'updatedAt'> = {
         ...checkInActual,
         rpe,
+        semaforo:
+          configSemaforos
+            ? evaluarSemaforo(
+                { rpe, dolorLumbar: checkInActual.dolorLumbar, sensaciones: checkInActual.sensaciones },
+                configSemaforos
+              )
+            : checkInActual.semaforo || 'verde',
         serie: serieActual,
+        camposPersonalizados: Object.keys(camposPersonalizados).length ? camposPersonalizados : undefined,
+        media: mediaAdjunta.length
+          ? mediaAdjunta.map((m) => ({
+              ...m,
+              createdAt: new Date().toISOString(),
+            }))
+          : undefined,
       } as any;
 
       const checkInGuardado = await crearCheckIn(nuevoCheckIn);
       if (checkInGuardado) {
         setCheckInActual({ ...checkInActual, id: checkInGuardado.id });
         setRpeRegistrado(rpe);
+        setMediaAdjunta([]);
         await cargarDatos();
       }
     } else {
-      await actualizarCheckIn(checkInActual.id, { rpe });
+      const semaforoActualizado =
+        configSemaforos
+          ? evaluarSemaforo(
+              { rpe, dolorLumbar: checkInActual.dolorLumbar, sensaciones: checkInActual.sensaciones },
+              configSemaforos
+            )
+          : undefined;
+      await actualizarCheckIn(checkInActual.id, { rpe, ...(semaforoActualizado ? { semaforo: semaforoActualizado } : {}) });
       setRpeRegistrado(rpe);
       await cargarDatos();
     }
   };
 
+  const handleAdjuntarMedia: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const nuevos = Array.from(files).slice(0, 6).map((file) => {
+      const url = URL.createObjectURL(file);
+      const isVideo = file.type.startsWith('video');
+      return {
+        id: `${file.name}-${Date.now()}`,
+        type: isVideo ? 'video' : 'image',
+        url,
+        thumbnailUrl: isVideo ? undefined : url,
+      };
+    });
+    setMediaAdjunta((prev) => [...prev, ...nuevos].slice(0, 6));
+    // reset input
+    e.currentTarget.value = '';
+  };
+
+  const removeMedia = (id: string) => {
+    setMediaAdjunta((prev) => prev.filter((m) => m.id !== id));
+  };
+
   const handleResolverAlerta = async (alertaId: string) => {
     await resolverAlerta(alertaId);
     await cargarDatos();
+  };
+
+  // Cargar y gestionar configuración de recordatorios simples
+  useEffect(() => {
+    const init = async () => {
+      if (!clienteId) return;
+      const conf = await getConfigRecordatorios('entrenador_demo');
+      setConfigRecordatoriosState(conf);
+      if (timerRecordatorios) {
+        clearInterval(timerRecordatorios);
+      }
+      if (conf.enabled) {
+        const t = iniciarVerificacionRecordatoriosCheckIn('entrenador_demo', clienteId);
+        setTimerRecordatorios(t);
+      }
+    };
+    init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clienteId]);
+
+  const handleGuardarConfigRecordatorios = async (updates: Partial<ConfigRecordatoriosCheckIn>) => {
+    if (!configRecordatorios) return;
+    const next = { ...configRecordatorios, ...updates };
+    await setConfigRecordatorios('entrenador_demo', next);
+    setConfigRecordatoriosState(next);
+    if (timerRecordatorios) {
+      clearInterval(timerRecordatorios);
+      setTimerRecordatorios(null);
+    }
+    if (next.enabled && clienteId) {
+      const t = iniciarVerificacionRecordatoriosCheckIn('entrenador_demo', clienteId);
+      setTimerRecordatorios(t);
+    }
   };
 
   const tabs = [
@@ -147,6 +335,16 @@ export const CheckInsEntreno: React.FC<CheckInsEntrenoProps> = ({
     {
       id: 'analisis',
       label: 'Análisis',
+      icon: <Users className="w-4 h-4" />,
+    },
+    {
+      id: 'analytics',
+      label: 'Analytics',
+      icon: <TrendingUp className="w-4 h-4" />,
+    },
+    {
+      id: 'ajustes',
+      label: 'Ajustes',
       icon: <Users className="w-4 h-4" />,
     },
   ];
@@ -204,10 +402,140 @@ export const CheckInsEntreno: React.FC<CheckInsEntrenoProps> = ({
               dolorLumbarInicial={checkInActual.dolorLumbar}
             />
 
+            {plantillaActiva && (
+              <CamposPersonalizadosCheckIn
+                plantilla={plantillaActiva}
+                values={camposPersonalizados}
+                onChange={setCamposPersonalizados}
+              />
+            )}
+
             <RegistradorRPE
               onRegistrar={handleRegistrarRPE}
               valorInicial={rpeRegistrado || checkInActual.rpe}
             />
+
+            {/* Sincronización de wearables */}
+            <Card className="p-6 bg-white shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-lg font-semibold text-gray-900">Métricas de wearables</h4>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm">Adjuntar la última muestra al check-in</label>
+                  <input
+                    type="checkbox"
+                    checked={attachLatestWearable}
+                    onChange={(e) => setAttachLatestWearable(e.target.checked)}
+                  />
+                </div>
+              </div>
+              {!wearableStatus?.linked ? (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-slate-600">
+                    No hay un dispositivo vinculado. Vincula un proveedor para sincronizar FC/HRV.
+                  </p>
+                  <Button
+                    onClick={async () => {
+                      if (!clienteId) return;
+                      await linkWearableSource(clienteId, 'garmin');
+                      await cargarDatos();
+                    }}
+                  >
+                    Vincular Garmin (demo)
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm text-slate-700">
+                    <span>
+                      Vinculado a {wearableStatus.source?.toUpperCase()} • Última sync:{' '}
+                      {wearableStatus.lastSyncAt
+                        ? new Date(wearableStatus.lastSyncAt).toLocaleString('es-ES')
+                        : '—'}
+                    </span>
+                    <Button
+                      onClick={async () => {
+                        if (!clienteId) return;
+                        const samples = await fetchRecentWearableMetrics(clienteId);
+                        setWearableSamples(samples);
+                      }}
+                      variant="secondary"
+                    >
+                      Re-sincronizar
+                    </Button>
+                  </div>
+                  {wearableSamples.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="p-3 rounded-lg bg-slate-50">
+                        <div className="text-xs text-slate-500">FC (Última)</div>
+                        <div className="text-xl font-bold text-slate-800">
+                          {wearableSamples[wearableSamples.length - 1].heartRateBpm ?? '—'} bpm
+                        </div>
+                      </div>
+                      <div className="p-3 rounded-lg bg-slate-50">
+                        <div className="text-xs text-slate-500">HRV (Última)</div>
+                        <div className="text-xl font-bold text-slate-800">
+                          {wearableSamples[wearableSamples.length - 1].hrvMs ?? '—'} ms
+                        </div>
+                      </div>
+                      <div className="p-3 rounded-lg bg-slate-50">
+                        <div className="text-xs text-slate-500">Capturado</div>
+                        <div className="text-sm font-medium text-slate-800">
+                          {new Date(
+                            wearableSamples[wearableSamples.length - 1].capturedAt
+                          ).toLocaleTimeString('es-ES')}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-slate-500">No hay muestras recientes.</div>
+                  )}
+                  {!!checkInActual.sensaciones && wearableSamples.length > 0 && (
+                    <div className="text-xs text-slate-600">
+                      {correlateSensationsWithMetrics(
+                        checkInActual.sensaciones,
+                        wearableSamples
+                      ).correlationHint || '—'}
+                    </div>
+                  )}
+                </div>
+              )}
+            </Card>
+
+            {/* Adjuntar fotos / videos */}
+            <Card className="p-6 bg-white shadow-sm">
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">Adjuntar medios (técnica/molestias)</h4>
+              <div className="flex items-center gap-3">
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  onChange={handleAdjuntarMedia}
+                  className="text-sm"
+                />
+                <span className="text-xs text-slate-500">Hasta 6 archivos</span>
+              </div>
+              {mediaAdjunta.length > 0 && (
+                <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                  {mediaAdjunta.map((m) => (
+                    <div key={m.id} className="relative rounded-lg overflow-hidden border border-slate-200">
+                      {m.type === 'image' ? (
+                        <img src={m.thumbnailUrl || m.url} alt="adjunto" className="h-24 w-full object-cover" />
+                      ) : (
+                        <video src={m.url} className="h-24 w-full object-cover" />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeMedia(m.id)}
+                        className="absolute right-1 top-1 rounded-full bg-white/90 px-2 py-0.5 text-xs text-slate-700 shadow"
+                        aria-label="Eliminar adjunto"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
 
             {analisis && (
               <AjustadorAutomatico
@@ -279,6 +607,199 @@ export const CheckInsEntreno: React.FC<CheckInsEntrenoProps> = ({
           />
         );
 
+      case 'analytics':
+        return (
+          <AnalyticsCheckInsVsPlan
+            clienteId={clienteId!}
+            analytics={analytics}
+            objetivos={objetivos}
+          />
+        );
+
+      case 'ajustes':
+        return (
+          <div className="space-y-6">
+            <Card className="p-6 bg-white shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Recordatorios automáticos de check-in</h3>
+                  <p className="text-sm text-slate-600">Envía un recordatorio antes de cada sesión.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm">Activar</label>
+                  <input
+                    type="checkbox"
+                    checked={!!configRecordatorios?.enabled}
+                    onChange={(e) => handleGuardarConfigRecordatorios({ enabled: e.target.checked })}
+                    className="w-5 h-5"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-slate-700">Minutos de anticipación</label>
+                  <input
+                    type="number"
+                    className="w-full rounded-xl ring-1 ring-slate-300 px-3 py-2"
+                    value={configRecordatorios?.minutosAnticipacion ?? 60}
+                    onChange={(e) =>
+                      handleGuardarConfigRecordatorios({ minutosAnticipacion: Number(e.target.value) })
+                    }
+                    min={5}
+                    step={5}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-slate-700">Canal</label>
+                  <select
+                    className="w-full rounded-xl ring-1 ring-slate-300 px-3 py-2"
+                    value={configRecordatorios?.canal || 'ambos'}
+                    onChange={(e) => handleGuardarConfigRecordatorios({ canal: e.target.value as any })}
+                  >
+                    <option value="push">Push</option>
+                    <option value="email">Email</option>
+                    <option value="ambos">Ambos</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-slate-700">Horas silenciosas</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={!!configRecordatorios?.horasSilenciosas?.enabled}
+                      onChange={(e) =>
+                        handleGuardarConfigRecordatorios({
+                          horasSilenciosas: {
+                            ...(configRecordatorios?.horasSilenciosas || { start: '22:00', end: '08:00' }),
+                            enabled: e.target.checked,
+                          },
+                        })
+                      }
+                    />
+                    <input
+                      type="time"
+                      className="rounded-xl ring-1 ring-slate-300 px-3 py-2"
+                      value={configRecordatorios?.horasSilenciosas?.start || '22:00'}
+                      onChange={(e) =>
+                        handleGuardarConfigRecordatorios({
+                          horasSilenciosas: {
+                            ...(configRecordatorios?.horasSilenciosas || { enabled: true, end: '08:00' }),
+                            start: e.target.value,
+                          },
+                        } as any)
+                      }
+                    />
+                    <span className="text-sm">a</span>
+                    <input
+                      type="time"
+                      className="rounded-xl ring-1 ring-slate-300 px-3 py-2"
+                      value={configRecordatorios?.horasSilenciosas?.end || '08:00'}
+                      onChange={(e) =>
+                        handleGuardarConfigRecordatorios({
+                          horasSilenciosas: {
+                            ...(configRecordatorios?.horasSilenciosas || { enabled: true, start: '22:00' }),
+                            end: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Reglas automáticas de ajustes ante alertas */}
+            <Card className="p-6 bg-white shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Reglas automáticas de ajustes</h3>
+                  <p className="text-sm text-slate-600">
+                    Aplica ajustes en el plan cuando se disparen alertas específicas.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm">Resolver alerta automáticamente</label>
+                  <input
+                    type="checkbox"
+                    checked={!!reglasConfig?.autoResolverAlerta}
+                    onChange={async (e) => {
+                      if (!clienteId || !reglasConfig) return;
+                      const next = { ...reglasConfig, autoResolverAlerta: e.target.checked };
+                      const saved = await setConfigReglas(clienteId, next);
+                      setReglasConfig(saved);
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="space-y-3">
+                {(reglasConfig?.reglas || []).map((regla: ReglaAutomatica, idx: number) => (
+                  <div key={regla.id} className="p-3 border border-slate-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={regla.enabled}
+                          onChange={async (e) => {
+                            if (!clienteId || !reglasConfig) return;
+                            const clone = { ...reglasConfig };
+                            clone.reglas[idx] = { ...regla, enabled: e.target.checked };
+                            const saved = await setConfigReglas(clienteId, clone);
+                            setReglasConfig(saved);
+                          }}
+                        />
+                        <div className="text-sm text-slate-700">
+                          Si tipo: <span className="font-semibold">{regla.coincidencia.tipo}</span> y
+                          severidad: <span className="font-semibold">{regla.coincidencia.severidad}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm text-slate-600">Ajuste</label>
+                        <select
+                          className="rounded-xl ring-1 ring-slate-300 px-3 py-2 text-sm"
+                          value={regla.ajuste}
+                          onChange={async (e) => {
+                            if (!clienteId || !reglasConfig) return;
+                            const clone = { ...reglasConfig };
+                            clone.reglas[idx] = { ...regla, ajuste: e.target.value as any };
+                            const saved = await setConfigReglas(clienteId, clone);
+                            setReglasConfig(saved);
+                          }}
+                        >
+                          <option value="reducir_intensidad">Reducir intensidad</option>
+                          <option value="cambiar_ejercicio">Cambiar ejercicio</option>
+                          <option value="aumentar_descanso">Aumentar descanso</option>
+                          <option value="mantener">Mantener</option>
+                        </select>
+                      </div>
+                    </div>
+                    {!!regla.nota && <div className="text-xs text-slate-500 mt-2">{regla.nota}</div>}
+                  </div>
+                ))}
+                {(!reglasConfig || reglasConfig.reglas.length === 0) && (
+                  <div className="text-sm text-slate-500">No hay reglas configuradas.</div>
+                )}
+              </div>
+            </Card>
+
+            <Card className="p-6 bg-white shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Plantillas de check-in</h3>
+                  <p className="text-sm text-slate-600">Crea y asigna plantillas con campos personalizados.</p>
+                </div>
+                <Button onClick={() => setMostrarGestorPlantillas(true)}>Gestionar plantillas</Button>
+              </div>
+              {plantillaActiva ? (
+                <div className="text-sm text-slate-700">
+                  Plantilla activa para este cliente: <span className="font-semibold">{plantillaActiva.nombre}</span>
+                </div>
+              ) : (
+                <div className="text-sm text-slate-500">No hay plantilla activa asignada.</div>
+              )}
+            </Card>
+          </div>
+        );
+
       default:
         return null;
     }
@@ -332,6 +853,17 @@ export const CheckInsEntreno: React.FC<CheckInsEntrenoProps> = ({
       <div className="mt-6">
         {renderTabContent()}
       </div>
+      <GestorPlantillasCheckIn
+        isOpen={mostrarGestorPlantillas}
+        onClose={async () => {
+          setMostrarGestorPlantillas(false);
+          if (clienteId) {
+            const tplAct = await getPlantillaActivaPorCliente(clienteId);
+            setPlantillaActiva(tplAct);
+          }
+        }}
+        clienteId={clienteId}
+      />
     </div>
   );
 };

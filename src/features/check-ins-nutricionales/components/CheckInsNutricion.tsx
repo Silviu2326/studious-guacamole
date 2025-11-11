@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Select, Modal } from '../../../components/componentsreutilizables';
-import { Plus, Calendar, Image as ImageIcon, Scale, Droplet } from 'lucide-react';
+import { Plus, Calendar, Image as ImageIcon, Scale, Droplet, Settings } from 'lucide-react';
 import { CheckInNutricional, crearCheckInNutricional, getCheckInsNutricionales, actualizarCheckInNutricional } from '../api/checkins';
 import { FotosComida } from './FotosComida';
+import { ComparadorFotos } from './ComparadorFotos';
 import { SeguimientoPeso } from './SeguimientoPeso';
 import { EvaluacionHambre } from './EvaluacionHambre';
 import { FeedbackEntrenador } from './FeedbackEntrenador';
 import { Input, Textarea } from '../../../components/componentsreutilizables';
+import { CamposPersonalizadosCheckInNutricional } from './CamposPersonalizadosCheckInNutricional';
+import { GestorPlantillasCheckInNutricional } from './GestorPlantillasCheckInNutricional';
+import { getPlantillaActivaPorCliente, PlantillaCheckInNutricional } from '../api/plantillas';
 
 interface CheckInsNutricionProps {
   clienteId: string;
@@ -19,6 +23,10 @@ export const CheckInsNutricion: React.FC<CheckInsNutricionProps> = ({
   const [mostrarModal, setMostrarModal] = useState(false);
   const [checkInSeleccionado, setCheckInSeleccionado] = useState<CheckInNutricional | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [plantillaActiva, setPlantillaActiva] = useState<PlantillaCheckInNutricional | null>(null);
+  const [mostrarGestorPlantillas, setMostrarGestorPlantillas] = useState(false);
+  const [camposAdicionales, setCamposAdicionales] = useState<Record<string, any>>({});
+  const [recargarComparador, setRecargarComparador] = useState(0);
 
   const [formData, setFormData] = useState({
     fecha: new Date().toISOString().split('T')[0],
@@ -32,7 +40,17 @@ export const CheckInsNutricion: React.FC<CheckInsNutricionProps> = ({
 
   useEffect(() => {
     cargarCheckIns();
+    cargarPlantillaActiva();
   }, [clienteId]);
+
+  const cargarPlantillaActiva = async () => {
+    try {
+      const tplActiva = await getPlantillaActivaPorCliente(clienteId);
+      setPlantillaActiva(tplActiva);
+    } catch (error) {
+      console.error('Error al cargar plantilla activa:', error);
+    }
+  };
 
   const cargarCheckIns = async () => {
     setCargando(true);
@@ -57,6 +75,7 @@ export const CheckInsNutricion: React.FC<CheckInsNutricionProps> = ({
         saciedad: formData.saciedad,
         peso: formData.peso ? parseFloat(formData.peso) : undefined,
         observaciones: formData.observaciones || undefined,
+        camposAdicionales: Object.keys(camposAdicionales).length > 0 ? camposAdicionales : undefined,
       });
 
       if (nuevoCheckIn) {
@@ -79,6 +98,7 @@ export const CheckInsNutricion: React.FC<CheckInsNutricionProps> = ({
       peso: '',
       observaciones: '',
     });
+    setCamposAdicionales({});
   };
 
   const getTipoComidaLabel = (tipo: string) => {
@@ -98,11 +118,26 @@ export const CheckInsNutricion: React.FC<CheckInsNutricionProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-end">
-        <Button onClick={() => setMostrarModal(true)}>
-          <Plus size={20} className="mr-2" />
-          Nuevo Check-in
-        </Button>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {plantillaActiva && (
+            <Card className="p-3 bg-blue-50 border border-blue-200">
+              <div className="text-sm text-slate-700">
+                Plantilla activa: <span className="font-semibold">{plantillaActiva.nombre}</span>
+              </div>
+            </Card>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={() => setMostrarGestorPlantillas(true)}>
+            <Settings size={18} className="mr-2" />
+            Plantillas
+          </Button>
+          <Button onClick={() => setMostrarModal(true)}>
+            <Plus size={20} className="mr-2" />
+            Nuevo Check-in
+          </Button>
+        </div>
       </div>
 
       <Card className="p-4 bg-white shadow-sm">
@@ -234,6 +269,14 @@ export const CheckInsNutricion: React.FC<CheckInsNutricionProps> = ({
             rows={3}
           />
 
+          {plantillaActiva && (
+            <CamposPersonalizadosCheckInNutricional
+              plantilla={plantillaActiva}
+              values={camposAdicionales}
+              onChange={setCamposAdicionales}
+            />
+          )}
+
           <div className="flex justify-end gap-3">
             <Button
               variant="secondary"
@@ -261,12 +304,30 @@ export const CheckInsNutricion: React.FC<CheckInsNutricionProps> = ({
           title={`Check-in: ${getTipoComidaLabel(checkInSeleccionado.tipoComida)}`}
           size="xl"
         >
-          <div className="space-y-4">
-            <FotosComida
-              clienteId={clienteId}
-              checkInId={checkInSeleccionado.id}
-              soloLectura={false}
-            />
+          <div className="space-y-6">
+            {/* Comparador de fotos */}
+            {checkInSeleccionado.id && (
+              <ComparadorFotos
+                key={recargarComparador}
+                clienteId={clienteId}
+                checkIn={checkInSeleccionado}
+              />
+            )}
+            
+            {/* Subir nuevas fotos */}
+            {checkInSeleccionado.id && (
+              <FotosComida
+                clienteId={clienteId}
+                checkInId={checkInSeleccionado.id}
+                soloLectura={false}
+                onFotoSubida={() => {
+                  // Recargar el comparador después de subir una foto
+                  setRecargarComparador(prev => prev + 1);
+                  cargarCheckIns();
+                }}
+              />
+            )}
+            
             <FeedbackEntrenador
               checkIn={checkInSeleccionado}
               onFeedbackEnviado={() => {
@@ -277,6 +338,15 @@ export const CheckInsNutricion: React.FC<CheckInsNutricionProps> = ({
           </div>
         </Modal>
       )}
+
+      <GestorPlantillasCheckInNutricional
+        isOpen={mostrarGestorPlantillas}
+        onClose={async () => {
+          setMostrarGestorPlantillas(false);
+          await cargarPlantillaActiva();
+        }}
+        clienteId={clienteId}
+      />
     </div>
   );
 };

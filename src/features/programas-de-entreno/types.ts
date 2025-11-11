@@ -16,6 +16,8 @@ export type DayPlan = {
   restorative: string;
   summary: string[];
   sessions: DaySession[];
+  targetDuration?: number; // Objetivo de duración en minutos
+  targetCalories?: number; // Objetivo de calorías
 };
 
 

@@ -1,0 +1,679 @@
+{
+  "user_stories": [
+    {
+      "feature": "src/features/OverviewMarketing",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero completar mi perfil estratégico (tono, especialidad, pilares de contenido, buyer persona) desde el dashboard, Para que todas las recomendaciones se adapten automáticamente a mi estilo."
+    },
+    {
+      "feature": "src/features/OverviewMarketing",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero elegir mis objetivos trimestrales (captar leads, vender packs, fidelizar), Para que el dashboard priorice métricas y alertas relevantes."
+    },
+    {
+      "feature": "src/features/OverviewMarketing",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero definir mis fortalezas (HIIT, fuerza funcional, nutrición holística), Para que las campañas sugeridas reflejen lo que mejor sé hacer."
+    },
+    {
+      "feature": "src/features/OverviewMarketing",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero ver KPIs priorizados con narrativa contextual (qué significa para mí), Para saber exactamente qué hacer después."
+    },
+    {
+      "feature": "src/features/OverviewMarketing",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero segmentar KPIs por buyer persona (ejecutivos, madres, atletas), Para detectar oportunidades específicas."
+    },
+    {
+      "feature": "src/features/OverviewMarketing",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que el panel me avise cuando algún indicador se salga del rango esperado, Para poder reaccionar rápido."
+    },
+    {
+      "feature": "src/features/OverviewMarketing",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero ver cómo se relacionan mis campañas, lead magnets y contenido con las ventas reales, Para optimizar lo que funciona."
+    },
+    {
+      "feature": "src/features/OverviewMarketing",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero recibir una estrategia IA semanal ya personalizada con mensajes, funnels y publicaciones, Para ejecutarla en minutos."
+    },
+    {
+      "feature": "src/features/OverviewMarketing",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que la IA adapte cada sugerencia al tono que seleccioné (cercano, técnico, motivador), Para mantener coherencia de marca."
+    },
+    {
+      "feature": "src/features/OverviewMarketing",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero guardar mis sugerencias favoritas como playbooks recurrentes, Para reutilizarlas en futuros periodos."
+    },
+    {
+      "feature": "src/features/OverviewMarketing",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que la IA me diga qué contenido repotenciar según rendimiento y estilo, Para amplificar ganadores sin reinventar la rueda."
+    },
+    {
+      "feature": "src/features/OverviewMarketing",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero crear un funnel o campaña directamente desde el insight destacado, Para no saltar entre módulos."
+    },
+    {
+      "feature": "src/features/OverviewMarketing",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero iniciar conversaciones con leads calientes desde el dashboard, Para no perder oportunidades."
+    },
+    {
+      "feature": "src/features/OverviewMarketing",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero compartir un resumen IA semanal con mi equipo (community manager, nutricionista), Para alinear acciones."
+    },
+    {
+      "feature": "src/features/OverviewMarketing",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero forecast automatizado de leads e ingresos según mis campañas en curso, Para ajustar recursos y cupos."
+    },
+    {
+      "feature": "src/features/OverviewMarketing",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero ver un roadmap IA de activaciones sugeridas (retos, colaboraciones, lives), Para mantener consistencia."
+    },
+    {
+      "feature": "src/features/OverviewMarketing",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero recibir alertas cuando haya huecos críticos en mi calendario de marketing, Para rellenarlos con propuestas IA pertinentes."
+    },
+    {
+      "feature": "src/features/OverviewMarketing",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que el dashboard aprenda de mis acciones aceptadas/rechazadas, Para que la IA se vuelva más precisa."
+    },
+    {
+      "feature": "src/features/OverviewMarketing",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero registrar experimentos realizados y su impacto en KPIs, Para saber qué repetir."
+    },
+    {
+      "feature": "src/features/OverviewMarketing",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero tips IA específicos cuando una métrica cae (ej: engagement bajo), Para saber qué ajuste es más efectivo según mi estilo."
+    },
+    {
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero generar funnels recomendados según mi especialidad y objetivos, Para lanzar embudos que reflejen mi propuesta única."
+    },
+    {
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero definir buyer personas y dolores principales en el builder, Para que cada funnel adapte copy y assets automáticamente."
+    },
+    {
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero guardar mis configuraciones de tono y CTA favoritos, Para reutilizarlos en funnels nuevos."
+    },
+    {
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que la Lead Magnet Factory me sugiera formatos según mi avatar (guía nutricional, checklist HIIT, mini-curso), Para ofrecer recursos que conecten."
+    },
+    {
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero generar el copy completo de la landing page con IA en mi tono, Para publicarla sin redacción extensa."
+    },
+    {
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que la IA cree formularios inteligentes que capturen datos relevantes (objetivos, disponibilidad), Para nutrir campañas posteriores."
+    },
+    {
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero ejecutar A/B tests guiados por IA (copy, oferta, formato), Para mejorar conversiones rápidamente."
+    },
+    {
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que el sistema identifique cuellos de botella por etapa (visitas, formulario, cierre), Para saber dónde actuar."
+    },
+    {
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero recibir recomendaciones de nurturing según respuestas del lead magnet, Para personalizar follow-ups."
+    },
+    {
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero enviar un funnel a Campañas & Automatización con todos los assets (mensajes, listas, timing), Para activarlo sin duplicar trabajo."
+    },
+    {
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero convertir rápidamente un funnel en reto/comunidad, Para maximizar engagement posterior."
+    },
+    {
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero conectar mis funnels con contenidos existentes (reels top, testimonios), Para reforzar prueba social."
+    },
+    {
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero ver el revenue proyectado por funnel según capacidad y precios, Para priorizar esfuerzos."
+    },
+    {
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero recibir alertas si un funnel de captación no genera leads suficientes antes de una campaña, Para tomar medidas preventivas."
+    },
+    {
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero registrar notas cualitativas de cada funnel (feedback de prospectos), Para mejorar las siguientes iteraciones."
+    },
+    {
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que la IA aprenda qué tipos de propuestas cierro mejor, Para priorizar ideas similares."
+    },
+    {
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que los funnels se actualicen con insights de Comunidad & Fidelización (testimonios, NPS), Para reforzar credibilidad automáticamente."
+    },
+    {
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero plantillas IA para follow-up post registro (WhatsApp + email) con mi tono, Para cerrar la venta rápidamente."
+    },
+    {
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero ver un calendario de lanzamientos y fases del funnel, Para coordinarme con mi equipo."
+    },
+    {
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero compartir con mi community manager un resumen IA del funnel, Para que ejecute contenido y anuncios consistentes."
+    },
+    {
+      "feature": "src/features/FunnelsAdquisicion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero actualizar un funnel una vez finalizado con resultados reales y aprendizajes, Para documentar iteraciones."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que el panel importe mi tono, buyer persona y oferta principal desde el perfil estratégico, Para que todas las plantillas y secuencias respeten mi voz."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero definir objetivos de la campaña (captar, reactivar, fidelizar) desde Mission Control, Para que el sistema sugiera journeys y canales óptimos."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero generar una campaña 360 (email + WhatsApp + DM) con IA en 3 pasos, Para activarla sin escribir desde cero."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero plantillas IA especializadas (retos 30 días, upsell packs, recuperación inactivos), Para reutilizarlas fácilmente."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que la IA me proponga secuencias automáticas post lead magnet, Para dar seguimiento coherente con el funnel."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que el sistema defina triggers basados en acciones de mis clientes (reserva sesión, falta a clase), Para enviar mensajes contextuales."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero automatizar recordatorios con IA que adapten el mensaje al historial del cliente, Para aumentar asistencia."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que el sistema detecte saturación de mensajes y proponga pausas automatizadas, Para no quemar a la audiencia."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero una biblioteca de mensajes IA con mi tono segmentada por objetivo (venta, inspiración, seguimiento), Para seleccionar rápidamente."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero generar newsletters IA basadas en mis highlights semanales, Para nutrir con valor y CTA personalizados."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero prompts rápidos para WhatsApp que incluyan audio/nota de voz sugerida, Para humanizar mis interacciones."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero crear segmentos inteligentes basados en progreso de entrenamientos, Para personalizar mensajes."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que los segmentos se auto-actualicen con feedback y NPS, Para nutrir embajadores o recuperar detractores."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero ver un mapa de calor IA de horarios preferidos de envío, Para maximizar aperturas y respuestas."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero KPIs accionables que relacionen mensajes enviados con reservas y ventas, Para entender el impacto real."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero un tablero de experimentos que compare versiones IA vs edición humana, Para elegir mejor copy."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero recibir insights IA semanales con mejoras concretas (cambiar CTA, ajustar delay), Para iterar sin analizar a mano."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero asignar tareas a mi equipo (copywriter, CM) desde la campaña, Para que ejecuten sus partes con contexto."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero exportar playbooks IA con todo el contenido y programación, Para compartir con socios o franquicias."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero aprobar campañas desde el móvil con vista previa clara, Para mantener velocidad."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que el sistema aprenda de mis campañas más exitosas y recomiende repetirlas, Para capitalizar lo probado."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que la IA detecte gaps en mis journeys (falta mensaje post-compra), Para completarlos automáticamente."
+    },
+    {
+      "feature": "src/features/CampanasAutomatizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero recibir recomendaciones para nuevos canales (SMS, bots) cuando tenga sentido, Para expandir alcance sin improvisar."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero configurar mi voz creativa (tono, palabras prohibidas, pilares temáticos), Para que todos los contenidos IA hablen como yo."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero definir mis formatos estrella (reels, carruseles, emails), Para que la IA los priorice en ideas y planning."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero especificar mis nichos principales (ejecutivos, postparto, alto rendimiento), Para que cada idea incluya ángulos adaptados."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero recibir un calendario IA semanal con ganchos, copy, CTA y hook audiovisual, Para publicar sin pensar mucho."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero generar contenido IA tipo \"Transformación del cliente\" usando mis datos reales, Para mostrar prueba social creíble."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero prompts rápidos para crear scripts de video alineados a mi estilo (energético vs calmado), Para grabar sin improvisar."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero plantillas IA para educar, inspirar y vender, Para mezclar formatos equilibradamente."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que el Planner me avise de huecos en mi calendario editorial, Para rellenarlos con ideas IA en 1 clic."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero orquestar un lanzamiento completo (teasing, apertura, cierre) desde Content Studio, Para coordinar con funnels y campañas."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que el sistema recicle contenido ganador en nuevos formatos (blog -> reel), Para maximizar alcance."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero enviar contenido aprobado directamente a Campañas & Automatización, Para incluirlo en secuencias email/WhatsApp."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero vincular piezas clave a mis funnels activos, Para reforzar nurtures."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que eventos/reto generen automáticamente kit de contenidos (invitación, recordatorio, recap), Para amplificarlos rápido."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero un dashboard que muestre qué piezas generan más leads/ventas, Para priorizar esas líneas."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero recibir retroalimentación IA sobre mi contenido (claridad, CTA, coherencia), Para mejorar cada publicación."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero guardar aprendizajes por formato/nicho, Para que la IA los considere en futuras ideas."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero asignar piezas de contenido a mi equipo (editor video, diseñador), Para que sepan qué y cómo producir."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero aprobar contenido desde el móvil con preview IA, Para mantener cadencia."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero generar kits de marca coherentes (paleta, tipografías, slogans), Para entregar a mi equipo externo."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que la IA aprenda qué estilos visuales obtienen más engagement, Para recomendarme formatos similares."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que la plataforma detecte temas saturados y proponga giros creativos, Para mantener frescura."
+    },
+    {
+      "feature": "src/features/ContentSocialStudio",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero recibir insights IA post campaña (qué contenido impactó más a cada buyer persona), Para afinar mis mensajes."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero configurar mis valores, rituales y tono de comunidad, Para que las comunicaciones y retos reflejen mi estilo auténtico."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero mapear segmentos de clientes (embajadores, nuevos, riesgo) con IA, Para tratarlos de forma diferenciada."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que la IA capte mis \"momentos wow\" característicos (sesión especial, ritual), Para replicarlos en estrategias de fidelización."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero guiones IA para solicitar testimonios en vivo o video, Para que mis clientes hablen en mi tono."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que las mejores reseñas se publiquen automáticamente en mis funnels y contenido, Para maximizar conversión."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero detectar momentos ideales para pedir testimonios según progreso real, Para aprovechar el momentum."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero crear programas de referidos IA que adapten recompensas y mensajes a cada segmento, Para crecer de forma orgánica."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero bandear promotores y darles misiones personalizadas (reels, reseñas, testimonios), Para amplificar mi marca."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero reportes IA que muestren impacto de referidos en ingresos y funnel, Para ver el ROI real."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero encuestas IA adaptadas a cada experiencia (sesión 1:1, reto, evento), Para recibir feedback accionable."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que el sistema detecte feedback negativo y me sugiera respuesta personalizada, Para retener al cliente."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero convertir feedback positivo en historias de éxito para contenido y funnels, Para reforzar autoridad."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero un playbook IA que me sugiera retos y eventos basados en mi estilo y calendario, Para mantener la comunidad motivada."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero automatizar mensajes de cumplimiento (felicitar hitos, motivar recaídas), Para acompañar a cada cliente."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que el Monthly Report IA me entregue insights accionables y próximas acciones, Para planificar rápido."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero ver el journey completo de un cliente (primer contacto -> comunidad -> fidelización), Para identificar puntos fuertes y débiles."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero correlacionar actividades de comunidad con retención e ingresos, Para justificar inversión."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero un radar IA de salud comunitaria (engagement, satisfacción, referidos), Para actuar proactivamente."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero asignar owners a cada programa de fidelización (miembro del team), Para asegurar ejecución."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero aprovisionar plantillas IA a mis community managers con guidelines claros, Para mantener coherencia al delegar."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero aprobar testimonios y mensajes antes de publicar, Para asegurar que reflejen mi marca."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que la IA aprenda qué iniciativas generan mayor retención y referidos, Para priorizar las más efectivas."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero gamificar la comunidad con IA (badges, retos, reconocimientos) adaptados a mis valores, Para aumentar engagement."
+    },
+    {
+      "feature": "src/features/ComunidadYFidelizacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero recibir recomendaciones de contenido/comunicaciones basadas en feedback reciente, Para iterar rápidamente."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero capturar mis pilares estratégicos (misión, diferenciadores, recursos disponibles), Para que la IA proponga iniciativas alineadas a mi realidad."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero indicar mi estilo de decisión (rápido, basado en datos, iterativo), Para que la IA adapte la forma de presentar recomendaciones."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero un overview IA que conecte datos de marketing, comunidad y ventas en lenguaje claro, Para entender qué está pasando sin analizar tablas."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero priorización IA con matriz Impacto/Esfuerzo basada en mis recursos, Para enfocar mi energía."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero playbooks IA completos (estrategia, copy, assets, medición) adaptados a mi estilo y audiencia, Para ejecutar sin perder tiempo."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero transformar un insight en playbook con un clic, Para pasar de diagnóstico a acción inmediata."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero compartir playbooks personalizados con mi equipo, Para que entiendan contexto y pasos."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que la IA me sugiera experimentos relevantes (ej: tono inspiracional vs técnico) según mis datos, Para aprender qué funciona mejor."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero seguimiento automático de experimentos con resultados traducidos a insights comprensibles, Para decidir si escalar."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero registrar lecciones aprendidas de cada experimento y que la IA las recuerde, Para no repetir errores."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero un motor de personalización IA que construya journeys según atributos del lead (objetivo fitness, motivadores), Para ofrecer experiencias únicas."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que la IA detecte micro-segmentos emergentes (ej: ejecutivos remotos) y sugiera ofertas, Para capitalizar tendencias."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero ver impacto de la personalización en métricas clave (reservas, retención), Para justificar inversión."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero integrar feedback de clientes, contenido y ventas en una sola vista IA, Para detectar patrones."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que cada feedback negativo genere un micro plan IA (mensaje, acción, seguimiento), Para resolver rápido."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero automatizar campañas basadas en feedback positivo (ej: invitar a programa premium), Para aprovechar momentum."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero recibir insights IA por canal (Ads, orgánico, referidos) con recomendaciones concretas, Para optimizar cada frente."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que la IA me avise de tendencias de mercado/movimiento competidor relevante, Para anticiparme."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero planes trimestrales IA basados en mis datos (OKRs, roadmap), Para alinear mi estrategia."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero asignar dueños a insights/playbooks y ver su progreso, Para asegurar ejecución."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero aprobar experimentos/playbooks desde móvil con resumen IA, Para mantener velocidad."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero sincronizar playbooks con otras sedes o entrenadores, Para escalar mi metodología."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que la IA aprenda de mis decisiones (qué playbooks acepto/rechazo), Para refinar futuras recomendaciones."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero que el sistema evalúe automáticamente el impacto de cada iniciativa y me diga si repetirla, Para optimizar recursos."
+    },
+    {
+      "feature": "src/features/InteligenciaIaExperimentacion",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal, Quiero recibir retrospectivas IA mensuales que celebren logros y marquen próximos focos, Para mantener motivación y claridad."
+    }
+  ]
+}

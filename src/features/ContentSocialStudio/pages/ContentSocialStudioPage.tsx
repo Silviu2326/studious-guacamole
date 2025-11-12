@@ -7,19 +7,19 @@ import type { ContentSocialSnapshot, ContentStudioPeriod } from '../types';
 import { getContentSocialStudioSnapshot } from '../api';
 import {
   AIContentWorkbench,
+  BrandProfileConfig,
   ClipperHighlights,
+  ClientTransformationPostGenerator,
+  ContentLeadAnalytics,
+  FAQContentGenerator,
+  InternalContentIdeasGenerator,
   ICON_MAP,
   ModuleHighlights,
   PlannerSchedulePreview,
+  PromotionalContentTemplates,
   SyndicationOverview,
   VideoStudioSpotlight,
 } from '../components';
-
-const periodTabs = [
-  { id: '7d', label: 'Últimos 7 días' },
-  { id: '30d', label: 'Últimos 30 días' },
-  { id: '90d', label: 'Últimos 90 días' },
-] as const;
 
 const sectionTabs = [
   { id: 'overview', label: 'Overview' },
@@ -28,6 +28,12 @@ const sectionTabs = [
   { id: 'clipper', label: 'Biblioteca' },
   { id: 'syndication', label: 'Creator Syndication' },
   { id: 'ai', label: 'IA Creativa' },
+  { id: 'brand-profile', label: 'Perfil de Marca' },
+  { id: 'promotional', label: 'Contenido Promocional' },
+  { id: 'transformations', label: 'Transformaciones' },
+  { id: 'faq-content', label: 'Contenido FAQ' },
+  { id: 'lead-analytics', label: 'Analytics de Leads' },
+  { id: 'internal-content', label: 'Contenido Interno' },
 ] as const;
 
 type SectionTabId = typeof sectionTabs[number]['id'];
@@ -40,22 +46,25 @@ const emptySnapshot: ContentSocialSnapshot = {
   clipper: { totalClips: 0, newThisWeek: 0, categories: [], featured: [], trendingTags: [] },
   syndication: { activeCampaigns: 0, creatorsNetwork: 0, pipeline: [] },
   ai: { assistants: [], quickIdeas: [], lastUpdated: new Date().toISOString() },
+  clientTransformations: { availableClients: [], generatedPosts: [], templates: [] },
+  faqContent: { topQuestions: [], contentIdeas: [] },
+  promotionalContent: { templates: [], availablePlans: [], activeOffers: [], generatedContent: [] },
 };
 
 export default function ContentSocialStudioPage() {
   const { user } = useAuth();
-  const [period, setPeriod] = useState<ContentStudioPeriod>('30d');
+  const period: ContentStudioPeriod = '30d';
   const [snapshot, setSnapshot] = useState<ContentSocialSnapshot>(emptySnapshot);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [sectionTab, setSectionTab] = useState<SectionTabId>('overview');
 
   const loadSnapshot = useCallback(
-    async (selectedPeriod: ContentStudioPeriod) => {
+    async () => {
       setLoading(true);
       setError(null);
       try {
-        const data = await getContentSocialStudioSnapshot(selectedPeriod);
+        const data = await getContentSocialStudioSnapshot(period);
         setSnapshot(data);
       } catch (err) {
         console.error('[ContentSocialStudio] Error loading snapshot', err);
@@ -69,8 +78,8 @@ export default function ContentSocialStudioPage() {
   );
 
   useEffect(() => {
-    loadSnapshot(period);
-  }, [period, loadSnapshot]);
+    loadSnapshot();
+  }, [loadSnapshot]);
 
   const metricCardsData: MetricCardData[] = useMemo(() => {
     if (loading && snapshot.metrics.length === 0) {
@@ -97,7 +106,7 @@ export default function ContentSocialStudioPage() {
   }, [snapshot.metrics, loading]);
 
   const handleRefresh = () => {
-    loadSnapshot(period);
+    loadSnapshot();
   };
 
   const renderSectionContent = () => {
@@ -112,6 +121,18 @@ export default function ContentSocialStudioPage() {
         return <SyndicationOverview syndication={snapshot.syndication} loading={loading} />;
       case 'ai':
         return <AIContentWorkbench ai={snapshot.ai} loading={loading} />;
+      case 'transformations':
+        return <ClientTransformationPostGenerator loading={loading} />;
+      case 'faq-content':
+        return <FAQContentGenerator loading={loading} />;
+      case 'brand-profile':
+        return <BrandProfileConfig loading={loading} />;
+      case 'promotional':
+        return <PromotionalContentTemplates loading={loading} />;
+      case 'lead-analytics':
+        return <ContentLeadAnalytics loading={loading} period={period} />;
+      case 'internal-content':
+        return <InternalContentIdeasGenerator loading={loading} />;
       case 'overview':
       default:
         return (
@@ -130,6 +151,16 @@ export default function ContentSocialStudioPage() {
               <ClipperHighlights clipper={snapshot.clipper} loading={loading} />
             </div>
             <AIContentWorkbench ai={snapshot.ai} loading={loading} />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <BrandProfileConfig loading={loading} />
+              <PromotionalContentTemplates loading={loading} />
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <ClientTransformationPostGenerator loading={loading} />
+              <FAQContentGenerator loading={loading} />
+            </div>
+            <ContentLeadAnalytics loading={loading} period={period} />
+            <InternalContentIdeasGenerator loading={loading} />
           </div>
         );
     }
@@ -179,20 +210,11 @@ export default function ContentSocialStudioPage() {
       </div>
 
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Tabs
-            items={periodTabs.map((tab) => ({ id: tab.id, label: tab.label }))}
-            activeTab={period}
-            onTabChange={(tabId) => setPeriod(tabId as ContentStudioPeriod)}
-            variant="pills"
-            size="sm"
-          />
-          <div className="flex items-center gap-2 text-sm text-violet-600 dark:text-violet-300">
-            <Sparkles className="w-4 h-4" />
-            <span>
-              {user?.name ? `${user.name.split(' ')[0]}, ` : ''}los datos son simulados según actividad orgánica
-            </span>
-          </div>
+        <div className="flex items-center gap-2 text-sm text-violet-600 dark:text-violet-300">
+          <Sparkles className="w-4 h-4" />
+          <span>
+            {user?.name ? `${user.name.split(' ')[0]}, ` : ''}los datos son simulados según actividad orgánica
+          </span>
         </div>
 
         {error ? (

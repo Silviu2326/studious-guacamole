@@ -8,6 +8,14 @@ import type { ContentSuggestion, SocialPost } from '../../PlannerDeRedesSociales
 import { getBrandProfile, getContentTemplates, getGenerationHistory } from '../../GeneradorCreativoConIa/api/generator';
 import { getSavedIdeas } from '../../GeneradorDeIdeasDeContenidoConIa/api/contentIdeas';
 import type { SavedIdea } from '../../GeneradorDeIdeasDeContenidoConIa/api/contentIdeas';
+import { getClientsWithProgress, TRANSFORMATION_TEMPLATES } from './clientTransformations';
+import { analyzeFrequentlyAskedQuestions, generateFAQContentIdeas } from './faqContent';
+import { getBrandProfileConfig } from './brandProfile';
+import {
+  getPromotionalTemplates,
+  getServicePlans,
+  getActiveOffers,
+} from './promotionalContent';
 import type {
   AIContentAssistant,
   AIContentIdea,
@@ -326,8 +334,15 @@ export const getContentSocialStudioSnapshot = async (
     templates,
     history,
     brandProfile,
+    brandProfileConfig,
     influencers,
     campaigns,
+    clientsWithProgress,
+    faqQuestions,
+    faqContentIdeas,
+    promotionalTemplates,
+    servicePlans,
+    activeOffers,
   ] = await Promise.all([
     getSocialAnalytics(range.start.toISOString(), range.end.toISOString()),
     getSocialPosts(range.start.toISOString(), range.end.toISOString()),
@@ -338,8 +353,15 @@ export const getContentSocialStudioSnapshot = async (
     Promise.resolve(getContentTemplates()),
     getGenerationHistory({ limit: 1 }),
     getBrandProfile(),
+    getBrandProfileConfig().catch(() => null),
     getInfluencers(),
     getCampaigns(),
+    getClientsWithProgress().catch(() => []),
+    analyzeFrequentlyAskedQuestions().catch(() => []),
+    generateFAQContentIdeas().catch(() => []),
+    getPromotionalTemplates().catch(() => []),
+    getServicePlans().catch(() => []),
+    getActiveOffers().catch(() => []),
   ]);
 
   const upcoming = mapPostsToUpcoming(posts);
@@ -402,6 +424,7 @@ export const getContentSocialStudioSnapshot = async (
     assistants: mapAssistants(templates, history.results[0]?.createdAt),
     quickIdeas: mapIdeas(savedIdeas),
     brandProfile: brandProfile || undefined,
+    brandProfileConfig: brandProfileConfig || undefined,
     lastUpdated: new Date().toISOString(),
   };
 
@@ -417,6 +440,21 @@ export const getContentSocialStudioSnapshot = async (
       pipeline: syndicationPipeline,
     },
     ai,
+    clientTransformations: {
+      availableClients: clientsWithProgress,
+      generatedPosts: [],
+      templates: TRANSFORMATION_TEMPLATES,
+    },
+    faqContent: {
+      topQuestions: faqQuestions,
+      contentIdeas: faqContentIdeas,
+    },
+    promotionalContent: {
+      templates: promotionalTemplates,
+      availablePlans: servicePlans,
+      activeOffers: activeOffers,
+      generatedContent: [],
+    },
   };
 
   snapshot.metrics = buildMetrics(posts, snapshot);

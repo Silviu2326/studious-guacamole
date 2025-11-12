@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { BarChart3, Megaphone, RefreshCw, Sparkles } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
-import { Badge, Button, Tabs } from '../../../components/componentsreutilizables';
+import { Badge, Button } from '../../../components/componentsreutilizables';
 import {
   ActiveCampaigns,
   AISuggestions,
@@ -21,15 +21,9 @@ import {
   UpcomingEvent,
 } from '../types';
 
-const periodTabs = [
-  { id: '7d', label: 'Últimos 7 días' },
-  { id: '30d', label: 'Últimos 30 días' },
-  { id: '90d', label: 'Últimos 90 días' },
-] as const;
-
 export default function OverviewMarketingPage() {
   const { user } = useAuth();
-  const [period, setPeriod] = useState<MarketingOverviewPeriod>('30d');
+  const period: MarketingOverviewPeriod = '30d';
   const [loadingSnapshot, setLoadingSnapshot] = useState(true);
   const [kpis, setKpis] = useState<MarketingKPI[]>([]);
   const [campaigns, setCampaigns] = useState<CampaignPerformance[]>([]);
@@ -53,7 +47,7 @@ export default function OverviewMarketingPage() {
     } finally {
       setLoadingSnapshot(false);
     }
-  }, [period]);
+  }, []);
 
   useEffect(() => {
     loadSnapshot();
@@ -98,18 +92,9 @@ export default function OverviewMarketingPage() {
       </div>
 
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-          <Tabs
-            items={periodTabs.map((tab) => ({ id: tab.id, label: tab.label }))}
-            activeTab={period}
-            onTabChange={(tabId) => setPeriod(tabId as MarketingOverviewPeriod)}
-            variant="pills"
-            size="sm"
-          />
-          <div className="flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-300">
-            <Sparkles className="w-4 h-4" />
-            <span>Datos simulados a partir de campañas y funnels activos.</span>
-          </div>
+        <div className="flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-300 mb-6">
+          <Sparkles className="w-4 h-4" />
+          <span>Datos simulados a partir de campañas y funnels activos.</span>
         </div>
 
         <div className="mb-8">
@@ -148,6 +133,7 @@ export default function OverviewMarketingPage() {
     </div>
   );
 }
+
 
 
 

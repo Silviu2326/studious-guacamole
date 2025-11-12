@@ -9,6 +9,10 @@ import {
   WorkspaceAutomation,
   WorkspaceFocusMetric,
   WorkspaceResource,
+  LeadRiskAlert,
+  FirstSessionConversionMetric,
+  SocialMediaMetrics,
+  ReferralProgramMetrics,
 } from '../types';
 
 const periodMultipliers: Record<FunnelsAcquisitionPeriod, number> = {
@@ -475,6 +479,618 @@ export async function fetchAcquisitionAISuggestions(): Promise<AcquisitionAISugg
 
 export async function fetchWorkspaceBlueprints(): Promise<AcquisitionWorkspaceBlueprint[]> {
   return simulateLatency(workspaceBlueprints);
+}
+
+// US-FA-008: Sistema de alertas y tareas automáticas para leads en riesgo
+const leadRiskAlerts: LeadRiskAlert[] = [
+  {
+    id: 'alert-1',
+    leadId: 'lead-123',
+    leadName: 'María González',
+    leadEmail: 'maria.gonzalez@email.com',
+    leadPhone: '+34 612 345 678',
+    currentStage: 'consulta_solicitada',
+    riskLevel: 'high',
+    daysSinceLastAction: 5,
+    lastActionDate: '2025-01-10T10:00:00Z',
+    reason: 'Consulta solicitada hace 5 días pero no se ha agendado',
+    suggestedActions: [
+      {
+        id: 'action-1',
+        type: 'whatsapp',
+        title: 'Enviar mensaje de seguimiento',
+        description: 'Contactar por WhatsApp para recordar la consulta y ofrecer agendar',
+        priority: 'high',
+        template: 'Hola {{nombre}}, vi que solicitaste una consulta. ¿Te gustaría agendar para esta semana?',
+      },
+      {
+        id: 'action-2',
+        type: 'email',
+        title: 'Enviar email con información adicional',
+        description: 'Enviar email con testimonios y beneficios del entrenamiento personal',
+        priority: 'medium',
+        template: 'Email template con casos de éxito',
+      },
+    ],
+    createdAt: '2025-01-15T08:00:00Z',
+  },
+  {
+    id: 'alert-2',
+    leadId: 'lead-456',
+    leadName: 'Carlos Ruiz',
+    leadEmail: 'carlos.ruiz@email.com',
+    leadPhone: '+34 623 456 789',
+    currentStage: 'consulta_realizada',
+    riskLevel: 'medium',
+    daysSinceLastAction: 3,
+    lastActionDate: '2025-01-12T14:30:00Z',
+    reason: 'Consulta realizada hace 3 días pero no ha comprado primera sesión',
+    suggestedActions: [
+      {
+        id: 'action-3',
+        type: 'llamada',
+        title: 'Llamada de seguimiento',
+        description: 'Llamar para resolver dudas y ofrecer primera sesión con descuento',
+        priority: 'high',
+      },
+      {
+        id: 'action-4',
+        type: 'oferta_especial',
+        title: 'Enviar oferta especial',
+        description: 'Ofrecer 20% de descuento en primera sesión si compra en las próximas 48h',
+        priority: 'medium',
+      },
+    ],
+    createdAt: '2025-01-15T08:00:00Z',
+  },
+  {
+    id: 'alert-3',
+    leadId: 'lead-789',
+    leadName: 'Ana Martínez',
+    leadEmail: 'ana.martinez@email.com',
+    leadPhone: '+34 634 567 890',
+    currentStage: 'primera_sesion_pagada',
+    riskLevel: 'low',
+    daysSinceLastAction: 7,
+    lastActionDate: '2025-01-08T16:00:00Z',
+    reason: 'Primera sesión realizada hace 7 días pero no ha comprado plan recurrente',
+    suggestedActions: [
+      {
+        id: 'action-5',
+        type: 'email',
+        title: 'Enviar email con planes disponibles',
+        description: 'Recordar los beneficios de los planes mensuales y bonos',
+        priority: 'medium',
+      },
+      {
+        id: 'action-6',
+        type: 'whatsapp',
+        title: 'Mensaje personalizado',
+        description: 'Preguntar cómo fue la sesión y ofrecer plan adaptado',
+        priority: 'low',
+      },
+    ],
+    createdAt: '2025-01-15T08:00:00Z',
+  },
+  {
+    id: 'alert-4',
+    leadId: 'lead-321',
+    leadName: 'Pedro Sánchez',
+    leadEmail: 'pedro.sanchez@email.com',
+    leadPhone: '+34 645 678 901',
+    currentStage: 'consulta_solicitada',
+    riskLevel: 'high',
+    daysSinceLastAction: 8,
+    lastActionDate: '2025-01-07T09:00:00Z',
+    reason: 'Consulta solicitada hace 8 días, riesgo alto de pérdida',
+    suggestedActions: [
+      {
+        id: 'action-7',
+        type: 'llamada',
+        title: 'Llamada urgente',
+        description: 'Llamar inmediatamente para recuperar el lead',
+        priority: 'high',
+      },
+      {
+        id: 'action-8',
+        type: 'oferta_especial',
+        title: 'Oferta de último momento',
+        description: 'Ofrecer consulta gratuita extendida o descuento especial',
+        priority: 'high',
+      },
+    ],
+    createdAt: '2025-01-15T08:00:00Z',
+  },
+];
+
+export async function fetchLeadRiskAlerts(): Promise<LeadRiskAlert[]> {
+  return simulateLatency(leadRiskAlerts);
+}
+
+// US-FA-009: Métrica de conversión de primera sesión a cliente con plan recurrente o bono
+function generateFirstSessionConversionMetric(
+  period: FunnelsAcquisitionPeriod,
+): FirstSessionConversionMetric {
+  const baseMetrics = {
+    '7d': {
+      totalFirstSessions: 28,
+      convertedToRecurring: 12,
+      convertedToBonus: 6,
+      averageDaysToConvert: 4.2,
+      averageValueRecurring: 89,
+      averageValueBonus: 250,
+    },
+    '30d': {
+      totalFirstSessions: 120,
+      convertedToRecurring: 52,
+      convertedToBonus: 24,
+      averageDaysToConvert: 4.5,
+      averageValueRecurring: 89,
+      averageValueBonus: 250,
+    },
+    '90d': {
+      totalFirstSessions: 340,
+      convertedToRecurring: 148,
+      convertedToBonus: 68,
+      averageDaysToConvert: 4.8,
+      averageValueRecurring: 89,
+      averageValueBonus: 250,
+    },
+  };
+
+  const base = baseMetrics[period];
+  const totalConverted = base.convertedToRecurring + base.convertedToBonus;
+  const conversionRate = (totalConverted / base.totalFirstSessions) * 100;
+  const conversionRateRecurring = (base.convertedToRecurring / base.totalFirstSessions) * 100;
+  const conversionRateBonus = (base.convertedToBonus / base.totalFirstSessions) * 100;
+  const totalRevenue =
+    base.convertedToRecurring * base.averageValueRecurring +
+    base.convertedToBonus * base.averageValueBonus;
+
+  // Comparación con período anterior
+  let previousPeriod: FunnelsAcquisitionPeriod = '7d';
+  if (period === '30d') previousPeriod = '7d';
+  if (period === '90d') previousPeriod = '30d';
+
+  const previousBase = baseMetrics[previousPeriod];
+  const previousTotalConverted = previousBase.convertedToRecurring + previousBase.convertedToBonus;
+  const previousConversionRate = (previousTotalConverted / previousBase.totalFirstSessions) * 100;
+
+  const conversionRateChange = conversionRate - previousConversionRate;
+  const conversionRateChangePercentage =
+    previousConversionRate > 0 ? (conversionRateChange / previousConversionRate) * 100 : 0;
+  const totalConvertedChange = totalConverted - previousTotalConverted;
+  const totalConvertedChangePercentage =
+    previousTotalConverted > 0 ? (totalConvertedChange / previousTotalConverted) * 100 : 0;
+
+  const trendDirection: 'up' | 'down' | 'neutral' =
+    conversionRateChange > 1 ? 'up' : conversionRateChange < -1 ? 'down' : 'neutral';
+
+  const suggestions: FirstSessionConversionMetric['suggestions'] = [
+    {
+      id: 'suggestion-1',
+      title: 'Mejorar seguimiento post-primera-sesión',
+      description:
+        'El 63% de los clientes que no convierten no reciben seguimiento en las primeras 48h. Implementa un sistema de seguimiento automático.',
+      impact: 'high',
+      category: 'follow_up',
+    },
+    {
+      id: 'suggestion-2',
+      title: 'Ofrecer descuento por compra anticipada',
+      description:
+        'Los clientes que compran plan en los primeros 3 días tienen 40% más retención. Crea una oferta especial para compras inmediatas.',
+      impact: 'high',
+      category: 'offer',
+    },
+    {
+      id: 'suggestion-3',
+      title: 'Optimizar timing de la oferta',
+      description:
+        'El mejor momento para ofrecer planes es 24-48h después de la primera sesión. Ajusta tu secuencia de seguimiento.',
+      impact: 'medium',
+      category: 'timing',
+    },
+    {
+      id: 'suggestion-4',
+      title: 'Personalizar comunicación según objetivo',
+      description:
+        'Segmenta tus ofertas según el objetivo del cliente (pérdida de peso, ganancia muscular, etc.) para aumentar conversión.',
+      impact: 'medium',
+      category: 'communication',
+    },
+  ];
+
+  return {
+    period,
+    totalFirstSessions: base.totalFirstSessions,
+    convertedToRecurring: base.convertedToRecurring,
+    convertedToBonus: base.convertedToBonus,
+    totalConverted,
+    conversionRate: Number(conversionRate.toFixed(1)),
+    conversionRateRecurring: Number(conversionRateRecurring.toFixed(1)),
+    conversionRateBonus: Number(conversionRateBonus.toFixed(1)),
+    averageDaysToConvert: base.averageDaysToConvert,
+    averageValueRecurring: base.averageValueRecurring,
+    averageValueBonus: base.averageValueBonus,
+    totalRevenue,
+    comparison: {
+      previousPeriod,
+      conversionRateChange: Number(conversionRateChange.toFixed(1)),
+      conversionRateChangePercentage: Number(conversionRateChangePercentage.toFixed(1)),
+      totalConvertedChange,
+      totalConvertedChangePercentage: Number(totalConvertedChangePercentage.toFixed(1)),
+      trendDirection,
+    },
+    suggestions,
+  };
+}
+
+export async function fetchFirstSessionConversionMetric(
+  period: FunnelsAcquisitionPeriod,
+): Promise<FirstSessionConversionMetric> {
+  return simulateLatency(generateFirstSessionConversionMetric(period));
+}
+
+// US-FA-010: Integración con métricas de redes sociales
+function generateSocialMediaMetrics(period: FunnelsAcquisitionPeriod): SocialMediaMetrics {
+  const baseMetrics = {
+    '7d': {
+      totalPosts: 12,
+      totalEngagement: 2840,
+      totalLeads: 18,
+      totalInquiries: 42,
+      totalTimeInvested: 180,
+    },
+    '30d': {
+      totalPosts: 48,
+      totalEngagement: 11200,
+      totalLeads: 72,
+      totalInquiries: 168,
+      totalTimeInvested: 720,
+    },
+    '90d': {
+      totalPosts: 144,
+      totalEngagement: 33600,
+      totalLeads: 216,
+      totalInquiries: 504,
+      totalTimeInvested: 2160,
+    },
+  };
+
+  const base = baseMetrics[period];
+  const averageROI = (base.totalLeads * 50) / base.totalTimeInvested; // Asumiendo valor promedio de lead
+
+  const platforms: SocialMediaMetrics['platforms'] = [
+    {
+      platform: 'instagram',
+      postsCount: Math.round(base.totalPosts * 0.45),
+      totalEngagement: Math.round(base.totalEngagement * 0.5),
+      leadsGenerated: Math.round(base.totalLeads * 0.55),
+      inquiriesGenerated: Math.round(base.totalInquiries * 0.5),
+      engagementToLeadRate: (Math.round(base.totalLeads * 0.55) / Math.round(base.totalEngagement * 0.5)) * 100,
+      timeInvestedMinutes: Math.round(base.totalTimeInvested * 0.4),
+      roi: ((Math.round(base.totalLeads * 0.55) * 50) / Math.round(base.totalTimeInvested * 0.4)),
+      trendDirection: 'up',
+    },
+    {
+      platform: 'facebook',
+      postsCount: Math.round(base.totalPosts * 0.25),
+      totalEngagement: Math.round(base.totalEngagement * 0.3),
+      leadsGenerated: Math.round(base.totalLeads * 0.25),
+      inquiriesGenerated: Math.round(base.totalInquiries * 0.3),
+      engagementToLeadRate: (Math.round(base.totalLeads * 0.25) / Math.round(base.totalEngagement * 0.3)) * 100,
+      timeInvestedMinutes: Math.round(base.totalTimeInvested * 0.3),
+      roi: ((Math.round(base.totalLeads * 0.25) * 50) / Math.round(base.totalTimeInvested * 0.3)),
+      trendDirection: 'neutral',
+    },
+    {
+      platform: 'tiktok',
+      postsCount: Math.round(base.totalPosts * 0.2),
+      totalEngagement: Math.round(base.totalEngagement * 0.15),
+      leadsGenerated: Math.round(base.totalLeads * 0.15),
+      inquiriesGenerated: Math.round(base.totalInquiries * 0.15),
+      engagementToLeadRate: (Math.round(base.totalLeads * 0.15) / Math.round(base.totalEngagement * 0.15)) * 100,
+      timeInvestedMinutes: Math.round(base.totalTimeInvested * 0.2),
+      roi: ((Math.round(base.totalLeads * 0.15) * 50) / Math.round(base.totalTimeInvested * 0.2)),
+      trendDirection: 'up',
+    },
+    {
+      platform: 'youtube',
+      postsCount: Math.round(base.totalPosts * 0.1),
+      totalEngagement: Math.round(base.totalEngagement * 0.05),
+      leadsGenerated: Math.round(base.totalLeads * 0.05),
+      inquiriesGenerated: Math.round(base.totalInquiries * 0.05),
+      engagementToLeadRate: (Math.round(base.totalLeads * 0.05) / Math.round(base.totalEngagement * 0.05)) * 100,
+      timeInvestedMinutes: Math.round(base.totalTimeInvested * 0.1),
+      roi: ((Math.round(base.totalLeads * 0.05) * 50) / Math.round(base.totalTimeInvested * 0.1)),
+      trendDirection: 'down',
+    },
+  ];
+
+  const topPosts: SocialMediaMetrics['topPosts'] = [
+    {
+      id: 'post-1',
+      platform: 'instagram',
+      postId: 'ig-12345',
+      content: 'Transformación completa en 12 semanas 💪',
+      publishedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      engagement: {
+        likes: 450,
+        comments: 32,
+        shares: 18,
+        saves: 67,
+        totalEngagement: 567,
+      },
+      leadsGenerated: 8,
+      inquiriesGenerated: 15,
+      engagementToLeadRate: (8 / 567) * 100,
+      timeInvestedMinutes: 25,
+      roi: (8 * 50) / 25,
+    },
+    {
+      id: 'post-2',
+      platform: 'facebook',
+      postId: 'fb-67890',
+      content: 'Nuevo programa de entrenamiento personalizado',
+      publishedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      engagement: {
+        likes: 320,
+        comments: 45,
+        shares: 22,
+        saves: 12,
+        totalEngagement: 399,
+      },
+      leadsGenerated: 6,
+      inquiriesGenerated: 12,
+      engagementToLeadRate: (6 / 399) * 100,
+      timeInvestedMinutes: 20,
+      roi: (6 * 50) / 20,
+    },
+    {
+      id: 'post-3',
+      platform: 'tiktok',
+      postId: 'tt-11111',
+      content: 'Rutina de 10 minutos para empezar el día',
+      publishedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+      engagement: {
+        likes: 1200,
+        comments: 89,
+        shares: 156,
+        saves: 234,
+        totalEngagement: 1679,
+      },
+      leadsGenerated: 5,
+      inquiriesGenerated: 18,
+      engagementToLeadRate: (5 / 1679) * 100,
+      timeInvestedMinutes: 15,
+      roi: (5 * 50) / 15,
+    },
+  ];
+
+  // Comparación con período anterior
+  let previousPeriod: FunnelsAcquisitionPeriod = '7d';
+  if (period === '30d') previousPeriod = '7d';
+  if (period === '90d') previousPeriod = '30d';
+
+  const previousBase = baseMetrics[previousPeriod];
+  const previousROI = (previousBase.totalLeads * 50) / previousBase.totalTimeInvested;
+  const roiChange = averageROI - previousROI;
+  const roiChangePercentage = previousROI > 0 ? (roiChange / previousROI) * 100 : 0;
+  const leadsChange = base.totalLeads - previousBase.totalLeads;
+  const leadsChangePercentage = previousBase.totalLeads > 0 ? (leadsChange / previousBase.totalLeads) * 100 : 0;
+
+  const trendDirection: 'up' | 'down' | 'neutral' =
+    roiChange > 0.5 ? 'up' : roiChange < -0.5 ? 'down' : 'neutral';
+
+  return {
+    period,
+    platforms,
+    topPosts,
+    totalEngagement: base.totalEngagement,
+    totalLeads: base.totalLeads,
+    totalInquiries: base.totalInquiries,
+    totalTimeInvestedMinutes: base.totalTimeInvested,
+    averageROI: Number(averageROI.toFixed(2)),
+    comparison: {
+      previousPeriod,
+      conversionRateChange: roiChange,
+      conversionRateChangePercentage: Number(roiChangePercentage.toFixed(1)),
+      totalConvertedChange: leadsChange,
+      totalConvertedChangePercentage: Number(leadsChangePercentage.toFixed(1)),
+      trendDirection,
+    },
+  };
+}
+
+export async function fetchSocialMediaMetrics(
+  period: FunnelsAcquisitionPeriod,
+): Promise<SocialMediaMetrics> {
+  return simulateLatency(generateSocialMediaMetrics(period));
+}
+
+// US-FA-012: Sistema de tracking de referidos
+function generateReferralProgramMetrics(period: FunnelsAcquisitionPeriod): ReferralProgramMetrics {
+  const baseMetrics = {
+    '7d': {
+      totalReferrals: 8,
+      convertedReferrals: 5,
+      totalRevenue: 1250,
+      totalParticipants: 12,
+      activeReferrers: 8,
+    },
+    '30d': {
+      totalReferrals: 32,
+      convertedReferrals: 20,
+      totalRevenue: 5000,
+      totalParticipants: 45,
+      activeReferrers: 28,
+    },
+    '90d': {
+      totalReferrals: 96,
+      convertedReferrals: 60,
+      totalRevenue: 15000,
+      totalParticipants: 120,
+      activeReferrers: 75,
+    },
+  };
+
+  const base = baseMetrics[period];
+  const conversionRate = (base.convertedReferrals / base.totalReferrals) * 100;
+  const averageCustomerValue = base.totalRevenue / base.convertedReferrals;
+  const averageReferralsPerPerson = base.totalReferrals / base.totalParticipants;
+  const programROI = (base.totalRevenue / (base.totalParticipants * 10)) * 100; // Asumiendo costo de programa
+
+  const referralSources: ReferralProgramMetrics['referralSources'] = [
+    {
+      id: 'ref-1',
+      referrerId: 'client-123',
+      referrerName: 'María González',
+      referrerEmail: 'maria.gonzalez@email.com',
+      referrerType: 'cliente',
+      totalReferrals: 8,
+      convertedReferrals: 6,
+      conversionRate: 75,
+      totalRevenue: 1800,
+      averageCustomerValue: 300,
+      lifetimeValue: 2400,
+      firstReferralDate: '2024-10-15T10:00:00Z',
+      lastReferralDate: new Date().toISOString(),
+    },
+    {
+      id: 'ref-2',
+      referrerId: 'client-456',
+      referrerName: 'Carlos Ruiz',
+      referrerEmail: 'carlos.ruiz@email.com',
+      referrerType: 'cliente',
+      totalReferrals: 6,
+      convertedReferrals: 4,
+      conversionRate: 66.7,
+      totalRevenue: 1200,
+      averageCustomerValue: 300,
+      lifetimeValue: 1800,
+      firstReferralDate: '2024-11-01T14:00:00Z',
+      lastReferralDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'ref-3',
+      referrerId: 'client-789',
+      referrerName: 'Ana Martínez',
+      referrerEmail: 'ana.martinez@email.com',
+      referrerType: 'cliente',
+      totalReferrals: 5,
+      convertedReferrals: 3,
+      conversionRate: 60,
+      totalRevenue: 900,
+      averageCustomerValue: 300,
+      lifetimeValue: 1350,
+      firstReferralDate: '2024-11-10T09:00:00Z',
+      lastReferralDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'ref-4',
+      referrerId: 'collab-001',
+      referrerName: 'Juan Pérez',
+      referrerEmail: 'juan.perez@email.com',
+      referrerType: 'colaborador',
+      totalReferrals: 4,
+      convertedReferrals: 3,
+      conversionRate: 75,
+      totalRevenue: 900,
+      averageCustomerValue: 300,
+      lifetimeValue: 1200,
+      firstReferralDate: '2024-10-20T11:00:00Z',
+      lastReferralDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+  ];
+
+  const topReferrers = [...referralSources]
+    .sort((a, b) => b.totalRevenue - a.totalRevenue)
+    .slice(0, 3);
+
+  // Comparación con período anterior
+  let previousPeriod: FunnelsAcquisitionPeriod = '7d';
+  if (period === '30d') previousPeriod = '7d';
+  if (period === '90d') previousPeriod = '30d';
+
+  const previousBase = baseMetrics[previousPeriod];
+  const previousConversionRate = (previousBase.convertedReferrals / previousBase.totalReferrals) * 100;
+  const conversionRateChange = conversionRate - previousConversionRate;
+  const conversionRateChangePercentage =
+    previousConversionRate > 0 ? (conversionRateChange / previousConversionRate) * 100 : 0;
+  const convertedChange = base.convertedReferrals - previousBase.convertedReferrals;
+  const convertedChangePercentage =
+    previousBase.convertedReferrals > 0 ? (convertedChange / previousBase.convertedReferrals) * 100 : 0;
+
+  const trendDirection: 'up' | 'down' | 'neutral' =
+    conversionRateChange > 2 ? 'up' : conversionRateChange < -2 ? 'down' : 'neutral';
+
+  const suggestions: ReferralProgramMetrics['suggestions'] = [
+    {
+      id: 'suggestion-ref-1',
+      title: 'Aumentar incentivos para referrers activos',
+      description:
+        'Los top 3 referrers generan el 60% de las conversiones. Considera aumentar sus incentivos o crear un programa VIP para mantenerlos motivados.',
+      impact: 'high',
+      category: 'incentives',
+    },
+    {
+      id: 'suggestion-ref-2',
+      title: 'Mejorar comunicación del programa',
+      description:
+        'Solo el 62% de los participantes están activos. Envía recordatorios mensuales sobre el programa y cómo referir clientes.',
+      impact: 'high',
+      category: 'communication',
+    },
+    {
+      id: 'suggestion-ref-3',
+      title: 'Simplificar proceso de referido',
+      description:
+        'Crea un enlace único por referrer que puedan compartir fácilmente. Esto puede aumentar las referencias en un 30%.',
+      impact: 'medium',
+      category: 'tracking',
+    },
+    {
+      id: 'suggestion-ref-4',
+      title: 'Promocionar programa en redes sociales',
+      description:
+        'Publica sobre el programa de referidos en tus redes sociales para aumentar la participación. Los clientes satisfechos son tu mejor marketing.',
+      impact: 'medium',
+      category: 'promotion',
+    },
+  ];
+
+  return {
+    period,
+    totalReferrals: base.totalReferrals,
+    convertedReferrals: base.convertedReferrals,
+    conversionRate: Number(conversionRate.toFixed(1)),
+    totalRevenue: base.totalRevenue,
+    averageCustomerValue: Number(averageCustomerValue.toFixed(2)),
+    topReferrers,
+    referralSources,
+    programPerformance: {
+      totalParticipants: base.totalParticipants,
+      activeReferrers: base.activeReferrers,
+      averageReferralsPerPerson: Number(averageReferralsPerPerson.toFixed(2)),
+      programROI: Number(programROI.toFixed(1)),
+    },
+    comparison: {
+      previousPeriod,
+      conversionRateChange: Number(conversionRateChange.toFixed(1)),
+      conversionRateChangePercentage: Number(conversionRateChangePercentage.toFixed(1)),
+      totalConvertedChange: convertedChange,
+      totalConvertedChangePercentage: Number(convertedChangePercentage.toFixed(1)),
+      trendDirection,
+    },
+    suggestions,
+  };
+}
+
+export async function fetchReferralProgramMetrics(
+  period: FunnelsAcquisitionPeriod,
+): Promise<ReferralProgramMetrics> {
+  return simulateLatency(generateReferralProgramMetrics(period));
 }
 
 

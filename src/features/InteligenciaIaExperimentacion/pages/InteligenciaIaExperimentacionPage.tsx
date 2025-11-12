@@ -64,7 +64,7 @@ export const InteligenciaIaExperimentacionPage: React.FC = () => {
       { id: 'playbooks', label: 'Playbooks IA', icon: <BookOpen size={16} /> },
       { id: 'feedback', label: 'Feedback Inteligente', icon: <MessageSquare size={16} /> },
       { id: 'personalization', label: 'Personalización IA', icon: <Sparkles size={16} /> },
-      { id: 'experimentation', label: 'A/B Testing', icon: <FlaskConical size={16} /> },
+      { id: 'experimentation', label: 'Test de Estrategias', icon: <FlaskConical size={16} /> },
       { id: 'insights', label: 'Insights & Mercado', icon: <Radar size={16} /> },
     ],
     []
@@ -72,6 +72,31 @@ export const InteligenciaIaExperimentacionPage: React.FC = () => {
 
   const handleCreatePlaybook = () => setActiveTab('playbooks');
   const handleLaunchExperiment = () => setActiveTab('experimentation');
+  const handleViewFeedback = () => setActiveTab('feedback');
+  const handleViewCampaignDetails = (campaignId: string) => {
+    // Navigate to campaign details or show modal
+    console.log('View campaign details:', campaignId);
+    // TODO: Implement navigation to campaign details
+  };
+  const handleDuplicateCampaign = (campaignId: string) => {
+    // Duplicate campaign logic
+    console.log('Duplicate campaign:', campaignId);
+    // TODO: Implement campaign duplication
+  };
+  const handleViewExperimentResults = () => {
+    setActiveTab('experimentation');
+    // TODO: Scroll to completed experiments or highlight them
+  };
+  const handlePauseSend = (sendId: string) => {
+    // Pause send logic
+    console.log('Pause send:', sendId);
+    // TODO: Implement pause send functionality
+  };
+  const handleEditSend = (sendId: string) => {
+    // Edit send logic
+    console.log('Edit send:', sendId);
+    // TODO: Implement edit send functionality - navigate to edit page or open modal
+  };
 
   const renderTabContent = () => {
     if (!overview) return null;
@@ -165,8 +190,15 @@ export const InteligenciaIaExperimentacionPage: React.FC = () => {
             Hola {user?.name ?? 'equipo'}, aquí tienes tu Engagement Hub central.
           </p>
           <IntelligenceHeader
+            overview={overview}
             onCreatePlaybook={handleCreatePlaybook}
             onLaunchExperiment={handleLaunchExperiment}
+            onViewFeedback={handleViewFeedback}
+            onViewCampaignDetails={handleViewCampaignDetails}
+            onDuplicateCampaign={handleDuplicateCampaign}
+            onViewExperimentResults={handleViewExperimentResults}
+            onPauseSend={handlePauseSend}
+            onEditSend={handleEditSend}
           />
         </div>
       </div>

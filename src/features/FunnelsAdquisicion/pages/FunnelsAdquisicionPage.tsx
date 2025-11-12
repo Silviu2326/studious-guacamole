@@ -2,15 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layers, Rocket, Sparkles, Target } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
-import { Badge, Button, Card, MetricCards, Tabs } from '../../../components/componentsreutilizables';
+import { Badge, Button, Card, MetricCards } from '../../../components/componentsreutilizables';
 import { FunnelsAdquisicionService } from '../services/funnelsAdquisicionService';
-import { AcquisitionFunnelPerformance, AcquisitionKPI, FunnelsAcquisitionPeriod } from '../types';
-
-const periodTabs = [
-  { id: '7d', label: 'Últimos 7 días' },
-  { id: '30d', label: 'Últimos 30 días' },
-  { id: '90d', label: 'Últimos 90 días' },
-] as const;
+import { AcquisitionFunnelPerformance, AcquisitionKPI, FunnelsAcquisitionPeriod, LeadRiskAlert, FirstSessionConversionMetric, SocialMediaMetrics, ReferralProgramMetrics } from '../types';
+import { LeadRiskAlerts, FirstSessionConversionMetricComponent, SocialMediaMetricsComponent, ReferralProgramMetricsComponent } from '../components';
 
 type SectionTabId = 'builder' | 'lead-magnet';
 
@@ -28,11 +23,19 @@ const sectionTabItems: SectionTabItem[] = [
 export default function FunnelsAdquisicionPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [period, setPeriod] = useState<FunnelsAcquisitionPeriod>('30d');
+  const period: FunnelsAcquisitionPeriod = '30d';
   const [loadingSnapshot, setLoadingSnapshot] = useState(true);
   const [activeSection, setActiveSection] = useState<SectionTabId>('builder');
   const [kpis, setKpis] = useState<AcquisitionKPI[]>([]);
   const [funnels, setFunnels] = useState<AcquisitionFunnelPerformance[]>([]);
+  const [leadRiskAlerts, setLeadRiskAlerts] = useState<LeadRiskAlert[]>([]);
+  const [firstSessionConversion, setFirstSessionConversion] = useState<FirstSessionConversionMetric | null>(null);
+  const [socialMediaMetrics, setSocialMediaMetrics] = useState<SocialMediaMetrics | null>(null);
+  const [referralProgramMetrics, setReferralProgramMetrics] = useState<ReferralProgramMetrics | null>(null);
+  const [loadingAlerts, setLoadingAlerts] = useState(true);
+  const [loadingConversion, setLoadingConversion] = useState(true);
+  const [loadingSocialMedia, setLoadingSocialMedia] = useState(true);
+  const [loadingReferrals, setLoadingReferrals] = useState(true);
 
   const loadSnapshot = useCallback(async () => {
     setLoadingSnapshot(true);
@@ -47,9 +50,61 @@ export default function FunnelsAdquisicionPage() {
     }
   }, [period]);
 
+  const loadLeadRiskAlerts = useCallback(async () => {
+    setLoadingAlerts(true);
+    try {
+      const alerts = await FunnelsAdquisicionService.getLeadRiskAlerts();
+      setLeadRiskAlerts(alerts);
+    } catch (error) {
+      console.error('[FunnelsAdquisicionPage] Error cargando alertas:', error);
+    } finally {
+      setLoadingAlerts(false);
+    }
+  }, []);
+
+  const loadFirstSessionConversion = useCallback(async () => {
+    setLoadingConversion(true);
+    try {
+      const metric = await FunnelsAdquisicionService.getFirstSessionConversionMetric(period);
+      setFirstSessionConversion(metric);
+    } catch (error) {
+      console.error('[FunnelsAdquisicionPage] Error cargando métrica de conversión:', error);
+    } finally {
+      setLoadingConversion(false);
+    }
+  }, [period]);
+
+  const loadSocialMediaMetrics = useCallback(async () => {
+    setLoadingSocialMedia(true);
+    try {
+      const metrics = await FunnelsAdquisicionService.getSocialMediaMetrics(period);
+      setSocialMediaMetrics(metrics);
+    } catch (error) {
+      console.error('[FunnelsAdquisicionPage] Error cargando métricas de redes sociales:', error);
+    } finally {
+      setLoadingSocialMedia(false);
+    }
+  }, [period]);
+
+  const loadReferralProgramMetrics = useCallback(async () => {
+    setLoadingReferrals(true);
+    try {
+      const metrics = await FunnelsAdquisicionService.getReferralProgramMetrics(period);
+      setReferralProgramMetrics(metrics);
+    } catch (error) {
+      console.error('[FunnelsAdquisicionPage] Error cargando métricas de referidos:', error);
+    } finally {
+      setLoadingReferrals(false);
+    }
+  }, [period]);
+
   useEffect(() => {
     loadSnapshot();
-  }, [loadSnapshot]);
+    loadLeadRiskAlerts();
+    loadFirstSessionConversion();
+    loadSocialMediaMetrics();
+    loadReferralProgramMetrics();
+  }, [loadSnapshot, loadLeadRiskAlerts, loadFirstSessionConversion, loadSocialMediaMetrics, loadReferralProgramMetrics]);
 
   const currencyFormatter = useMemo(
     () =>
@@ -178,6 +233,10 @@ export default function FunnelsAdquisicionPage() {
 
   const handleRefresh = () => {
     loadSnapshot();
+    loadLeadRiskAlerts();
+    loadFirstSessionConversion();
+    loadSocialMediaMetrics();
+    loadReferralProgramMetrics();
   };
 
   const handleCreateFunnel = () => {
@@ -505,24 +564,42 @@ export default function FunnelsAdquisicionPage() {
 
             <div className="px-4 py-6 space-y-6">
               {(activeSection === 'builder' || activeSection === 'lead-magnet') && (
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <Tabs
-                    items={periodTabs.map((tab) => ({ id: tab.id, label: tab.label }))}
-                    activeTab={period}
-                    onTabChange={(tabId) => setPeriod(tabId as FunnelsAcquisitionPeriod)}
-                    variant="pills"
-                    size="sm"
-                  />
-                  <div className="flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-300">
-                    <Rocket className="w-4 h-4" />
-                    <span>Datos simulados con base en performance de captación y nurturing multicanal.</span>
-                  </div>
+                <div className="flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-300">
+                  <Rocket className="w-4 h-4" />
+                  <span>Datos simulados con base en performance de captación y nurturing multicanal.</span>
                 </div>
               )}
 
               {renderSectionContent()}
             </div>
           </Card>
+
+          {/* US-FA-009: Métrica de conversión de primera sesión a cliente */}
+          {firstSessionConversion && (
+            <FirstSessionConversionMetricComponent
+              metric={firstSessionConversion}
+              loading={loadingConversion}
+            />
+          )}
+
+          {/* US-FA-008: Sistema de alertas y tareas automáticas para leads en riesgo */}
+          <LeadRiskAlerts alerts={leadRiskAlerts} loading={loadingAlerts} />
+
+          {/* US-FA-010: Integración con métricas de redes sociales */}
+          {socialMediaMetrics && (
+            <SocialMediaMetricsComponent
+              metrics={socialMediaMetrics}
+              loading={loadingSocialMedia}
+            />
+          )}
+
+          {/* US-FA-012: Sistema de tracking de referidos */}
+          {referralProgramMetrics && (
+            <ReferralProgramMetricsComponent
+              metrics={referralProgramMetrics}
+              loading={loadingReferrals}
+            />
+          )}
         </div>
       </div>
     </div>

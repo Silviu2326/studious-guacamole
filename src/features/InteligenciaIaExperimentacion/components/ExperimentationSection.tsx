@@ -23,9 +23,9 @@ export const ExperimentationSection: React.FC<ExperimentationSectionProps> = ({ 
             <FlaskConical size={20} />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-slate-900">A/B Testing & Experimentación</h2>
+            <h2 className="text-xl font-semibold text-slate-900">Test de Estrategias</h2>
             <p className="text-sm text-slate-600">
-              Diseña experimentos rápidos, valida hipótesis y activa el ganador en tus campañas y experiencias in-app.
+              Prueba mensajes y estrategias: envía dos versiones diferentes a tu audiencia y descubre cuál genera más respuestas o conversiones. Compara resultados en tiempo real y activa automáticamente la versión ganadora.
             </p>
           </div>
         </div>
@@ -47,7 +47,7 @@ export const ExperimentationSection: React.FC<ExperimentationSectionProps> = ({ 
         columns={[
           {
             key: 'name',
-            label: 'Experimentación',
+            label: 'Test de Estrategias',
             render: (_, row) => (
               <div>
                 <p className="font-semibold text-slate-900">{row.name}</p>

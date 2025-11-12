@@ -34,8 +34,11 @@ import {
   UtensilsCrossed,
   Wallet,
   ChevronRight,
+  MessageSquareMore,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { RequestTestimonialModal } from '../../ComunidadYFidelizacion/components/RequestTestimonialModal';
+import { TestimonialRequestsService } from '../../ComunidadYFidelizacion/services/testimonialRequestsService';
 
 interface ClientProfileSummaryProps {
   client?: Client360Summary;
@@ -131,6 +134,7 @@ function Timeline({ events }: { events: ClientTimelineEvent[] }) {
 
 export function ClientProfileSummary({ client, profile, loading }: ClientProfileSummaryProps) {
   const [activeTab, setActiveTab] = useState<string>('summary');
+  const [isTestimonialModalOpen, setIsTestimonialModalOpen] = useState(false);
 
   if (!client) {
     return (
@@ -152,11 +156,36 @@ export function ClientProfileSummary({ client, profile, loading }: ClientProfile
   }
 
   const header = profile.header;
+  const handleQuickAction = (actionId: string) => {
+    if (actionId === 'testimonial') {
+      setIsTestimonialModalOpen(true);
+    }
+    // Aquí se pueden agregar otros handlers para otras acciones
+  };
+
+  const handleSendTestimonialRequest = async (request: {
+    clientId: string;
+    templateId?: string;
+    message: string;
+    channel: 'whatsapp' | 'email';
+  }) => {
+    if (!client) return;
+    
+    await TestimonialRequestsService.create({
+      clientId: client.id,
+      clientName: client.name,
+      templateId: request.templateId,
+      message: request.message,
+      channel: request.channel,
+    });
+  };
+
   const quickActions = [
     { id: 'whatsapp', label: 'Enviar WhatsApp', icon: <MessageCircle className="h-4 w-4" /> },
     { id: 'email', label: 'Enviar Email', icon: <Mail className="h-4 w-4" /> },
     { id: 'call', label: 'Llamar', icon: <Phone className="h-4 w-4" /> },
     { id: 'appointment', label: 'Crear cita', icon: <CalendarClock className="h-4 w-4" /> },
+    { id: 'testimonial', label: 'Solicitar testimonio', icon: <MessageSquareMore className="h-4 w-4" /> },
     { id: 'note', label: 'Nueva nota', icon: <PenSquare className="h-4 w-4" /> },
     { id: 'task', label: 'Nueva tarea', icon: <ClipboardList className="h-4 w-4" /> },
     { id: 'corporate', label: 'Convertir a corporativo', icon: <Users className="h-4 w-4" /> },
@@ -1389,12 +1418,29 @@ export function ClientProfileSummary({ client, profile, loading }: ClientProfile
 
         <div className="flex flex-wrap gap-2">
           {quickActions.map(action => (
-            <Button key={action.id} variant="ghost" size="sm" leftIcon={action.icon}>
+            <Button 
+              key={action.id} 
+              variant="ghost" 
+              size="sm" 
+              leftIcon={action.icon}
+              onClick={() => handleQuickAction(action.id)}
+            >
               {action.label}
             </Button>
           ))}
         </div>
       </Card>
+
+      {/* Modal de solicitud de testimonio */}
+      {client && (
+        <RequestTestimonialModal
+          isOpen={isTestimonialModalOpen}
+          onClose={() => setIsTestimonialModalOpen(false)}
+          clientId={client.id}
+          clientName={client.name}
+          onSend={handleSendTestimonialRequest}
+        />
+      )}
 
       <Card padding="lg" className="space-y-6 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:bg-slate-900/80">
         <Tabs items={DETAIL_TABS} activeTab={activeTab} onTabChange={setActiveTab} variant="underline" />

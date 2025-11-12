@@ -4,7 +4,8 @@ import { Layers, Rocket, Sparkles, Target } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { Badge, Button, Card, MetricCards, Tabs } from '../../../components/componentsreutilizables';
 import { FunnelsAdquisicionService } from '../services/funnelsAdquisicionService';
-import { AcquisitionFunnelPerformance, AcquisitionKPI, FunnelsAcquisitionPeriod } from '../types';
+import { AcquisitionFunnelPerformance, AcquisitionKPI, FunnelsAcquisitionPeriod, LeadRiskAlert, FirstSessionConversionMetric, SocialMediaMetrics, ReferralProgramMetrics } from '../types';
+import { LeadRiskAlerts, FirstSessionConversionMetricComponent, SocialMediaMetricsComponent, ReferralProgramMetricsComponent } from '../components';
 
 const periodTabs = [
   { id: '7d', label: 'Últimos 7 días' },
@@ -33,6 +34,14 @@ export default function FunnelsAdquisicionPage() {
   const [activeSection, setActiveSection] = useState<SectionTabId>('builder');
   const [kpis, setKpis] = useState<AcquisitionKPI[]>([]);
   const [funnels, setFunnels] = useState<AcquisitionFunnelPerformance[]>([]);
+  const [leadRiskAlerts, setLeadRiskAlerts] = useState<LeadRiskAlert[]>([]);
+  const [firstSessionConversion, setFirstSessionConversion] = useState<FirstSessionConversionMetric | null>(null);
+  const [socialMediaMetrics, setSocialMediaMetrics] = useState<SocialMediaMetrics | null>(null);
+  const [referralProgramMetrics, setReferralProgramMetrics] = useState<ReferralProgramMetrics | null>(null);
+  const [loadingAlerts, setLoadingAlerts] = useState(true);
+  const [loadingConversion, setLoadingConversion] = useState(true);
+  const [loadingSocialMedia, setLoadingSocialMedia] = useState(true);
+  const [loadingReferrals, setLoadingReferrals] = useState(true);
 
   const loadSnapshot = useCallback(async () => {
     setLoadingSnapshot(true);
@@ -47,9 +56,61 @@ export default function FunnelsAdquisicionPage() {
     }
   }, [period]);
 
+  const loadLeadRiskAlerts = useCallback(async () => {
+    setLoadingAlerts(true);
+    try {
+      const alerts = await FunnelsAdquisicionService.getLeadRiskAlerts();
+      setLeadRiskAlerts(alerts);
+    } catch (error) {
+      console.error('[FunnelsAdquisicionPage] Error cargando alertas:', error);
+    } finally {
+      setLoadingAlerts(false);
+    }
+  }, []);
+
+  const loadFirstSessionConversion = useCallback(async () => {
+    setLoadingConversion(true);
+    try {
+      const metric = await FunnelsAdquisicionService.getFirstSessionConversionMetric(period);
+      setFirstSessionConversion(metric);
+    } catch (error) {
+      console.error('[FunnelsAdquisicionPage] Error cargando métrica de conversión:', error);
+    } finally {
+      setLoadingConversion(false);
+    }
+  }, [period]);
+
+  const loadSocialMediaMetrics = useCallback(async () => {
+    setLoadingSocialMedia(true);
+    try {
+      const metrics = await FunnelsAdquisicionService.getSocialMediaMetrics(period);
+      setSocialMediaMetrics(metrics);
+    } catch (error) {
+      console.error('[FunnelsAdquisicionPage] Error cargando métricas de redes sociales:', error);
+    } finally {
+      setLoadingSocialMedia(false);
+    }
+  }, [period]);
+
+  const loadReferralProgramMetrics = useCallback(async () => {
+    setLoadingReferrals(true);
+    try {
+      const metrics = await FunnelsAdquisicionService.getReferralProgramMetrics(period);
+      setReferralProgramMetrics(metrics);
+    } catch (error) {
+      console.error('[FunnelsAdquisicionPage] Error cargando métricas de referidos:', error);
+    } finally {
+      setLoadingReferrals(false);
+    }
+  }, [period]);
+
   useEffect(() => {
     loadSnapshot();
-  }, [loadSnapshot]);
+    loadLeadRiskAlerts();
+    loadFirstSessionConversion();
+    loadSocialMediaMetrics();
+    loadReferralProgramMetrics();
+  }, [loadSnapshot, loadLeadRiskAlerts, loadFirstSessionConversion, loadSocialMediaMetrics, loadReferralProgramMetrics]);
 
   const currencyFormatter = useMemo(
     () =>
@@ -178,6 +239,10 @@ export default function FunnelsAdquisicionPage() {
 
   const handleRefresh = () => {
     loadSnapshot();
+    loadLeadRiskAlerts();
+    loadFirstSessionConversion();
+    loadSocialMediaMetrics();
+    loadReferralProgramMetrics();
   };
 
   const handleCreateFunnel = () => {
@@ -478,6 +543,33 @@ export default function FunnelsAdquisicionPage() {
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
         <div className="space-y-6">
           <MetricCards data={metricCardsToRender} columns={4} />
+
+          {/* US-FA-009: Métrica de conversión de primera sesión a cliente */}
+          {firstSessionConversion && (
+            <FirstSessionConversionMetricComponent
+              metric={firstSessionConversion}
+              loading={loadingConversion}
+            />
+          )}
+
+          {/* US-FA-008: Sistema de alertas y tareas automáticas para leads en riesgo */}
+          <LeadRiskAlerts alerts={leadRiskAlerts} loading={loadingAlerts} />
+
+          {/* US-FA-010: Integración con métricas de redes sociales */}
+          {socialMediaMetrics && (
+            <SocialMediaMetricsComponent
+              metrics={socialMediaMetrics}
+              loading={loadingSocialMedia}
+            />
+          )}
+
+          {/* US-FA-012: Sistema de tracking de referidos */}
+          {referralProgramMetrics && (
+            <ReferralProgramMetricsComponent
+              metrics={referralProgramMetrics}
+              loading={loadingReferrals}
+            />
+          )}
 
           <Card className="p-0 bg-white shadow-sm dark:bg-slate-900/60">
             <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">

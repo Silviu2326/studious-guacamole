@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HeartHandshake, Users, RefreshCw, Sparkles, Flame, Activity, MessageCircle } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { Badge, Button, Tabs } from '../../../components/componentsreutilizables';
-import { AdvocacyPrograms, FeedbackInsightsBoard, PulseOverview, TestimonialsShowcase } from '../components';
+import { AdvocacyPrograms, FeedbackInsightsBoard, PulseOverview, TestimonialsShowcase, TestimonialInputManager, TestimonialRequestsTracking, IdealTestimonialMoments, PostSessionSurveyAutomation, SurveyTemplatesLibrary, NegativeFeedbackAlerts, PromoterClientsList, ReferralProgramManager, MetricsDashboard, SocialPlatformsIntegration, MonthlyReportManager } from '../components';
 import { CommunityFidelizacionService } from '../services/communityFidelizacionService';
 import { CommunityFidelizacionSnapshot } from '../types';
 
@@ -170,6 +170,20 @@ export default function ComunidadYFidelizacionPage() {
           <>
             {section === 'dashboard' && (
               <section className="space-y-10">
+                <MetricsDashboard
+                  summary={snapshot.summary}
+                  pulseMetrics={snapshot.pulseMetrics}
+                  testimonials={snapshot.testimonials}
+                  insights={snapshot.insights}
+                  promoterClients={snapshot.promoterClients}
+                  negativeFeedbackAlerts={snapshot.negativeFeedbackAlerts}
+                  loading={loading}
+                  periodLabel={PERIOD_LABEL[period]}
+                  onViewDetails={(metricId) => {
+                    console.log('Ver detalles de métrica:', metricId);
+                    // TODO: Implementar navegación a detalles de métrica
+                  }}
+                />
                 <PulseOverview
                   summary={snapshot.summary}
                   pulseMetrics={snapshot.pulseMetrics}
@@ -182,13 +196,88 @@ export default function ComunidadYFidelizacionPage() {
                   onNavigateToFeedback={(anchorId) => navigateToSection('feedback', anchorId)}
                   onNavigateToAutomations={() => navigateToSection('feedback', 'automations-board')}
                 />
+                <MonthlyReportManager
+                  reports={snapshot.monthlyReports}
+                  config={snapshot.monthlyReportConfig}
+                  loading={loading}
+                  onGenerateReport={(month) => {
+                    console.log('Generar reporte:', month);
+                    // TODO: Implementar lógica de generación de reporte
+                  }}
+                  onDownloadReport={(reportId) => {
+                    console.log('Descargar reporte:', reportId);
+                    // TODO: Implementar lógica de descarga
+                  }}
+                  onSendReport={(reportId) => {
+                    console.log('Enviar reporte:', reportId);
+                    // TODO: Implementar lógica de envío
+                  }}
+                  onUpdateConfig={(config) => {
+                    console.log('Actualizar configuración:', config);
+                    // TODO: Implementar lógica de actualización de configuración
+                  }}
+                />
               </section>
             )}
 
             {section === 'reviews' && (
               <section>
-                <div id="reviews-testimonials">
+                <div id="reviews-testimonials" className="space-y-10">
+                  <TestimonialInputManager />
                   <TestimonialsShowcase testimonials={snapshot.testimonials} loading={loading} />
+                </div>
+                <div className="mt-10">
+                  <SocialPlatformsIntegration
+                    connections={snapshot.socialPlatformConnections}
+                    reviewRequests={snapshot.reviewRequests}
+                    loading={loading}
+                    onConnect={(platform) => {
+                      console.log('Conectar plataforma:', platform);
+                      // TODO: Implementar lógica de conexión
+                    }}
+                    onDisconnect={(connectionId) => {
+                      console.log('Desconectar:', connectionId);
+                      // TODO: Implementar lógica de desconexión
+                    }}
+                    onSync={(connectionId) => {
+                      console.log('Sincronizar:', connectionId);
+                      // TODO: Implementar lógica de sincronización
+                    }}
+                    onUpdateSyncFrequency={(connectionId, frequency) => {
+                      console.log('Actualizar frecuencia:', connectionId, frequency);
+                      // TODO: Implementar lógica de actualización
+                    }}
+                    onRequestReview={(clientId, platform) => {
+                      console.log('Solicitar reseña:', clientId, platform);
+                      // TODO: Implementar lógica de solicitud de reseña
+                    }}
+                  />
+                </div>
+                <div className="mt-10">
+                  <IdealTestimonialMoments
+                    moments={snapshot.idealTestimonialMoments}
+                    loading={loading}
+                    onSendReminder={(momentId, channel) => {
+                      console.log('Enviar recordatorio:', momentId, channel);
+                      // TODO: Implementar lógica de envío de recordatorio
+                    }}
+                    onDismiss={(momentId) => {
+                      console.log('Descartar momento:', momentId);
+                      // TODO: Implementar lógica de descartar
+                    }}
+                    onRequestTestimonial={(momentId) => {
+                      console.log('Solicitar testimonio:', momentId);
+                      // TODO: Implementar lógica de solicitar testimonio
+                    }}
+                  />
+                </div>
+                <div className="mt-10">
+                  <TestimonialRequestsTracking
+                    onNotificationReceived={(request) => {
+                      console.log('Nueva respuesta recibida:', request);
+                      // TODO: Mostrar notificación toast o banner
+                    }}
+                  />
                 </div>
                 <div className="mt-10">
                   <AdvocacyPrograms
@@ -197,15 +286,105 @@ export default function ComunidadYFidelizacionPage() {
                     loading={loading}
                   />
                 </div>
+                <div className="mt-10">
+                  <PromoterClientsList
+                    promoters={snapshot.promoterClients || []}
+                    loading={loading}
+                    onRequestReferral={(clientId) => {
+                      console.log('Solicitar referido para cliente:', clientId);
+                      // TODO: Implementar lógica de solicitar referido
+                    }}
+                    onRequestTestimonial={(clientId) => {
+                      console.log('Solicitar testimonio para cliente:', clientId);
+                      // TODO: Implementar lógica de solicitar testimonio
+                    }}
+                    onContactClient={(clientId, type) => {
+                      console.log('Contactar cliente:', clientId, 'tipo:', type);
+                      // TODO: Implementar lógica de contacto
+                    }}
+                  />
+                </div>
+                <div className="mt-10">
+                  <ReferralProgramManager
+                    program={snapshot.referralProgram}
+                    referrals={snapshot.referrals || []}
+                    stats={snapshot.referralStats}
+                    loading={loading}
+                    onCreateProgram={() => {
+                      console.log('Crear programa de referidos');
+                      // TODO: Implementar lógica de crear programa
+                    }}
+                    onEditProgram={(programId) => {
+                      console.log('Editar programa:', programId);
+                      // TODO: Implementar lógica de editar programa
+                    }}
+                    onGenerateLink={(clientId) => {
+                      console.log('Generar link para cliente:', clientId);
+                      // TODO: Implementar lógica de generar link
+                    }}
+                    onManageReward={(referralId) => {
+                      console.log('Gestionar recompensa para referido:', referralId);
+                      // TODO: Implementar lógica de gestionar recompensa
+                    }}
+                    onViewReferral={(referralId) => {
+                      console.log('Ver referido:', referralId);
+                      // TODO: Implementar lógica de ver referido
+                    }}
+                  />
+                </div>
               </section>
             )}
 
             {section === 'feedback' && (
-              <section>
+              <section className="space-y-10">
+                <NegativeFeedbackAlerts
+                  alerts={snapshot.negativeFeedbackAlerts || []}
+                  loading={loading}
+                  onContactClient={(clientId, channel) => {
+                    console.log('Contactar cliente:', clientId, channel);
+                    // TODO: Implementar lógica de contacto
+                  }}
+                  onResolveAlert={(alertId) => {
+                    console.log('Resolver alerta:', alertId);
+                    // TODO: Implementar lógica de resolución
+                  }}
+                  onViewClientHistory={(clientId) => {
+                    console.log('Ver historial del cliente:', clientId);
+                    // TODO: Implementar lógica de ver historial
+                  }}
+                />
+                <SurveyTemplatesLibrary
+                  templates={snapshot.surveyTemplates || []}
+                  clients={[
+                    { id: 'cliente_001', name: 'Laura Méndez', email: 'laura@example.com' },
+                    { id: 'cliente_002', name: 'Carlos Ortega', email: 'carlos@example.com' },
+                    { id: 'cliente_003', name: 'María González', email: 'maria@example.com' },
+                    { id: 'cliente_004', name: 'Pedro Sánchez', email: 'pedro@example.com' },
+                    { id: 'cliente_005', name: 'Ana Martínez', email: 'ana@example.com' },
+                  ]}
+                  loading={loading}
+                  onSendSurvey={(survey) => {
+                    console.log('Enviar encuesta:', survey);
+                    // TODO: Implementar lógica de envío
+                  }}
+                />
                 <FeedbackInsightsBoard
                   insights={snapshot.insights}
                   automations={snapshot.automations}
                   loading={loading}
+                />
+                <PostSessionSurveyAutomation
+                  surveys={snapshot.postSessionSurveys}
+                  config={snapshot.postSessionSurveyConfig}
+                  loading={loading}
+                  onUpdateConfig={(config) => {
+                    console.log('Actualizar configuración:', config);
+                    // TODO: Implementar lógica de actualización de configuración
+                  }}
+                  onViewSurvey={(surveyId) => {
+                    console.log('Ver encuesta:', surveyId);
+                    // TODO: Implementar lógica de ver encuesta
+                  }}
                 />
               </section>
             )}

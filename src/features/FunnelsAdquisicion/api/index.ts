@@ -5,6 +5,10 @@ export {
   fetchAcquisitionTopFunnels,
   fetchFunnelsAcquisitionKPIs,
   fetchWorkspaceBlueprints,
+  fetchLeadRiskAlerts,
+  fetchFirstSessionConversionMetric,
+  fetchSocialMediaMetrics,
+  fetchReferralProgramMetrics,
 } from './funnelsAdquisicion';
 
 

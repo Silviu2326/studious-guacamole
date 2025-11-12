@@ -66,11 +66,68 @@ export interface IntelligenceInsight {
   severity: InsightSeverity;
 }
 
+export interface TopCampaign {
+  id: string;
+  name: string;
+  channel: string;
+  conversionRate: number;
+  revenue: number;
+  engagementRate: number;
+  sent: number;
+  converted: number;
+}
+
+export interface UpcomingSend {
+  id: string;
+  name: string;
+  type: 'campaign' | 'playbook' | 'automation' | 'scheduled_message';
+  scheduledDate: string; // ISO date string
+  channel: string;
+  recipientCount: number;
+  status: 'scheduled' | 'pending';
+}
+
+export interface Objective {
+  id: string;
+  name: string;
+  currentValue: number;
+  targetValue: number;
+  unit?: string;
+}
+
+export interface CampaignPerformanceMetric {
+  type: 'roi' | 'customers';
+  value: number;
+  previousMonthValue: number;
+  percentageChange: number;
+  label: string;
+  unit?: string;
+}
+
+export interface SectorTrend {
+  id: string;
+  category: 'strategy' | 'timing' | 'content';
+  title: string;
+  description: string;
+  impact: 'high' | 'medium' | 'low';
+}
+
+export interface SectorTrendsData {
+  successfulStrategies: SectorTrend[];
+  bestPostingTimes: SectorTrend[];
+  topContentTypes: SectorTrend[];
+}
+
 export interface IntelligenceOverviewResponse {
   metrics: IntelligenceMetric[];
   playbooks: PlaybookRecord[];
   feedbackLoops: FeedbackLoopRecord[];
   experiments: ExperimentRecord[];
   insights: IntelligenceInsight[];
+  topCampaigns?: TopCampaign[];
+  upcomingSends?: UpcomingSend[];
+  objectives?: Objective[];
+  campaignPerformanceMetric?: CampaignPerformanceMetric;
+  sectorTrends?: SectorTrendsData;
 }
 

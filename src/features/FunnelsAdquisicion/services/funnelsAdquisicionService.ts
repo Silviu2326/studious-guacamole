@@ -5,6 +5,10 @@ import {
   fetchAcquisitionTopFunnels,
   fetchFunnelsAcquisitionKPIs,
   fetchWorkspaceBlueprints,
+  fetchLeadRiskAlerts,
+  fetchFirstSessionConversionMetric,
+  fetchSocialMediaMetrics,
+  fetchReferralProgramMetrics,
 } from '../api';
 import {
   AcquisitionAISuggestion,
@@ -15,6 +19,10 @@ import {
   AcquisitionWorkspaceBlueprint,
   FunnelsAcquisitionPeriod,
   FunnelsAcquisitionSnapshot,
+  LeadRiskAlert,
+  FirstSessionConversionMetric,
+  SocialMediaMetrics,
+  ReferralProgramMetrics,
 } from '../types';
 
 function formatCurrency(value: number): string {
@@ -95,6 +103,28 @@ async function getSnapshot(period: FunnelsAcquisitionPeriod): Promise<FunnelsAcq
   };
 }
 
+async function getLeadRiskAlerts(): Promise<LeadRiskAlert[]> {
+  return fetchLeadRiskAlerts();
+}
+
+async function getFirstSessionConversionMetric(
+  period: FunnelsAcquisitionPeriod,
+): Promise<FirstSessionConversionMetric> {
+  return fetchFirstSessionConversionMetric(period);
+}
+
+async function getSocialMediaMetrics(
+  period: FunnelsAcquisitionPeriod,
+): Promise<SocialMediaMetrics> {
+  return fetchSocialMediaMetrics(period);
+}
+
+async function getReferralProgramMetrics(
+  period: FunnelsAcquisitionPeriod,
+): Promise<ReferralProgramMetrics> {
+  return fetchReferralProgramMetrics(period);
+}
+
 export const FunnelsAdquisicionService = {
   getKPIs,
   getCampaigns,
@@ -104,6 +134,10 @@ export const FunnelsAdquisicionService = {
   getWorkspaceBlueprints,
   getSnapshot,
   formatKpiValue,
+  getLeadRiskAlerts,
+  getFirstSessionConversionMetric,
+  getSocialMediaMetrics,
+  getReferralProgramMetrics,
 };
 
 

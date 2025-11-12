@@ -134,6 +134,182 @@ export interface AIContentIdea {
   callToAction: string;
 }
 
+export interface ClientProgressMetrics {
+  clientId: string;
+  clientName: string;
+  weight?: {
+    current: number;
+    previous: number;
+    change: number;
+    unit: 'kg' | 'lbs';
+  };
+  measurements?: {
+    chest?: { current: number; previous: number; change: number };
+    waist?: { current: number; previous: number; change: number };
+    hips?: { current: number; previous: number; change: number };
+    arms?: { current: number; previous: number; change: number };
+    legs?: { current: number; previous: number; change: number };
+  };
+  photos?: {
+    before?: string;
+    after?: string;
+    hasPermission: boolean;
+  };
+  achievements?: string[];
+  startDate: string;
+  currentDate: string;
+}
+
+export interface PostTemplate {
+  id: string;
+  name: string;
+  description: string;
+  format: 'post' | 'reel' | 'carousel' | 'story';
+  structure: {
+    hook: string;
+    body: string;
+    cta: string;
+  };
+}
+
+export interface GeneratedTransformationPost {
+  id: string;
+  clientId: string;
+  clientName: string;
+  template: PostTemplate;
+  content: {
+    caption: string;
+    hashtags: string[];
+    mediaUrls?: string[];
+  };
+  permissionStatus: 'pending' | 'granted' | 'denied' | 'not_requested';
+  createdAt: string;
+}
+
+export interface FAQQuestion {
+  id: string;
+  question: string;
+  frequency: number;
+  source: 'inbox' | 'whatsapp' | 'instagram' | 'email';
+  lastAsked: string;
+  category?: string;
+}
+
+export interface FAQContentIdea {
+  id: string;
+  question: string;
+  suggestedFormats: Array<'post' | 'reel' | 'carousel' | 'story'>;
+  contentIdeas: Array<{
+    format: 'post' | 'reel' | 'carousel' | 'story';
+    title: string;
+    hook: string;
+    keyPoints: string[];
+    cta: string;
+  }>;
+  priority: 'high' | 'medium' | 'low';
+}
+
+// Brand Profile Types (US-CSS-009)
+export type Specialization = 
+  | 'hipertrofia'
+  | 'perdida-peso'
+  | 'rehabilitacion'
+  | 'fuerza'
+  | 'resistencia'
+  | 'flexibilidad'
+  | 'funcional'
+  | 'deportivo'
+  | 'nutricion'
+  | 'bienestar-general';
+
+export type ToneOfVoice = 
+  | 'motivacional'
+  | 'tecnico'
+  | 'cercano'
+  | 'profesional'
+  | 'energico'
+  | 'empatico'
+  | 'educativo'
+  | 'directo';
+
+export interface BrandProfileConfig {
+  trainerId: string;
+  specializations: Specialization[];
+  toneOfVoice: ToneOfVoice;
+  customTone?: string;
+  values: string[];
+  targetAudience?: string;
+  keywords?: string[];
+  updatedAt?: string;
+}
+
+// Promotional Content Types (US-CSS-010)
+export type PromotionalTemplateType = 
+  | 'plan-entrenamiento'
+  | 'oferta-especial'
+  | 'bono-sesiones'
+  | 'nuevo-servicio'
+  | 'descuento'
+  | 'evento-clase';
+
+export interface ServicePlan {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  sessionsPerMonth?: number;
+  features: string[];
+  isActive: boolean;
+}
+
+export interface PromotionalOffer {
+  id: string;
+  title: string;
+  description: string;
+  discount?: number;
+  discountType?: 'percentage' | 'fixed';
+  validUntil?: string;
+  applicablePlans?: string[];
+  isActive: boolean;
+}
+
+export interface PromotionalContentTemplate {
+  id: string;
+  name: string;
+  description: string;
+  type: PromotionalTemplateType;
+  format: 'post' | 'reel' | 'carousel' | 'story';
+  structure: {
+    hook: string;
+    body: string;
+    cta: string;
+  };
+  variables: Array<{
+    key: string;
+    label: string;
+    type: 'text' | 'number' | 'date' | 'plan' | 'offer';
+    defaultValue?: string;
+  }>;
+  suggestedHashtags: string[];
+  educational: boolean;
+  platforms: SocialPlatform[];
+}
+
+export interface GeneratedPromotionalContent {
+  id: string;
+  templateId: string;
+  content: {
+    caption: string;
+    hashtags: string[];
+    mediaUrls?: string[];
+  };
+  scheduledAt?: string;
+  platform: SocialPlatform;
+  status: 'draft' | 'scheduled' | 'published';
+  createdAt: string;
+}
+
 export interface ContentSocialSnapshot {
   metrics: ContentStudioMetric[];
   modules: ModuleQuickAction[];
@@ -170,7 +346,23 @@ export interface ContentSocialSnapshot {
       keywords?: string[];
       updatedAt?: string;
     };
+    brandProfileConfig?: BrandProfileConfig;
     lastUpdated: string;
+  };
+  clientTransformations?: {
+    availableClients: ClientProgressMetrics[];
+    generatedPosts: GeneratedTransformationPost[];
+    templates: PostTemplate[];
+  };
+  faqContent?: {
+    topQuestions: FAQQuestion[];
+    contentIdeas: FAQContentIdea[];
+  };
+  promotionalContent?: {
+    templates: PromotionalContentTemplate[];
+    availablePlans: ServicePlan[];
+    activeOffers: PromotionalOffer[];
+    generatedContent: GeneratedPromotionalContent[];
   };
 }
 

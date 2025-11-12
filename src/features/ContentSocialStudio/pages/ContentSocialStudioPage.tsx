@@ -7,10 +7,16 @@ import type { ContentSocialSnapshot, ContentStudioPeriod } from '../types';
 import { getContentSocialStudioSnapshot } from '../api';
 import {
   AIContentWorkbench,
+  BrandProfileConfig,
   ClipperHighlights,
+  ClientTransformationPostGenerator,
+  ContentLeadAnalytics,
+  FAQContentGenerator,
+  InternalContentIdeasGenerator,
   ICON_MAP,
   ModuleHighlights,
   PlannerSchedulePreview,
+  PromotionalContentTemplates,
   SyndicationOverview,
   VideoStudioSpotlight,
 } from '../components';
@@ -28,6 +34,12 @@ const sectionTabs = [
   { id: 'clipper', label: 'Biblioteca' },
   { id: 'syndication', label: 'Creator Syndication' },
   { id: 'ai', label: 'IA Creativa' },
+  { id: 'brand-profile', label: 'Perfil de Marca' },
+  { id: 'promotional', label: 'Contenido Promocional' },
+  { id: 'transformations', label: 'Transformaciones' },
+  { id: 'faq-content', label: 'Contenido FAQ' },
+  { id: 'lead-analytics', label: 'Analytics de Leads' },
+  { id: 'internal-content', label: 'Contenido Interno' },
 ] as const;
 
 type SectionTabId = typeof sectionTabs[number]['id'];
@@ -40,6 +52,9 @@ const emptySnapshot: ContentSocialSnapshot = {
   clipper: { totalClips: 0, newThisWeek: 0, categories: [], featured: [], trendingTags: [] },
   syndication: { activeCampaigns: 0, creatorsNetwork: 0, pipeline: [] },
   ai: { assistants: [], quickIdeas: [], lastUpdated: new Date().toISOString() },
+  clientTransformations: { availableClients: [], generatedPosts: [], templates: [] },
+  faqContent: { topQuestions: [], contentIdeas: [] },
+  promotionalContent: { templates: [], availablePlans: [], activeOffers: [], generatedContent: [] },
 };
 
 export default function ContentSocialStudioPage() {
@@ -112,6 +127,18 @@ export default function ContentSocialStudioPage() {
         return <SyndicationOverview syndication={snapshot.syndication} loading={loading} />;
       case 'ai':
         return <AIContentWorkbench ai={snapshot.ai} loading={loading} />;
+      case 'transformations':
+        return <ClientTransformationPostGenerator loading={loading} />;
+      case 'faq-content':
+        return <FAQContentGenerator loading={loading} />;
+      case 'brand-profile':
+        return <BrandProfileConfig loading={loading} />;
+      case 'promotional':
+        return <PromotionalContentTemplates loading={loading} />;
+      case 'lead-analytics':
+        return <ContentLeadAnalytics loading={loading} period={period} />;
+      case 'internal-content':
+        return <InternalContentIdeasGenerator loading={loading} />;
       case 'overview':
       default:
         return (
@@ -130,6 +157,16 @@ export default function ContentSocialStudioPage() {
               <ClipperHighlights clipper={snapshot.clipper} loading={loading} />
             </div>
             <AIContentWorkbench ai={snapshot.ai} loading={loading} />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <BrandProfileConfig loading={loading} />
+              <PromotionalContentTemplates loading={loading} />
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <ClientTransformationPostGenerator loading={loading} />
+              <FAQContentGenerator loading={loading} />
+            </div>
+            <ContentLeadAnalytics loading={loading} period={period} />
+            <InternalContentIdeasGenerator loading={loading} />
           </div>
         );
     }

@@ -66,7 +66,11 @@ export const SummaryGrid: React.FC<SummaryGridProps> = ({ summary, loading = fal
               </p>
               <div className="flex items-end gap-3">
                 <span className="text-3xl font-bold text-slate-900 dark:text-slate-100">
-                  {item.id === 'avg-response' ? `${item.value} min` : item.id === 'revenue-attributed' ? `€${item.value.toLocaleString('es-ES')}` : item.value}
+                  {item.id === 'client-response-rate'
+                    ? `${item.value}%`
+                    : item.id === 'messages-sent' || item.id === 'active-reminders' || item.id === 'pending-communication'
+                    ? item.value.toString()
+                    : item.value}
                 </span>
                 <Badge variant="blue">
                   {item.channelFocus === 'multi' ? 'Omnicanal' : `Foco ${String(item.channelFocus).toUpperCase()}`}

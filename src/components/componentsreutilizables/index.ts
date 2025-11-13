@@ -14,6 +14,9 @@ export type { SelectProps, SelectOption } from './Select';
 export { Textarea } from './Textarea';
 export type { TextareaProps } from './Textarea';
 
+export { Checkbox } from './Checkbox';
+export type { CheckboxProps } from './Checkbox';
+
 export { Tabs } from './Tabs';
 export type { TabsProps, TabItem } from './Tabs';
 
@@ -36,6 +39,9 @@ export { Badge } from './Badge';
 
 export { Switch } from './Switch';
 export type { SwitchProps } from './Switch';
+
+export { Progress } from './Progress';
+export type { ProgressProps } from './Progress';
 
 // Export example pages
 export { ExamplePage } from './ExamplePage';

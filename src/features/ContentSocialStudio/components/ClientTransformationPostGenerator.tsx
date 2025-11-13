@@ -54,11 +54,13 @@ export function ClientTransformationPostGenerator({ loading: externalLoading }: 
     if (!selectedClientId || !selectedTemplateId) return;
 
     setGenerating(true);
+    setGeneratedPost(null);
     try {
       const post = await generateTransformationPost(selectedClientId, selectedTemplateId);
       setGeneratedPost(post);
     } catch (error) {
       console.error('Error generando post:', error);
+      alert(error instanceof Error ? error.message : 'Error al generar el post. Asegúrate de que el cliente tenga datos de progreso registrados.');
     } finally {
       setGenerating(false);
     }
@@ -136,7 +138,7 @@ export function ClientTransformationPostGenerator({ loading: externalLoading }: 
           </h2>
         </div>
         <p className="text-sm text-slate-500">
-          Selecciona un cliente, elige una plantilla y genera automáticamente un post destacando su logro
+          Genera contenido de transformación usando los datos reales de progreso de tus clientes para crear prueba social creíble y auténtica
         </p>
       </div>
 

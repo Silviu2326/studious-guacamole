@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Layers, Rocket, Sparkles, Target } from 'lucide-react';
+import { Layers, Rocket, Sparkles, Target, Users, Calendar } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { Badge, Button, Card, MetricCards } from '../../../components/componentsreutilizables';
 import { FunnelsAdquisicionService } from '../services/funnelsAdquisicionService';
-import { AcquisitionFunnelPerformance, AcquisitionKPI, FunnelsAcquisitionPeriod, LeadRiskAlert, FirstSessionConversionMetric, SocialMediaMetrics, ReferralProgramMetrics } from '../types';
-import { LeadRiskAlerts, FirstSessionConversionMetricComponent, SocialMediaMetricsComponent, ReferralProgramMetricsComponent } from '../components';
+import { AcquisitionFunnelPerformance, AcquisitionKPI, FunnelsAcquisitionPeriod, LeadRiskAlert, FirstSessionConversionMetric, SocialMediaMetrics, ReferralProgramMetrics, ProjectedRevenueByFunnelResponse, FunnelLeadGenerationAlertsResponse, RecommendedFunnel } from '../types';
+import { LeadRiskAlerts, FirstSessionConversionMetricComponent, SocialMediaMetricsComponent, ReferralProgramMetricsComponent, RecommendedFunnelsGenerator, FunnelExperiments, FunnelPerformance, FunnelToChallengeConverter, FunnelContentConnector, ProjectedRevenueByFunnelComponent, FunnelLeadGenerationAlerts, FunnelQualitativeNotes, ProposalLearning, FunnelCommunityInsightsUpdater, PostRegistrationFollowUpTemplates, FunnelLaunchCalendar, FunnelAISummary, FunnelRetrospectiveComponent } from '../components';
 
 type SectionTabId = 'builder' | 'lead-magnet';
 
@@ -32,10 +32,27 @@ export default function FunnelsAdquisicionPage() {
   const [firstSessionConversion, setFirstSessionConversion] = useState<FirstSessionConversionMetric | null>(null);
   const [socialMediaMetrics, setSocialMediaMetrics] = useState<SocialMediaMetrics | null>(null);
   const [referralProgramMetrics, setReferralProgramMetrics] = useState<ReferralProgramMetrics | null>(null);
+  const [projectedRevenue, setProjectedRevenue] = useState<ProjectedRevenueByFunnelResponse | null>(null);
+  const [leadGenerationAlerts, setLeadGenerationAlerts] = useState<FunnelLeadGenerationAlertsResponse | null>(null);
   const [loadingAlerts, setLoadingAlerts] = useState(true);
   const [loadingConversion, setLoadingConversion] = useState(true);
   const [loadingSocialMedia, setLoadingSocialMedia] = useState(true);
   const [loadingReferrals, setLoadingReferrals] = useState(true);
+  const [loadingProjectedRevenue, setLoadingProjectedRevenue] = useState(true);
+  const [loadingLeadGenerationAlerts, setLoadingLeadGenerationAlerts] = useState(true);
+  const [showRecommendedFunnels, setShowRecommendedFunnels] = useState(false);
+  const [showChallengeConverter, setShowChallengeConverter] = useState(false);
+  const [showContentConnector, setShowContentConnector] = useState(false);
+  const [showCommunityInsightsUpdater, setShowCommunityInsightsUpdater] = useState(false);
+  const [showFollowUpTemplates, setShowFollowUpTemplates] = useState(false);
+  const [selectedFunnelForConversion, setSelectedFunnelForConversion] = useState<AcquisitionFunnelPerformance | null>(null);
+  const [selectedFunnelForContent, setSelectedFunnelForContent] = useState<AcquisitionFunnelPerformance | null>(null);
+  const [selectedFunnelForSummary, setSelectedFunnelForSummary] = useState<AcquisitionFunnelPerformance | null>(null);
+  const [showAISummary, setShowAISummary] = useState(false);
+  const [selectedFunnelForInsights, setSelectedFunnelForInsights] = useState<AcquisitionFunnelPerformance | null>(null);
+  const [selectedFunnelForFollowUp, setSelectedFunnelForFollowUp] = useState<AcquisitionFunnelPerformance | null>(null);
+  const [selectedFunnelForRetrospective, setSelectedFunnelForRetrospective] = useState<AcquisitionFunnelPerformance | null>(null);
+  const [showRetrospective, setShowRetrospective] = useState(false);
 
   const loadSnapshot = useCallback(async () => {
     setLoadingSnapshot(true);
@@ -98,13 +115,39 @@ export default function FunnelsAdquisicionPage() {
     }
   }, [period]);
 
+  const loadProjectedRevenue = useCallback(async () => {
+    setLoadingProjectedRevenue(true);
+    try {
+      const data = await FunnelsAdquisicionService.getProjectedRevenueByFunnel(period);
+      setProjectedRevenue(data);
+    } catch (error) {
+      console.error('[FunnelsAdquisicionPage] Error cargando revenue proyectado:', error);
+    } finally {
+      setLoadingProjectedRevenue(false);
+    }
+  }, [period]);
+
+  const loadLeadGenerationAlerts = useCallback(async () => {
+    setLoadingLeadGenerationAlerts(true);
+    try {
+      const alerts = await FunnelsAdquisicionService.getFunnelLeadGenerationAlerts();
+      setLeadGenerationAlerts(alerts);
+    } catch (error) {
+      console.error('[FunnelsAdquisicionPage] Error cargando alertas de generación de leads:', error);
+    } finally {
+      setLoadingLeadGenerationAlerts(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadSnapshot();
     loadLeadRiskAlerts();
     loadFirstSessionConversion();
     loadSocialMediaMetrics();
     loadReferralProgramMetrics();
-  }, [loadSnapshot, loadLeadRiskAlerts, loadFirstSessionConversion, loadSocialMediaMetrics, loadReferralProgramMetrics]);
+    loadProjectedRevenue();
+    loadLeadGenerationAlerts();
+  }, [loadSnapshot, loadLeadRiskAlerts, loadFirstSessionConversion, loadSocialMediaMetrics, loadReferralProgramMetrics, loadProjectedRevenue, loadLeadGenerationAlerts]);
 
   const currencyFormatter = useMemo(
     () =>
@@ -237,10 +280,19 @@ export default function FunnelsAdquisicionPage() {
     loadFirstSessionConversion();
     loadSocialMediaMetrics();
     loadReferralProgramMetrics();
+    loadProjectedRevenue();
+    loadLeadGenerationAlerts();
   };
 
   const handleCreateFunnel = () => {
     navigate('/dashboard/marketing/funnels-adquisicion/funnel-editor');
+  };
+
+  const handleSelectRecommendedFunnel = (funnel: RecommendedFunnel) => {
+    // Navegar al editor con el funnel recomendado
+    navigate('/dashboard/marketing/funnels-adquisicion/funnel-editor', {
+      state: { recommendedFunnel: funnel },
+    });
   };
 
   const handleCreateLandingPage = () => {
@@ -269,6 +321,36 @@ export default function FunnelsAdquisicionPage() {
     });
   };
 
+  const handleConvertToChallenge = (funnel: AcquisitionFunnelPerformance) => {
+    setSelectedFunnelForConversion(funnel);
+    setShowChallengeConverter(true);
+  };
+
+  const handleConnectContent = (funnel: AcquisitionFunnelPerformance) => {
+    setSelectedFunnelForContent(funnel);
+    setShowContentConnector(true);
+  };
+
+  const handleShareAISummary = (funnel: AcquisitionFunnelPerformance) => {
+    setSelectedFunnelForSummary(funnel);
+    setShowAISummary(true);
+  };
+
+  const handleUpdateCommunityInsights = (funnel: AcquisitionFunnelPerformance) => {
+    setSelectedFunnelForInsights(funnel);
+    setShowCommunityInsightsUpdater(true);
+  };
+
+  const handleCreateFollowUpTemplate = (funnel: AcquisitionFunnelPerformance) => {
+    setSelectedFunnelForFollowUp(funnel);
+    setShowFollowUpTemplates(true);
+  };
+
+  const handleOpenRetrospective = (funnel: AcquisitionFunnelPerformance) => {
+    setSelectedFunnelForRetrospective(funnel);
+    setShowRetrospective(true);
+  };
+
   const renderSectionContent = () => {
     if (activeSection === 'builder') {
       return (
@@ -281,6 +363,15 @@ export default function FunnelsAdquisicionPage() {
                   Visualiza performance y optimiza cada etapa antes de iterar.
                 </p>
               </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowRecommendedFunnels(true)}
+                className="inline-flex items-center gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                Funnels Recomendados
+              </Button>
               <Button variant="primary" size="sm" onClick={handleCreateFunnel} className="inline-flex items-center gap-2">
                 <Sparkles className="h-4 w-4" />
                 Crear funnel
@@ -315,14 +406,70 @@ export default function FunnelsAdquisicionPage() {
                           {`${funnel.velocityDays} días`}
                         </td>
                         <td className="py-3 pl-4 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-300 dark:hover:text-indigo-200"
-                            onClick={() => handleEditFunnel(funnel.id)}
-                          >
-                            Editar
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-green-600 hover:text-green-700 dark:text-green-300 dark:hover:text-green-200"
+                              onClick={() => handleUpdateCommunityInsights(funnel)}
+                              title="Actualizar con insights de comunidad (testimonios, NPS)"
+                            >
+                              <Users className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-blue-600 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200"
+                              onClick={() => handleCreateFollowUpTemplate(funnel)}
+                              title="Crear plantilla de follow-up post registro"
+                            >
+                              <Sparkles className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-300 dark:hover:text-indigo-200"
+                              onClick={() => handleConnectContent(funnel)}
+                              title="Conectar contenidos"
+                            >
+                              <Sparkles className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-purple-600 hover:text-purple-700 dark:text-purple-300 dark:hover:text-purple-200"
+                              onClick={() => handleConvertToChallenge(funnel)}
+                              title="Convertir a reto/comunidad"
+                            >
+                              <Target className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-green-600 hover:text-green-700 dark:text-green-300 dark:hover:text-green-200"
+                              onClick={() => handleShareAISummary(funnel)}
+                              title="Compartir resumen IA"
+                            >
+                              <Users className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-orange-600 hover:text-orange-700 dark:text-orange-300 dark:hover:text-orange-200"
+                              onClick={() => handleOpenRetrospective(funnel)}
+                              title="Actualizar con resultados reales y aprendizajes"
+                            >
+                              Retrospectiva
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-300 dark:hover:text-indigo-200"
+                              onClick={() => handleEditFunnel(funnel.id)}
+                            >
+                              Editar
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -517,6 +664,15 @@ export default function FunnelsAdquisicionPage() {
                 <Badge variant="blue" size="md" className="shadow">
                   {user?.name ? `Hola, ${user.name.split(' ')[0]}` : 'Modo growth'}
                 </Badge>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setShowRecommendedFunnels(true)}
+                  className="inline-flex items-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Funnels Recomendados
+                </Button>
                 <Button variant="primary" size="sm" onClick={handleCreateFunnel} className="inline-flex items-center gap-2">
                   <Sparkles className="w-4 h-4" />
                   Crear funnel
@@ -600,8 +756,165 @@ export default function FunnelsAdquisicionPage() {
               loading={loadingReferrals}
             />
           )}
+
+          {/* US-FA-07: A/B tests guiados por IA (copy, oferta, formato) */}
+          {funnels.length > 0 && (
+            <FunnelExperiments funnelId={funnels[0]?.id} />
+          )}
+
+          {/* US-FA-08: Identificación de cuellos de botella por etapa */}
+          {funnels.length > 0 && (
+            <FunnelPerformance funnelId={funnels[0]?.id} period={period} />
+          )}
+
+          {/* US-FA-020: Revenue proyectado por funnel según capacidad y precios */}
+          <ProjectedRevenueByFunnelComponent
+            data={projectedRevenue}
+            loading={loadingProjectedRevenue}
+          />
+
+          {/* US-FA-021: Alertas si un funnel de captación no genera leads suficientes antes de una campaña */}
+          <FunnelLeadGenerationAlerts
+            data={leadGenerationAlerts}
+            loading={loadingLeadGenerationAlerts}
+          />
+
+          {/* US-FA-022: Registrar notas cualitativas de cada funnel (feedback de prospectos) */}
+          {funnels.length > 0 && (
+            <FunnelQualitativeNotes
+              funnel={funnels[0]}
+              onRefresh={handleRefresh}
+            />
+          )}
+
+          {/* US-FA-023: IA aprende qué tipos de propuestas cierro mejor para priorizar ideas similares */}
+          <ProposalLearning period={period} />
+
+          {/* US-FA-026: Calendario de lanzamientos y fases del funnel */}
+          <FunnelLaunchCalendar
+            funnelIds={funnels.map((f) => f.id)}
+            onEventClick={(event) => {
+              console.log('Evento seleccionado:', event);
+              // Aquí puedes abrir un modal o navegar a los detalles del evento
+            }}
+          />
         </div>
       </div>
+
+      {/* US-FA-014: Generar funnels recomendados según especialidad y objetivos */}
+      <RecommendedFunnelsGenerator
+        isOpen={showRecommendedFunnels}
+        onClose={() => setShowRecommendedFunnels(false)}
+        onSelectFunnel={handleSelectRecommendedFunnel}
+      />
+
+      {/* US-FA-018: Convertir rápidamente un funnel en reto/comunidad */}
+      {selectedFunnelForConversion && (
+        <FunnelToChallengeConverter
+          funnelId={selectedFunnelForConversion.id}
+          funnelName={selectedFunnelForConversion.name}
+          isOpen={showChallengeConverter}
+          onClose={() => {
+            setShowChallengeConverter(false);
+            setSelectedFunnelForConversion(null);
+          }}
+          onSuccess={(response) => {
+            console.log('Funnel convertido exitosamente:', response);
+            setShowChallengeConverter(false);
+            setSelectedFunnelForConversion(null);
+            // Opcional: mostrar notificación de éxito
+          }}
+        />
+      )}
+
+      {/* US-FA-019: Conectar funnels con contenidos existentes (reels top, testimonios) */}
+      {selectedFunnelForContent && (
+        <FunnelContentConnector
+          funnelId={selectedFunnelForContent.id}
+          isOpen={showContentConnector}
+          onClose={() => {
+            setShowContentConnector(false);
+            setSelectedFunnelForContent(null);
+          }}
+          onSuccess={(response) => {
+            console.log('Contenidos conectados exitosamente:', response);
+            setShowContentConnector(false);
+            setSelectedFunnelForContent(null);
+            // Opcional: mostrar notificación de éxito
+          }}
+        />
+      )}
+
+      {/* US-FA-024: Actualizar funnels con insights de Comunidad & Fidelización (testimonios, NPS) */}
+      {selectedFunnelForInsights && (
+        <FunnelCommunityInsightsUpdater
+          funnel={selectedFunnelForInsights}
+          isOpen={showCommunityInsightsUpdater}
+          onClose={() => {
+            setShowCommunityInsightsUpdater(false);
+            setSelectedFunnelForInsights(null);
+          }}
+          onSuccess={(response) => {
+            console.log('Insights actualizados exitosamente:', response);
+            setShowCommunityInsightsUpdater(false);
+            setSelectedFunnelForInsights(null);
+            handleRefresh();
+            // Opcional: mostrar notificación de éxito
+          }}
+        />
+      )}
+
+      {/* US-FA-025: Plantillas IA para follow-up post registro (WhatsApp + email) con tono del usuario */}
+      {selectedFunnelForFollowUp && (
+        <PostRegistrationFollowUpTemplates
+          funnel={selectedFunnelForFollowUp}
+          isOpen={showFollowUpTemplates}
+          onClose={() => {
+            setShowFollowUpTemplates(false);
+            setSelectedFunnelForFollowUp(null);
+          }}
+          onSuccess={(response) => {
+            console.log('Plantilla aplicada exitosamente:', response);
+            setShowFollowUpTemplates(false);
+            setSelectedFunnelForFollowUp(null);
+            // Opcional: mostrar notificación de éxito
+          }}
+        />
+      )}
+
+      {/* US-FA-027: Compartir resumen IA del funnel con community manager */}
+      {selectedFunnelForSummary && showAISummary && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="max-w-4xl w-full my-8">
+            <FunnelAISummary
+              funnel={selectedFunnelForSummary}
+              onClose={() => {
+                setShowAISummary(false);
+                setSelectedFunnelForSummary(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* US-FA-021: Actualizar un funnel una vez finalizado con resultados reales y aprendizajes */}
+      {selectedFunnelForRetrospective && (
+        <FunnelRetrospectiveComponent
+          funnel={selectedFunnelForRetrospective}
+          isOpen={showRetrospective}
+          onClose={() => {
+            setShowRetrospective(false);
+            setSelectedFunnelForRetrospective(null);
+          }}
+          onSuccess={(retrospective) => {
+            console.log('Retrospectiva guardada exitosamente:', retrospective);
+            setShowRetrospective(false);
+            setSelectedFunnelForRetrospective(null);
+            handleRefresh();
+            // Opcional: mostrar notificación de éxito
+          }}
+        />
+      )}
     </div>
   );
 }

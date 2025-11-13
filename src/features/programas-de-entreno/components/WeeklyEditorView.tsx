@@ -1,5 +1,5 @@
 import { memo, useState, useMemo, useEffect } from 'react';
-import { Plus, AlertCircle, Tag, CheckSquare, Square, Eye, EyeOff, Calendar, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
+import { Plus, AlertCircle, Tag, CheckSquare, Square, Eye, EyeOff, Calendar, ChevronLeft, ChevronRight, BookOpen, Clock } from 'lucide-react';
 import { Button, Badge, Select } from '../../../components/componentsreutilizables';
 import type { DayPlan, DaySession } from '../types';
 import { InlineBlockEditor } from './InlineBlockEditor';
@@ -49,6 +49,14 @@ const dayGradients = [
 const parseFirstNumber = (value: string) => {
   const match = value.match(/\d+(?:[.,]\d+)?/);
   return match ? Number(match[0].replace(',', '.')) : null;
+};
+
+const getNumericValue = (value: string | number | null | undefined) => {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    return parseFirstNumber(value) ?? 0;
+  }
+  return 0;
 };
 
 function WeeklyEditorViewComponent({ 
@@ -454,26 +462,43 @@ function WeeklyEditorViewComponent({
         onApplyFilter={setSelectionFilter}
       />
 
-      <div className="grid gap-4 md:grid-cols-4 lg:grid-cols-7">
-        {weekDays.map((day, index) => (
-          <button
-            key={day}
-            type="button"
-            onClick={() => onViewDay(day)}
-            className={`flex flex-col items-center justify-center rounded-3xl bg-gradient-to-br ${dayGradients[index % dayGradients.length]} p-4 text-slate-800 shadow-md transition hover:-translate-y-1 hover:shadow-xl`}
-          >
-            <span className="text-sm text-slate-500">{day}</span>
-            <span className="mt-2 text-2xl font-semibold text-slate-900">{index + 22}</span>
-          </button>
-        ))}
+      <div className="overflow-x-auto">
+        <div className="grid min-w-max grid-flow-col gap-3 pb-1 sm:min-w-0 sm:grid-flow-row sm:grid-cols-3 lg:grid-cols-7">
+          {weekDays.map((day, index) => (
+            <button
+              key={day}
+              type="button"
+              onClick={() => onViewDay(day)}
+              className={`flex min-w-[160px] flex-col items-start justify-between rounded-3xl bg-gradient-to-br ${dayGradients[index % dayGradients.length]} px-5 py-4 text-left text-slate-800 shadow-md transition hover:-translate-y-1 hover:shadow-xl sm:min-w-0`}
+            >
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">{day}</span>
+              <div className="mt-3 flex items-center gap-2 text-sm text-slate-700">
+                <Calendar className="h-4 w-4" />
+                <span>Semana · Día {index + 1}</span>
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7 auto-rows-fr">
         {weekDays.map((day) => {
           const plan = weeklyPlan[day];
           const planSessions = plan?.sessions || [];
           const exceeds = dayExceedsTargets[day];
           const hasExceeded = exceeds && (exceeds.duration || exceeds.calories);
+          const totalMinutes = planSessions.reduce(
+            (total, session) => total + (parseFirstNumber(String(session.duration ?? '')) ?? 0),
+            0
+          );
+          const totalSeries = planSessions.reduce(
+            (total, session) => total + getNumericValue(session.series),
+            0
+          );
+          const totalReps = planSessions.reduce(
+            (total, session) => total + getNumericValue(session.repeticiones),
+            0
+          );
 
           return (
             <div
@@ -481,7 +506,7 @@ function WeeklyEditorViewComponent({
               onDragOver={handleDragOver(day)}
               onDragLeave={handleDragLeave}
               onDrop={handleDayDrop(day)}
-              className={`space-y-4 rounded-3xl border p-4 shadow-lg transition hover:-translate-y-1 hover:shadow-xl ${
+              className={`flex h-full flex-col rounded-3xl border p-4 shadow-lg transition hover:-translate-y-1 hover:shadow-xl ${
                 hasExceeded
                   ? 'border-red-300 bg-red-50/50 ring-2 ring-red-200'
                   : dragOverDay === day
@@ -489,17 +514,17 @@ function WeeklyEditorViewComponent({
                   : 'border-slate-200 bg-white'
               }`}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs font-medium uppercase text-slate-400">{day}</p>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-1 flex-col gap-1">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    <span>{day}</span>
                     {hasExceeded && (
                       <AlertCircle className="h-4 w-4 text-red-500" title="Excede objetivos semanales" />
                     )}
                   </div>
                   <h3 className="text-lg font-semibold text-slate-900">{plan?.focus ?? 'Sin plan'}</h3>
                   {plan?.tags && plan.tags.length > 0 && (
-                    <div className="mt-1 flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1">
                       {plan.tags.map((tag) => (
                         <Badge key={tag} size="xs" variant="secondary" className="text-[10px]">
                           <Tag className="mr-1 h-2.5 w-2.5" />
@@ -508,156 +533,208 @@ function WeeklyEditorViewComponent({
                       ))}
                     </div>
                   )}
+                </div>
+                <div className="flex flex-col items-end gap-1 text-xs text-slate-500">
+                  <div className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-600">
+                    <BookOpen className="h-4 w-4" />
+                    {planSessions.length} {planSessions.length === 1 ? 'sesión' : 'sesiones'}
+                  </div>
+                  <div className="flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-1 text-indigo-600">
+                    <Clock className="h-4 w-4" />
+                    {totalMinutes} min
+                  </div>
+                  {Boolean(totalSeries) && (
+                    <div className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-emerald-600">
+                      <CheckSquare className="h-4 w-4" />
+                      {totalSeries} series
+                    </div>
+                  )}
+                  {Boolean(totalReps) && (
+                    <div className="flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-amber-600">
+                      <Plus className="h-4 w-4" />
+                      {totalReps} reps
+                    </div>
+                  )}
                   {hasExceeded && (
-                    <div className="mt-1 flex flex-wrap gap-1 text-xs">
-                      {exceeds.duration && (
-                        <span className="rounded-full bg-red-100 px-2 py-0.5 text-red-700">Excede duración</span>
-                      )}
-                      {exceeds.calories && (
-                        <span className="rounded-full bg-red-100 px-2 py-0.5 text-red-700">Excede calorías</span>
-                      )}
+                    <div className="rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-600">
+                      Objetivo superado
                     </div>
                   )}
                 </div>
               </div>
-              <div className="space-y-3">
+              <div className="mt-4 flex flex-1 flex-col">
                 {planSessions.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-4 text-center text-slate-500">
+                  <div className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-4 text-center text-slate-500">
                     Sin sesiones. Crea o arrastra bloques.
                   </div>
                 ) : (
-                  planSessions.map((session, idx) => {
-                    const isSelected = selectedSessions.has(session.id);
-                    // User Story 2: Obtener icono y color según tipo de entrenamiento
-                    const TipoIcon = getTipoEntrenamientoIcon(session.tipoEntrenamiento);
-                    const sessionColorClass = getSessionColorClass(session.tipoEntrenamiento);
-                    
-                    return (
-                    <div
-                      key={session.id}
-                      className={`group flex cursor-move items-center justify-between gap-3 rounded-xl border p-3 shadow-sm transition hover:shadow-md ${
-                        isSelected
-                          ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200'
-                          : sessionColorClass || 'border-slate-200 bg-white hover:border-indigo-300'
-                      }`}
-                      draggable
-                      onDragStart={handleDragStart(day, idx)}
-                      onDragOver={handleDragOver(day)}
-                      onDrop={handleDrop(day, idx)}
-                      onClick={(e) => {
-                        // User Story 1: Toggle selection on click (with Ctrl/Cmd for multi-select)
-                        if (e.ctrlKey || e.metaKey) {
-                          e.stopPropagation();
-                          toggleSessionSelection(session.id);
-                        }
-                      }}
-                    >
-                      <div className="flex items-center gap-3">
-                        {/* User Story 1: Checkbox for multi-select */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleSessionSelection(session.id);
-                          }}
-                          className="flex-shrink-0 text-indigo-600 hover:text-indigo-700"
-                        >
-                          {isSelected ? (
-                            <CheckSquare className="h-5 w-5" />
-                          ) : (
-                            <Square className="h-5 w-5 text-slate-400" />
-                          )}
-                        </button>
-                        {/* User Story 2: Icono de tipo de entrenamiento o número de índice */}
-                        {session.tipoEntrenamiento ? (
-                          <div className="h-8 w-8 rounded-md bg-white border border-gray-200 flex items-center justify-center flex-shrink-0">
-                            <TipoIcon className="h-4 w-4 text-gray-700" />
-                          </div>
-                        ) : (
-                          <div className="h-6 w-6 rounded-md bg-slate-100 text-[11px] font-semibold text-slate-500 flex items-center justify-center">
-                            {idx + 1}
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-semibold text-slate-900">{session.block}</div>
-                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                            <span>{session.time}</span>
-                            <span
-                              className="cursor-pointer rounded px-1 hover:bg-indigo-50"
-                              onDoubleClick={(e) => handleDoubleClick(day, session, 'duration', e)}
-                              title="Doble clic para editar duración"
-                            >
-                              {session.duration}
-                            </span>
-                            <span>·</span>
-                            <span>{session.modality}</span>
-                            {(session.series || session.repeticiones) && (
-                              <>
-                                <span>·</span>
-                                <span
-                                  className="cursor-pointer rounded px-1 hover:bg-indigo-50"
-                                  onDoubleClick={(e) => handleDoubleClick(day, session, 'series', e)}
-                                  title="Doble clic para editar series"
-                                >
-                                  {session.series || '?'} series
-                                </span>
-                                {session.repeticiones && (
-                                  <span
-                                    className="cursor-pointer rounded px-1 hover:bg-indigo-50"
-                                    onDoubleClick={(e) => handleDoubleClick(day, session, 'repeticiones', e)}
-                                    title="Doble clic para editar repeticiones"
-                                  >
-                                    x {session.repeticiones}
-                                  </span>
+                  <div className="flex flex-1 flex-col gap-3 overflow-hidden">
+                    <div className="flex-1 space-y-3 overflow-y-auto pr-1 md:pr-0">
+                      {planSessions.map((session, idx) => {
+                        const isSelected = selectedSessions.has(session.id);
+                        // User Story 2: Obtener icono y color según tipo de entrenamiento
+                        const TipoIcon = getTipoEntrenamientoIcon(session.tipoEntrenamiento);
+                        const sessionColorClass = getSessionColorClass(session.tipoEntrenamiento);
+                        
+                        return (
+                          <div
+                            key={session.id}
+                            className={`group flex cursor-move flex-col gap-3 rounded-xl border p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+                              isSelected
+                                ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200'
+                                : sessionColorClass || 'border-slate-200 bg-white hover:border-indigo-300'
+                            }`}
+                            draggable
+                            onDragStart={handleDragStart(day, idx)}
+                            onDragOver={handleDragOver(day)}
+                            onDrop={handleDrop(day, idx)}
+                            onClick={(e) => {
+                              // User Story 1: Toggle selection on click (with Ctrl/Cmd for multi-select)
+                              if (e.ctrlKey || e.metaKey) {
+                                e.stopPropagation();
+                                toggleSessionSelection(session.id);
+                              }
+                            }}
+                          >
+                            <div className="flex flex-wrap items-start gap-3">
+                              {/* User Story 1: Checkbox for multi-select */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleSessionSelection(session.id);
+                                }}
+                                className="flex-shrink-0 text-indigo-600 transition hover:text-indigo-700"
+                              >
+                                {isSelected ? (
+                                  <CheckSquare className="h-5 w-5" />
+                                ) : (
+                                  <Square className="h-5 w-5 text-slate-400" />
                                 )}
-                              </>
-                            )}
-                            <span>·</span>
-                            <span
-                              className="cursor-pointer rounded px-1 hover:bg-indigo-50"
-                              onDoubleClick={(e) => handleDoubleClick(day, session, 'intensity', e)}
-                              title="Doble clic para editar intensidad"
-                            >
-                              {session.intensity}
-                            </span>
+                              </button>
+                              {/* User Story 2: Icono de tipo de entrenamiento o número de índice */}
+                              {session.tipoEntrenamiento ? (
+                                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white shadow-sm">
+                                  <TipoIcon className="h-5 w-5 text-slate-600" />
+                                </div>
+                              ) : (
+                                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-slate-100 text-xs font-semibold text-slate-500">
+                                  {idx + 1}
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1 space-y-1">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="truncate text-sm font-semibold text-slate-900">{session.block}</div>
+                                  <Button
+                                    variant="ghost"
+                                    size="xs"
+                                    className="hidden whitespace-nowrap text-xs text-indigo-600 hover:text-indigo-700 group-hover:flex"
+                                    onClick={() => onViewDay(day)}
+                                    leftIcon={<Eye className="h-3.5 w-3.5" />}
+                                  >
+                                    Ver día
+                                  </Button>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                                  {session.time && <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{session.time}</span>}
+                                  <span
+                                    className="cursor-pointer rounded px-1 py-0.5 transition hover:bg-indigo-100"
+                                    onDoubleClick={(e) => handleDoubleClick(day, session, 'duration', e)}
+                                    title="Doble clic para editar duración"
+                                  >
+                                    {session.duration}
+                                  </span>
+                                  <span className="h-1 w-1 rounded-full bg-slate-300" />
+                                  <span>{session.modality}</span>
+                                  {(session.series || session.repeticiones) && (
+                                    <>
+                                      <span className="h-1 w-1 rounded-full bg-slate-300" />
+                                      <span
+                                        className="cursor-pointer rounded px-1 py-0.5 transition hover:bg-indigo-100"
+                                        onDoubleClick={(e) => handleDoubleClick(day, session, 'series', e)}
+                                        title="Doble clic para editar series"
+                                      >
+                                        {session.series || '?'} series
+                                      </span>
+                                      {session.repeticiones && (
+                                        <span
+                                          className="cursor-pointer rounded px-1 py-0.5 transition hover:bg-indigo-100"
+                                          onDoubleClick={(e) => handleDoubleClick(day, session, 'repeticiones', e)}
+                                          title="Doble clic para editar repeticiones"
+                                        >
+                                          x {session.repeticiones}
+                                        </span>
+                                      )}
+                                    </>
+                                  )}
+                                  <span className="h-1 w-1 rounded-full bg-slate-300" />
+                                  <span
+                                    className="cursor-pointer rounded px-1 py-0.5 transition hover:bg-indigo-100"
+                                    onDoubleClick={(e) => handleDoubleClick(day, session, 'intensity', e)}
+                                    title="Doble clic para editar intensidad"
+                                  >
+                                    {session.intensity}
+                                  </span>
+                                </div>
+                                {/* User Story 2: Mostrar tipo de entrenamiento y grupos musculares */}
+                                <div className="flex flex-wrap gap-1">
+                                  {session.tipoEntrenamiento && (
+                                    <Badge size="xs" variant="secondary" className="text-[10px]">
+                                      <TipoIcon className="mr-1 h-2.5 w-2.5" />
+                                      {session.tipoEntrenamiento}
+                                    </Badge>
+                                  )}
+                                  {session.gruposMusculares && session.gruposMusculares.map((grupo, gIdx) => {
+                                    const GrupoIcon = getGrupoMuscularIcon(grupo);
+                                    return (
+                                      <Badge
+                                        key={gIdx}
+                                        size="xs"
+                                        variant="secondary"
+                                        className={`text-[10px] ${getGrupoMuscularColor(grupo)}`}
+                                      >
+                                        <GrupoIcon className="mr-1 h-2.5 w-2.5" />
+                                        {grupo}
+                                      </Badge>
+                                    );
+                                  })}
+                                  {session.tags && session.tags.map((tag) => (
+                                    <Badge key={tag} size="xs" variant="secondary" className="text-[10px]">
+                                      <Tag className="mr-1 h-2.5 w-2.5" />
+                                      {tag}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between text-xs text-slate-400">
+                              <span className="hidden sm:inline">Arrastra para reordenar</span>
+                              <Button
+                                variant="ghost"
+                                size="xs"
+                                className="sm:hidden text-xs text-indigo-600"
+                                onClick={() => onViewDay(day)}
+                                leftIcon={<Eye className="h-3.5 w-3.5" />}
+                              >
+                                Ver día
+                              </Button>
+                            </div>
                           </div>
-                          {/* User Story 2: Mostrar tipo de entrenamiento y grupos musculares */}
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {session.tipoEntrenamiento && (
-                              <Badge size="xs" variant="secondary" className="text-[10px]">
-                                <TipoIcon className="mr-1 h-2.5 w-2.5" />
-                                {session.tipoEntrenamiento}
-                              </Badge>
-                            )}
-                            {session.gruposMusculares && session.gruposMusculares.map((grupo, gIdx) => {
-                              const GrupoIcon = getGrupoMuscularIcon(grupo);
-                              return (
-                                <Badge
-                                  key={gIdx}
-                                  size="xs"
-                                  variant="secondary"
-                                  className={`text-[10px] ${getGrupoMuscularColor(grupo)}`}
-                                >
-                                  <GrupoIcon className="mr-1 h-2.5 w-2.5" />
-                                  {grupo}
-                                </Badge>
-                              );
-                            })}
-                            {session.tags && session.tags.map((tag) => (
-                              <Badge key={tag} size="xs" variant="secondary" className="text-[10px]">
-                                <Tag className="mr-1 h-2.5 w-2.5" />
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                      <Button variant="ghost" size="sm" leftIcon={<Plus className="h-4 w-4" />}>
-                        Ver día
+                        );
+                      })}
+                    </div>
+                    <div className="mt-2 flex justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs font-medium"
+                        onClick={() => onViewDay(day)}
+                        leftIcon={<Eye className="h-4 w-4" />}
+                      >
+                        Abrir detalle del día
                       </Button>
                     </div>
-                    );
-                  })
+                  </div>
                 )}
               </div>
             </div>

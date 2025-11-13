@@ -28,9 +28,11 @@ export {
   fetchCentralAutomationsPanel,
   fetchMessageAlertsDashboard,
   fetchPreferredSendingSchedulesDashboard,
+  fetchClientActionTriggers,
+  fetchAIReminderAutomation,
+  fetchJourneyGapDetectorDashboard,
+  fetchChannelRecommendationsDashboard,
 } from './missionControl';
-
-
 
 
 

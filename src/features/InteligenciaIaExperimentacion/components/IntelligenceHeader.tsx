@@ -8,10 +8,11 @@ import { ObjectivesSection } from './ObjectivesSection';
 import { CampaignExperimentSearch } from './CampaignExperimentSearch';
 import { HighlightedMetric } from './HighlightedMetric';
 import { SectorTrendsLink } from './SectorTrendsLink';
-import { IntelligenceOverviewResponse } from '../types';
+import { IntelligenceOverviewResponse, DecisionStyle } from '../types';
 
 interface IntelligenceHeaderProps {
   overview?: IntelligenceOverviewResponse | null;
+  decisionStyle?: DecisionStyle;
   onCreatePlaybook?: () => void;
   onLaunchExperiment?: () => void;
   onViewFeedback?: () => void;
@@ -24,6 +25,7 @@ interface IntelligenceHeaderProps {
 
 export const IntelligenceHeader: React.FC<IntelligenceHeaderProps> = ({
   overview,
+  decisionStyle,
   onCreatePlaybook,
   onLaunchExperiment,
   onViewFeedback,
@@ -190,6 +192,7 @@ export const IntelligenceHeader: React.FC<IntelligenceHeaderProps> = ({
       {overview && (
         <IntelligentRecommendations
           overview={overview}
+          decisionStyle={decisionStyle}
           onCreatePlaybook={onCreatePlaybook}
           onLaunchExperiment={onLaunchExperiment}
           onViewFeedback={onViewFeedback}
@@ -200,8 +203,6 @@ export const IntelligenceHeader: React.FC<IntelligenceHeaderProps> = ({
 };
 
 export default IntelligenceHeader;
-
-
 
 
 

@@ -10,9 +10,27 @@ export { ClientTransformationPostGenerator } from './ClientTransformationPostGen
 export { FAQContentGenerator } from './FAQContentGenerator';
 export { ContentLeadAnalytics } from './ContentLeadAnalytics';
 export { InternalContentIdeasGenerator } from './InternalContentIdeasGenerator';
+export { CreativeVoiceConfig } from './CreativeVoiceConfig';
+export { StarFormatsConfig } from './StarFormatsConfig';
+export { TrainerNichesConfig } from './TrainerNichesConfig';
+export { WeeklyAICalendarComponent } from './WeeklyAICalendar';
+export { VideoScriptGenerator } from './VideoScriptGenerator';
+export { AITemplateLibrary } from './AITemplateLibrary';
+export { CalendarGapAlerts } from './CalendarGapAlerts';
+export { LaunchOrchestrator } from './LaunchOrchestrator';
+export { ContentRecycler } from './ContentRecycler';
+export { ApprovedContentToCampaigns } from './ApprovedContentToCampaigns';
+export { ContentToFunnelsLinker } from './ContentToFunnelsLinker';
+export { EventChallengeContentKit } from './EventChallengeContentKit';
+export { ContentAIFeedback } from './ContentAIFeedback';
+export { ContentLearningsManager } from './ContentLearningsManager';
+export { ContentTeamAssignment } from './ContentTeamAssignment';
+export { MobileContentApproval } from './MobileContentApproval';
+export { BrandKitGenerator } from './BrandKitGenerator';
+export { VisualStyleLearning } from './VisualStyleLearning';
+export { SaturatedTopicsDetector } from './SaturatedTopicsDetector';
+export { PostCampaignInsights } from './PostCampaignInsights';
 export { ICON_MAP } from './iconMap';
-
-
 
 
 

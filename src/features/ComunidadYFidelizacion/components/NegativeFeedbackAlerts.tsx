@@ -12,9 +12,13 @@ import {
   Lightbulb,
   ExternalLink,
   CheckCircle2,
+  Sparkles,
+  Copy,
+  RefreshCw,
 } from 'lucide-react';
 import { Card, Badge, Button, Modal } from '../../../components/componentsreutilizables';
-import { NegativeFeedbackAlert, ClientHistory, Session, ActionSuggestion } from '../types';
+import { NegativeFeedbackAlert, ClientHistory, Session, ActionSuggestion, PersonalizedResponse } from '../types';
+import { NegativeFeedbackResponsesAPI } from '../api/negativeFeedbackResponses';
 
 interface NegativeFeedbackAlertsProps {
   alerts: NegativeFeedbackAlert[];
@@ -33,6 +37,9 @@ export function NegativeFeedbackAlerts({
 }: NegativeFeedbackAlertsProps) {
   const [selectedAlert, setSelectedAlert] = useState<NegativeFeedbackAlert | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [personalizedResponse, setPersonalizedResponse] = useState<PersonalizedResponse | null>(null);
+  const [isGeneratingResponse, setIsGeneratingResponse] = useState(false);
+  const [selectedTone, setSelectedTone] = useState<PersonalizedResponse['tone'] | null>(null);
 
   const urgentAlerts = alerts.filter((a) => a.status === 'pending' && a.priority === 'urgent');
   const recentAlerts = alerts.filter((a) => a.status === 'pending').slice(0, 5);
@@ -40,6 +47,37 @@ export function NegativeFeedbackAlerts({
   const handleViewDetails = (alert: NegativeFeedbackAlert) => {
     setSelectedAlert(alert);
     setIsDetailModalOpen(true);
+    // Si ya tiene respuesta personalizada, usarla; si no, generar una
+    if (alert.personalizedResponse) {
+      setPersonalizedResponse(alert.personalizedResponse);
+      setSelectedTone(alert.personalizedResponse.tone);
+    } else {
+      generatePersonalizedResponse(alert);
+    }
+  };
+
+  const generatePersonalizedResponse = async (alert: NegativeFeedbackAlert, tone?: PersonalizedResponse['tone']) => {
+    setIsGeneratingResponse(true);
+    try {
+      let response: PersonalizedResponse;
+      if (tone && selectedTone !== tone) {
+        response = await NegativeFeedbackResponsesAPI.regenerateWithTone(alert, tone);
+        setSelectedTone(tone);
+      } else {
+        response = await NegativeFeedbackResponsesAPI.generatePersonalizedResponse(alert);
+        setSelectedTone(response.tone);
+      }
+      setPersonalizedResponse(response);
+    } catch (error) {
+      console.error('Error generando respuesta personalizada:', error);
+    } finally {
+      setIsGeneratingResponse(false);
+    }
+  };
+
+  const handleCopyMessage = (message: string) => {
+    navigator.clipboard.writeText(message);
+    // Aquí podrías agregar una notificación de éxito
   };
 
   const handleContact = (channel: 'whatsapp' | 'email' | 'phone') => {
@@ -203,6 +241,8 @@ export function NegativeFeedbackAlerts({
         onClose={() => {
           setIsDetailModalOpen(false);
           setSelectedAlert(null);
+          setPersonalizedResponse(null);
+          setSelectedTone(null);
         }}
         title={`Alerta: ${selectedAlert?.clientName}`}
         size="xl"
@@ -329,6 +369,123 @@ export function NegativeFeedbackAlerts({
                 </div>
               </div>
             )}
+
+            {/* Respuesta personalizada sugerida */}
+            <div className="rounded-lg border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-900/10 p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <h4 className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+                    Respuesta Personalizada Sugerida
+                  </h4>
+                </div>
+                {isGeneratingResponse && (
+                  <RefreshCw className="w-4 h-4 text-emerald-600 dark:text-emerald-400 animate-spin" />
+                )}
+              </div>
+
+              {isGeneratingResponse && !personalizedResponse ? (
+                <div className="text-sm text-emerald-700 dark:text-emerald-300">
+                  Generando respuesta personalizada con IA...
+                </div>
+              ) : personalizedResponse ? (
+                <div className="space-y-4">
+                  {/* Selector de tono */}
+                  <div>
+                    <label className="block text-xs font-medium text-emerald-900 dark:text-emerald-100 mb-2">
+                      Tono de la respuesta:
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {(['empatico', 'profesional', 'cercano', 'motivacional'] as const).map((tone) => (
+                        <Button
+                          key={tone}
+                          variant={selectedTone === tone ? 'default' : 'secondary'}
+                          size="sm"
+                          onClick={() => generatePersonalizedResponse(selectedAlert!, tone)}
+                          disabled={isGeneratingResponse}
+                        >
+                          {tone.charAt(0).toUpperCase() + tone.slice(1)}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Mensaje sugerido */}
+                  <div className="rounded-lg border border-emerald-300 dark:border-emerald-800 bg-white dark:bg-slate-800 p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="green" size="sm">
+                          {personalizedResponse.channel === 'phone' && <Phone className="w-3 h-3 mr-1" />}
+                          {personalizedResponse.channel === 'whatsapp' && <MessageCircle className="w-3 h-3 mr-1" />}
+                          {personalizedResponse.channel === 'email' && <Mail className="w-3 h-3 mr-1" />}
+                          {personalizedResponse.channel}
+                        </Badge>
+                        <Badge variant="secondary" size="sm">
+                          {personalizedResponse.tone}
+                        </Badge>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleCopyMessage(personalizedResponse.suggestedMessage)}
+                        title="Copiar mensaje"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
+                      {personalizedResponse.suggestedMessage}
+                    </p>
+                  </div>
+
+                  {/* Puntos clave */}
+                  {personalizedResponse.keyPoints && personalizedResponse.keyPoints.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-emerald-900 dark:text-emerald-100 mb-2">
+                        Puntos clave a mencionar:
+                      </p>
+                      <ul className="space-y-1">
+                        {personalizedResponse.keyPoints.map((point, index) => (
+                          <li key={index} className="text-xs text-emerald-700 dark:text-emerald-300 flex items-start gap-2">
+                            <span className="text-emerald-500 mt-0.5">•</span>
+                            <span>{point}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Razonamiento */}
+                  {personalizedResponse.reasoning && (
+                    <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-3">
+                      <p className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        ¿Por qué esta respuesta?
+                      </p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">
+                        {personalizedResponse.reasoning}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Seguimiento sugerido */}
+                  {personalizedResponse.suggestedFollowUp && (
+                    <div className="rounded-lg border border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-900/10 p-3">
+                      <p className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-1 flex items-center gap-2">
+                        <Clock className="w-3 h-3" />
+                        Seguimiento sugerido:
+                      </p>
+                      <p className="text-xs text-blue-700 dark:text-blue-300">
+                        {personalizedResponse.suggestedFollowUp}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-sm text-slate-500 dark:text-slate-400">
+                  No se pudo generar una respuesta personalizada.
+                </div>
+              )}
+            </div>
 
             {/* Sugerencias de acción */}
             {selectedAlert.actionSuggestions && selectedAlert.actionSuggestions.length > 0 && (

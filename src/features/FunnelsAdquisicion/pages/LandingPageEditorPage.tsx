@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, LayoutTemplate, Palette, Sparkles, Zap } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import { Badge, Button, Card, Input, Tabs, Textarea } from '../../../components/componentsreutilizables';
+import { AICopyGenerator, IntelligentFormsBuilder } from '../components';
 import grapesjs from 'grapesjs';
 import 'grapesjs/dist/css/grapes.min.css';
 
 type DeviceName = 'Desktop' | 'Tablet' | 'Mobile';
 
-type LandingEditorTabId = 'estructura' | 'componentes' | 'seo';
+type LandingEditorTabId = 'estructura' | 'componentes' | 'seo' | 'copy-ia' | 'formularios';
 
 const DEVICE_CANVAS_CONFIG: Record<DeviceName, { width: string; bodyPadding: string }> = {
   Desktop: { width: '1120px', bodyPadding: '48px 0' },
@@ -39,6 +40,16 @@ export default function LandingPageEditorPage() {
         id: 'estructura' as LandingEditorTabId,
         label: 'Estructura & layout',
         icon: <LayoutTemplate className="h-4 w-4" />,
+      },
+      {
+        id: 'copy-ia' as LandingEditorTabId,
+        label: 'Copy IA',
+        icon: <Sparkles className="h-4 w-4" />,
+      },
+      {
+        id: 'formularios' as LandingEditorTabId,
+        label: 'Formularios',
+        icon: <Zap className="h-4 w-4" />,
       },
       {
         id: 'componentes' as LandingEditorTabId,
@@ -675,6 +686,18 @@ export default function LandingPageEditorPage() {
                   <li>• CTA flotante en mobile con icono Spark.</li>
                 </ul>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'copy-ia' && (
+            <div className="space-y-6">
+              <AICopyGenerator landingPageId={undefined} />
+            </div>
+          )}
+
+          {activeTab === 'formularios' && (
+            <div className="space-y-6">
+              <IntelligentFormsBuilder landingPageId={undefined} />
             </div>
           )}
 

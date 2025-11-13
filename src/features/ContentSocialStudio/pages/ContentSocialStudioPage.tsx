@@ -13,30 +13,179 @@ import {
   ContentLeadAnalytics,
   FAQContentGenerator,
   InternalContentIdeasGenerator,
+  CreativeVoiceConfig,
+  StarFormatsConfig,
+  TrainerNichesConfig,
+  WeeklyAICalendarComponent,
+  VideoScriptGenerator,
   ICON_MAP,
   ModuleHighlights,
   PlannerSchedulePreview,
   PromotionalContentTemplates,
   SyndicationOverview,
   VideoStudioSpotlight,
+  AITemplateLibrary,
+  CalendarGapAlerts,
+  LaunchOrchestrator,
+  ContentRecycler,
+  ApprovedContentToCampaigns,
+  ContentToFunnelsLinker,
+  EventChallengeContentKit,
+  ContentAIFeedback,
+  ContentLearningsManager,
+  ContentTeamAssignment,
+  MobileContentApproval,
+  BrandKitGenerator,
+  VisualStyleLearning,
+  SaturatedTopicsDetector,
+  PostCampaignInsights,
 } from '../components';
 
-const sectionTabs = [
+type SectionGroupId =
+  | 'overview'
+  | 'planning'
+  | 'video-production'
+  | 'library-distribution'
+  | 'creative-ai'
+  | 'brand-identity'
+  | 'promotions-launch'
+  | 'intelligence-insights'
+  | 'team-operations'
+  | 'community-resources';
+
+type SubTabId =
+  | 'planner'
+  | 'ai-calendar'
+  | 'video-studio'
+  | 'video-scripts'
+  | 'clipper'
+  | 'content-recycler'
+  | 'approved-to-campaigns'
+  | 'content-to-funnels'
+  | 'ai-workbench'
+  | 'ai-templates'
+  | 'internal-ideas'
+  | 'ai-feedback'
+  | 'brand-profile'
+  | 'creative-voice'
+  | 'star-formats'
+  | 'trainer-niches'
+  | 'brand-kits'
+  | 'visual-style'
+  | 'promotional'
+  | 'launch-orchestration'
+  | 'event-kits'
+  | 'lead-analytics'
+  | 'saturated-topics'
+  | 'post-campaign-insights'
+  | 'learnings'
+  | 'team-assignment'
+  | 'mobile-approval'
+  | 'client-transformations'
+  | 'faq-content'
+  | 'syndication';
+
+interface SectionGroup {
+  id: SectionGroupId;
+  label: string;
+  subTabs?: { id: SubTabId; label: string }[];
+}
+
+const SECTION_GROUPS: readonly SectionGroup[] = [
   { id: 'overview', label: 'Overview' },
-  { id: 'planner', label: 'Planner RRSS' },
-  { id: 'video', label: 'Video Studio' },
-  { id: 'clipper', label: 'Biblioteca' },
-  { id: 'syndication', label: 'Creator Syndication' },
-  { id: 'ai', label: 'IA Creativa' },
-  { id: 'brand-profile', label: 'Perfil de Marca' },
-  { id: 'promotional', label: 'Contenido Promocional' },
-  { id: 'transformations', label: 'Transformaciones' },
-  { id: 'faq-content', label: 'Contenido FAQ' },
-  { id: 'lead-analytics', label: 'Analytics de Leads' },
-  { id: 'internal-content', label: 'Contenido Interno' },
+  {
+    id: 'planning',
+    label: 'Planificación',
+    subTabs: [
+      { id: 'planner', label: 'Agenda & Gaps' },
+      { id: 'ai-calendar', label: 'Calendario IA' },
+    ],
+  },
+  {
+    id: 'video-production',
+    label: 'Video & Producción',
+    subTabs: [
+      { id: 'video-studio', label: 'Video Studio' },
+      { id: 'video-scripts', label: 'Scripts de Video' },
+    ],
+  },
+  {
+    id: 'library-distribution',
+    label: 'Biblioteca & Distribución',
+    subTabs: [
+      { id: 'clipper', label: 'Biblioteca' },
+      { id: 'content-recycler', label: 'Reciclaje' },
+      { id: 'approved-to-campaigns', label: 'A Campañas' },
+      { id: 'content-to-funnels', label: 'A Funnels' },
+    ],
+  },
+  {
+    id: 'creative-ai',
+    label: 'IA Creativa',
+    subTabs: [
+      { id: 'ai-workbench', label: 'Workbench' },
+      { id: 'ai-templates', label: 'Plantillas' },
+      { id: 'internal-ideas', label: 'Ideas Internas' },
+      { id: 'ai-feedback', label: 'Feedback IA' },
+    ],
+  },
+  {
+    id: 'brand-identity',
+    label: 'Marca & Voz',
+    subTabs: [
+      { id: 'brand-profile', label: 'Perfil de Marca' },
+      { id: 'creative-voice', label: 'Voz Creativa' },
+      { id: 'star-formats', label: 'Formatos Estrella' },
+      { id: 'trainer-niches', label: 'Nichos Principales' },
+      { id: 'brand-kits', label: 'Kits de Marca' },
+      { id: 'visual-style', label: 'Estilos Visuales' },
+    ],
+  },
+  {
+    id: 'promotions-launch',
+    label: 'Promos & Lanzamientos',
+    subTabs: [
+      { id: 'promotional', label: 'Contenido Promocional' },
+      { id: 'launch-orchestration', label: 'Orquestación' },
+      { id: 'event-kits', label: 'Kits Eventos/Retos' },
+    ],
+  },
+  {
+    id: 'intelligence-insights',
+    label: 'Inteligencia & Insights',
+    subTabs: [
+      { id: 'lead-analytics', label: 'Analytics Leads' },
+      { id: 'saturated-topics', label: 'Temas Saturados' },
+      { id: 'post-campaign-insights', label: 'Post-Campaña' },
+      { id: 'learnings', label: 'Aprendizajes' },
+    ],
+  },
+  {
+    id: 'team-operations',
+    label: 'Equipo & Operaciones',
+    subTabs: [
+      { id: 'team-assignment', label: 'Asignación' },
+      { id: 'mobile-approval', label: 'Aprobación Móvil' },
+    ],
+  },
+  {
+    id: 'community-resources',
+    label: 'Comunidad & Recursos',
+    subTabs: [
+      { id: 'client-transformations', label: 'Transformaciones' },
+      { id: 'faq-content', label: 'FAQ' },
+      { id: 'syndication', label: 'Creator Syndication' },
+    ],
+  },
 ] as const;
 
-type SectionTabId = typeof sectionTabs[number]['id'];
+const DEFAULT_SUB_TAB_BY_GROUP: Record<SectionGroupId, SubTabId | null> = SECTION_GROUPS.reduce(
+  (acc, group) => {
+    acc[group.id] = group.subTabs?.[0]?.id ?? null;
+    return acc;
+  },
+  {} as Record<SectionGroupId, SubTabId | null>
+);
 
 const emptySnapshot: ContentSocialSnapshot = {
   metrics: [],
@@ -49,6 +198,8 @@ const emptySnapshot: ContentSocialSnapshot = {
   clientTransformations: { availableClients: [], generatedPosts: [], templates: [] },
   faqContent: { topQuestions: [], contentIdeas: [] },
   promotionalContent: { templates: [], availablePlans: [], activeOffers: [], generatedContent: [] },
+  contentAssignments: { assignments: [], availableTeamMembers: [], pendingAssignments: 0, inProgressAssignments: 0 },
+  contentApprovals: { pendingApprovals: [], pendingCount: 0, recentApprovals: [] },
 };
 
 export default function ContentSocialStudioPage() {
@@ -57,7 +208,31 @@ export default function ContentSocialStudioPage() {
   const [snapshot, setSnapshot] = useState<ContentSocialSnapshot>(emptySnapshot);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [sectionTab, setSectionTab] = useState<SectionTabId>('overview');
+  const [sectionTab, setSectionTab] = useState<SectionGroupId>('overview');
+  const [subTabsByGroup, setSubTabsByGroup] = useState<Record<SectionGroupId, SubTabId | null>>(
+    DEFAULT_SUB_TAB_BY_GROUP
+  );
+
+  const handleGroupChange = useCallback((groupId: SectionGroupId) => {
+    setSectionTab(groupId);
+    const defaultSubTab = DEFAULT_SUB_TAB_BY_GROUP[groupId];
+    if (defaultSubTab) {
+      setSubTabsByGroup((prev) => ({
+        ...prev,
+        [groupId]: prev[groupId] ?? defaultSubTab,
+      }));
+    }
+  }, []);
+
+  const handleSubTabChange = useCallback(
+    (subTabId: SubTabId) => {
+      setSubTabsByGroup((prev) => ({
+        ...prev,
+        [sectionTab]: subTabId,
+      }));
+    },
+    [sectionTab]
+  );
 
   const loadSnapshot = useCallback(
     async () => {
@@ -109,35 +284,177 @@ export default function ContentSocialStudioPage() {
     loadSnapshot();
   };
 
-  const renderSectionContent = () => {
+  const currentGroup = SECTION_GROUPS.find((group) => group.id === sectionTab);
+  const activeSubTab = currentGroup?.subTabs?.length
+    ? subTabsByGroup[sectionTab] ?? currentGroup.subTabs[0].id
+    : null;
+
+  const renderGroupContent = () => {
     switch (sectionTab) {
-      case 'planner':
-        return <PlannerSchedulePreview planner={snapshot.planner} loading={loading} />;
-      case 'video':
-        return <VideoStudioSpotlight video={snapshot.video} loading={loading} />;
-      case 'clipper':
-        return <ClipperHighlights clipper={snapshot.clipper} loading={loading} />;
-      case 'syndication':
-        return <SyndicationOverview syndication={snapshot.syndication} loading={loading} />;
-      case 'ai':
-        return <AIContentWorkbench ai={snapshot.ai} loading={loading} />;
-      case 'transformations':
-        return <ClientTransformationPostGenerator loading={loading} />;
-      case 'faq-content':
-        return <FAQContentGenerator loading={loading} />;
-      case 'brand-profile':
-        return <BrandProfileConfig loading={loading} />;
-      case 'promotional':
-        return <PromotionalContentTemplates loading={loading} />;
-      case 'lead-analytics':
-        return <ContentLeadAnalytics loading={loading} period={period} />;
-      case 'internal-content':
-        return <InternalContentIdeasGenerator loading={loading} />;
+      case 'planning': {
+        const subTab = activeSubTab ?? 'planner';
+        if (subTab === 'ai-calendar') {
+          return <WeeklyAICalendarComponent loading={loading} />;
+        }
+        return (
+          <div className="space-y-6">
+            <CalendarGapAlerts
+              posts={snapshot.planner.upcoming}
+              loading={loading}
+              onGapFilled={(post) => {
+                setSnapshot((prev) => ({
+                  ...prev,
+                  planner: {
+                    ...prev.planner,
+                    upcoming: [...prev.planner.upcoming, post],
+                  },
+                }));
+              }}
+              onGapsFilled={(posts) => {
+                setSnapshot((prev) => ({
+                  ...prev,
+                  planner: {
+                    ...prev.planner,
+                    upcoming: [...prev.planner.upcoming, ...posts],
+                  },
+                }));
+              }}
+            />
+            <PlannerSchedulePreview planner={snapshot.planner} loading={loading} />
+          </div>
+        );
+      }
+      case 'video-production': {
+        const subTab = activeSubTab ?? 'video-studio';
+        switch (subTab) {
+          case 'video-scripts':
+            return <VideoScriptGenerator loading={loading} />;
+          case 'video-studio':
+          default:
+            return <VideoStudioSpotlight video={snapshot.video} loading={loading} />;
+        }
+      }
+      case 'library-distribution': {
+        const subTab = activeSubTab ?? 'clipper';
+        switch (subTab) {
+          case 'content-recycler':
+            return <ContentRecycler loading={loading} />;
+          case 'approved-to-campaigns':
+            return <ApprovedContentToCampaigns loading={loading} />;
+          case 'content-to-funnels':
+            return <ContentToFunnelsLinker loading={loading} />;
+          case 'clipper':
+          default:
+            return <ClipperHighlights clipper={snapshot.clipper} loading={loading} />;
+        }
+      }
+      case 'creative-ai': {
+        const subTab = activeSubTab ?? 'ai-workbench';
+        switch (subTab) {
+          case 'ai-templates':
+            return <AITemplateLibrary loading={loading} />;
+          case 'internal-ideas':
+            return <InternalContentIdeasGenerator loading={loading} />;
+          case 'ai-feedback':
+            return <ContentAIFeedback loading={loading} />;
+          case 'ai-workbench':
+          default:
+            return <AIContentWorkbench ai={snapshot.ai} loading={loading} />;
+        }
+      }
+      case 'brand-identity': {
+        const subTab = activeSubTab ?? 'brand-profile';
+        switch (subTab) {
+          case 'creative-voice':
+            return <CreativeVoiceConfig loading={loading} />;
+          case 'star-formats':
+            return <StarFormatsConfig loading={loading} />;
+          case 'trainer-niches':
+            return <TrainerNichesConfig loading={loading} />;
+          case 'brand-kits':
+            return <BrandKitGenerator loading={loading} />;
+          case 'visual-style':
+            return <VisualStyleLearning loading={loading} />;
+          case 'brand-profile':
+          default:
+            return <BrandProfileConfig loading={loading} />;
+        }
+      }
+      case 'promotions-launch': {
+        const subTab = activeSubTab ?? 'promotional';
+        switch (subTab) {
+          case 'launch-orchestration':
+            return <LaunchOrchestrator loading={loading} />;
+          case 'event-kits':
+            return <EventChallengeContentKit loading={loading} />;
+          case 'promotional':
+          default:
+            return <PromotionalContentTemplates loading={loading} />;
+        }
+      }
+      case 'intelligence-insights': {
+        const subTab = activeSubTab ?? 'lead-analytics';
+        switch (subTab) {
+          case 'saturated-topics':
+            return <SaturatedTopicsDetector loading={loading} period={period} />;
+          case 'post-campaign-insights':
+            return <PostCampaignInsights loading={loading} period={period} />;
+          case 'learnings':
+            return <ContentLearningsManager loading={loading} />;
+          case 'lead-analytics':
+          default:
+            return <ContentLeadAnalytics loading={loading} period={period} />;
+        }
+      }
+      case 'team-operations': {
+        const subTab = activeSubTab ?? 'team-assignment';
+        switch (subTab) {
+          case 'mobile-approval':
+            return <MobileContentApproval loading={loading} />;
+          case 'team-assignment':
+          default:
+            return <ContentTeamAssignment loading={loading} />;
+        }
+      }
+      case 'community-resources': {
+        const subTab = activeSubTab ?? 'client-transformations';
+        switch (subTab) {
+          case 'faq-content':
+            return <FAQContentGenerator loading={loading} />;
+          case 'syndication':
+            return <SyndicationOverview syndication={snapshot.syndication} loading={loading} />;
+          case 'client-transformations':
+          default:
+            return <ClientTransformationPostGenerator loading={loading} />;
+        }
+      }
       case 'overview':
       default:
         return (
           <div className="space-y-6">
             <ModuleHighlights modules={snapshot.modules} loading={loading && snapshot.modules.length === 0} />
+            <CalendarGapAlerts
+              posts={snapshot.planner.upcoming}
+              loading={loading}
+              onGapFilled={(post) => {
+                setSnapshot((prev) => ({
+                  ...prev,
+                  planner: {
+                    ...prev.planner,
+                    upcoming: [...prev.planner.upcoming, post],
+                  },
+                }));
+              }}
+              onGapsFilled={(posts) => {
+                setSnapshot((prev) => ({
+                  ...prev,
+                  planner: {
+                    ...prev.planner,
+                    upcoming: [...prev.planner.upcoming, ...posts],
+                  },
+                }));
+              }}
+            />
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               <div className="xl:col-span-2">
                 <PlannerSchedulePreview planner={snapshot.planner} loading={loading} />
@@ -151,16 +468,39 @@ export default function ContentSocialStudioPage() {
               <ClipperHighlights clipper={snapshot.clipper} loading={loading} />
             </div>
             <AIContentWorkbench ai={snapshot.ai} loading={loading} />
+            <AITemplateLibrary loading={loading} />
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <BrandProfileConfig loading={loading} />
               <PromotionalContentTemplates loading={loading} />
             </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <CreativeVoiceConfig loading={loading} />
+              <StarFormatsConfig loading={loading} />
+            </div>
+            <TrainerNichesConfig loading={loading} />
+            <WeeklyAICalendarComponent loading={loading} />
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <ClientTransformationPostGenerator loading={loading} />
               <FAQContentGenerator loading={loading} />
             </div>
             <ContentLeadAnalytics loading={loading} period={period} />
             <InternalContentIdeasGenerator loading={loading} />
+            <VideoScriptGenerator loading={loading} />
+            <EventChallengeContentKit loading={loading} />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <ContentAIFeedback loading={loading} />
+              <ContentLearningsManager loading={loading} />
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <ContentTeamAssignment loading={loading} />
+              <MobileContentApproval loading={loading} />
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <BrandKitGenerator loading={loading} />
+              <VisualStyleLearning loading={loading} />
+            </div>
+            <SaturatedTopicsDetector loading={loading} period={period} />
+            <PostCampaignInsights loading={loading} period={period} />
           </div>
         );
     }
@@ -232,16 +572,25 @@ export default function ContentSocialStudioPage() {
         <MetricCards data={metricCardsData} columns={4} />
 
         <Card className="p-0 bg-white shadow-sm">
-          <div className="px-4 py-3 border-b border-slate-200">
+          <div className="px-4 py-3 border-b border-slate-200 space-y-3">
             <Tabs
-              items={sectionTabs.map((tab) => ({ id: tab.id, label: tab.label }))}
+              items={SECTION_GROUPS.map((group) => ({ id: group.id, label: group.label }))}
               activeTab={sectionTab}
-              onTabChange={(tabId) => setSectionTab(tabId as SectionTabId)}
+              onTabChange={(tabId) => handleGroupChange(tabId as SectionGroupId)}
               variant="underline"
               size="md"
             />
+            {currentGroup?.subTabs?.length ? (
+              <Tabs
+                items={currentGroup.subTabs.map((tab) => ({ id: tab.id, label: tab.label }))}
+                activeTab={activeSubTab ?? currentGroup.subTabs[0].id}
+                onTabChange={(tabId) => handleSubTabChange(tabId as SubTabId)}
+                variant="underline"
+                size="sm"
+              />
+            ) : null}
           </div>
-          <div className="p-6 space-y-6">{renderSectionContent()}</div>
+          <div className="p-6 space-y-6">{renderGroupContent()}</div>
         </Card>
       </div>
     </div>

@@ -1,4 +1,24 @@
 import { CommunityFidelizacionSnapshot } from '../types';
+import { CommunityVoiceAPI } from './communityVoice';
+import { CustomerSegmentationAPI } from './customerSegmentation';
+import { WowMomentsAPI } from './wowMoments';
+import { TestimonialScriptsAPI } from './testimonialScripts';
+import { BestReviewsAutoPublishAPI } from './bestReviewsAutoPublish';
+import { ProgressBasedMomentsAPI } from './progressBasedMoments';
+import { AIReferralProgramAPI } from './aiReferralProgram';
+import { PromoterMissionsAPI } from './promoterMissions';
+import { ReferralImpactReportsAPI } from './referralImpactReports';
+import { AIAdaptedSurveysAPI } from './aiAdaptedSurveys';
+import { AIPlaybookAPI } from './aiPlaybook';
+import { AutomatedComplianceMessagesAPI } from './automatedComplianceMessages';
+import { SuccessStoriesAPI } from './successStories';
+import { CommunityActivityCorrelationAPI } from './communityActivityCorrelation';
+import { CommunityHealthRadarAPI } from './communityHealthRadar';
+import { getCommunityManagerTemplates, getCommunityManagerGuidelines } from './communityManagerTemplates';
+import { CommunityGamificationAPI } from './communityGamification';
+import { ContentRecommendationsAPI } from './contentRecommendations';
+import { ApprovalManagerAPI } from './approvalManager';
+import { InitiativePrioritizationAPI } from './initiativePrioritization';
 
 type SnapshotPeriod = CommunityFidelizacionSnapshot['period'];
 
@@ -883,6 +903,133 @@ const BASE_SNAPSHOT: CommunityFidelizacionSnapshot = {
       downloadUrl: 'https://example.com/reports/octubre-2025.pdf',
       recipients: ['entrenador@example.com'],
       format: 'both',
+      // US-CF-15: Insights accionables y próximas acciones
+      highlights: [
+        {
+          id: 'h1',
+          title: 'Récord de Testimonios',
+          description: 'Se recopilaron 48 testimonios este mes, un aumento del 33% respecto al mes anterior',
+          metric: 'Testimonios',
+          value: 48,
+          trend: 'positive',
+        },
+        {
+          id: 'h2',
+          title: 'Satisfacción en Máximo Histórico',
+          description: 'La satisfacción promedio alcanzó 4.7/5, el mejor resultado en los últimos 6 meses',
+          metric: 'Satisfacción',
+          value: '4.7/5',
+          trend: 'positive',
+        },
+      ],
+      actionableInsights: [
+        {
+          id: 'ai1',
+          title: 'Oportunidad de Upsell en Clientes Satisfechos',
+          description: 'El 78% de los clientes con satisfacción >4.5 no han sido contactados para programas premium en los últimos 60 días',
+          category: 'revenue',
+          priority: 'high',
+          impact: 'Potencial de incrementar ingresos en un 15-20% mediante upsells estratégicos',
+          dataPoints: [
+            '41 clientes con satisfacción >4.5',
+            '32 no han recibido propuesta de upgrade',
+            'Tasa de conversión histórica de upsell: 35%',
+          ],
+          confidence: 85,
+        },
+        {
+          id: 'ai2',
+          title: 'Engagement Bajo en Nuevos Clientes',
+          description: 'Los clientes que se unieron en los últimos 30 días muestran un 25% menos de engagement que el promedio',
+          category: 'engagement',
+          priority: 'medium',
+          impact: 'Riesgo de abandono temprano si no se mejora el onboarding',
+          dataPoints: [
+            '12 nuevos clientes en octubre',
+            'Tasa de asistencia: 65% vs 87% promedio',
+            'Solo 3 han completado el onboarding completo',
+          ],
+          confidence: 78,
+        },
+      ],
+      nextActions: [
+        {
+          id: 'na1',
+          title: 'Lanzar Campaña de Upsell para Clientes Satisfechos',
+          description: 'Crear una campaña personalizada dirigida a clientes con alta satisfacción para ofrecer programas premium',
+          type: 'campaign',
+          priority: 'high',
+          estimatedImpact: '15-20% aumento en ingresos recurrentes',
+          effort: 'medium',
+          suggestedTimeline: 'Próximas 2 semanas',
+          relatedInsightId: 'ai1',
+          actionableSteps: [
+            'Segmentar clientes con satisfacción >4.5 y sin upgrade reciente',
+            'Crear mensaje personalizado destacando beneficios del programa premium',
+            'Configurar automatización para enviar propuesta vía WhatsApp/Email',
+            'Seguimiento personalizado para los primeros 10 días',
+          ],
+        },
+        {
+          id: 'na2',
+          title: 'Mejorar Proceso de Onboarding',
+          description: 'Implementar check-ins más frecuentes y contenido educativo para nuevos clientes',
+          type: 'automation',
+          priority: 'medium',
+          estimatedImpact: 'Reducción del 30% en abandono temprano',
+          effort: 'low',
+          suggestedTimeline: 'Esta semana',
+          relatedInsightId: 'ai2',
+          actionableSteps: [
+            'Crear secuencia de bienvenida automatizada (días 1, 3, 7, 14)',
+            'Agregar contenido educativo sobre beneficios del entrenamiento',
+            'Programar llamadas de check-in en día 5 y día 10',
+            'Crear grupo de WhatsApp exclusivo para nuevos clientes',
+          ],
+        },
+        {
+          id: 'na3',
+          title: 'Reto Comunitario de 7 Días',
+          description: 'Lanzar un reto de 7 días para aumentar engagement y crear contenido social',
+          type: 'challenge',
+          priority: 'medium',
+          estimatedImpact: 'Aumento del 25% en engagement y generación de 15+ testimonios',
+          effort: 'low',
+          suggestedTimeline: 'Próxima semana',
+          actionableSteps: [
+            'Definir tema del reto basado en feedback de clientes',
+            'Crear assets visuales y copy para redes sociales',
+            'Configurar grupo de WhatsApp para participantes',
+            'Programar recordatorios diarios y celebración de logros',
+          ],
+        },
+      ],
+      learnings: [
+        {
+          id: 'l1',
+          title: 'Testimonios en Video Generan Más Conversión',
+          description: 'Los testimonios en video tienen un 3x más de engagement que los de texto',
+          category: 'what-worked',
+          evidence: ['48 testimonios recopilados', '15 en formato video', 'Videos generaron 450% más views'],
+          recommendation: 'Priorizar solicitud de testimonios en video para clientes satisfechos',
+        },
+        {
+          id: 'l2',
+          title: 'Feedback Negativo Resuelto Rápidamente Mejora Retención',
+          description: 'Los clientes con feedback negativo resuelto en <24h tienen 85% de retención vs 45% si se resuelve después',
+          category: 'what-worked',
+          evidence: ['8 feedbacks negativos resueltos', '7 resueltos en <24h', '6 clientes retenidos'],
+          recommendation: 'Mantener protocolo de respuesta rápida a feedback negativo',
+        },
+        {
+          id: 'l3',
+          title: 'Oportunidad: Clientes Promotores No Están Siendo Aprovechados',
+          description: '41 clientes promotores identificados pero solo 12 han dado referidos este mes',
+          category: 'opportunity',
+          evidence: ['41 promotores activos', 'Solo 12 referidos generados', 'Tasa histórica: 60% de promotores dan referidos'],
+          recommendation: 'Crear programa de incentivos y facilitar proceso de referidos',
+        },
+      ],
     },
     {
       id: 'mr_002',
@@ -925,7 +1072,500 @@ const BASE_SNAPSHOT: CommunityFidelizacionSnapshot = {
     includeCharts: true,
     includeTestimonials: true,
     includeTrends: true,
+    includeActionableInsights: true,
+    includeNextActions: true,
   },
+  // US-CF-16: Journey completo del cliente
+  clientJourneys: [
+    {
+      id: 'cj_001',
+      clientId: 'cliente_001',
+      clientName: 'Laura Méndez',
+      currentStage: 'loyalty',
+      totalDuration: 245,
+      firstContactDate: '2025-02-15T10:00:00Z',
+      lastInteractionDate: '2025-10-15T14:30:00Z',
+      stages: [
+        {
+          stage: 'first-contact',
+          enteredAt: '2025-02-15T10:00:00Z',
+          exitedAt: '2025-02-20T12:00:00Z',
+          duration: 5,
+          events: [
+            {
+              id: 'e1',
+              type: 'contact',
+              title: 'Primer contacto vía Instagram',
+              description: 'Cliente contactó después de ver contenido en Instagram',
+              date: '2025-02-15T10:00:00Z',
+              channel: 'social',
+              sentiment: 'positive',
+              impact: 85,
+            },
+            {
+              id: 'e2',
+              type: 'contact',
+              title: 'Llamada de consulta',
+              description: 'Llamada de 30 minutos para entender objetivos',
+              date: '2025-02-18T15:00:00Z',
+              channel: 'phone',
+              sentiment: 'positive',
+              impact: 90,
+            },
+          ],
+          strengths: ['Respuesta rápida al primer contacto', 'Comunicación clara de objetivos'],
+          weaknesses: [],
+        },
+        {
+          stage: 'onboarding',
+          enteredAt: '2025-02-20T12:00:00Z',
+          exitedAt: '2025-03-10T10:00:00Z',
+          duration: 18,
+          events: [
+            {
+              id: 'e3',
+              type: 'purchase',
+              title: 'Contratación de plan mensual',
+              description: 'Contrató plan de entrenamiento personalizado',
+              date: '2025-02-20T12:00:00Z',
+              channel: 'whatsapp',
+              sentiment: 'positive',
+              impact: 95,
+            },
+            {
+              id: 'e4',
+              type: 'session',
+              title: 'Primera sesión de evaluación',
+              description: 'Sesión inicial para establecer línea base',
+              date: '2025-02-22T09:00:00Z',
+              channel: 'in-person',
+              sentiment: 'positive',
+              impact: 88,
+            },
+          ],
+          metrics: {
+            satisfaction: 4.5,
+            engagement: 90,
+          },
+          strengths: ['Alta asistencia desde el inicio', 'Compromiso con el proceso'],
+          weaknesses: ['Tardó en unirse al grupo de WhatsApp'],
+        },
+        {
+          stage: 'active',
+          enteredAt: '2025-03-10T10:00:00Z',
+          exitedAt: '2025-06-15T10:00:00Z',
+          duration: 97,
+          events: [
+            {
+              id: 'e5',
+              type: 'milestone',
+              title: 'Objetivo alcanzado: Pérdida de peso',
+              description: 'Alcanzó su objetivo de perder 8kg',
+              date: '2025-05-20T10:00:00Z',
+              channel: 'in-person',
+              sentiment: 'positive',
+              impact: 95,
+            },
+            {
+              id: 'e6',
+              type: 'feedback',
+              title: 'Feedback positivo post-sesión',
+              description: 'Calificación 5/5 en encuesta post-sesión',
+              date: '2025-05-25T18:00:00Z',
+              channel: 'whatsapp',
+              sentiment: 'positive',
+              impact: 85,
+            },
+          ],
+          metrics: {
+            satisfaction: 4.8,
+            engagement: 95,
+            attendance: 92,
+            spending: 1200,
+          },
+          strengths: ['Excelente adherencia', 'Progreso constante', 'Feedback muy positivo'],
+          weaknesses: [],
+        },
+        {
+          stage: 'community',
+          enteredAt: '2025-06-15T10:00:00Z',
+          exitedAt: '2025-08-20T10:00:00Z',
+          duration: 66,
+          events: [
+            {
+              id: 'e7',
+              type: 'testimonial',
+              title: 'Testimonio en video',
+              description: 'Grabó testimonio en video compartido en redes',
+              date: '2025-07-10T14:00:00Z',
+              channel: 'social',
+              sentiment: 'positive',
+              impact: 90,
+            },
+            {
+              id: 'e8',
+              type: 'referral',
+              title: 'Primer referido',
+              description: 'Refirió a amiga que se convirtió en cliente',
+              date: '2025-07-25T10:00:00Z',
+              channel: 'whatsapp',
+              sentiment: 'positive',
+              impact: 92,
+            },
+          ],
+          metrics: {
+            satisfaction: 4.9,
+            engagement: 98,
+            attendance: 95,
+          },
+          strengths: ['Alto engagement en comunidad', 'Genera referidos', 'Crea contenido'],
+          weaknesses: [],
+        },
+        {
+          stage: 'loyalty',
+          enteredAt: '2025-08-20T10:00:00Z',
+          events: [
+            {
+              id: 'e9',
+              type: 'purchase',
+              title: 'Upgrade a plan premium',
+              description: 'Actualizó a plan premium con nutrición incluida',
+              date: '2025-08-20T10:00:00Z',
+              channel: 'whatsapp',
+              sentiment: 'positive',
+              impact: 95,
+            },
+            {
+              id: 'e10',
+              type: 'referral',
+              title: 'Segundo referido',
+              description: 'Refirió a segundo contacto',
+              date: '2025-09-15T10:00:00Z',
+              channel: 'whatsapp',
+              sentiment: 'positive',
+              impact: 90,
+            },
+          ],
+          metrics: {
+            satisfaction: 5.0,
+            engagement: 100,
+            attendance: 98,
+            spending: 1800,
+          },
+          strengths: ['Cliente embajador', 'Alta satisfacción', 'Genera múltiples referidos'],
+          weaknesses: [],
+        },
+      ],
+      analysis: {
+        overallHealth: 92,
+        strengths: [
+          {
+            stage: 'onboarding',
+            strength: 'strong',
+            description: 'Onboarding rápido y efectivo, alta satisfacción desde el inicio',
+            evidence: ['Satisfacción 4.5 desde primera sesión', 'Alta asistencia desde el inicio'],
+            impact: 'high',
+          },
+          {
+            stage: 'community',
+            strength: 'strong',
+            description: 'Excelente integración en la comunidad, genera referidos y contenido',
+            evidence: ['2 referidos generados', 'Testimonio en video', 'Alto engagement'],
+            impact: 'high',
+          },
+        ],
+        weaknesses: [
+          {
+            stage: 'onboarding',
+            strength: 'weak',
+            description: 'Tardó en unirse al grupo de WhatsApp de la comunidad',
+            evidence: ['Se unió 2 semanas después del inicio'],
+            impact: 'low',
+          },
+        ],
+        criticalMoments: [
+          {
+            id: 'e5',
+            type: 'milestone',
+            title: 'Objetivo alcanzado: Pérdida de peso',
+            description: 'Alcanzó su objetivo de perder 8kg',
+            date: '2025-05-20T10:00:00Z',
+            channel: 'in-person',
+            sentiment: 'positive',
+            impact: 95,
+          },
+          {
+            id: 'e9',
+            type: 'purchase',
+            title: 'Upgrade a plan premium',
+            description: 'Actualizó a plan premium con nutrición incluida',
+            date: '2025-08-20T10:00:00Z',
+            channel: 'whatsapp',
+            sentiment: 'positive',
+            impact: 95,
+          },
+        ],
+      },
+      aiRecommendations: [
+        {
+          id: 'r1',
+          type: 'recognition',
+          title: 'Reconocer como Cliente Embajador',
+          description: 'Laura ha generado 2 referidos y tiene satisfacción perfecta. Reconocer públicamente su contribución',
+          priority: 'high',
+          reasoning: 'El reconocimiento público aumenta la probabilidad de más referidos y fortalece la relación',
+          expectedImpact: 'Aumento en referidos y mayor engagement',
+          suggestedTimeline: 'Esta semana',
+          actionableSteps: [
+            'Crear post destacando su historia de éxito',
+            'Ofrecer beneficio exclusivo como embajador',
+            'Incluir en programa de referidos premium',
+          ],
+          relatedStage: 'loyalty',
+          confidence: 90,
+        },
+        {
+          id: 'r2',
+          type: 'upsell',
+          title: 'Ofrecer Programa de Nutrición Avanzada',
+          description: 'Laura está en plan premium básico. Ofrecer programa avanzado de nutrición',
+          priority: 'medium',
+          reasoning: 'Cliente satisfecha y comprometida, alta probabilidad de aceptar upgrade',
+          expectedImpact: 'Aumento de ingresos recurrentes en 30%',
+          suggestedTimeline: 'Próximas 2 semanas',
+          actionableSteps: [
+            'Preparar propuesta personalizada',
+            'Destacar beneficios específicos para sus objetivos',
+            'Programar llamada para presentar oferta',
+          ],
+          relatedStage: 'loyalty',
+          confidence: 75,
+        },
+      ],
+      metrics: {
+        totalSessions: 68,
+        totalSpent: 3000,
+        averageSatisfaction: 4.9,
+        referralsGiven: 2,
+        testimonialsGiven: 1,
+        lastPurchaseDate: '2025-08-20T10:00:00Z',
+        daysSinceLastSession: 5,
+      },
+      createdAt: '2025-02-15T10:00:00Z',
+      updatedAt: '2025-10-15T14:30:00Z',
+    },
+    {
+      id: 'cj_002',
+      clientId: 'cliente_002',
+      clientName: 'Carlos Ortega',
+      currentStage: 'at-risk',
+      totalDuration: 120,
+      firstContactDate: '2025-06-20T09:00:00Z',
+      lastInteractionDate: '2025-09-15T16:00:00Z',
+      stages: [
+        {
+          stage: 'first-contact',
+          enteredAt: '2025-06-20T09:00:00Z',
+          exitedAt: '2025-06-25T10:00:00Z',
+          duration: 5,
+          events: [
+            {
+              id: 'e11',
+              type: 'contact',
+              title: 'Primer contacto vía referido',
+              description: 'Contactó después de ser referido por Laura Méndez',
+              date: '2025-06-20T09:00:00Z',
+              channel: 'whatsapp',
+              sentiment: 'positive',
+              impact: 80,
+            },
+          ],
+          strengths: ['Vino por referido (mayor confianza)'],
+          weaknesses: [],
+        },
+        {
+          stage: 'onboarding',
+          enteredAt: '2025-06-25T10:00:00Z',
+          exitedAt: '2025-07-15T10:00:00Z',
+          duration: 20,
+          events: [
+            {
+              id: 'e12',
+              type: 'purchase',
+              title: 'Contratación de plan mensual',
+              description: 'Contrató plan básico',
+              date: '2025-06-25T10:00:00Z',
+              channel: 'whatsapp',
+              sentiment: 'positive',
+              impact: 85,
+            },
+            {
+              id: 'e13',
+              type: 'session',
+              title: 'Primera sesión',
+              description: 'Sesión inicial completada',
+              date: '2025-06-27T09:00:00Z',
+              channel: 'in-person',
+              sentiment: 'neutral',
+              impact: 70,
+            },
+          ],
+          metrics: {
+            satisfaction: 3.8,
+            engagement: 65,
+          },
+          strengths: [],
+          weaknesses: ['Baja satisfacción inicial', 'Asistencia irregular'],
+        },
+        {
+          stage: 'active',
+          enteredAt: '2025-07-15T10:00:00Z',
+          exitedAt: '2025-09-10T10:00:00Z',
+          duration: 57,
+          events: [
+            {
+              id: 'e14',
+              type: 'feedback',
+              title: 'Feedback negativo',
+              description: 'Expresó frustración con progreso lento',
+              date: '2025-08-20T18:00:00Z',
+              channel: 'whatsapp',
+              sentiment: 'negative',
+              impact: 60,
+            },
+          ],
+          metrics: {
+            satisfaction: 3.5,
+            engagement: 55,
+            attendance: 60,
+            spending: 600,
+          },
+          strengths: [],
+          weaknesses: ['Baja asistencia', 'Progreso más lento de lo esperado', 'Frustración expresada'],
+        },
+        {
+          stage: 'at-risk',
+          enteredAt: '2025-09-10T10:00:00Z',
+          events: [
+            {
+              id: 'e15',
+              type: 'interaction',
+              title: 'Última sesión hace 35 días',
+              description: 'No ha asistido a sesiones en más de un mes',
+              date: '2025-09-15T16:00:00Z',
+              channel: 'whatsapp',
+              sentiment: 'negative',
+              impact: 40,
+            },
+          ],
+          metrics: {
+            satisfaction: 3.2,
+            engagement: 40,
+            attendance: 50,
+          },
+          strengths: [],
+          weaknesses: ['Abandono de sesiones', 'Baja comunicación', 'Riesgo de churn'],
+        },
+      ],
+      analysis: {
+        overallHealth: 45,
+        strengths: [
+          {
+            stage: 'first-contact',
+            strength: 'moderate',
+            description: 'Vino por referido, lo que indica confianza inicial',
+            evidence: ['Referido por cliente satisfecha'],
+            impact: 'medium',
+          },
+        ],
+        weaknesses: [
+          {
+            stage: 'onboarding',
+            strength: 'weak',
+            description: 'Onboarding no logró generar suficiente engagement',
+            evidence: ['Satisfacción inicial baja (3.8)', 'Asistencia irregular desde el inicio'],
+            impact: 'high',
+          },
+          {
+            stage: 'active',
+            strength: 'weak',
+            description: 'Progreso lento generó frustración y desmotivación',
+            evidence: ['Feedback negativo expresado', 'Baja asistencia (60%)'],
+            impact: 'high',
+          },
+          {
+            stage: 'at-risk',
+            strength: 'weak',
+            description: 'Alto riesgo de abandono, no ha asistido en 35 días',
+            evidence: ['Última sesión hace 35 días', 'Baja comunicación'],
+            impact: 'critical',
+          },
+        ],
+        criticalMoments: [
+          {
+            id: 'e14',
+            type: 'feedback',
+            title: 'Feedback negativo',
+            description: 'Expresó frustración con progreso lento',
+            date: '2025-08-20T18:00:00Z',
+            channel: 'whatsapp',
+            sentiment: 'negative',
+            impact: 60,
+          },
+        ],
+        dropOffPoints: ['active', 'at-risk'],
+      },
+      aiRecommendations: [
+        {
+          id: 'r3',
+          type: 'reconnection',
+          title: 'Reconexión Urgente',
+          description: 'Contactar inmediatamente para entender razones del abandono y ofrecer solución',
+          priority: 'high',
+          reasoning: 'Cliente en riesgo crítico, necesita intervención inmediata para evitar churn',
+          expectedImpact: 'Posibilidad de retención del 40-50% si se actúa rápido',
+          suggestedTimeline: 'Hoy',
+          actionableSteps: [
+            'Llamada personalizada para entender situación',
+            'Ofrecer ajuste en plan o objetivos',
+            'Proponer sesión de re-engagement sin costo',
+            'Crear plan de acción personalizado',
+          ],
+          relatedStage: 'at-risk',
+          confidence: 85,
+        },
+        {
+          id: 'r4',
+          type: 'retention',
+          title: 'Ajustar Objetivos y Expectativas',
+          description: 'Revisar objetivos iniciales y ajustarlos a progreso realista',
+          priority: 'high',
+          reasoning: 'La frustración viene de expectativas no alineadas con progreso real',
+          expectedImpact: 'Mejora en satisfacción y retención',
+          suggestedTimeline: 'Esta semana',
+          actionableSteps: [
+            'Revisar objetivos iniciales vs progreso real',
+            'Establecer objetivos más realistas y alcanzables',
+            'Crear plan de acción con hitos más frecuentes',
+            'Aumentar frecuencia de check-ins',
+          ],
+          relatedStage: 'at-risk',
+          confidence: 80,
+        },
+      ],
+      metrics: {
+        totalSessions: 18,
+        totalSpent: 600,
+        averageSatisfaction: 3.5,
+        referralsGiven: 0,
+        testimonialsGiven: 0,
+        lastPurchaseDate: '2025-06-25T10:00:00Z',
+        daysSinceLastSession: 35,
+      },
+      createdAt: '2025-06-20T09:00:00Z',
+      updatedAt: '2025-09-15T16:00:00Z',
+    },
+  ],
 };
 
 const MOCK_SNAPSHOTS: Record<SnapshotPeriod, CommunityFidelizacionSnapshot> = {
@@ -992,7 +1632,133 @@ export const CommunityFidelizacionAPI = {
     if (!snapshot) {
       throw new Error(`No se encontró snapshot para el periodo ${period}`);
     }
-    return cloneData(snapshot);
+    const cloned = cloneData(snapshot);
+    
+    // Cargar datos adicionales para US-CF-01, US-CF-02, US-CF-03, US-CF-04, US-CF-05, US-CF-06, US-CF-07, US-CF-08, US-CF-09 y US-CF-10
+    // User Story: Correlación de actividades de comunidad con retención e ingresos
+    // User Story: Radar IA de salud comunitaria
+    try {
+      const [
+        voiceConfig,
+        segments,
+        segmentSummary,
+        wowMoments,
+        testimonialScripts,
+        bestReviewConfig,
+        autoPublishedReviews,
+        progressBasedMoments,
+        aiReferralProgram,
+        promoterMissions,
+        promoterBrandings,
+        referralROIReport,
+        aiAdaptedSurveys,
+        aiAdaptedSurveyTemplates,
+        aiAdaptedSurveyStats,
+        successStories,
+        aiPlaybook,
+        aiPlaybookSuggestions,
+        complianceMessages,
+        complianceMessageConfig,
+        activityCorrelationReport,
+        communityHealthRadar,
+        communityManagerTemplates,
+        communityManagerGuidelines,
+        approvalConfig,
+        pendingApprovals,
+        initiativePrioritization,
+      ] = await Promise.all([
+        CommunityVoiceAPI.getConfig(),
+        CustomerSegmentationAPI.getSegments(),
+        CustomerSegmentationAPI.getSegmentSummary(),
+        WowMomentsAPI.getMoments(),
+        TestimonialScriptsAPI.getScripts(),
+        BestReviewsAutoPublishAPI.getBestReviewConfig(),
+        BestReviewsAutoPublishAPI.getAutoPublishedReviews(),
+        ProgressBasedMomentsAPI.getProgressBasedMoments(),
+        AIReferralProgramAPI.getAIReferralProgram(),
+        PromoterMissionsAPI.getMissions(),
+        PromoterMissionsAPI.getPromoterBrandings(),
+        ReferralImpactReportsAPI.getReferralROIReport('30d'),
+        AIAdaptedSurveysAPI.getSurveys(),
+        AIAdaptedSurveysAPI.getTemplates(),
+        AIAdaptedSurveysAPI.getSurveyStats('30d'),
+        SuccessStoriesAPI.getSuccessStories(),
+        AIPlaybookAPI.getPlaybook(),
+        AIPlaybookAPI.getSuggestions('playbook_001'),
+        AutomatedComplianceMessagesAPI.getMessages(),
+        AutomatedComplianceMessagesAPI.getConfig(),
+        CommunityActivityCorrelationAPI.getActivityCorrelationReport(period),
+        CommunityHealthRadarAPI.getCommunityHealthRadar(period),
+        getCommunityManagerTemplates(),
+        getCommunityManagerGuidelines(),
+        ApprovalManagerAPI.getConfig(),
+        ApprovalManagerAPI.getPending(),
+        InitiativePrioritizationAPI.getPrioritization(period),
+      ]);
+      
+      cloned.communityVoiceConfig = voiceConfig || undefined;
+      cloned.customerSegments = segments;
+      cloned.segmentSummary = segmentSummary;
+      cloned.wowMoments = wowMoments;
+      cloned.testimonialScripts = testimonialScripts;
+      cloned.bestReviewConfig = bestReviewConfig || undefined;
+      cloned.autoPublishedReviews = autoPublishedReviews;
+      cloned.progressBasedMoments = progressBasedMoments;
+      cloned.aiReferralProgram = aiReferralProgram || undefined;
+      cloned.promoterMissions = promoterMissions;
+      cloned.promoterBrandings = promoterBrandings;
+      cloned.referralROIReport = referralROIReport || undefined;
+      cloned.aiAdaptedSurveys = aiAdaptedSurveys;
+      cloned.aiAdaptedSurveyTemplates = aiAdaptedSurveyTemplates;
+      cloned.aiAdaptedSurveyStats = aiAdaptedSurveyStats;
+      cloned.successStories = successStories;
+      cloned.aiPlaybook = aiPlaybook || undefined;
+      cloned.aiPlaybookSuggestions = aiPlaybookSuggestions;
+      cloned.automatedComplianceMessages = complianceMessages;
+      cloned.complianceMessageConfig = complianceMessageConfig || undefined;
+      cloned.activityCorrelationReport = activityCorrelationReport || undefined;
+      cloned.communityHealthRadar = communityHealthRadar || undefined;
+      cloned.communityManagerTemplates = communityManagerTemplates || undefined;
+      cloned.communityManagerGuidelines = communityManagerGuidelines || undefined;
+      cloned.approvalConfig = approvalConfig || undefined;
+      cloned.pendingApprovals = pendingApprovals || undefined;
+      cloned.initiativePrioritization = initiativePrioritization || undefined;
+
+      // User Story: Gamificación de la comunidad con IA
+      const [gamificationConfig, badges, clientBadges, challenges, recognitions] = await Promise.all([
+        CommunityGamificationAPI.getConfig(),
+        CommunityGamificationAPI.getBadges(),
+        CommunityGamificationAPI.getClientBadges(),
+        CommunityGamificationAPI.getChallenges(),
+        CommunityGamificationAPI.getRecognitions(),
+      ]);
+      cloned.communityGamificationConfig = gamificationConfig || undefined;
+      cloned.communityBadges = badges || undefined;
+      cloned.clientBadges = clientBadges || undefined;
+      cloned.communityChallenges = challenges || undefined;
+      cloned.recognitions = recognitions || undefined;
+
+      // User Story: Recomendaciones de contenido/comunicaciones basadas en feedback
+      const [
+        contentRecommendationsConfig,
+        feedbackAnalysis,
+        contentRecommendations,
+        communicationRecommendations,
+      ] = await Promise.all([
+        ContentRecommendationsAPI.getConfig(),
+        ContentRecommendationsAPI.analyzeFeedback(period),
+        ContentRecommendationsAPI.getContentRecommendations(),
+        ContentRecommendationsAPI.getCommunicationRecommendations(),
+      ]);
+      cloned.contentRecommendationsConfig = contentRecommendationsConfig || undefined;
+      cloned.feedbackAnalysis = feedbackAnalysis || undefined;
+      cloned.contentRecommendations = contentRecommendations || undefined;
+      cloned.communicationRecommendations = communicationRecommendations || undefined;
+    } catch (error) {
+      console.error('Error cargando datos adicionales:', error);
+    }
+    
+    return cloned;
   },
 };
 

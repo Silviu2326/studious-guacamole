@@ -43,10 +43,10 @@ import {
 } from 'lucide-react';
 import { Button, Card, Tabs, Badge, Input, Select, Modal, Textarea } from '../../../components/componentsreutilizables';
 import { WeeklyEditorView } from '../components/WeeklyEditorView';
-import { LoadTrackingChart } from '../components/LoadTrackingChart';
 import { DailyEditorView } from '../components/DailyEditorView';
 import { ExcelSummaryView } from '../components/ExcelSummaryView';
-import type { DayPlan } from '../types';
+import { LoadTrackingChart } from '../components/LoadTrackingChart';
+import type { DayPlan, DaySession, RespuestasCuestionario, PlantillaRecomendada } from '../types';
 import { obtenerReglas, aplicarReglasInteligentes, type ReglaInteligente } from '../utils/intelligentRules';
 import { BuscarSustituirEntidades } from '../components/BuscarSustituirEntidades';
 import { CompartirExtractosChat } from '../components/CompartirExtractosChat';
@@ -54,9 +54,12 @@ import { SubstitutionHistoryManager } from '../utils/substitutionHistory';
 import { SubstitutionPresetsManager, type SubstitutionPreset } from '../utils/substitutionPresets';
 import { TagManager } from '../components/TagManager';
 import { BulkAutomationFlow } from '../components/BulkAutomationFlow';
-import { AutomationLogViewer } from '../components/AutomationLogViewer';
 import { guardarBorrador } from '../api/programas';
 import { useAuth } from '../../../context/AuthContext';
+import { AsistenteIAPrograma } from '../components/AsistenteIAPrograma';
+import { CuestionarioConfiguracion } from '../components/CuestionarioConfiguracion';
+import { GestorFormulas } from '../components/GestorFormulas';
+import type { FormulaPersonalizada } from '../utils/formulasPersonalizadas';
 
 type EditorView = 'weekly' | 'daily' | 'excel';
 type LibraryTab = 'templates' | 'exercises';
@@ -386,6 +389,7 @@ type EditorHeaderProps = {
   onOpenTagManager: () => void;
   onOpenCharts: () => void;
   onOpenBulkAutomation: () => void;
+  onOpenLayoutSurvey: () => void;
   onSaveDraft: () => void;
   lastSaveTime: string | null;
 };
@@ -403,6 +407,7 @@ function EditorHeader({
   onOpenCharts,
   onOpenTagManager,
   onOpenBulkAutomation,
+  onOpenLayoutSurvey,
   onSaveDraft,
   lastSaveTime,
 }: EditorHeaderProps) {
@@ -480,6 +485,9 @@ function EditorHeader({
           </Button>
           <Button variant="ghost" size="sm" leftIcon={<BarChart3 className="h-4 w-4" />} onClick={onOpenCharts}>
             Gráficos
+          </Button>
+          <Button variant="ghost" size="sm" leftIcon={<Lightbulb className="h-4 w-4" />} onClick={onOpenLayoutSurvey}>
+            Configurar layout
           </Button>
           <Button variant="ghost" size="sm" leftIcon={<Sparkles className="h-4 w-4" />} onClick={onOpenBulkAutomation}>
             Automatización
@@ -648,7 +656,8 @@ function LibrarySidebar({
                   { label: 'Lower body', value: 'lower' },
                   { label: 'Core & estabilidad', value: 'core' },
                 ]}
-                defaultValue="todos"
+              value={categoryFilter}
+              onChange={(e) => onChangeCategoryFilter(e.target.value)}
               />
               {libraryTab === 'exercises' && (
                 <Select
@@ -886,6 +895,8 @@ type SummarySidebarProps = {
   onEditNote: (id: string, newContent: string) => void;
   onDeleteNote: (id: string) => void;
   activeView: EditorView;
+  customFormulaCount: number;
+  onOpenFormulaManager: () => void;
 };
 
 function SummarySidebar({
@@ -913,6 +924,8 @@ function SummarySidebar({
   onEditNote,
   onDeleteNote,
   activeView,
+  customFormulaCount,
+  onOpenFormulaManager,
 }: SummarySidebarProps) {
   return (
     !isCollapsed && (
@@ -973,21 +986,32 @@ function SummarySidebar({
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-3">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Objetivos semanales</p>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onResetManualTargets}
-                className="h-auto px-2 py-1 text-xs"
-                disabled={
-                  manualWeeklyTargets.sessions === null &&
-                  manualWeeklyTargets.duration === null &&
-                  manualWeeklyTargets.calories === null
-                }
-              >
-                Restablecer
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onOpenFormulaManager}
+                  className="h-auto px-2 py-1 text-xs"
+                >
+                  Fórmulas personalizadas
+                  {customFormulaCount > 0 ? ` (${customFormulaCount})` : ''}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onResetManualTargets}
+                  className="h-auto px-2 py-1 text-xs"
+                  disabled={
+                    manualWeeklyTargets.sessions === null &&
+                    manualWeeklyTargets.duration === null &&
+                    manualWeeklyTargets.calories === null
+                  }
+                >
+                  Restablecer
+                </Button>
+              </div>
             </div>
             <div className="mb-4 space-y-2 rounded-xl border border-slate-200/70 bg-slate-50/50 p-3 dark:border-slate-800/70 dark:bg-slate-900/40">
               <div className="flex items-center gap-2">
@@ -2302,6 +2326,11 @@ export default function ProgramasDeEntrenoEditorPage() {
   const [isChartsOpen, setIsChartsOpen] = useState(false);
   const [isCompartirChatOpen, setIsCompartirChatOpen] = useState(false);
   const [isBuscarSustituirOpen, setIsBuscarSustituirOpen] = useState(false);
+  const [isLayoutSurveyOpen, setIsLayoutSurveyOpen] = useState(false);
+  const [layoutSurveyResponses, setLayoutSurveyResponses] = useState<RespuestasCuestionario | null>(null);
+  const [layoutRecommendedTemplates, setLayoutRecommendedTemplates] = useState<PlantillaRecomendada[]>([]);
+  const [isFormulaManagerOpen, setIsFormulaManagerOpen] = useState(false);
+  const [customFormulas, setCustomFormulas] = useState<FormulaPersonalizada[]>([]);
   const [librarySearch, setLibrarySearch] = useState(() => {
     try {
       const saved = localStorage.getItem('programasEditor_librarySearch');
@@ -2426,6 +2455,28 @@ export default function ProgramasDeEntrenoEditorPage() {
     () => INITIAL_WEEKLY_PLAN,
   );
 
+  const handleAddBlockToDay = useCallback(
+    (day: DayKey, block: DaySession) => {
+      setWeeklyPlan((prev) => {
+        const dayPlan = prev[day];
+        if (!dayPlan) {
+          return prev;
+        }
+        const uniqueId =
+          block.id ?? `ai-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const newSession: DaySession = { ...block, id: uniqueId };
+        return {
+          ...prev,
+          [day]: {
+            ...dayPlan,
+            sessions: [...dayPlan.sessions, newSession],
+          },
+        };
+      });
+    },
+    [setWeeklyPlan],
+  );
+
   // Gestor de historial para sustituciones (undo/redo)
   const substitutionHistoryManager = useMemo(() => new SubstitutionHistoryManager(), []);
 
@@ -2499,20 +2550,24 @@ export default function ProgramasDeEntrenoEditorPage() {
     () => templateExamples.filter((t) => !pinnedTemplateIds.includes(t.id)),
     [templateExamples, pinnedTemplateIds],
   );
-  const filteredPinnedTemplates = useMemo(
-    () =>
-      pinnedTemplates.filter((t) =>
-        t.name.toLowerCase().includes(librarySearch.toLowerCase()),
-      ),
-    [pinnedTemplates, librarySearch],
-  );
-  const filteredUnpinnedTemplates = useMemo(
-    () =>
-      unpinnedTemplates.filter((t) =>
-        t.name.toLowerCase().includes(librarySearch.toLowerCase()),
-      ),
-    [unpinnedTemplates, librarySearch],
-  );
+  const filteredPinnedTemplates = useMemo(() => {
+    return pinnedTemplates.filter((t) => {
+      const matchesSearch = t.name.toLowerCase().includes(librarySearch.toLowerCase());
+      const matchesCategory =
+        categoryFilter === 'todos' ||
+        t.focus?.toLowerCase().includes(categoryFilter.toLowerCase());
+      return matchesSearch && matchesCategory;
+    });
+  }, [pinnedTemplates, librarySearch, categoryFilter]);
+  const filteredUnpinnedTemplates = useMemo(() => {
+    return unpinnedTemplates.filter((t) => {
+      const matchesSearch = t.name.toLowerCase().includes(librarySearch.toLowerCase());
+      const matchesCategory =
+        categoryFilter === 'todos' ||
+        t.focus?.toLowerCase().includes(categoryFilter.toLowerCase());
+      return matchesSearch && matchesCategory;
+    });
+  }, [unpinnedTemplates, librarySearch, categoryFilter]);
   const uniqueEquipments = useMemo(() => {
     const all = Array.from(new Set(exerciseExamples.map((e) => e.equipment)));
     return ['Todos los equipos', ...all];
@@ -2526,6 +2581,34 @@ export default function ProgramasDeEntrenoEditorPage() {
       e.equipment.toLowerCase().includes(equipmentFilter.toLowerCase()),
     );
   }, [exerciseExamples, librarySearch, equipmentFilter]);
+  const pinnedExercises = useMemo(
+    () => exerciseExamples.filter((e) => pinnedExerciseIds.includes(e.id)),
+    [exerciseExamples, pinnedExerciseIds],
+  );
+  const unpinnedExercises = useMemo(
+    () => exerciseExamples.filter((e) => !pinnedExerciseIds.includes(e.id)),
+    [exerciseExamples, pinnedExerciseIds],
+  );
+  const filteredPinnedExercises = useMemo(() => {
+    const bySearch = pinnedExercises.filter((e) =>
+      e.name.toLowerCase().includes(librarySearch.toLowerCase()),
+    );
+    if (equipmentFilter === 'todos') return bySearch;
+    return bySearch.filter((e) =>
+      e.equipment.toLowerCase().includes(equipmentFilter.toLowerCase()),
+    );
+  }, [pinnedExercises, librarySearch, equipmentFilter]);
+  const filteredUnpinnedExercises = useMemo(() => {
+    const bySearch = unpinnedExercises.filter((e) =>
+      e.name.toLowerCase().includes(librarySearch.toLowerCase()),
+    );
+    if (equipmentFilter === 'todos') return bySearch;
+    return bySearch.filter((e) =>
+      e.equipment.toLowerCase().includes(equipmentFilter.toLowerCase()),
+    );
+  }, [unpinnedExercises, librarySearch, equipmentFilter]);
+  const pinnedTemplatesCount = pinnedTemplates.length;
+  const pinnedExercisesCount = pinnedExercises.length;
 
   const parseDurationInMinutes = useCallback((duration: string) => {
     const match = duration.match(/\d+/);
@@ -2608,34 +2691,6 @@ export default function ProgramasDeEntrenoEditorPage() {
     }),
     [],
   );
-
-  const aiRecommendations = useMemo(() => {
-    const intensity = selectedDayPlan?.intensity || '';
-    const focus = selectedDayPlan?.focus || '';
-    const sessions = selectedDayPlan?.sessions || [];
-    const totalMin = sessions.reduce((acc, s) => {
-      const m = s.duration.match(/\d+/);
-      return acc + (m ? Number(m[0]) : 0);
-    }, 0);
-
-    const recs: string[] = [];
-    recs.push(`Mantén el foco del día: ${focus}. Ajusta el calentamiento para preparar patrones clave.`);
-    if (totalMin > 50) {
-      recs.push('Reduce 5-8 min el bloque menos prioritario para evitar fatiga acumulada.');
-    } else if (totalMin < 35) {
-      recs.push('Añade un finisher aeróbico ligero (6-8 min zone 2) para completar volumen.');
-    }
-    if (/RPE\s*8|Alta/i.test(intensity)) {
-      recs.push('Incluye serie de aproximación adicional y pausa controlada en la primera serie pesada.');
-    } else {
-      recs.push('Introduce tempos controlados (3-1-1) en el ejercicio principal para mayor estímulo.');
-    }
-    if (/rodilla|lumbar|impacto/i.test(selectedClient.restricciones.join(' ').toLowerCase())) {
-      recs.push('Sustituye saltos/impacto por arrastres de trineo o bike erg de igual carga interna.');
-    }
-    recs.push(`Objetivo semanal: ${weeklyTargets.sessions} sesiones · ${weeklyTargets.duration} min · ${weeklyTargets.calories} kcal aprox.`);
-    return recs;
-  }, [selectedDayPlan, weeklyTargets, selectedClient]);
 
   // Sugerencias contextuales según la vista activa
   const contextualSuggestions = useMemo(() => {
@@ -2962,6 +3017,15 @@ export default function ProgramasDeEntrenoEditorPage() {
     }
   }, []);
 
+  const handleCategoryFilterChange = useCallback((value: string) => {
+    setCategoryFilter(value);
+    try {
+      localStorage.setItem('programasEditor_categoryFilter', value);
+    } catch {
+      // ignore persistence errors
+    }
+  }, []);
+
   const handleResetManualTargets = useCallback(() => {
     updateManualWeeklyTargets({ sessions: null, duration: null, calories: null });
   }, [updateManualWeeklyTargets]);
@@ -3038,6 +3102,26 @@ export default function ProgramasDeEntrenoEditorPage() {
     }
   }, [draftId, draftMessage, selectedClient.id, user?.id, weeklyPlan]);
 
+  const handleLayoutSurveyComplete = useCallback(
+    (respuestas: RespuestasCuestionario, plantillas: PlantillaRecomendada[]) => {
+      setLayoutSurveyResponses(respuestas);
+      setLayoutRecommendedTemplates(plantillas);
+      setIsLayoutSurveyOpen(false);
+    },
+    [],
+  );
+
+  const handleFormulasChange = useCallback((formulas: FormulaPersonalizada[]) => {
+    setCustomFormulas(formulas);
+  }, []);
+
+  const handleLibraryDragStart = useCallback(
+    (_type: 'template' | 'exercise', _item: TemplateExample | ExerciseExample) => {
+      // Placeholder for analytics or contextual hints
+    },
+    [],
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100/80 py-8 dark:from-[#050815] dark:via-[#0b1120] dark:to-[#020617]">
       <div className="flex w-full flex-col gap-6 px-4 md:px-6 lg:px-8">
@@ -3050,7 +3134,11 @@ export default function ProgramasDeEntrenoEditorPage() {
           onOpenFitCoach={() => setIsFitCoachOpen(true)}
           onOpenSubstitutions={() => setIsSubstitutionsOpen(true)}
           onOpenBatchTraining={() => setIsBatchTrainingOpen(true)}
+          onOpenCompartirChat={() => setIsCompartirChatOpen(true)}
+          onOpenBuscarSustituir={() => setIsBuscarSustituirOpen(true)}
           onOpenTagManager={() => setIsTagManagerOpen(true)}
+          onOpenCharts={() => setIsChartsOpen(true)}
+          onOpenLayoutSurvey={() => setIsLayoutSurveyOpen(true)}
           onOpenBulkAutomation={() => setIsBulkAutomationOpen(true)}
           onSaveDraft={handleOpenSaveDraftModal}
           lastSaveTime={lastSaveTime}
@@ -3058,6 +3146,47 @@ export default function ProgramasDeEntrenoEditorPage() {
 
         {/* View selector */}
         <ViewSelector activeView={activeView} onChange={(view) => setActiveView(view)} />
+
+        {layoutRecommendedTemplates.length > 0 && (
+          <Card className="border border-indigo-200/70 bg-white/95 p-4 shadow-sm dark:border-indigo-900/40 dark:bg-slate-950/60">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">
+                  Plantillas sugeridas por el asistente
+                </p>
+                {layoutSurveyResponses?.rol && (
+                  <p className="text-sm text-slate-600 dark:text-slate-300">
+                    Rol seleccionado: {layoutSurveyResponses.rol}
+                  </p>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsLayoutSurveyOpen(true)}
+                className="h-auto px-3 py-1 text-xs"
+              >
+                Ajustar preferencias
+              </Button>
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {layoutRecommendedTemplates.slice(0, 6).map((template) => (
+                <div
+                  key={template.id}
+                  className="rounded-xl border border-indigo-100/70 bg-indigo-50/40 p-3 dark:border-indigo-900/30 dark:bg-indigo-500/10"
+                >
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {template.nombre}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-300">{template.descripcion}</p>
+                  <p className="mt-2 text-[11px] text-indigo-600 dark:text-indigo-300">
+                    {template.razon}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
         <div className="flex flex-col gap-6 lg:flex-row">
           <LibrarySidebar
@@ -3069,12 +3198,19 @@ export default function ProgramasDeEntrenoEditorPage() {
             onChangeLibrarySearch={handleLibrarySearchChange}
             equipmentFilter={equipmentFilter}
             onChangeEquipmentFilter={handleEquipmentFilterChange}
+            categoryFilter={categoryFilter}
+            onChangeCategoryFilter={handleCategoryFilterChange}
             uniqueEquipments={uniqueEquipments}
             filteredPinnedTemplates={filteredPinnedTemplates}
             filteredUnpinnedTemplates={filteredUnpinnedTemplates}
+            filteredPinnedExercises={filteredPinnedExercises}
+            filteredUnpinnedExercises={filteredUnpinnedExercises}
             filteredExercises={filteredExercises}
-            pinnedTemplatesCount={filteredPinnedTemplates.length}
+            pinnedTemplatesCount={pinnedTemplatesCount}
+            pinnedExercisesCount={pinnedExercisesCount}
             onTogglePinTemplate={togglePinTemplate}
+            onTogglePinExercise={togglePinExercise}
+            onDragStart={handleLibraryDragStart}
           />
 
           <main className="flex-1 space-y-4">{renderCanvas()}</main>
@@ -3104,6 +3240,8 @@ export default function ProgramasDeEntrenoEditorPage() {
             onEditNote={handleEditNote}
             onDeleteNote={handleDeleteNote}
             activeView={activeView}
+            customFormulaCount={customFormulas.length}
+            onOpenFormulaManager={() => setIsFormulaManagerOpen(true)}
           />
         </div>
       </div>
@@ -3151,39 +3289,52 @@ export default function ProgramasDeEntrenoEditorPage() {
         </div>
       </Modal>
 
+      <CuestionarioConfiguracion
+        isOpen={isLayoutSurveyOpen}
+        onClose={() => setIsLayoutSurveyOpen(false)}
+        onComplete={handleLayoutSurveyComplete}
+        respuestasExistentes={layoutSurveyResponses ?? undefined}
+      />
+
+      <GestorFormulas
+        isOpen={isFormulaManagerOpen}
+        onClose={() => setIsFormulaManagerOpen(false)}
+        onFormulasChange={handleFormulasChange}
+      />
+
+      <Modal
+        isOpen={isChartsOpen}
+        onClose={() => setIsChartsOpen(false)}
+        title="Gráficos de carga semanal"
+        size="xl"
+      >
+        <LoadTrackingChart weekDays={weekDays} weeklyPlan={weeklyPlan} weeklyTargets={weeklyTargets} />
+      </Modal>
+
       {/* Modal: Fit Coach (Recomendaciones IA) */}
       <Modal
         isOpen={isFitCoachOpen}
         onClose={() => setIsFitCoachOpen(false)}
-        title={`Fit Coach · Recomendaciones para ${selectedDay}`}
+        title={`Asistente IA · ${selectedDay}`}
         size="xl"
       >
         <div className="space-y-4">
-          <div className="rounded-2xl border border-slate-200/70 bg-slate-50 p-4 text-sm dark:border-slate-800/70 dark:bg-slate-900/40">
-            <p className="text-slate-700 dark:text-slate-300">
-              Plan del día: <span className="font-semibold text-slate-900 dark:text-slate-100">{selectedDayPlan.focus}</span> ·{' '}
-              {selectedDayPlan.volume} · {selectedDayPlan.intensity}
-            </p>
-          </div>
-          <div className="space-y-2">
-            {aiRecommendations.map((rec, idx) => (
-              <div
-                key={idx}
-                className="flex items-start gap-3 rounded-2xl border border-slate-200/70 bg-white/95 p-4 shadow-sm dark:border-slate-800/70 dark:bg-slate-950/60"
-              >
-                <div className="mt-0.5">
-                  <Sparkles className="h-4 w-4 text-indigo-500" />
-                </div>
-                <p className="text-sm text-slate-700 dark:text-slate-300">{rec}</p>
-              </div>
-            ))}
-          </div>
-          <div className="flex items-center justify-end gap-2">
+          <AsistenteIAPrograma
+            weeklyPlan={weeklyPlan}
+            selectedDay={selectedDay}
+            selectedDayPlan={selectedDayPlan}
+            clientInfo={{
+              nombre: selectedClient.nombre,
+              objetivos: selectedClient.objetivos,
+              restricciones: selectedClient.restricciones,
+              notas: selectedClient.notas,
+            }}
+            weeklyTargets={weeklyTargets}
+            onAddBlock={(block) => handleAddBlockToDay(selectedDay, block)}
+          />
+          <div className="flex items-center justify-end">
             <Button variant="ghost" onClick={() => setIsFitCoachOpen(false)}>
               Cerrar
-            </Button>
-            <Button variant="secondary" onClick={() => setIsFitCoachOpen(false)}>
-              Aplicar sugerencias (próximamente)
             </Button>
           </div>
         </div>

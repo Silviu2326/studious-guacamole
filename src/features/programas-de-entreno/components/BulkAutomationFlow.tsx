@@ -13,7 +13,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { Button, Modal, Input, Select, Badge, Card } from '../../../components/componentsreutilizables';
-import type { DayPlan, DaySession } from '../types';
+import type { DayPlan, DaySession, PresetAutomatizacion } from '../types';
 import { 
   crearLogBulkAutomation, 
   compararPlanes, 
@@ -29,6 +29,8 @@ type BulkAutomationFlowProps = {
   onUpdatePlan: (updatedPlan: Record<string, DayPlan>) => void;
   programaId?: string;
   clienteId?: string;
+  selectedPreset?: PresetAutomatizacion | null;
+  onClearSelectedPreset?: () => void;
 };
 
 type OperationType = 'add' | 'edit' | 'move' | 'duplicate' | 'delete';
@@ -136,6 +138,8 @@ export function BulkAutomationFlow({
   onUpdatePlan,
   programaId,
   clienteId,
+  selectedPreset,
+  onClearSelectedPreset,
 }: BulkAutomationFlowProps) {
   const { user } = useAuth();
   const [operations, setOperations] = useState<BulkOperation[]>(() =>
@@ -324,6 +328,12 @@ export function BulkAutomationFlow({
     }
     
     onUpdatePlan(result);
+    if (selectedPreset) {
+      console.info('[BulkAutomationFlow] Cambios aplicados desde preset', {
+        presetId: selectedPreset.id,
+        presetVersion: selectedPreset.version,
+      });
+    }
     onOpenChange(false);
     setPreviewMode(false);
     setPreviewResult(null);
@@ -920,6 +930,44 @@ export function BulkAutomationFlow({
             eliminar sesiones en masa.
           </p>
         </div>
+
+        {selectedPreset && (
+          <Card className="border border-indigo-200/70 bg-indigo-50/60 p-4 dark:border-indigo-900/40 dark:bg-indigo-500/10">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Preset seleccionado: {selectedPreset.nombre}
+                </p>
+                <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                  Versión {selectedPreset.version} · {selectedPreset.reglasEncadenadas.length} reglas ·{' '}
+                  {selectedPreset.automatizacionesRecurrentes.length} automatizaciones
+                </p>
+                {selectedPreset.tags.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {selectedPreset.tags.slice(0, 6).map((tag) => (
+                      <Badge key={tag} variant="outline" className="text-[10px] uppercase tracking-wide">
+                        {tag}
+                      </Badge>
+                    ))}
+                    {selectedPreset.tags.length > 6 && (
+                      <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                        +{selectedPreset.tags.length - 6}
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
+              {onClearSelectedPreset && (
+                <Button variant="ghost" size="sm" onClick={onClearSelectedPreset}>
+                  Limpiar
+                </Button>
+              )}
+            </div>
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              Aplica o ajusta manualmente las operaciones para adaptarlas al plan actual.
+            </p>
+          </Card>
+        )}
 
         <div className="space-y-3">
           {operations.map((operation) => (

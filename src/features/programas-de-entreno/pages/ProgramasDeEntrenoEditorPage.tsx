@@ -25,7 +25,6 @@ import {
   Square,
   Star,
   Lightbulb,
-  StickyNote,
   Edit2,
   Trash2,
   Share2,
@@ -46,7 +45,16 @@ import { WeeklyEditorView } from '../components/WeeklyEditorView';
 import { DailyEditorView } from '../components/DailyEditorView';
 import { ExcelSummaryView } from '../components/ExcelSummaryView';
 import { LoadTrackingChart } from '../components/LoadTrackingChart';
-import type { DayPlan, DaySession, RespuestasCuestionario, PlantillaRecomendada } from '../types';
+import type {
+  ContextoCliente,
+  DayPlan,
+  DaySession,
+  PlantillaRecomendada,
+  PresetAutomatizacion,
+  RespuestasCuestionario,
+  ResumenObjetivosProgreso,
+  TimelineSesiones,
+} from '../types';
 import { obtenerReglas, aplicarReglasInteligentes, type ReglaInteligente } from '../utils/intelligentRules';
 import { BuscarSustituirEntidades } from '../components/BuscarSustituirEntidades';
 import { CompartirExtractosChat } from '../components/CompartirExtractosChat';
@@ -59,16 +67,13 @@ import { useAuth } from '../../../context/AuthContext';
 import { AsistenteIAPrograma } from '../components/AsistenteIAPrograma';
 import { CuestionarioConfiguracion } from '../components/CuestionarioConfiguracion';
 import { GestorFormulas } from '../components/GestorFormulas';
+import { GestorPresetsAutomatizaciones } from '../components/GestorPresetsAutomatizaciones';
+import { InsightsAssistantPanel } from '../components/InsightsAssistantPanel';
+import { NotasAcuerdosRecordatorios } from '../components/NotasAcuerdosRecordatorios';
 import type { FormulaPersonalizada } from '../utils/formulasPersonalizadas';
 
 type EditorView = 'weekly' | 'daily' | 'excel';
 type LibraryTab = 'templates' | 'exercises';
-
-type FollowUpNote = {
-  id: string;
-  content: string;
-  createdAt: string;
-};
 
 type TemplateExample = {
   id: string;
@@ -388,6 +393,7 @@ type EditorHeaderProps = {
   onOpenBuscarSustituir: () => void;
   onOpenTagManager: () => void;
   onOpenCharts: () => void;
+  onOpenAutomationPresets: () => void;
   onOpenBulkAutomation: () => void;
   onOpenLayoutSurvey: () => void;
   onSaveDraft: () => void;
@@ -406,6 +412,7 @@ function EditorHeader({
   onOpenBuscarSustituir,
   onOpenCharts,
   onOpenTagManager,
+  onOpenAutomationPresets,
   onOpenBulkAutomation,
   onOpenLayoutSurvey,
   onSaveDraft,
@@ -488,6 +495,9 @@ function EditorHeader({
           </Button>
           <Button variant="ghost" size="sm" leftIcon={<Lightbulb className="h-4 w-4" />} onClick={onOpenLayoutSurvey}>
             Configurar layout
+          </Button>
+          <Button variant="ghost" size="sm" leftIcon={<Bookmark className="h-4 w-4" />} onClick={onOpenAutomationPresets}>
+            Presets de automatización
           </Button>
           <Button variant="ghost" size="sm" leftIcon={<Sparkles className="h-4 w-4" />} onClick={onOpenBulkAutomation}>
             Automatización
@@ -883,20 +893,17 @@ type SummarySidebarProps = {
   onResetManualTargets: () => void;
   onUpdateManualTargets: (updates: Partial<{ sessions: number | null; duration: number | null; calories: number | null }>) => void;
   contextualSuggestions: string[];
-  followUpNotes: FollowUpNote[];
-  isAddingNote: boolean;
-  newNoteContent: string;
-  onStartAddNote: () => void;
-  onCancelAddNote: () => void;
-  onChangeNewNoteContent: (value: string) => void;
-  onSaveNewNote: () => void;
-  editingNoteId: string | null;
-  onSetEditingNoteId: (id: string | null) => void;
-  onEditNote: (id: string, newContent: string) => void;
-  onDeleteNote: (id: string) => void;
   activeView: EditorView;
   customFormulaCount: number;
   onOpenFormulaManager: () => void;
+  weeklyPlan: Record<DayKey, DayPlan>;
+  weekDays: ReadonlyArray<DayKey>;
+  contextoCliente: ContextoCliente;
+  objetivosProgreso: ResumenObjetivosProgreso;
+  timelineSesiones: TimelineSesiones;
+  onInsightAction: (insightId: string, action: { tipo: string; label: string; detalle?: string } | undefined) => void;
+  clienteId: string;
+  programaId: string;
 };
 
 function SummarySidebar({
@@ -912,361 +919,289 @@ function SummarySidebar({
   onResetManualTargets,
   onUpdateManualTargets,
   contextualSuggestions,
-  followUpNotes,
-  isAddingNote,
-  newNoteContent,
-  onStartAddNote,
-  onCancelAddNote,
-  onChangeNewNoteContent,
-  onSaveNewNote,
-  editingNoteId,
-  onSetEditingNoteId,
-  onEditNote,
-  onDeleteNote,
   activeView,
   customFormulaCount,
   onOpenFormulaManager,
+  weeklyPlan,
+  weekDays,
+  contextoCliente,
+  objetivosProgreso,
+  timelineSesiones,
+  onInsightAction,
+  clienteId,
+  programaId,
 }: SummarySidebarProps) {
+  const [activeTab, setActiveTab] = useState<'resumen' | 'insights'>('resumen');
+
+  if (isCollapsed) {
+    return null;
+  }
+
+  const tabButtonClasses = (tab: 'resumen' | 'insights') =>
+    `rounded-full px-3 py-1 transition focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+      activeTab === tab
+        ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-slate-100'
+        : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+    }`;
+
   return (
-    !isCollapsed && (
-      <aside className="w-full flex-shrink-0 lg:w-[340px] xl:w-[360px]">
-        <Card className="space-y-6 border border-slate-200/70 bg-white/95 p-6 shadow-lg dark:border-slate-800/70 dark:bg-slate-950/60">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Resumen</p>
-              <h3 className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">Hoy</h3>
-            </div>
-            <button
-              type="button"
-              onClick={onCollapse}
-              className="rounded-full border border-slate-200 p-2 text-slate-400 transition hover:border-indigo-300 hover:text-indigo-500 dark:border-slate-700 dark:hover:border-indigo-500"
-              aria-label="Colapsar panel derecho"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
+    <aside className="w-full flex-shrink-0 lg:w-[340px] xl:w-[360px]">
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Panel</p>
+          <h3 className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+            {activeTab === 'insights' ? 'Asistente de insights' : 'Resumen semanal'}
+          </h3>
+        </div>
+        <button
+          type="button"
+          onClick={onCollapse}
+          className="rounded-full border border-slate-200 p-2 text-slate-400 transition hover:border-indigo-300 hover:text-indigo-500 dark:border-slate-700 dark:hover:border-indigo-500"
+          aria-label="Colapsar panel derecho"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
 
-          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center dark:border-slate-800/70 dark:bg-slate-900/40">
-            {todaysSessions.length === 0 ? (
-              <div className="space-y-2">
-                <Calendar className="mx-auto h-8 w-8 text-slate-300" />
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">No hay sesiones programadas para hoy</p>
-              </div>
-            ) : (
-              <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-500">Siguiente sesión</p>
-                <p className="text-base font-semibold text-slate-900 dark:text-slate-100">{nextSession?.block}</p>
-                <p>
-                  {nextSession?.time} · {nextSession?.duration}
-                </p>
-              </div>
-            )}
-          </div>
+      <div className="mb-4 flex items-center gap-2">
+        <div className="flex rounded-full bg-slate-100 p-1 text-xs font-semibold dark:bg-slate-900/40">
+          <button
+            type="button"
+            className={tabButtonClasses('resumen')}
+            onClick={() => setActiveTab('resumen')}
+            aria-pressed={activeTab === 'resumen'}
+          >
+            Resumen
+          </button>
+          <button
+            type="button"
+            className={tabButtonClasses('insights')}
+            onClick={() => setActiveTab('insights')}
+            aria-pressed={activeTab === 'insights'}
+          >
+            Insights
+          </button>
+        </div>
+      </div>
 
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Esta semana</p>
-            <dl className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
-              <div className="flex items-center justify-between">
-                <dt>Sesiones</dt>
-                <dd className="font-semibold text-indigo-600">{weeklyOverview.sessions}</dd>
-              </div>
-              <div className="flex items-center justify-between">
-                <dt>Ejercicios</dt>
-                <dd className="font-semibold text-indigo-600">{weeklyOverview.exercises}</dd>
-              </div>
-              <div className="flex items-center justify-between">
-                <dt>Duración</dt>
-                <dd className="font-semibold text-indigo-600">{weeklyOverview.duration} min</dd>
-              </div>
-              <div className="flex items-center justify-between">
-                <dt>Calorías</dt>
-                <dd className="font-semibold text-indigo-600">{weeklyCalories}</dd>
-              </div>
-            </dl>
-          </div>
-
-          <div>
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Objetivos semanales</p>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onOpenFormulaManager}
-                  className="h-auto px-2 py-1 text-xs"
-                >
-                  Fórmulas personalizadas
-                  {customFormulaCount > 0 ? ` (${customFormulaCount})` : ''}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onResetManualTargets}
-                  className="h-auto px-2 py-1 text-xs"
-                  disabled={
-                    manualWeeklyTargets.sessions === null &&
-                    manualWeeklyTargets.duration === null &&
-                    manualWeeklyTargets.calories === null
-                  }
-                >
-                  Restablecer
-                </Button>
-              </div>
-            </div>
-            <div className="mb-4 space-y-2 rounded-xl border border-slate-200/70 bg-slate-50/50 p-3 dark:border-slate-800/70 dark:bg-slate-900/40">
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-medium text-slate-600 dark:text-slate-300 w-20">Sesiones:</label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={manualWeeklyTargets.sessions ?? ''}
-                  onChange={(e) => {
-                    const value = e.target.value === '' ? null : parseInt(e.target.value, 10);
-                    onUpdateManualTargets({ sessions: value && !Number.isNaN(value) ? value : null });
-                  }}
-                  placeholder={autoWeeklyTargets.sessions.toString()}
-                  className="flex-1 text-xs"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-medium text-slate-600 dark:text-slate-300 w-20">Duración:</label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={manualWeeklyTargets.duration ?? ''}
-                  onChange={(e) => {
-                    const value = e.target.value === '' ? null : parseInt(e.target.value, 10);
-                    onUpdateManualTargets({ duration: value && !Number.isNaN(value) ? value : null });
-                  }}
-                  placeholder={autoWeeklyTargets.duration.toString()}
-                  className="flex-1 text-xs"
-                />
-                <span className="text-xs text-slate-500">min</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-medium text-slate-600 dark:text-slate-300 w-20">Calorías:</label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={manualWeeklyTargets.calories ?? ''}
-                  onChange={(e) => {
-                    const value = e.target.value === '' ? null : parseInt(e.target.value, 10);
-                    onUpdateManualTargets({ calories: value && !Number.isNaN(value) ? value : null });
-                  }}
-                  placeholder={autoWeeklyTargets.calories.toString()}
-                  className="flex-1 text-xs"
-                />
-              </div>
-            </div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-3">Progreso</p>
-            <div className="mt-3 space-y-4">
-              {[
-                {
-                  label: 'Sesiones',
-                  value: weeklyOverview.sessions,
-                  goal: weeklyTargets.sessions,
-                  suffix: '',
-                  gradient: 'from-emerald-500 to-emerald-400',
-                  highlight: 'text-emerald-600',
-                },
-                {
-                  label: 'Duración',
-                  value: weeklyOverview.duration,
-                  goal: weeklyTargets.duration,
-                  suffix: ' min',
-                  gradient: 'from-indigo-500 to-indigo-400',
-                  highlight: 'text-emerald-600',
-                },
-                {
-                  label: 'Calorías',
-                  value: weeklyCalories,
-                  goal: weeklyTargets.calories,
-                  suffix: '',
-                  gradient: 'from-amber-500 to-orange-400',
-                  highlight: weeklyCalories > weeklyTargets.calories ? 'text-red-500' : 'text-emerald-600',
-                },
-              ].map((item) => {
-                const percentage = item.goal > 0 ? Math.min(100, (item.value / item.goal) * 100) : 0;
-                return (
-                  <div key={item.label} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs text-slate-500">
-                      <span>{item.label}</span>
-                      <span className={`font-semibold ${item.highlight}`}>
-                        {item.value}
-                        {item.suffix} / {item.goal}
-                        {item.suffix}
-                      </span>
-                    </div>
-                    <div className="h-2 rounded-full bg-slate-100">
-                      <div className={`h-full rounded-full bg-gradient-to-r ${item.gradient}`} style={{ width: `${percentage}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Alertas</p>
-            <div className="mt-3 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
-              <AlertCircle className="h-5 w-5 text-amber-500" />
-              <div>
-                <p className="font-semibold">Volumen alto en la sesión del jueves</p>
-                <Button variant="ghost" size="sm" className="mt-2 h-auto px-3 py-1 text-xs text-amber-600 hover:text-amber-700">
-                  Reducir series
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Lightbulb className="h-4 w-4 text-indigo-500" />
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                Sugerencias {activeView === 'weekly' ? 'Semanal' : activeView === 'daily' ? 'Diaria' : 'Excel'}
-              </p>
-            </div>
-            <div className="space-y-2">
-              {contextualSuggestions.length > 0 ? (
-                contextualSuggestions.map((suggestion) => (
-                  <div
-                    key={suggestion}
-                    className="flex items-start gap-2 rounded-xl border border-indigo-200/70 bg-indigo-50/50 p-3 text-sm text-indigo-700 dark:border-indigo-800/70 dark:bg-indigo-500/10 dark:text-indigo-300"
-                  >
-                    <Sparkles className="h-4 w-4 text-indigo-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-xs leading-relaxed">{suggestion}</p>
-                  </div>
-                ))
-              ) : (
-                <div className="rounded-xl border border-slate-200/70 bg-slate-50 p-3 text-xs text-slate-500 dark:border-slate-800/70 dark:bg-slate-900/40">
-                  No hay sugerencias en este momento
+      {activeTab === 'insights' ? (
+        <InsightsAssistantPanel
+          weeklyPlan={weeklyPlan}
+          weekDays={weekDays}
+          weeklyTargets={weeklyTargets}
+          contextoCliente={contextoCliente}
+          objetivosProgreso={objetivosProgreso}
+          timelineSesiones={timelineSesiones}
+          clienteId={clienteId}
+          onInsightAction={onInsightAction}
+        />
+      ) : (
+        <div className="space-y-6">
+          <Card className="space-y-6 border border-slate-200/70 bg-white/95 p-6 shadow-lg dark:border-slate-800/70 dark:bg-slate-950/60">
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center dark:border-slate-800/70 dark:bg-slate-900/40">
+              {todaysSessions.length === 0 ? (
+                <div className="space-y-2">
+                  <Calendar className="mx-auto h-8 w-8 text-slate-300" />
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-300">No hay sesiones programadas para hoy</p>
                 </div>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <StickyNote className="h-4 w-4 text-emerald-500" />
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Notas de seguimiento</p>
-              </div>
-              {!isAddingNote && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  leftIcon={<PlusCircle className="h-3.5 w-3.5" />}
-                  onClick={onStartAddNote}
-                  className="h-auto px-2 py-1 text-xs"
-                >
-                  Nueva
-                </Button>
-              )}
-            </div>
-
-            {isAddingNote && (
-              <div className="mb-3 rounded-xl border border-emerald-200/70 bg-emerald-50/50 p-3 dark:border-emerald-800/70 dark:bg-emerald-500/10">
-                <textarea
-                  value={newNoteContent}
-                  onChange={(e) => onChangeNewNoteContent(e.target.value)}
-                  placeholder="Escribe una nota de seguimiento..."
-                  className="w-full min-h-[80px] rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs text-slate-700 placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none dark:border-emerald-800 dark:bg-slate-950 dark:text-slate-200"
-                  autoFocus
-                />
-                <div className="mt-2 flex items-center justify-end gap-2">
-                  <Button variant="ghost" size="sm" onClick={onCancelAddNote} className="h-auto px-2 py-1 text-xs">
-                    Cancelar
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={onSaveNewNote}
-                    disabled={!newNoteContent.trim()}
-                    className="h-auto px-2 py-1 text-xs"
-                  >
-                    Guardar
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-2 max-h-[300px] overflow-y-auto">
-              {followUpNotes.length > 0 ? (
-                followUpNotes.map((note) => (
-                  <div
-                    key={note.id}
-                    className="group relative rounded-xl border border-slate-200/70 bg-white/90 p-3 text-sm transition hover:border-emerald-300 hover:shadow-sm dark:border-slate-800/70 dark:bg-slate-950/60 dark:hover:border-emerald-500/40"
-                  >
-                    {editingNoteId === note.id ? (
-                      <div>
-                        <textarea
-                          defaultValue={note.content}
-                          onBlur={(e) => {
-                            if (e.target.value.trim() !== note.content) {
-                              onEditNote(note.id, e.target.value);
-                            } else {
-                              onSetEditingNoteId(null);
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                              e.currentTarget.blur();
-                            }
-                            if (e.key === 'Escape') {
-                              onSetEditingNoteId(null);
-                            }
-                          }}
-                          className="w-full min-h-[60px] rounded-lg border border-emerald-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-emerald-400 focus:outline-none dark:border-emerald-800 dark:bg-slate-900 dark:text-slate-200"
-                          autoFocus
-                        />
-                        <p className="mt-1 text-[10px] text-slate-400">Presiona Cmd/Ctrl+Enter para guardar, Esc para cancelar</p>
-                      </div>
-                    ) : (
-                      <>
-                        <p className="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words">{note.content}</p>
-                        <p className="mt-1.5 text-[10px] text-slate-400">
-                          {new Date(note.createdAt).toLocaleDateString('es-ES', {
-                            day: 'numeric',
-                            month: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </p>
-                        <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
-                          <button
-                            type="button"
-                            onClick={() => onSetEditingNoteId(note.id)}
-                            className="rounded p-1 text-slate-400 transition hover:bg-slate-100 hover:text-indigo-600 dark:hover:bg-slate-800"
-                            aria-label="Editar nota"
-                          >
-                            <Edit2 className="h-3 w-3" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onDeleteNote(note.id)}
-                            className="rounded p-1 text-slate-400 transition hover:bg-slate-100 hover:text-red-600 dark:hover:bg-slate-800"
-                            aria-label="Eliminar nota"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ))
               ) : (
-                <div className="rounded-xl border border-dashed border-slate-200/70 bg-slate-50 p-4 text-center dark:border-slate-800/70 dark:bg-slate-900/40">
-                  <StickyNote className="mx-auto h-6 w-6 text-slate-300 mb-2" />
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    No hay notas de seguimiento. Añade una para recordar ajustes acordados con el cliente.
+                <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-500">Siguiente sesión</p>
+                  <p className="text-base font-semibold text-slate-900 dark:text-slate-100">{nextSession?.block}</p>
+                  <p>
+                    {nextSession?.time} · {nextSession?.duration}
                   </p>
                 </div>
               )}
             </div>
-          </div>
-        </Card>
-      </aside>
-    )
+
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Esta semana</p>
+              <dl className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                <div className="flex items-center justify-between">
+                  <dt>Sesiones</dt>
+                  <dd className="font-semibold text-indigo-600">{weeklyOverview.sessions}</dd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <dt>Ejercicios</dt>
+                  <dd className="font-semibold text-indigo-600">{weeklyOverview.exercises}</dd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <dt>Duración</dt>
+                  <dd className="font-semibold text-indigo-600">{weeklyOverview.duration} min</dd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <dt>Calorías</dt>
+                  <dd className="font-semibold text-indigo-600">{weeklyCalories}</dd>
+                </div>
+              </dl>
+            </div>
+
+            <div>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Objetivos semanales</p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onOpenFormulaManager}
+                    className="h-auto px-2 py-1 text-xs"
+                  >
+                    Fórmulas personalizadas
+                    {customFormulaCount > 0 ? ` (${customFormulaCount})` : ''}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onResetManualTargets}
+                    className="h-auto px-2 py-1 text-xs"
+                    disabled={
+                      manualWeeklyTargets.sessions === null &&
+                      manualWeeklyTargets.duration === null &&
+                      manualWeeklyTargets.calories === null
+                    }
+                  >
+                    Restablecer
+                  </Button>
+                </div>
+              </div>
+              <div className="mb-4 space-y-2 rounded-xl border border-slate-200/70 bg-slate-50/50 p-3 dark:border-slate-800/70 dark:bg-slate-900/40">
+                <div className="flex items-center gap-2">
+                  <label className="w-20 text-xs font-medium text-slate-600 dark:text-slate-300">Sesiones:</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={manualWeeklyTargets.sessions ?? ''}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? null : parseInt(e.target.value, 10);
+                      onUpdateManualTargets({ sessions: value && !Number.isNaN(value) ? value : null });
+                    }}
+                    placeholder={autoWeeklyTargets.sessions.toString()}
+                    className="flex-1 text-xs"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="w-20 text-xs font-medium text-slate-600 dark:text-slate-300">Duración:</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={manualWeeklyTargets.duration ?? ''}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? null : parseInt(e.target.value, 10);
+                      onUpdateManualTargets({ duration: value && !Number.isNaN(value) ? value : null });
+                    }}
+                    placeholder={autoWeeklyTargets.duration.toString()}
+                    className="flex-1 text-xs"
+                  />
+                  <span className="text-xs text-slate-500">min</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="w-20 text-xs font-medium text-slate-600 dark:text-slate-300">Calorías:</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={manualWeeklyTargets.calories ?? ''}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? null : parseInt(e.target.value, 10);
+                      onUpdateManualTargets({ calories: value && !Number.isNaN(value) ? value : null });
+                    }}
+                    placeholder={autoWeeklyTargets.calories.toString()}
+                    className="flex-1 text-xs"
+                  />
+                </div>
+              </div>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Progreso</p>
+              <div className="mt-3 space-y-4">
+                {[
+                  {
+                    label: 'Sesiones',
+                    value: weeklyOverview.sessions,
+                    goal: weeklyTargets.sessions,
+                    suffix: '',
+                    gradient: 'from-emerald-500 to-emerald-400',
+                    highlight: 'text-emerald-600',
+                  },
+                  {
+                    label: 'Duración',
+                    value: weeklyOverview.duration,
+                    goal: weeklyTargets.duration,
+                    suffix: ' min',
+                    gradient: 'from-indigo-500 to-indigo-400',
+                    highlight: 'text-emerald-600',
+                  },
+                  {
+                    label: 'Calorías',
+                    value: weeklyCalories,
+                    goal: weeklyTargets.calories,
+                    suffix: '',
+                    gradient: 'from-amber-500 to-orange-400',
+                    highlight: weeklyCalories > weeklyTargets.calories ? 'text-red-500' : 'text-emerald-600',
+                  },
+                ].map((item) => {
+                  const percentage = item.goal > 0 ? Math.min(100, (item.value / item.goal) * 100) : 0;
+                  return (
+                    <div key={item.label} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs text-slate-500">
+                        <span>{item.label}</span>
+                        <span className={`font-semibold ${item.highlight}`}>
+                          {item.value}
+                          {item.suffix} / {item.goal}
+                          {item.suffix}
+                        </span>
+                      </div>
+                      <div className="h-2 rounded-full bg-slate-100">
+                        <div className={`h-full rounded-full bg-gradient-to-r ${item.gradient}`} style={{ width: `${percentage}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Alertas</p>
+              <div className="mt-3 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
+                <AlertCircle className="h-5 w-5 text-amber-500" />
+                <div>
+                  <p className="font-semibold">Volumen alto en la sesión del jueves</p>
+                  <Button variant="ghost" size="sm" className="mt-2 h-auto px-3 py-1 text-xs text-amber-600 hover:text-amber-700">
+                    Reducir series
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="mb-3 flex items-center gap-2">
+                <Lightbulb className="h-4 w-4 text-indigo-500" />
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Sugerencias {activeView === 'weekly' ? 'Semanal' : activeView === 'daily' ? 'Diaria' : 'Excel'}
+                </p>
+              </div>
+              <div className="space-y-2">
+                {contextualSuggestions.length > 0 ? (
+                  contextualSuggestions.map((suggestion) => (
+                    <div
+                      key={suggestion}
+                      className="flex items-start gap-2 rounded-xl border border-indigo-200/70 bg-indigo-50/50 p-3 text-sm text-indigo-700 dark:border-indigo-800/70 dark:bg-indigo-500/10 dark:text-indigo-300"
+                    >
+                      <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-indigo-500" />
+                      <p className="text-xs leading-relaxed">{suggestion}</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-xl border border-slate-200/70 bg-slate-50 p-3 text-xs text-slate-500 dark:border-slate-800/70 dark:bg-slate-900/40">
+                    No hay sugerencias en este momento
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+
+          <NotasAcuerdosRecordatorios programaId={programaId} clienteId={clienteId} />
+        </div>
+      )}
+    </aside>
   );
 }
 
@@ -2291,6 +2226,7 @@ function BatchTrainingModal({ weeklyPlan, weekDays, onApplyRules, onClose }: Bat
 export default function ProgramasDeEntrenoEditorPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const currentProgramId = 'current-program';
   const [activeView, setActiveView] = useState<EditorView>('weekly');
   const [selectedDay, setSelectedDay] = useState<DayKey>('Lunes');
   const [leftCollapsed, setLeftCollapsed] = useState(() => {
@@ -2323,6 +2259,8 @@ export default function ProgramasDeEntrenoEditorPage() {
   const [isBatchTrainingOpen, setIsBatchTrainingOpen] = useState(false);
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
   const [isBulkAutomationOpen, setIsBulkAutomationOpen] = useState(false);
+  const [isAutomationPresetsOpen, setIsAutomationPresetsOpen] = useState(false);
+  const [selectedAutomationPreset, setSelectedAutomationPreset] = useState<PresetAutomatizacion | null>(null);
   const [isChartsOpen, setIsChartsOpen] = useState(false);
   const [isCompartirChatOpen, setIsCompartirChatOpen] = useState(false);
   const [isBuscarSustituirOpen, setIsBuscarSustituirOpen] = useState(false);
@@ -2370,19 +2308,6 @@ export default function ProgramasDeEntrenoEditorPage() {
       return [];
     }
   });
-
-  // Estado para notas de seguimiento
-  const [followUpNotes, setFollowUpNotes] = useState<FollowUpNote[]>(() => {
-    try {
-      const raw = localStorage.getItem('followUpNotes');
-      return raw ? (JSON.parse(raw) as FollowUpNote[]) : [];
-    } catch {
-      return [];
-    }
-  });
-  const [isAddingNote, setIsAddingNote] = useState(false);
-  const [newNoteContent, setNewNoteContent] = useState('');
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 
   // Estado para guardar borrador
   const [isSaveDraftModalOpen, setIsSaveDraftModalOpen] = useState(false);
@@ -2692,6 +2617,264 @@ export default function ProgramasDeEntrenoEditorPage() {
     [],
   );
 
+  const contextoCliente = useMemo<ContextoCliente>(
+    () => ({
+      clienteId: selectedClient.id,
+      clienteNombre: selectedClient.nombre,
+      datosBiometricos: {
+        peso: {
+          valor: 68.2,
+          fecha: '2025-01-08',
+          tendencia: 'bajando',
+        },
+        altura: 168,
+        imc: 24.1,
+        grasaCorporal: {
+          porcentaje: 24,
+          fecha: '2025-01-05',
+        },
+        frecuenciaCardiaca: {
+          reposo: 58,
+          maxima: 186,
+        },
+        vo2Max: 42,
+      },
+      lesiones: [
+        {
+          id: 'lesion-rotuliana',
+          nombre: 'Tendinopatía rotuliana',
+          ubicacion: 'Rodilla derecha',
+          severidad: 'leve',
+          fechaInicio: '2024-11-15',
+          estado: 'activa',
+          restricciones: ['Limitar impactos altos', 'Trabajo excéntrico controlado'],
+          notas: 'Mejora progresiva, monitorizar respuesta tras sesiones de fuerza.',
+        },
+      ],
+      habitos: [
+        {
+          id: 'habito-sueno',
+          nombre: 'Higiene del sueño',
+          tipo: 'sueño',
+          objetivo: 7,
+          unidad: 'h/noche',
+          cumplimiento: 68,
+          activo: true,
+        },
+        {
+          id: 'habito-nutricion',
+          nombre: 'Registro nutricional',
+          tipo: 'nutricion',
+          objetivo: 5,
+          unidad: 'días/semana',
+          cumplimiento: 60,
+          activo: true,
+        },
+      ],
+      disponibilidadMaterial: [
+        { material: 'Bandas elásticas', disponible: true, ubicacion: 'Home gym' },
+        { material: 'Kettlebell 16kg', disponible: false, notas: 'Prestada durante dos semanas' },
+        { material: 'Barra olímpica', disponible: true, ubicacion: 'Box' },
+      ],
+      cronotipo: 'matutino',
+      ultimaActualizacion: new Date().toISOString(),
+    }),
+    [selectedClient.id, selectedClient.nombre],
+  );
+
+  const objetivosProgreso = useMemo<ResumenObjetivosProgreso>(() => {
+    const objetivos = [
+      {
+        id: 'obj-1',
+        titulo: 'Reducir grasa corporal al 22%',
+        descripcion: 'Mejorar composición corporal sin perder masa magra.',
+        categoria: 'salud',
+        horizonte: 'medio',
+        valorObjetivo: 22,
+        valorActual: 24.5,
+        unidad: '%',
+        fechaLimite: '2025-03-31',
+        estado: 'in_progress',
+        progreso: 35,
+        fechaCreacion: '2024-09-01',
+        fechaActualizacion: new Date().toISOString(),
+      },
+      {
+        id: 'obj-2',
+        titulo: 'Mejorar sentadilla trasera 1RM',
+        descripcion: 'Alcanzar 120 kg manteniendo técnica sólida.',
+        categoria: 'fuerza',
+        horizonte: 'corto',
+        valorObjetivo: 120,
+        valorActual: 112,
+        unidad: 'kg',
+        fechaLimite: '2025-02-15',
+        estado: 'at_risk',
+        progreso: 45,
+        fechaCreacion: '2024-10-10',
+        fechaActualizacion: new Date().toISOString(),
+      },
+      {
+        id: 'obj-3',
+        titulo: 'Completar 10 sesiones consecutivas de movilidad',
+        descripcion: 'Establecer rutina de movilidad torácica y cadera.',
+        categoria: 'movilidad',
+        horizonte: 'corto',
+        valorObjetivo: 10,
+        valorActual: 10,
+        unidad: 'sesiones',
+        fechaLimite: '2024-12-20',
+        estado: 'achieved',
+        progreso: 100,
+        fechaCreacion: '2024-11-01',
+        fechaActualizacion: '2024-12-18',
+      },
+    ];
+
+    const metricas = [
+      {
+        id: 'met-1',
+        nombre: 'Peso corporal',
+        categoria: 'salud',
+        valorActual: 68.2,
+        valorAnterior: 69.5,
+        cambio: -1.3,
+        cambioPorcentual: Number((-1.3 / 69.5 * 100).toFixed(2)),
+        unidad: 'kg',
+        tendencia: 'down' as const,
+        fecha: '2025-01-08',
+      },
+      {
+        id: 'met-2',
+        nombre: 'Adherencia semanal',
+        categoria: 'fitness',
+        valorActual: 74,
+        valorAnterior: 68,
+        cambio: 6,
+        cambioPorcentual: Number((6 / 68 * 100).toFixed(2)),
+        unidad: '%',
+        tendencia: 'up' as const,
+        fecha: '2025-01-07',
+      },
+      {
+        id: 'met-3',
+        nombre: 'Horas de sueño promedio',
+        categoria: 'salud',
+        valorActual: 6.6,
+        valorAnterior: 6.2,
+        cambio: 0.4,
+        cambioPorcentual: Number((0.4 / 6.2 * 100).toFixed(2)),
+        unidad: 'h',
+        tendencia: 'up' as const,
+        fecha: '2025-01-09',
+      },
+    ];
+
+    const resumen = {
+      totalObjetivos: objetivos.length,
+      objetivosCortoPlazo: objetivos.filter((o) => o.horizonte === 'corto').length,
+      objetivosMedioPlazo: objetivos.filter((o) => o.horizonte === 'medio').length,
+      objetivosLargoPlazo: objetivos.filter((o) => o.horizonte === 'largo').length,
+      objetivosEnProgreso: objetivos.filter((o) => o.estado === 'in_progress').length,
+      objetivosCompletados: objetivos.filter((o) => o.estado === 'achieved').length,
+      objetivosEnRiesgo: objetivos.filter((o) => o.estado === 'at_risk').length,
+      progresoPromedio:
+        objetivos.length > 0
+          ? Math.round(objetivos.reduce((acc, objetivo) => acc + objetivo.progreso, 0) / objetivos.length)
+          : 0,
+    };
+
+    return {
+      clienteId: selectedClient.id,
+      clienteNombre: selectedClient.nombre,
+      objetivos,
+      metricas,
+      resumen,
+      ultimaActualizacion: new Date().toISOString(),
+    };
+  }, [selectedClient.id, selectedClient.nombre]);
+
+  const timelineSesiones = useMemo<TimelineSesiones>(() => {
+    const eventos: TimelineSesiones['eventos'] = [
+      {
+        id: 'evt-1',
+        tipo: 'sesion',
+        fecha: '2025-01-10T09:00:00Z',
+        titulo: 'Sesión fuerza tren inferior',
+        descripcion: 'Sesión completada con énfasis en control excéntrico.',
+        clienteId: selectedClient.id,
+        clienteNombre: selectedClient.nombre,
+        metadata: {
+          sesionId: 'tue-06',
+          duracionMinutos: 40,
+          ejerciciosCompletados: 5,
+          ejerciciosTotales: 5,
+          tipoEntrenamiento: 'fuerza',
+          gruposMusculares: ['piernas'],
+        },
+      },
+      {
+        id: 'evt-2',
+        tipo: 'feedback',
+        fecha: '2025-01-09T19:30:00Z',
+        titulo: 'Feedback post-sesión',
+        descripcion: 'Reporta fatiga moderada tras bloques intensos consecutivos.',
+        clienteId: selectedClient.id,
+        clienteNombre: selectedClient.nombre,
+        metadata: {
+          tipoFeedback: 'post-sesion',
+          puntuacion: 7,
+          comentarios: 'Buena sesión, pero la rodilla cargada al final.',
+          nivelFatiga: 7,
+          nivelDolor: 4,
+        },
+      },
+      {
+        id: 'evt-3',
+        tipo: 'resultado',
+        fecha: '2025-01-05T08:00:00Z',
+        titulo: 'Test de movilidad torácica',
+        descripcion: 'Incremento de 7° en rango de movimiento.',
+        clienteId: selectedClient.id,
+        clienteNombre: selectedClient.nombre,
+        metadata: {
+          metrica: 'Movilidad torácica',
+          valorAnterior: 75,
+          valorActual: 82,
+          unidad: '°',
+          tipoEntrenamiento: 'movilidad',
+        },
+      },
+    ];
+
+    return {
+      clienteId: selectedClient.id,
+      clienteNombre: selectedClient.nombre,
+      eventos,
+      resumen: {
+        totalSesiones: 7,
+        sesionesCompletadas: 5,
+        sesionesPendientes: 2,
+        promedioAdherencia: 72,
+        promedioFeedback: 8.1,
+        ultimaSesion: eventos[0]?.fecha,
+        patronesDetectados: [
+          {
+            tipo: 'adherencia',
+            descripcion: 'Mayor adherencia al inicio de la semana que en sesiones de jueves.',
+            severidad: 'media',
+          },
+          {
+            tipo: 'fatiga',
+            descripcion: 'Fatiga elevada tras dos días consecutivos de intensidad alta.',
+            severidad: 'alta',
+          },
+        ],
+      },
+      ultimaActualizacion: new Date().toISOString(),
+    };
+  }, [selectedClient.id, selectedClient.nombre]);
+
   // Sugerencias contextuales según la vista activa
   const contextualSuggestions = useMemo(() => {
     if (activeView === 'weekly') {
@@ -2811,49 +2994,54 @@ export default function ProgramasDeEntrenoEditorPage() {
     [],
   );
 
-  // Funciones para manejar notas de seguimiento
-  const saveNotesToStorage = useCallback((notes: FollowUpNote[]) => {
-    try {
-      localStorage.setItem('followUpNotes', JSON.stringify(notes));
-    } catch {
-      // ignore persistence errors
-    }
+  const handleInsightAction = useCallback(
+    (insightId: string, action: { tipo: string; label: string; detalle?: string } | undefined) => {
+      if (!action) return;
+
+      if (
+        action.tipo === 'aumentar_volumen_grupo' ||
+        action.tipo === 'revisar_objetivo' ||
+        action.tipo === 'revisar_adherencia' ||
+        action.tipo === 'revisar_plan'
+      ) {
+        setActiveView('weekly');
+      }
+
+      if (
+        action.tipo === 'aumentar_volumen_grupo' ||
+        action.tipo === 'ajustar_intensidad' ||
+        action.tipo === 'ajustar_plan_sueno'
+      ) {
+        setSelectedAutomationPreset(null);
+        setIsBulkAutomationOpen(true);
+      }
+
+      if (rightCollapsed) {
+        setRightCollapsed(false);
+        try {
+          localStorage.setItem('programasEditor_rightCollapsed', JSON.stringify(false));
+        } catch {
+          // ignore persistence errors
+        }
+      }
+
+      console.info('[ProgramasDeEntrenoEditorPage] Acción de insight recibida', { insightId, action });
+    },
+    [rightCollapsed],
+  );
+
+  const handleAutomationPresetSelect = useCallback((preset: PresetAutomatizacion) => {
+    setSelectedAutomationPreset(preset);
+    setIsAutomationPresetsOpen(false);
+    setIsBulkAutomationOpen(true);
   }, []);
 
-  const handleAddNote = useCallback(() => {
-    if (!newNoteContent.trim()) return;
-    const newNote: FollowUpNote = {
-      id: Date.now().toString(),
-      content: newNoteContent.trim(),
-      createdAt: new Date().toISOString(),
-    };
-    const updatedNotes = [newNote, ...followUpNotes];
-    setFollowUpNotes(updatedNotes);
-    saveNotesToStorage(updatedNotes);
-    setNewNoteContent('');
-    setIsAddingNote(false);
-  }, [newNoteContent, followUpNotes, saveNotesToStorage]);
-
-  const handleEditNote = useCallback(
-    (noteId: string, newContent: string) => {
-      const updatedNotes = followUpNotes.map((note) =>
-        note.id === noteId ? { ...note, content: newContent.trim() } : note
-      );
-      setFollowUpNotes(updatedNotes);
-      saveNotesToStorage(updatedNotes);
-      setEditingNoteId(null);
-    },
-    [followUpNotes, saveNotesToStorage]
-  );
-
-  const handleDeleteNote = useCallback(
-    (noteId: string) => {
-      const updatedNotes = followUpNotes.filter((note) => note.id !== noteId);
-      setFollowUpNotes(updatedNotes);
-      saveNotesToStorage(updatedNotes);
-    },
-    [followUpNotes, saveNotesToStorage]
-  );
+  const handleBulkAutomationOpenChange = useCallback((open: boolean) => {
+    setIsBulkAutomationOpen(open);
+    if (!open) {
+      setSelectedAutomationPreset(null);
+    }
+  }, []);
 
   // Atajos de teclado para cambiar vistas y colapsar paneles
   useEffect(() => {
@@ -3030,17 +3218,6 @@ export default function ProgramasDeEntrenoEditorPage() {
     updateManualWeeklyTargets({ sessions: null, duration: null, calories: null });
   }, [updateManualWeeklyTargets]);
 
-  const handleStartAddNote = useCallback(() => setIsAddingNote(true), []);
-
-  const handleCancelAddNote = useCallback(() => {
-    setIsAddingNote(false);
-    setNewNoteContent('');
-  }, []);
-
-  const handleChangeNewNoteContent = useCallback((value: string) => setNewNoteContent(value), []);
-
-  const handleSetEditingNoteId = useCallback((noteId: string | null) => setEditingNoteId(noteId), []);
-
   const handleOpenSaveDraftModal = useCallback(() => {
     setSaveDraftError(null);
     setIsSaveDraftModalOpen(true);
@@ -3139,6 +3316,7 @@ export default function ProgramasDeEntrenoEditorPage() {
           onOpenTagManager={() => setIsTagManagerOpen(true)}
           onOpenCharts={() => setIsChartsOpen(true)}
           onOpenLayoutSurvey={() => setIsLayoutSurveyOpen(true)}
+        onOpenAutomationPresets={() => setIsAutomationPresetsOpen(true)}
           onOpenBulkAutomation={() => setIsBulkAutomationOpen(true)}
           onSaveDraft={handleOpenSaveDraftModal}
           lastSaveTime={lastSaveTime}
@@ -3228,20 +3406,17 @@ export default function ProgramasDeEntrenoEditorPage() {
             onResetManualTargets={handleResetManualTargets}
             onUpdateManualTargets={updateManualWeeklyTargets}
             contextualSuggestions={contextualSuggestions}
-            followUpNotes={followUpNotes}
-            isAddingNote={isAddingNote}
-            newNoteContent={newNoteContent}
-            onStartAddNote={handleStartAddNote}
-            onCancelAddNote={handleCancelAddNote}
-            onChangeNewNoteContent={handleChangeNewNoteContent}
-            onSaveNewNote={handleAddNote}
-            editingNoteId={editingNoteId}
-            onSetEditingNoteId={handleSetEditingNoteId}
-            onEditNote={handleEditNote}
-            onDeleteNote={handleDeleteNote}
             activeView={activeView}
             customFormulaCount={customFormulas.length}
             onOpenFormulaManager={() => setIsFormulaManagerOpen(true)}
+          weeklyPlan={weeklyPlan}
+          weekDays={weekDays}
+          contextoCliente={contextoCliente}
+          objetivosProgreso={objetivosProgreso}
+          timelineSesiones={timelineSesiones}
+          onInsightAction={handleInsightAction}
+          clienteId={selectedClient.id}
+          programaId={currentProgramId}
           />
         </div>
       </div>
@@ -3386,7 +3561,7 @@ export default function ProgramasDeEntrenoEditorPage() {
         onOpenChange={setIsCompartirChatOpen}
         clienteId={selectedClient.id}
         clienteNombre={selectedClient.nombre}
-        programaId="current-program"
+        programaId={currentProgramId}
         programaNombre="Programa Actual"
       />
 
@@ -3516,15 +3691,27 @@ export default function ProgramasDeEntrenoEditorPage() {
         }}
       />
 
+      <GestorPresetsAutomatizaciones
+        open={isAutomationPresetsOpen}
+        onOpenChange={setIsAutomationPresetsOpen}
+        usuarioId={user?.id ?? 'usuario-actual'}
+        usuarioNombre={user?.name ?? user?.email ?? 'Usuario'}
+        onSeleccionarPreset={handleAutomationPresetSelect}
+      />
+
       {/* Modal: Automatización Masiva */}
       <BulkAutomationFlow
         open={isBulkAutomationOpen}
-        onOpenChange={setIsBulkAutomationOpen}
+        onOpenChange={handleBulkAutomationOpenChange}
         weeklyPlan={weeklyPlan}
         weekDays={weekDays}
         onUpdatePlan={(updatedPlan) => {
           setWeeklyPlan(updatedPlan);
         }}
+        selectedPreset={selectedAutomationPreset}
+        onClearSelectedPreset={() => setSelectedAutomationPreset(null)}
+        programaId={currentProgramId}
+        clienteId={selectedClient.id}
       />
     </div>
   );

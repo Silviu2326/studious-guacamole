@@ -4,10 +4,11 @@ import { Button } from '../../../components/componentsreutilizables/Button';
 import { Input } from '../../../components/componentsreutilizables/Input';
 import { Textarea } from '../../../components/componentsreutilizables/Textarea';
 import { Select } from '../../../components/componentsreutilizables/Select';
-import { FileEdit, Plus, Trash2, Save } from 'lucide-react';
+import { FileEdit, Plus, Trash2, Save, User } from 'lucide-react';
 import * as programasApi from '../api/programas';
 import * as categoriasApi from '../api/categorias';
 import { useAuth } from '../../../context/AuthContext';
+import { ClientFileModal } from './ClientFileModal';
 
 export function EditorPrograma() {
   const { user } = useAuth();
@@ -31,6 +32,9 @@ export function EditorPrograma() {
     descanso: 60,
     orden: 0,
   });
+  const [isClientFileModalOpen, setIsClientFileModalOpen] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [selectedClientName, setSelectedClientName] = useState<string>('');
 
   useEffect(() => {
     loadCategorias();
@@ -119,10 +123,24 @@ export function EditorPrograma() {
     setPrograma({ ...programa, ejercicios: nuevos });
   };
 
+  const handleOpenClientFile = (clientId?: string, clientName?: string) => {
+    // Si no se proporciona cliente, usar uno por defecto (en producción vendría del contexto)
+    setSelectedClientId(clientId || '1');
+    setSelectedClientName(clientName || 'Cliente');
+    setIsClientFileModalOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Toolbar superior */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        <Button 
+          onClick={() => handleOpenClientFile()} 
+          iconLeft={User} 
+          variant="secondary"
+        >
+          Ver Ficha del Cliente
+        </Button>
         <Button onClick={handleGuardar} iconLeft={Save} loading={loading}>
           Guardar Programa
         </Button>
@@ -270,6 +288,14 @@ export function EditorPrograma() {
             </div>
           </div>
       </Card>
+
+      {/* Modal de Ficha del Cliente */}
+      <ClientFileModal
+        open={isClientFileModalOpen}
+        onOpenChange={setIsClientFileModalOpen}
+        clientId={selectedClientId}
+        clientName={selectedClientName}
+      />
     </div>
   );
 }

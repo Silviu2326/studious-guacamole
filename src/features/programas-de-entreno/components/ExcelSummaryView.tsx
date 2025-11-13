@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import {
   BarChart3,
   Calculator,
@@ -27,9 +27,25 @@ import {
   ZoomIn,
   ZoomOut,
   AlertCircle,
+  User,
+  CheckCircle2,
+  TrendingUp,
+  TrendingDown,
+  XCircle,
+  Table2,
+  Calendar,
 } from 'lucide-react';
 import { Button, Input } from '../../../components/componentsreutilizables';
-import type { DayPlan } from '../types';
+import type { DayPlan, PreferenciasCoachExcel, GrupoMuscular, ContextoCliente, ResumenObjetivosProgreso } from '../types';
+import { obtenerPreferenciasCoach, tienePreferenciasGuardadas } from '../api/coach-preferences';
+import { useAuth } from '../../../context/AuthContext';
+import { CoachPreferencesQuestionnaire } from './CoachPreferencesQuestionnaire';
+import { AIAnalysisPanel } from './AIAnalysisPanel';
+import {
+  FormulaPersonalizada,
+  calcularFormulasPlanSemanal,
+  cargarFormulasPersonalizadas,
+} from '../utils/formulasPersonalizadas';
 
 type ExcelCell = {
   value: string | number;
@@ -55,6 +71,10 @@ type ExcelSummaryViewProps = {
     duration: number;
     calories: number;
   };
+  formulasPersonalizadas?: FormulaPersonalizada[];
+  columnasPersonalizadas?: string[];
+  contextoCliente?: ContextoCliente;
+  objetivosProgreso?: ResumenObjetivosProgreso;
 };
 
 const EXCEL_ROW_OFFSET = 2;
@@ -64,7 +84,8 @@ const parseFirstNumber = (value: string) => {
   return match ? Number(match[0].replace(',', '.')) : null;
 };
 
-export function ExcelSummaryView({ weekDays, weeklyPlan, onUpdateDayPlan, weeklyTargets }: ExcelSummaryViewProps) {
+export function ExcelSummaryView({ weekDays, weeklyPlan, onUpdateDayPlan, weeklyTargets, contextoCliente, objetivosProgreso }: ExcelSummaryViewProps) {
+  const { user } = useAuth();
   const [activeSheet, setActiveSheet] = useState(0);
   const [selectedCell, setSelectedCell] = useState<string | null>(null);
   const [editingCell, setEditingCell] = useState<string | null>(null);
@@ -77,9 +98,44 @@ export function ExcelSummaryView({ weekDays, weeklyPlan, onUpdateDayPlan, weekly
   const [formulaValue, setFormulaValue] = useState('');
   const [showCharts, setShowCharts] = useState(false);
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
+  const [selectedRange, setSelectedRange] = useState<{ start: string; end: string } | null>(null);
+  const [isSelectingRange, setIsSelectingRange] = useState(false);
+  const [rangeStart, setRangeStart] = useState<string | null>(null);
+  const [showRightPanel, setShowRightPanel] = useState(false);
   const [sortColumn, setSortColumn] = useState<string>('A');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showContextMenu, setShowContextMenu] = useState<{ x: number; y: number; row?: number } | null>(null);
+  const [preferencias, setPreferencias] = useState<PreferenciasCoachExcel | null>(null);
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+  const [hasCheckedPreferences, setHasCheckedPreferences] = useState(false);
+
+  // Cargar preferencias del coach
+  useEffect(() => {
+    const loadPreferences = async () => {
+      if (!user?.id) return;
+      
+      const hasPreferences = await tienePreferenciasGuardadas(user.id);
+      if (!hasPreferences) {
+        // Mostrar cuestionario si no hay preferencias
+        setShowQuestionnaire(true);
+        setHasCheckedPreferences(true);
+        return;
+      }
+
+      const prefs = await obtenerPreferenciasCoach(user.id);
+      setPreferencias(prefs);
+      setHasCheckedPreferences(true);
+    };
+
+    loadPreferences();
+  }, [user?.id]);
+
+  const handlePreferencesSaved = async () => {
+    if (!user?.id) return;
+    const prefs = await obtenerPreferenciasCoach(user.id);
+    setPreferencias(prefs);
+    setShowQuestionnaire(false);
+  };
 
   const sheets = useMemo<ExcelSheet[]>(() => {
     const summaryHeader: ExcelRow = {
@@ -213,8 +269,127 @@ export function ExcelSummaryView({ weekDays, weeklyPlan, onUpdateDayPlan, weekly
     return cell?.value?.toString() ?? '';
   }, [selectedCell, currentSheet]);
 
-  const handleCellClick = (cellId: string) => {
-    setSelectedCell(cellId);
+  // Función para verificar si una celda está en el rango seleccionado
+  const isCellInRange = useCallback((cellId: string, range: { start: string; end: string } | null) => {
+    if (!range) return false;
+    const [startRow, startCol] = range.start.split('-').map((v, i) => i === 0 ? Number(v) : v);
+    const [endRow, endCol] = range.end.split('-').map((v, i) => i === 0 ? Number(v) : v);
+    const [cellRow, cellCol] = cellId.split('-').map((v, i) => i === 0 ? Number(v) : v);
+    
+    const minRow = Math.min(startRow, endRow);
+    const maxRow = Math.max(startRow, endRow);
+    const minCol = startCol < endCol ? startCol : endCol;
+    const maxCol = startCol > endCol ? startCol : endCol;
+    
+    return cellRow >= minRow && cellRow <= maxRow && cellCol >= minCol && cellCol <= maxCol;
+  }, []);
+
+  // Función para calcular estadísticas del rango seleccionado
+  const calculateRangeStatistics = useMemo(() => {
+    if (!selectedRange || !currentSheet) return null;
+
+    const [startRow, startCol] = selectedRange.start.split('-').map((v, i) => i === 0 ? Number(v) : v);
+    const [endRow, endCol] = selectedRange.end.split('-').map((v, i) => i === 0 ? Number(v) : v);
+    
+    const minRow = Math.min(startRow, endRow);
+    const maxRow = Math.max(startRow, endRow);
+    const minCol = startCol < endCol ? startCol : endCol;
+    const maxCol = startCol > endCol ? startCol : endCol;
+
+    // Obtener datos del rango
+    const rangeData: Array<{ row: number; column: string; value: any; day?: string }> = [];
+    for (let row = minRow; row <= maxRow; row++) {
+      for (let col = minCol.charCodeAt(0); col <= maxCol.charCodeAt(0); col++) {
+        const column = String.fromCharCode(col);
+        const cell = currentSheet.data[row]?.[column];
+        if (cell && row > 0 && row <= weekDays.length) {
+          const day = weekDays[row - 1];
+          rangeData.push({ row, column, value: cell.value, day });
+        }
+      }
+    }
+
+    // Calcular estadísticas
+    const stats = {
+      totalCells: rangeData.length,
+      volumeByMuscleGroup: {} as Record<string, number>,
+      averageRPE: 0,
+      totalVolume: 0,
+      totalDuration: 0,
+      totalCalories: 0,
+      sessionsByDay: {} as Record<string, number>,
+      intensityValues: [] as number[],
+    };
+
+    // Procesar datos del rango
+    rangeData.forEach(({ row, column, value, day }) => {
+      if (day) {
+        const plan = weeklyPlan[day];
+        if (plan) {
+          // Calcular volumen por grupo muscular
+          plan.sessions.forEach(session => {
+            if (session.gruposMusculares) {
+              session.gruposMusculares.forEach(grupo => {
+                stats.volumeByMuscleGroup[grupo] = (stats.volumeByMuscleGroup[grupo] || 0) + 1;
+              });
+            }
+          });
+
+          // Extraer RPE de intensidad
+          plan.sessions.forEach(session => {
+            const rpeMatch = session.intensity?.match(/RPE\s*(\d+(?:\.\d+)?)/i);
+            if (rpeMatch) {
+              stats.intensityValues.push(parseFloat(rpeMatch[1]));
+            }
+          });
+
+          // Calcular totales
+          const totalMinutes = plan.sessions.reduce((total, session) => 
+            total + (parseFirstNumber(session.duration) ?? 0), 0);
+          stats.totalDuration += totalMinutes;
+          stats.totalCalories += Math.round(totalMinutes * 8);
+          stats.totalVolume += parseFirstNumber(plan.volume ?? '') ?? 0;
+          stats.sessionsByDay[day] = plan.sessions.length;
+        }
+      }
+    });
+
+    // Calcular promedio de RPE
+    if (stats.intensityValues.length > 0) {
+      stats.averageRPE = stats.intensityValues.reduce((sum, val) => sum + val, 0) / stats.intensityValues.length;
+    }
+
+    return stats;
+  }, [selectedRange, currentSheet, weekDays, weeklyPlan]);
+
+  const handleCellClick = (cellId: string, event?: React.MouseEvent) => {
+    if (event?.shiftKey && rangeStart) {
+      // Selección de rango con Shift
+      setSelectedRange({ start: rangeStart, end: cellId });
+      setShowRightPanel(true);
+    } else if (event?.ctrlKey || event?.metaKey) {
+      // Selección múltiple con Ctrl/Cmd
+      if (!selectedRange) {
+        setRangeStart(cellId);
+        setSelectedRange({ start: cellId, end: cellId });
+      } else {
+        setSelectedRange({ ...selectedRange, end: cellId });
+      }
+      setShowRightPanel(true);
+    } else {
+      // Selección simple
+      setSelectedCell(cellId);
+      setRangeStart(cellId);
+      const newRange = { start: cellId, end: cellId };
+      setSelectedRange(newRange);
+      
+      // Si hay un rango previo y la celda clickeada está dentro de él, mantener el panel abierto
+      if (selectedRange && isCellInRange(cellId, selectedRange) && selectedRange.start !== selectedRange.end) {
+        setShowRightPanel(true);
+      } else {
+        setShowRightPanel(false);
+      }
+    }
     setEditingCell(null);
     const [rowIndexRaw, column] = cellId.split('-');
     const rowIndex = Number(rowIndexRaw);
@@ -323,7 +498,7 @@ export function ExcelSummaryView({ weekDays, weeklyPlan, onUpdateDayPlan, weekly
   }
 
   return (
-    <div className="space-y-6 font-sans text-slate-700 dark:text-slate-200">
+    <div className="space-y-6 font-sans text-slate-700 dark:text-slate-700 relative">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm dark:border-slate-800 dark:bg-slate-950">
         <div>
           <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Resumen semanal · Vista Excel</h3>
@@ -332,6 +507,14 @@ export function ExcelSummaryView({ weekDays, weeklyPlan, onUpdateDayPlan, weekly
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            leftIcon={<Settings className="h-4 w-4" />}
+            onClick={() => setShowQuestionnaire(true)}
+          >
+            Configurar vista
+          </Button>
           <Button variant="primary" size="sm" leftIcon={<FileSpreadsheet className="h-4 w-4" />}>
             Exportar .xlsx
           </Button>
@@ -628,9 +811,35 @@ export function ExcelSummaryView({ weekDays, weeklyPlan, onUpdateDayPlan, weekly
                       const plan = day ? weeklyPlan[day] : null;
                       const totalMinutes = plan ? plan.sessions.reduce((total, session) => total + (parseFirstNumber(session.duration) ?? 0), 0) : 0;
                       const calories = Math.round(totalMinutes * 8);
+                      const targetDuration = plan?.targetDuration;
+                      const targetCalories = plan?.targetCalories;
+                      
+                      // Formato condicional mejorado: verificar cumplimiento de objetivos
+                      let objectiveStatus: 'fulfilled' | 'exceeded' | 'below' | null = null;
+                      if (column === 'F' && targetDuration !== undefined && targetDuration > 0) {
+                        if (totalMinutes >= targetDuration * 0.95 && totalMinutes <= targetDuration * 1.05) {
+                          objectiveStatus = 'fulfilled';
+                        } else if (totalMinutes > targetDuration * 1.05) {
+                          objectiveStatus = 'exceeded';
+                        } else if (totalMinutes < targetDuration * 0.95) {
+                          objectiveStatus = 'below';
+                        }
+                      } else if (column === 'G' && targetCalories !== undefined && targetCalories > 0) {
+                        if (calories >= targetCalories * 0.95 && calories <= targetCalories * 1.05) {
+                          objectiveStatus = 'fulfilled';
+                        } else if (calories > targetCalories * 1.05) {
+                          objectiveStatus = 'exceeded';
+                        } else if (calories < targetCalories * 0.95) {
+                          objectiveStatus = 'below';
+                        }
+                      }
+                      
                       const exceedsDuration = weeklyTargets && day && totalMinutes > weeklyTargets.duration;
                       const exceedsCalories = weeklyTargets && day && calories > weeklyTargets.calories;
                       const showWarning = day && ((column === 'F' && exceedsDuration) || (column === 'G' && exceedsCalories));
+                      
+                      // Verificar si la celda está en el rango seleccionado
+                      const isInRange = selectedRange && isCellInRange(cellId, selectedRange);
 
                       return (
                         <div
@@ -639,8 +848,10 @@ export function ExcelSummaryView({ weekDays, weeklyPlan, onUpdateDayPlan, weekly
                             isHeaderRow ? 'bg-slate-100 font-semibold' : 'bg-white'
                           } ${isSelected ? 'bg-sky-100 ring-1 ring-sky-300' : ''} ${
                             showWarning ? 'ring-2 ring-red-400 bg-red-50' : ''
-                          } ${isEditableGoal ? 'bg-blue-50/50 hover:bg-blue-100/50' : ''}`}
-                          onClick={() => handleCellClick(cellId)}
+                          } ${isEditableGoal ? 'bg-blue-50/50 hover:bg-blue-100/50' : ''} ${
+                            isInRange ? 'ring-2 ring-blue-400 bg-blue-50' : ''
+                          }`}
+                          onClick={(e) => handleCellClick(cellId, e)}
                           onDoubleClick={() => {
                             if (isEditableGoal) {
                               handleCellEdit(cellId);
@@ -660,11 +871,24 @@ export function ExcelSummaryView({ weekDays, weeklyPlan, onUpdateDayPlan, weekly
                           ) : (
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-1 flex-1 min-w-0">
-                                {showWarning && (
+                                {objectiveStatus === 'fulfilled' && (
+                                  <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                                )}
+                                {objectiveStatus === 'exceeded' && (
+                                  <XCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
+                                )}
+                                {objectiveStatus === 'below' && (
+                                  <TrendingDown className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+                                )}
+                                {showWarning && !objectiveStatus && (
                                   <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
                                 )}
                                 <span
-                                  className={`truncate ${cell.bold ? 'font-semibold' : ''} ${showWarning ? 'text-red-700 font-semibold' : ''}`}
+                                  className={`truncate ${cell.bold ? 'font-semibold' : ''} ${
+                                    objectiveStatus === 'exceeded' || showWarning ? 'text-red-700 font-semibold' : ''
+                                  } ${objectiveStatus === 'fulfilled' ? 'text-green-700 font-semibold' : ''} ${
+                                    objectiveStatus === 'below' ? 'text-yellow-700' : ''
+                                  }`}
                                   style={{
                                     backgroundColor: cell.backgroundColor,
                                     fontStyle: cell.italic ? 'italic' : 'normal',
@@ -798,6 +1022,231 @@ export function ExcelSummaryView({ weekDays, weeklyPlan, onUpdateDayPlan, weekly
           </div>
         )}
       </div>
+
+      {/* Modal de cuestionario de preferencias */}
+      <CoachPreferencesQuestionnaire
+        isOpen={showQuestionnaire}
+        onClose={() => setShowQuestionnaire(false)}
+        onSave={handlePreferencesSaved}
+      />
+
+      {/* Panel derecho con tablas dinámicas y resúmenes */}
+      {showRightPanel && selectedRange && calculateRangeStatistics && (
+        <div className="fixed right-0 top-0 h-full w-96 bg-white border-l border-slate-200 shadow-xl z-50 overflow-y-auto">
+          <div className="p-4 border-b border-slate-200 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Table2 className="h-5 w-5" />
+                <h3 className="text-lg font-bold">Resumen del Rango</h3>
+              </div>
+              <button
+                onClick={() => setShowRightPanel(false)}
+                className="rounded p-1 hover:bg-white/20 transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="text-sm text-blue-100 mt-1">
+              Rango: {selectedRange.start} - {selectedRange.end}
+            </p>
+          </div>
+
+          <div className="p-4 space-y-6">
+            {/* Estadísticas generales */}
+            <div className="space-y-3">
+              <h4 className="font-semibold text-slate-900 flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Estadísticas Generales
+              </h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <div className="text-xs text-slate-600">Total Celdas</div>
+                  <div className="text-2xl font-bold text-slate-900">{calculateRangeStatistics.totalCells}</div>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <div className="text-xs text-slate-600">Volumen Total</div>
+                  <div className="text-2xl font-bold text-slate-900">{calculateRangeStatistics.totalVolume}</div>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <div className="text-xs text-slate-600">Duración Total</div>
+                  <div className="text-2xl font-bold text-slate-900">{calculateRangeStatistics.totalDuration} min</div>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <div className="text-xs text-slate-600">Calorías Totales</div>
+                  <div className="text-2xl font-bold text-slate-900">{calculateRangeStatistics.totalCalories}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* RPE Promedio */}
+            {calculateRangeStatistics.averageRPE > 0 && (
+              <div className="space-y-3">
+                <h4 className="font-semibold text-slate-900 flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Intensidad
+                </h4>
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200">
+                  <div className="text-sm text-slate-600 mb-1">RPE Promedio</div>
+                  <div className="text-3xl font-bold text-purple-700">
+                    {calculateRangeStatistics.averageRPE.toFixed(1)}
+                    <span className="text-lg text-slate-500">/10</span>
+                  </div>
+                  <div className="text-xs text-slate-500 mt-2">
+                    Basado en {calculateRangeStatistics.intensityValues.length} sesiones
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Volumen por Grupo Muscular */}
+            {Object.keys(calculateRangeStatistics.volumeByMuscleGroup).length > 0 && (
+              <div className="space-y-3">
+                <h4 className="font-semibold text-slate-900 flex items-center gap-2">
+                  <Dumbbell className="h-4 w-4" />
+                  Volumen por Grupo Muscular
+                </h4>
+                <div className="space-y-2">
+                  {Object.entries(calculateRangeStatistics.volumeByMuscleGroup)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([grupo, volumen]) => (
+                      <div key={grupo} className="flex items-center justify-between bg-slate-50 rounded-lg p-3">
+                        <span className="text-sm font-medium text-slate-700 capitalize">{grupo}</span>
+                        <span className="text-sm font-bold text-slate-900">{volumen} sesiones</span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sesiones por Día */}
+            {Object.keys(calculateRangeStatistics.sessionsByDay).length > 0 && (
+              <div className="space-y-3">
+                <h4 className="font-semibold text-slate-900 flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Sesiones por Día
+                </h4>
+                <div className="space-y-2">
+                  {Object.entries(calculateRangeStatistics.sessionsByDay)
+                    .sort(([a], [b]) => weekDays.indexOf(a as any) - weekDays.indexOf(b as any))
+                    .map(([dia, sesiones]) => (
+                      <div key={dia} className="flex items-center justify-between bg-slate-50 rounded-lg p-3">
+                        <span className="text-sm font-medium text-slate-700">{dia}</span>
+                        <span className="text-sm font-bold text-slate-900">{sesiones} sesiones</span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tabla Pivote - Resumen por Modalidad */}
+            <div className="space-y-3">
+              <h4 className="font-semibold text-slate-900 flex items-center gap-2">
+                <PieChart className="h-4 w-4" />
+                Resumen por Modalidad
+              </h4>
+              <div className="bg-slate-50 rounded-lg p-3 space-y-2">
+                {Object.entries(
+                  weekDays.reduce((acc, day) => {
+                    const plan = weeklyPlan[day];
+                    plan?.sessions.forEach(session => {
+                      acc[session.modality] = (acc[session.modality] || 0) + 1;
+                    });
+                    return acc;
+                  }, {} as Record<string, number>)
+                )
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([modalidad, count]) => (
+                    <div key={modalidad} className="flex items-center justify-between">
+                      <span className="text-sm text-slate-700">{modalidad}</span>
+                      <span className="text-sm font-bold text-slate-900">{count}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            {/* Panel de Análisis de IA */}
+            {selectedRange && (() => {
+              // Convertir rango seleccionado a formato SelectedCell
+              const [startRow, startCol] = selectedRange.start.split('-').map((v, i) => i === 0 ? Number(v) : v);
+              const [endRow, endCol] = selectedRange.end.split('-').map((v, i) => i === 0 ? Number(v) : v);
+              const minRow = Math.min(startRow, endRow);
+              const maxRow = Math.max(startRow, endRow);
+              const minCol = startCol < endCol ? startCol : endCol;
+              const maxCol = startCol > endCol ? startCol : endCol;
+
+              const selectedCells: Array<{
+                cellId: string;
+                column: string;
+                row: number;
+                value: string | number;
+                day?: string;
+                sessionId?: string;
+                metadata?: {
+                  type: 'volume' | 'intensity' | 'duration' | 'series' | 'repetitions' | 'calories' | 'other';
+                  grupoMuscular?: string;
+                  ejercicio?: string;
+                };
+              }> = [];
+
+              for (let row = minRow; row <= maxRow; row++) {
+                for (let col = minCol.charCodeAt(0); col <= maxCol.charCodeAt(0); col++) {
+                  const column = String.fromCharCode(col);
+                  const cellId = `${row}-${column}`;
+                  const cell = currentSheet?.data[row]?.[column];
+                  
+                  if (cell && row > 0 && row <= weekDays.length) {
+                    const day = weekDays[row - 1];
+                    const dayPlan = weeklyPlan[day];
+                    
+                    // Determinar tipo de celda según columna
+                    let metadataType: 'volume' | 'intensity' | 'duration' | 'series' | 'repetitions' | 'calories' | 'other' = 'other';
+                    if (column === 'D') metadataType = 'volume';
+                    else if (column === 'E') metadataType = 'intensity';
+                    else if (column === 'F') metadataType = 'duration';
+                    else if (column === 'G') metadataType = 'calories';
+
+                    // Obtener grupos musculares de las sesiones del día
+                    const gruposMusculares = new Set<string>();
+                    dayPlan?.sessions.forEach(session => {
+                      if (session.gruposMusculares) {
+                        session.gruposMusculares.forEach(grupo => gruposMusculares.add(grupo));
+                      }
+                    });
+
+                    selectedCells.push({
+                      cellId,
+                      column,
+                      row,
+                      value: cell.value,
+                      day,
+                      metadata: {
+                        type: metadataType,
+                        grupoMuscular: gruposMusculares.size > 0 ? Array.from(gruposMusculares)[0] : undefined,
+                      },
+                    });
+                  }
+                }
+              }
+
+              return (
+                <div className="mt-6">
+                  <AIAnalysisPanel
+                    selectedCells={selectedCells}
+                    weeklyPlan={weeklyPlan}
+                    weekDays={weekDays}
+                    contextoCliente={contextoCliente}
+                    objetivosProgreso={objetivosProgreso}
+                    onApplySuggestion={(suggestionId, action) => {
+                      console.log('Aplicar sugerencia:', suggestionId, action);
+                      // Aquí se implementaría la lógica para aplicar la sugerencia
+                    }}
+                  />
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

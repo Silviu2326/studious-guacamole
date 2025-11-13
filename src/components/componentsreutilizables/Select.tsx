@@ -21,7 +21,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(({
   label,
   error,
   helperText,
-  options,
+  options = [],
   placeholder,
   fullWidth = true,
   className = '',

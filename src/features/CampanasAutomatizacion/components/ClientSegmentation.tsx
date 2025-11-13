@@ -18,10 +18,14 @@ import {
   TrendingUp,
   Eye,
   Reply,
+  Brain,
+  RefreshCw,
+  Zap,
 } from 'lucide-react';
 import { Card, Button, Badge, Modal } from '../../../components/componentsreutilizables';
 import { ds } from '../../adherencia/ui/ds';
 import { ClientSegment, BulkMessage, SegmentCriteria, MessagingChannel, CampaignStatus } from '../types';
+import { IntelligentSegmentBuilder } from './IntelligentSegmentBuilder';
 
 interface ClientSegmentationProps {
   segments?: ClientSegment[];
@@ -87,6 +91,8 @@ export const ClientSegmentation: React.FC<ClientSegmentationProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'segments' | 'messages'>('segments');
   const [selectedSegment, setSelectedSegment] = useState<string | null>(null);
+  const [isIntelligentSegmentBuilderOpen, setIsIntelligentSegmentBuilderOpen] = useState(false);
+  const [editingIntelligentSegment, setEditingIntelligentSegment] = useState<ClientSegment | undefined>(undefined);
 
   if (loading) {
     return (
@@ -142,6 +148,17 @@ export const ClientSegmentation: React.FC<ClientSegmentationProps> = ({
           <Badge variant="blue" size="md">
             {segments.length} segmentos
           </Badge>
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<Brain size={16} />}
+            onClick={() => {
+              setEditingIntelligentSegment(undefined);
+              setIsIntelligentSegmentBuilderOpen(true);
+            }}
+          >
+            Segmento Inteligente
+          </Button>
           <Button variant="primary" size="sm" leftIcon={<Plus size={16} />} onClick={onSegmentCreate}>
             Nuevo segmento
           </Button>
@@ -213,7 +230,7 @@ export const ClientSegmentation: React.FC<ClientSegmentationProps> = ({
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
                       <h3 className={`${ds.typography.h3} ${ds.color.textPrimary} ${ds.color.textPrimaryDark}`}>
                         {segment.name}
                       </h3>
@@ -228,10 +245,78 @@ export const ClientSegmentation: React.FC<ClientSegmentationProps> = ({
                           Inactivo
                         </Badge>
                       )}
+                      {segment.isIntelligentSegment && (
+                        <Badge variant="purple" size="sm">
+                          <Brain className="w-3 h-3 mr-1" />
+                          Inteligente
+                        </Badge>
+                      )}
+                      {segment.autoUpdateEnabled && (
+                        <Badge variant="orange" size="sm">
+                          <Zap className="w-3 h-3 mr-1" />
+                          Auto-actualiza
+                        </Badge>
+                      )}
                     </div>
                     <p className={`${ds.typography.bodySmall} ${ds.color.textSecondary} ${ds.color.textSecondaryDark} mb-3`}>
                       {segment.description}
                     </p>
+                    {segment.isIntelligentSegment && segment.trainingProgressCriteria && (
+                      <div className="mb-3 p-3 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Brain className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                          <span className={`${ds.typography.bodySmall} ${ds.color.textPrimary} ${ds.color.textPrimaryDark} font-medium`}>
+                            Criterios de Progreso:
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {segment.trainingProgressCriteria.map((criterion, idx) => {
+                            const metricLabels: Record<string, string> = {
+                              'completion-rate': 'Cumplimiento',
+                              'weight-change': 'Cambio de peso',
+                              'strength-improvement': 'Mejora en fuerza',
+                              'consistency-score': 'Consistencia',
+                              'goal-achievement': 'Logro de objetivos',
+                              'session-frequency': 'Frecuencia',
+                            };
+                            return (
+                              <Badge key={idx} variant="indigo" size="sm">
+                                {metricLabels[criterion.metric] || criterion.metric}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {segment.autoUpdateEnabled && (
+                      <div className="mb-3 p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Zap className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                          <span className={`${ds.typography.bodySmall} ${ds.color.textPrimary} ${ds.color.textPrimaryDark} font-medium`}>
+                            Auto-actualización:
+                          </span>
+                          <Badge variant="purple" size="sm">
+                            {segment.autoUpdateFrequency === 'realtime'
+                              ? 'Tiempo real'
+                              : segment.autoUpdateFrequency === 'hourly'
+                              ? 'Cada hora'
+                              : segment.autoUpdateFrequency === 'daily'
+                              ? 'Diariamente'
+                              : 'Semanalmente'}
+                          </Badge>
+                        </div>
+                        {segment.autoUpdateRules && segment.autoUpdateRules.length > 0 && (
+                          <p className={`${ds.typography.caption} ${ds.color.textSecondary} ${ds.color.textSecondaryDark}`}>
+                            {segment.autoUpdateRules.length} regla(s) activa(s) basada(s) en feedback y NPS
+                          </p>
+                        )}
+                        {segment.lastAutoUpdate && (
+                          <p className={`${ds.typography.caption} ${ds.color.textMuted} ${ds.color.textMutedDark} mt-1`}>
+                            Última actualización: {new Date(segment.lastAutoUpdate).toLocaleString('es-ES')}
+                          </p>
+                        )}
+                      </div>
+                    )}
                     {renderCriteria(segment.criteria)}
                   </div>
                   <div className="flex items-center gap-2 ml-4">
@@ -254,14 +339,28 @@ export const ClientSegmentation: React.FC<ClientSegmentationProps> = ({
                     >
                       Enviar mensaje
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      leftIcon={<Edit size={14} />}
-                      onClick={() => onSegmentEdit?.(segment)}
-                    >
-                      Editar
-                    </Button>
+                    {segment.isIntelligentSegment ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        leftIcon={<Brain size={14} />}
+                        onClick={() => {
+                          setEditingIntelligentSegment(segment);
+                          setIsIntelligentSegmentBuilderOpen(true);
+                        }}
+                      >
+                        Editar
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        leftIcon={<Edit size={14} />}
+                        onClick={() => onSegmentEdit?.(segment)}
+                      >
+                        Editar
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -422,6 +521,43 @@ export const ClientSegmentation: React.FC<ClientSegmentationProps> = ({
           )}
         </div>
       )}
+
+      {/* Modal de Segmento Inteligente */}
+      <IntelligentSegmentBuilder
+        isOpen={isIntelligentSegmentBuilderOpen}
+        onClose={() => {
+          setIsIntelligentSegmentBuilderOpen(false);
+          setEditingIntelligentSegment(undefined);
+        }}
+        onSave={(segment) => {
+          if (editingIntelligentSegment) {
+            onSegmentEdit?.({ ...editingIntelligentSegment, ...segment } as ClientSegment);
+          } else {
+            // Crear nuevo segmento inteligente
+            const newSegment: ClientSegment = {
+              id: `segment-${Date.now()}`,
+              name: segment.name || '',
+              description: segment.description || '',
+              criteria: segment.criteria || [],
+              clientCount: 0,
+              lastUpdated: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              isActive: segment.isActive ?? true,
+              isIntelligentSegment: true,
+              trainingProgressCriteria: segment.trainingProgressCriteria,
+              autoUpdateEnabled: segment.autoUpdateEnabled,
+              autoUpdateFrequency: segment.autoUpdateFrequency,
+              autoUpdateRules: segment.autoUpdateRules,
+              tags: segment.tags,
+            };
+            onSegmentEdit?.(newSegment);
+          }
+          setIsIntelligentSegmentBuilderOpen(false);
+          setEditingIntelligentSegment(undefined);
+        }}
+        existingSegment={editingIntelligentSegment}
+      />
     </Card>
   );
 };

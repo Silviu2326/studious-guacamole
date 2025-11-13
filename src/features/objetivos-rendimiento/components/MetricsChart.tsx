@@ -1,25 +1,132 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Metric } from '../types';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Metric, GlobalFilters, ChartAnnotation, SavedMetricView } from '../types';
 import { getPerformanceMetrics } from '../api/performance';
-import { Card, Button, Select, Badge } from '../../../components/componentsreutilizables';
-import { BarChart3, TrendingUp, TrendingDown, Minus, Loader2, LineChart, PieChart, Calendar, Target, Activity, Filter, Info } from 'lucide-react';
+import { getChartAnnotations } from '../api/externalSources';
+import { createSavedView, getSavedViewByToken } from '../api/savedViews';
+import { Card, Button, Select, Badge, Modal, Input, Textarea } from '../../../components/componentsreutilizables';
+import { BarChart3, TrendingUp, TrendingDown, Minus, Loader2, LineChart, PieChart, Calendar, Target, Activity, Filter, Info, Bookmark, Save } from 'lucide-react';
+import { useAuth } from '../../../context/AuthContext';
+import { useSearchParams } from 'react-router-dom';
 
 interface MetricsChartProps {
   role: 'entrenador' | 'gimnasio';
   category?: string;
+  globalFilters?: GlobalFilters;
+  periodo?: 'semana' | 'mes' | 'trimestre';
 }
 
-export const MetricsChart: React.FC<MetricsChartProps> = ({ role, category }) => {
+export const MetricsChart: React.FC<MetricsChartProps> = ({ role, category, globalFilters, periodo }) => {
+  const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [metrics, setMetrics] = useState<Metric[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [chartType, setChartType] = useState<'bar' | 'line' | 'list'>('list');
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
   const [period, setPeriod] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
+  
+  // User Story 1: Estados para anotaciones de fuentes externas
+  const [annotations, setAnnotations] = useState<ChartAnnotation[]>([]);
+  const [showAnnotations, setShowAnnotations] = useState(true);
+  
+  // User Story 2: Estados para vistas guardadas
+  const [isSaveViewModalOpen, setIsSaveViewModalOpen] = useState(false);
+  const [savedViewName, setSavedViewName] = useState('');
+  const [savedViewDescription, setSavedViewDescription] = useState('');
+
+  // User Story 2: Cargar vista desde URL si existe
+  useEffect(() => {
+    const viewToken = searchParams.get('view');
+    if (viewToken) {
+      loadViewFromToken(viewToken);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     loadMetrics();
   }, [role, category, period]);
+  
+  // User Story 1: Cargar anotaciones cuando cambian los datos
+  useEffect(() => {
+    if (selectedMetric) {
+      loadAnnotations();
+    }
+  }, [selectedMetric, period]);
+  
+  // User Story 1: Cargar anotaciones
+  const loadAnnotations = async () => {
+    try {
+      if (selectedMetric) {
+        const data = await getChartAnnotations([selectedMetric]);
+        setAnnotations(data);
+      } else {
+        setAnnotations([]);
+      }
+    } catch (error) {
+      console.error('Error loading annotations:', error);
+    }
+  };
+  
+  // User Story 2: Cargar vista desde token
+  const loadViewFromToken = async (token: string) => {
+    try {
+      const view = await getSavedViewByToken(token);
+      if (view) {
+        setChartType(view.config.chartType as 'bar' | 'line' | 'list');
+        setPeriod(view.config.period);
+        if (view.config.selectedMetrics && view.config.selectedMetrics.length > 0) {
+          setSelectedMetric(view.config.selectedMetrics[0]);
+        }
+        if (view.config.category) {
+          setSelectedCategory(view.config.category);
+        }
+        if (view.config.chartOptions?.showAnnotations !== undefined) {
+          setShowAnnotations(view.config.chartOptions.showAnnotations);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading view from token:', error);
+    }
+  };
+  
+  // User Story 2: Guardar vista actual
+  const handleSaveView = async () => {
+    if (!savedViewName.trim()) {
+      alert('Por favor ingresa un nombre para la vista');
+      return;
+    }
+    
+    try {
+      await createSavedView({
+        name: savedViewName,
+        description: savedViewDescription,
+        createdBy: user?.id || 'unknown',
+        shared: false,
+        sharedWith: [],
+        config: {
+          chartType: chartType as 'list' | 'bar' | 'line' | 'interactive' | 'multi-kpi',
+          selectedMetrics: selectedMetric ? [selectedMetric] : [],
+          selectedKPIs: [],
+          period,
+          filters: globalFilters || {},
+          category: selectedCategory !== 'all' ? selectedCategory : undefined,
+          chartOptions: {
+            showTargets: true,
+            showTrends: true,
+            showAnnotations,
+          },
+        },
+      });
+      
+      setIsSaveViewModalOpen(false);
+      setSavedViewName('');
+      setSavedViewDescription('');
+      alert('Vista guardada exitosamente');
+    } catch (error) {
+      console.error('Error saving view:', error);
+      alert('Error al guardar la vista');
+    }
+  };
 
   const loadMetrics = async () => {
     setLoading(true);
@@ -124,6 +231,25 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ role, category }) =>
           <h2 className="text-lg font-semibold text-gray-900">Análisis de Métricas</h2>
         </div>
         <div className="flex items-center gap-2">
+          {/* User Story 1: Toggle anotaciones */}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowAnnotations(!showAnnotations)}
+            title={showAnnotations ? 'Ocultar anotaciones' : 'Mostrar anotaciones'}
+          >
+            <Filter className="w-4 h-4 mr-2" />
+            {showAnnotations ? 'Ocultar Etiquetas' : 'Mostrar Etiquetas'}
+          </Button>
+          {/* User Story 2: Guardar vista */}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setIsSaveViewModalOpen(true)}
+          >
+            <Save className="w-4 h-4 mr-2" />
+            Guardar Vista
+          </Button>
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value as any)}
@@ -285,7 +411,12 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ role, category }) =>
 
       {/* Gráfico de líneas temporal */}
       {chartType === 'line' && filteredMetrics.length > 0 && (
-        <Card className="p-6 bg-white shadow-sm">
+        <Card 
+          className="p-6 bg-white shadow-sm"
+          ref={(el) => {
+            if (el) chartRefs.current.set('line-chart', el);
+          }}
+        >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <LineChart className="w-5 h-5 text-gray-600" />
@@ -303,14 +434,39 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ role, category }) =>
             </select>
           </div>
           {chartData.length > 0 && (
-            <div className="h-80 flex items-end justify-between gap-1">
+            <div className="h-80 flex items-end justify-between gap-1 relative">
               {chartData.map((point, index) => {
                 const maxValue = Math.max(...chartData.map(p => p.value));
                 const height = (point.value / maxValue) * 100;
                 const metric = metrics.find(m => m.id === selectedMetric || selectedMetric === null);
                 
+                // User Story 1: Buscar anotaciones para esta fecha
+                const pointDate = new Date(point.date);
+                const relevantAnnotations = showAnnotations && selectedMetric
+                  ? annotations.filter(ann => {
+                      const annDate = new Date(ann.date);
+                      return ann.metricIds.includes(selectedMetric) &&
+                             annDate.toDateString() === pointDate.toDateString();
+                    })
+                  : [];
+                
                 return (
-                  <div key={index} className="flex-1 flex flex-col items-center">
+                  <div key={index} className="flex-1 flex flex-col items-center relative">
+                    {/* User Story 1: Mostrar anotaciones */}
+                    {relevantAnnotations.length > 0 && (
+                      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 z-20 mb-1">
+                        {relevantAnnotations.map((ann) => (
+                          <div
+                            key={ann.id}
+                            className="mb-1 px-2 py-1 rounded text-xs font-medium text-white shadow-md"
+                            style={{ backgroundColor: ann.color || '#3B82F6' }}
+                            title={ann.description || ann.label}
+                          >
+                            {ann.label}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <div
                       className="w-full bg-gradient-to-t from-purple-600 to-purple-400 rounded-t-lg hover:from-purple-700 hover:to-purple-500 transition-all cursor-pointer group relative"
                       style={{ height: `${height}%`, minHeight: '4px' }}
@@ -318,6 +474,15 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ role, category }) =>
                     >
                       <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                         {point.date}: {point.value.toFixed(0)} {metric?.unit || ''}
+                        {relevantAnnotations.length > 0 && (
+                          <div className="mt-1 pt-1 border-t border-gray-700">
+                            {relevantAnnotations.map(ann => (
+                              <div key={ann.id} className="text-xs">
+                                {ann.label}: {ann.description}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                     {index % 5 === 0 && (
@@ -515,6 +680,59 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ role, category }) =>
           </div>
         </Card>
       )}
+
+      {/* User Story 2: Modal para guardar vista */}
+      <Modal
+        isOpen={isSaveViewModalOpen}
+        onClose={() => {
+          setIsSaveViewModalOpen(false);
+          setSavedViewName('');
+          setSavedViewDescription('');
+        }}
+        title="Guardar Vista Personalizada"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+            <Input
+              value={savedViewName}
+              onChange={(e) => setSavedViewName(e.target.value)}
+              placeholder="Ej: Vista Mensual de Facturación"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+            <Textarea
+              value={savedViewDescription}
+              onChange={(e) => setSavedViewDescription(e.target.value)}
+              placeholder="Describe esta vista personalizada..."
+              rows={3}
+            />
+          </div>
+          <div className="pt-4 border-t">
+            <p className="text-xs text-gray-500 mb-2">
+              Se guardará la configuración actual: tipo de gráfico, métricas seleccionadas, filtros y período.
+            </p>
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setIsSaveViewModalOpen(false);
+                setSavedViewName('');
+                setSavedViewDescription('');
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveView}>
+              <Save className="w-4 h-4 mr-2" />
+              Guardar Vista
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

@@ -37,6 +37,9 @@ export { Badge } from './Badge';
 export { Switch } from './Switch';
 export type { SwitchProps } from './Switch';
 
+export { Checkbox } from './Checkbox';
+export type { CheckboxProps } from './Checkbox';
+
 // Export example pages
 export { ExamplePage } from './ExamplePage';
 export { ButtonShowcase } from './ButtonShowcase';

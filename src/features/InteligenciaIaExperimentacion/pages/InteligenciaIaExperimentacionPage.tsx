@@ -9,9 +9,26 @@ import {
   ExperimentationSection,
   PersonalizationEngineSection,
   InsightsSection,
+  IntelligenceProfileSection,
+  AIOverviewSection,
+  AIPrioritizationSection,
+  PersonalizationImpactSection,
+  IntegratedAIPatternsSection,
+  ChannelInsightsSection,
+  MarketTrendsAlertsSection,
+  QuarterlyPlanSection,
+  OwnershipTrackingSection,
+  // User Story 1: Aprobar experimentos/playbooks desde móvil con resumen IA
+  MobileApprovalSection,
+  // User Story 2: Sincronizar playbooks con otras sedes o entrenadores
+  PlaybookSyncSection,
+  // User Story 1: IA que aprende de decisiones de playbooks
+  PlaybookLearningInsights,
+  // User Story 2: Evaluación automática de impacto de iniciativas
+  InitiativeImpactEvaluation,
 } from '../components';
-import { getIntelligenceOverview } from '../services/intelligenceService';
-import { IntelligenceOverviewResponse } from '../types';
+import { getIntelligenceOverview, getIntelligenceProfile } from '../services/intelligenceService';
+import { IntelligenceOverviewResponse, DecisionStyle } from '../types';
 import { Card, Button, Tabs, TabItem } from '../../../components/componentsreutilizables';
 import {
   Loader2,
@@ -23,15 +40,41 @@ import {
   Radar,
   Wand2,
   MessageSquareHeart,
+  UserCog,
+  BarChart3,
+  Target,
+  TrendingUp,
+  Layers,
+  BarChart,
+  Bell,
+  Calendar,
+  UserCheck,
+  Smartphone,
+  RefreshCw,
+  Trophy,
 } from 'lucide-react';
 
 type IntelligenceTabId =
   | 'overview'
+  | 'ai-overview'
+  | 'ai-prioritization'
+  | 'quarterly-plan'
+  | 'monthly-retrospective'
   | 'playbooks'
+  | 'playbook-learning'
+  | 'initiative-impact'
   | 'feedback'
   | 'personalization'
+  | 'personalization-impact'
+  | 'integrated-ai-view'
   | 'experimentation'
-  | 'insights';
+  | 'insights'
+  | 'channel-insights'
+  | 'market-trends'
+  | 'ownership'
+  | 'mobile-approval'
+  | 'playbook-sync'
+  | 'profile';
 
 export const InteligenciaIaExperimentacionPage: React.FC = () => {
   const { user } = useAuth();
@@ -40,12 +83,23 @@ export const InteligenciaIaExperimentacionPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [hasError, setHasError] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<IntelligenceTabId>('overview');
+  const [decisionStyle, setDecisionStyle] = useState<DecisionStyle | undefined>(undefined);
+  const [aiOverviewPeriod, setAiOverviewPeriod] = useState<'7d' | '30d' | '90d'>('30d');
+  const [aiPrioritizationPeriod, setAiPrioritizationPeriod] = useState<'7d' | '30d' | '90d'>('30d');
+  const [personalizationImpactPeriod, setPersonalizationImpactPeriod] = useState<'7d' | '30d' | '90d' | '180d' | '365d'>('30d');
+  const [integratedAIViewPeriod, setIntegratedAIViewPeriod] = useState<'7d' | '30d' | '90d'>('30d');
+  const [channelInsightsPeriod, setChannelInsightsPeriod] = useState<'7d' | '30d' | '90d'>('30d');
+  const [marketTrendsPeriod, setMarketTrendsPeriod] = useState<'7d' | '30d' | '90d'>('30d');
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const data = await getIntelligenceOverview();
-        setOverview(data);
+        const [overviewData, profileData] = await Promise.all([
+          getIntelligenceOverview(),
+          getIntelligenceProfile(user?.id),
+        ]);
+        setOverview(overviewData);
+        setDecisionStyle(profileData?.decisionStyle);
         setHasError(false);
       } catch (error) {
         console.error('No se pudo cargar el overview de inteligencia', error);
@@ -56,16 +110,29 @@ export const InteligenciaIaExperimentacionPage: React.FC = () => {
     };
 
     loadData();
-  }, []);
+  }, [user?.id]);
 
   const tabItems: TabItem[] = useMemo(
     () => [
       { id: 'overview', label: 'Overview Hub', icon: <LayoutDashboard size={16} /> },
+      { id: 'ai-overview', label: 'Overview IA', icon: <BarChart3 size={16} /> },
+      { id: 'ai-prioritization', label: 'Priorización IA', icon: <Target size={16} /> },
+      { id: 'quarterly-plan', label: 'Plan Trimestral IA', icon: <Calendar size={16} /> },
       { id: 'playbooks', label: 'Playbooks IA', icon: <BookOpen size={16} /> },
+      { id: 'playbook-learning', label: 'Aprendizaje IA', icon: <Sparkles size={16} /> },
+      { id: 'initiative-impact', label: 'Evaluación Impacto', icon: <BarChart3 size={16} /> },
       { id: 'feedback', label: 'Feedback Inteligente', icon: <MessageSquare size={16} /> },
       { id: 'personalization', label: 'Personalización IA', icon: <Sparkles size={16} /> },
+      { id: 'personalization-impact', label: 'Impacto Personalización', icon: <TrendingUp size={16} /> },
+      { id: 'integrated-ai-view', label: 'Vista Integrada IA', icon: <Layers size={16} /> },
       { id: 'experimentation', label: 'Test de Estrategias', icon: <FlaskConical size={16} /> },
       { id: 'insights', label: 'Insights & Mercado', icon: <Radar size={16} /> },
+      { id: 'channel-insights', label: 'Insights por Canal', icon: <BarChart size={16} /> },
+      { id: 'market-trends', label: 'Alertas Mercado', icon: <Bell size={16} /> },
+      { id: 'ownership', label: 'Seguimiento Ownership', icon: <UserCheck size={16} /> },
+      { id: 'mobile-approval', label: 'Aprobación Móvil', icon: <Smartphone size={16} /> },
+      { id: 'playbook-sync', label: 'Sincronización', icon: <RefreshCw size={16} /> },
+      { id: 'profile', label: 'Perfil de Inteligencia', icon: <UserCog size={16} /> },
     ],
     []
   );
@@ -99,10 +166,9 @@ export const InteligenciaIaExperimentacionPage: React.FC = () => {
   };
 
   const renderTabContent = () => {
-    if (!overview) return null;
-
     switch (activeTab) {
       case 'overview':
+        if (!overview) return null;
         return (
           <div className="space-y-8">
             <IntelligenceMetrics metrics={overview.metrics} />
@@ -164,19 +230,177 @@ export const InteligenciaIaExperimentacionPage: React.FC = () => {
               </Card>
             </div>
 
-            <InsightsSection insights={overview.insights} />
+            <InsightsSection 
+              insights={overview.insights} 
+              onPlaybookCreated={(playbookId) => {
+                // Recargar datos cuando se crea un playbook desde un insight
+                getIntelligenceOverview().then((data) => {
+                  setOverview(data);
+                  setActiveTab('playbooks');
+                });
+              }}
+            />
           </div>
         );
+      case 'ai-overview':
+        return (
+          <AIOverviewSection
+            period={aiOverviewPeriod}
+            onPeriodChange={(period) => setAiOverviewPeriod(period)}
+          />
+        );
+      case 'ai-prioritization':
+        return (
+          <AIPrioritizationSection
+            period={aiPrioritizationPeriod}
+            onPeriodChange={(period) => setAiPrioritizationPeriod(period)}
+            trainerId={user?.id}
+          />
+        );
+      case 'quarterly-plan':
+        return (
+          <QuarterlyPlanSection
+            trainerId={user?.id}
+          />
+        );
+      case 'monthly-retrospective':
+        return (
+          <MonthlyRetrospectiveSection
+            trainerId={user?.id}
+          />
+        );
       case 'playbooks':
-        return <PlaybookLibrary playbooks={overview.playbooks} />;
+        if (!overview) return null;
+        return (
+          <PlaybookLibrary 
+            playbooks={overview.playbooks}
+            onPlaybookCreated={(playbook) => {
+              // Recargar datos cuando se crea un playbook
+              getIntelligenceOverview().then((data) => {
+                setOverview(data);
+              });
+            }}
+          />
+        );
+      case 'playbook-learning':
+        return (
+          <PlaybookLearningInsights trainerId={user?.id} />
+        );
+      case 'initiative-impact':
+        return (
+          <InitiativeImpactEvaluation trainerId={user?.id} />
+        );
       case 'feedback':
-        return <FeedbackLoopSection feedbackLoops={overview.feedbackLoops} />;
+        if (!overview) return null;
+        return <FeedbackLoopSection feedbackLoops={overview.feedbackLoops} trainerId={user?.id} />;
       case 'personalization':
         return <PersonalizationEngineSection />;
+      case 'personalization-impact':
+        return (
+          <PersonalizationImpactSection
+            period={personalizationImpactPeriod}
+            onPeriodChange={(period) => setPersonalizationImpactPeriod(period)}
+            trainerId={user?.id}
+          />
+        );
+      case 'integrated-ai-view':
+        return (
+          <IntegratedAIPatternsSection
+            period={integratedAIViewPeriod}
+            onPeriodChange={(period) => setIntegratedAIViewPeriod(period)}
+            trainerId={user?.id}
+          />
+        );
       case 'experimentation':
-        return <ExperimentationSection experiments={overview.experiments} />;
+        if (!overview) return null;
+        return (
+          <ExperimentationSection 
+            experiments={overview.experiments}
+            trainerId={user?.id}
+            onExperimentCreated={(experiment) => {
+              // Recargar datos cuando se crea un experimento
+              getIntelligenceOverview().then((data) => {
+                setOverview(data);
+              });
+            }}
+          />
+        );
       case 'insights':
-        return <InsightsSection insights={overview.insights} />;
+        if (!overview) return null;
+        return (
+          <InsightsSection 
+            insights={overview.insights}
+            onPlaybookCreated={(playbookId) => {
+              // Recargar datos cuando se crea un playbook desde un insight
+              getIntelligenceOverview().then((data) => {
+                setOverview(data);
+                setActiveTab('playbooks');
+              });
+            }}
+          />
+        );
+      case 'channel-insights':
+        return (
+          <ChannelInsightsSection
+            period={channelInsightsPeriod}
+            onPeriodChange={(period) => setChannelInsightsPeriod(period)}
+            trainerId={user?.id}
+          />
+        );
+      case 'market-trends':
+        return (
+          <MarketTrendsAlertsSection
+            period={marketTrendsPeriod}
+            onPeriodChange={(period) => setMarketTrendsPeriod(period)}
+            trainerId={user?.id}
+          />
+        );
+      case 'ownership':
+        return (
+          <OwnershipTrackingSection
+            trainerId={user?.id}
+          />
+        );
+      case 'mobile-approval':
+        return (
+          <MobileApprovalSection
+            trainerId={user?.id}
+            onApprovalChange={() => {
+              // Recargar datos cuando se aprueba/rechaza un item
+              getIntelligenceOverview().then((data) => {
+                setOverview(data);
+              });
+            }}
+          />
+        );
+      case 'playbook-sync':
+        if (!overview) return null;
+        return (
+          <PlaybookSyncSection
+            playbooks={overview.playbooks}
+            trainerId={user?.id}
+            onSyncComplete={() => {
+              // Recargar datos cuando se sincroniza un playbook
+              getIntelligenceOverview().then((data) => {
+                setOverview(data);
+              });
+            }}
+          />
+        );
+      case 'profile':
+        return (
+          <IntelligenceProfileSection
+            onProfileUpdated={async () => {
+              // Recargar el perfil para actualizar el estilo de decisión
+              try {
+                const profileData = await getIntelligenceProfile(user?.id);
+                setDecisionStyle(profileData?.decisionStyle);
+              } catch (error) {
+                console.error('Error recargando perfil:', error);
+              }
+            }}
+          />
+        );
       default:
         return null;
     }
@@ -191,6 +415,7 @@ export const InteligenciaIaExperimentacionPage: React.FC = () => {
           </p>
           <IntelligenceHeader
             overview={overview}
+            decisionStyle={decisionStyle}
             onCreatePlaybook={handleCreatePlaybook}
             onLaunchExperiment={handleLaunchExperiment}
             onViewFeedback={handleViewFeedback}
@@ -221,19 +446,17 @@ export const InteligenciaIaExperimentacionPage: React.FC = () => {
           </Card>
         )}
 
-        {!isLoading && overview && (
-          <div className="space-y-8">
-            <Tabs
-              items={tabItems}
-              activeTab={activeTab}
-              onTabChange={(tabId) => setActiveTab(tabId as IntelligenceTabId)}
-              variant="pills"
-              fullWidth
-            />
+        <div className="space-y-8">
+          <Tabs
+            items={tabItems}
+            activeTab={activeTab}
+            onTabChange={(tabId) => setActiveTab(tabId as IntelligenceTabId)}
+            variant="pills"
+            fullWidth
+          />
 
-            {renderTabContent()}
-          </div>
-        )}
+          {renderTabContent()}
+        </div>
       </div>
     </div>
   );

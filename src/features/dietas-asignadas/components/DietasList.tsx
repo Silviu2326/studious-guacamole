@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Card, Button, Badge, Table, Select, MetricCards } from '../../../components/componentsreutilizables';
-import { Eye, Edit, Trash2, Plus, Calendar, TrendingUp, Filter, Target, Activity } from 'lucide-react';
+import { Eye, Edit, Trash2, Plus, Calendar, TrendingUp, Filter, Target, Activity, Download, FileSpreadsheet } from 'lucide-react';
 import { Dieta, ObjetivoNutricional } from '../types';
 import type { SelectOption, MetricCardData } from '../../../components/componentsreutilizables';
+import * as XLSX from 'xlsx';
 
 interface DietasListProps {
   dietas: Dieta[];
@@ -57,6 +58,118 @@ export const DietasList: React.FC<DietasListProps> = ({
     if (filtroTipo !== 'todos' && dieta.tipo !== filtroTipo) return false;
     return true;
   });
+
+  // Función para calcular coste total de una dieta
+  const calcularCosteTotal = (dieta: Dieta): number => {
+    return dieta.comidas.reduce((total, comida) => {
+      const costeComida = comida.alimentos?.reduce((sum, alimento) => {
+        return sum + ((alimento as any).coste || 0);
+      }, 0) || 0;
+      return total + costeComida;
+    }, 0);
+  };
+
+  // Función para calcular tiempo de preparación total de una dieta
+  const calcularTiempoPreparacionTotal = (dieta: Dieta): number => {
+    return dieta.comidas.reduce((total, comida) => {
+      return total + (comida.tempoCulinario || 0);
+    }, 0);
+  };
+
+  // Función para calcular satisfacción prevista promedio de una dieta
+  const calcularSatisfaccionPromedio = (dieta: Dieta): number | null => {
+    const comidasConSatisfaccion = dieta.comidas.filter(c => c.satisfaccionPrevista !== undefined);
+    if (comidasConSatisfaccion.length === 0) return null;
+    const suma = comidasConSatisfaccion.reduce((sum, comida) => sum + (comida.satisfaccionPrevista || 0), 0);
+    return Math.round((suma / comidasConSatisfaccion.length) * 10) / 10; // Redondear a 1 decimal
+  };
+
+  // Función para exportar a Excel
+  const handleExportarExcel = (conFiltros: boolean = true) => {
+    const dietasAExportar = conFiltros ? dietasFiltradas : dietas;
+
+    if (dietasAExportar.length === 0) {
+      alert('No hay dietas para exportar');
+      return;
+    }
+
+    // Preparar datos para Excel
+    const datos = dietasAExportar.map((dieta) => {
+      const costeTotal = calcularCosteTotal(dieta);
+      const tiempoTotal = calcularTiempoPreparacionTotal(dieta);
+      const satisfaccionPromedio = calcularSatisfaccionPromedio(dieta);
+
+      return {
+        'Nombre': dieta.nombre,
+        'Cliente': dieta.clienteNombre || '-',
+        'Tipo': getTipoLabel(dieta.tipo),
+        'Estado': dieta.estado === 'activa' ? 'Activa' : 
+                  dieta.estado === 'pausada' ? 'Pausada' : 
+                  dieta.estado === 'finalizada' ? 'Finalizada' : dieta.estado,
+        'Calorías (kcal)': dieta.macros.calorias,
+        'Proteínas (g)': dieta.macros.proteinas,
+        'Carbohidratos (g)': dieta.macros.carbohidratos,
+        'Grasas (g)': dieta.macros.grasas,
+        'Adherencia (%)': dieta.adherencia !== undefined ? `${dieta.adherencia}%` : '-',
+        'Coste Total (€)': costeTotal > 0 ? costeTotal.toFixed(2) : '-',
+        'Tiempo Preparación Total (min)': tiempoTotal > 0 ? tiempoTotal : '-',
+        'Satisfacción Prevista Promedio': satisfaccionPromedio !== null ? satisfaccionPromedio : '-',
+        'Fecha Inicio': new Date(dieta.fechaInicio).toLocaleDateString('es-ES'),
+        'Fecha Fin': dieta.fechaFin ? new Date(dieta.fechaFin).toLocaleDateString('es-ES') : '-',
+        'Objetivo': dieta.objetivo,
+        'Restricciones': dieta.restricciones?.join(', ') || '-',
+      };
+    });
+
+    // Crear workbook y worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(datos);
+
+    // Ajustar ancho de columnas
+    const columnWidths = [
+      { wch: 30 }, // Nombre
+      { wch: 25 }, // Cliente
+      { wch: 15 }, // Tipo
+      { wch: 12 }, // Estado
+      { wch: 15 }, // Calorías
+      { wch: 15 }, // Proteínas
+      { wch: 18 }, // Carbohidratos
+      { wch: 12 }, // Grasas
+      { wch: 15 }, // Adherencia
+      { wch: 18 }, // Coste Total
+      { wch: 25 }, // Tiempo Preparación Total
+      { wch: 28 }, // Satisfacción Prevista Promedio
+      { wch: 12 }, // Fecha Inicio
+      { wch: 12 }, // Fecha Fin
+      { wch: 20 }, // Objetivo
+      { wch: 40 }, // Restricciones
+    ];
+    ws['!cols'] = columnWidths;
+
+    // Agregar worksheet al workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Dietas Asignadas');
+
+    // Generar nombre de archivo
+    const fechaActual = new Date().toISOString().split('T')[0];
+    let nombreArchivo = `Dietas_Asignadas_${fechaActual}`;
+    
+    // Agregar información de filtros al nombre si se exportan con filtros
+    if (conFiltros && (filtroEstado !== 'todos' || filtroTipo !== 'todos')) {
+      const filtrosAplicados: string[] = [];
+      if (filtroEstado !== 'todos') filtrosAplicados.push(`Estado_${filtroEstado}`);
+      if (filtroTipo !== 'todos') filtrosAplicados.push(`Tipo_${filtroTipo}`);
+      if (filtrosAplicados.length > 0) {
+        nombreArchivo += `_${filtrosAplicados.join('_')}`;
+      }
+    } else if (!conFiltros) {
+      nombreArchivo += '_Todas';
+    }
+    
+    nombreArchivo += '.xlsx';
+
+    // Guardar archivo
+    XLSX.writeFile(wb, nombreArchivo);
+  };
 
   const estadosFiltros: SelectOption[] = [
     { value: 'todos', label: 'Todos los estados' },
@@ -203,13 +316,32 @@ export const DietasList: React.FC<DietasListProps> = ({
     <div className="space-y-6">
       {/* Toolbar superior */}
       <div className="flex items-center justify-between">
-        {onCrear && (
-          <Button onClick={onCrear}>
-            <Plus size={20} className="mr-2" />
-            {esEntrenador ? 'Nueva Dieta Individual' : 'Asignar Plan Nutricional'}
+        <div className="flex items-center gap-2">
+          {onCrear && (
+            <Button onClick={onCrear}>
+              <Plus size={20} className="mr-2" />
+              {esEntrenador ? 'Nueva Dieta Individual' : 'Asignar Plan Nutricional'}
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => handleExportarExcel(true)}
+            leftIcon={<FileSpreadsheet size={18} />}
+            title="Exportar con filtros activos"
+          >
+            Exportar (con filtros)
           </Button>
-        )}
-        {!onCrear && <div />}
+          <Button
+            variant="secondary"
+            onClick={() => handleExportarExcel(false)}
+            leftIcon={<Download size={18} />}
+            title="Exportar todas las dietas"
+          >
+            Exportar (todas)
+          </Button>
+        </div>
       </div>
 
       <MetricCards data={metricas} columns={3} />

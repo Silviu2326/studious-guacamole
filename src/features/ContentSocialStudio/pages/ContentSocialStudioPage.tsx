@@ -13,12 +13,32 @@ import {
   ContentLeadAnalytics,
   FAQContentGenerator,
   InternalContentIdeasGenerator,
+  CreativeVoiceConfig,
+  StarFormatsConfig,
+  TrainerNichesConfig,
+  WeeklyAICalendarComponent,
+  VideoScriptGenerator,
   ICON_MAP,
   ModuleHighlights,
   PlannerSchedulePreview,
   PromotionalContentTemplates,
   SyndicationOverview,
   VideoStudioSpotlight,
+  AITemplateLibrary,
+  CalendarGapAlerts,
+  LaunchOrchestrator,
+  ContentRecycler,
+  ApprovedContentToCampaigns,
+  ContentToFunnelsLinker,
+  EventChallengeContentKit,
+  ContentAIFeedback,
+  ContentLearningsManager,
+  ContentTeamAssignment,
+  MobileContentApproval,
+  BrandKitGenerator,
+  VisualStyleLearning,
+  SaturatedTopicsDetector,
+  PostCampaignInsights,
 } from '../components';
 
 const sectionTabs = [
@@ -28,12 +48,31 @@ const sectionTabs = [
   { id: 'clipper', label: 'Biblioteca' },
   { id: 'syndication', label: 'Creator Syndication' },
   { id: 'ai', label: 'IA Creativa' },
+  { id: 'ai-templates', label: 'Plantillas IA' },
   { id: 'brand-profile', label: 'Perfil de Marca' },
+  { id: 'creative-voice', label: 'Voz Creativa' },
+  { id: 'star-formats', label: 'Formatos Estrella' },
+  { id: 'trainer-niches', label: 'Nichos Principales' },
+  { id: 'weekly-calendar', label: 'Calendario Semanal IA' },
   { id: 'promotional', label: 'Contenido Promocional' },
   { id: 'transformations', label: 'Transformaciones' },
   { id: 'faq-content', label: 'Contenido FAQ' },
   { id: 'lead-analytics', label: 'Analytics de Leads' },
   { id: 'internal-content', label: 'Contenido Interno' },
+  { id: 'video-scripts', label: 'Scripts de Video' },
+  { id: 'launch-orchestration', label: 'Orquestación de Lanzamientos' },
+  { id: 'content-recycling', label: 'Reciclaje de Contenido' },
+  { id: 'content-to-campaigns', label: 'Enviar a Campañas' },
+  { id: 'content-to-funnels', label: 'Vincular a Funnels' },
+  { id: 'event-challenge-kits', label: 'Kits Eventos/Retos' },
+  { id: 'ai-feedback', label: 'Retroalimentación IA' },
+  { id: 'learnings', label: 'Aprendizajes' },
+  { id: 'team-assignment', label: 'Asignación a Equipo' },
+  { id: 'mobile-approval', label: 'Aprobación Móvil' },
+  { id: 'brand-kits', label: 'Kits de Marca' },
+  { id: 'visual-style-learning', label: 'Aprendizaje de Estilos' },
+  { id: 'saturated-topics', label: 'Temas Saturados' },
+  { id: 'post-campaign-insights', label: 'Insights Post-Campaña' },
 ] as const;
 
 type SectionTabId = typeof sectionTabs[number]['id'];
@@ -49,6 +88,8 @@ const emptySnapshot: ContentSocialSnapshot = {
   clientTransformations: { availableClients: [], generatedPosts: [], templates: [] },
   faqContent: { topQuestions: [], contentIdeas: [] },
   promotionalContent: { templates: [], availablePlans: [], activeOffers: [], generatedContent: [] },
+  contentAssignments: { assignments: [], availableTeamMembers: [], pendingAssignments: 0, inProgressAssignments: 0 },
+  contentApprovals: { pendingApprovals: [], pendingCount: 0, recentApprovals: [] },
 };
 
 export default function ContentSocialStudioPage() {
@@ -112,7 +153,35 @@ export default function ContentSocialStudioPage() {
   const renderSectionContent = () => {
     switch (sectionTab) {
       case 'planner':
-        return <PlannerSchedulePreview planner={snapshot.planner} loading={loading} />;
+        return (
+          <div className="space-y-6">
+            <CalendarGapAlerts
+              posts={snapshot.planner.upcoming}
+              loading={loading}
+              onGapFilled={(post) => {
+                // Add post to planner
+                setSnapshot((prev) => ({
+                  ...prev,
+                  planner: {
+                    ...prev.planner,
+                    upcoming: [...prev.planner.upcoming, post],
+                  },
+                }));
+              }}
+              onGapsFilled={(posts) => {
+                // Add posts to planner
+                setSnapshot((prev) => ({
+                  ...prev,
+                  planner: {
+                    ...prev.planner,
+                    upcoming: [...prev.planner.upcoming, ...posts],
+                  },
+                }));
+              }}
+            />
+            <PlannerSchedulePreview planner={snapshot.planner} loading={loading} />
+          </div>
+        );
       case 'video':
         return <VideoStudioSpotlight video={snapshot.video} loading={loading} />;
       case 'clipper':
@@ -121,23 +190,85 @@ export default function ContentSocialStudioPage() {
         return <SyndicationOverview syndication={snapshot.syndication} loading={loading} />;
       case 'ai':
         return <AIContentWorkbench ai={snapshot.ai} loading={loading} />;
+      case 'ai-templates':
+        return <AITemplateLibrary loading={loading} />;
       case 'transformations':
         return <ClientTransformationPostGenerator loading={loading} />;
       case 'faq-content':
         return <FAQContentGenerator loading={loading} />;
       case 'brand-profile':
         return <BrandProfileConfig loading={loading} />;
+      case 'creative-voice':
+        return <CreativeVoiceConfig loading={loading} />;
+      case 'star-formats':
+        return <StarFormatsConfig loading={loading} />;
+      case 'trainer-niches':
+        return <TrainerNichesConfig loading={loading} />;
+      case 'weekly-calendar':
+        return <WeeklyAICalendarComponent loading={loading} />;
       case 'promotional':
         return <PromotionalContentTemplates loading={loading} />;
       case 'lead-analytics':
         return <ContentLeadAnalytics loading={loading} period={period} />;
       case 'internal-content':
         return <InternalContentIdeasGenerator loading={loading} />;
+      case 'video-scripts':
+        return <VideoScriptGenerator loading={loading} />;
+      case 'launch-orchestration':
+        return <LaunchOrchestrator loading={loading} />;
+      case 'content-recycling':
+        return <ContentRecycler loading={loading} />;
+      case 'content-to-campaigns':
+        return <ApprovedContentToCampaigns loading={loading} />;
+      case 'content-to-funnels':
+        return <ContentToFunnelsLinker loading={loading} />;
+      case 'event-challenge-kits':
+        return <EventChallengeContentKit loading={loading} />;
+      case 'ai-feedback':
+        return <ContentAIFeedback loading={loading} />;
+      case 'learnings':
+        return <ContentLearningsManager loading={loading} />;
+      case 'team-assignment':
+        return <ContentTeamAssignment loading={loading} />;
+      case 'mobile-approval':
+        return <MobileContentApproval loading={loading} />;
+      case 'brand-kits':
+        return <BrandKitGenerator loading={loading} />;
+      case 'visual-style-learning':
+        return <VisualStyleLearning loading={loading} />;
+      case 'saturated-topics':
+        return <SaturatedTopicsDetector loading={loading} period={period} />;
+      case 'post-campaign-insights':
+        return <PostCampaignInsights loading={loading} period={period} />;
       case 'overview':
       default:
         return (
           <div className="space-y-6">
             <ModuleHighlights modules={snapshot.modules} loading={loading && snapshot.modules.length === 0} />
+            <CalendarGapAlerts
+              posts={snapshot.planner.upcoming}
+              loading={loading}
+              onGapFilled={(post) => {
+                // Add post to planner
+                setSnapshot((prev) => ({
+                  ...prev,
+                  planner: {
+                    ...prev.planner,
+                    upcoming: [...prev.planner.upcoming, post],
+                  },
+                }));
+              }}
+              onGapsFilled={(posts) => {
+                // Add posts to planner
+                setSnapshot((prev) => ({
+                  ...prev,
+                  planner: {
+                    ...prev.planner,
+                    upcoming: [...prev.planner.upcoming, ...posts],
+                  },
+                }));
+              }}
+            />
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               <div className="xl:col-span-2">
                 <PlannerSchedulePreview planner={snapshot.planner} loading={loading} />
@@ -151,16 +282,39 @@ export default function ContentSocialStudioPage() {
               <ClipperHighlights clipper={snapshot.clipper} loading={loading} />
             </div>
             <AIContentWorkbench ai={snapshot.ai} loading={loading} />
+            <AITemplateLibrary loading={loading} />
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <BrandProfileConfig loading={loading} />
               <PromotionalContentTemplates loading={loading} />
             </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <CreativeVoiceConfig loading={loading} />
+              <StarFormatsConfig loading={loading} />
+            </div>
+            <TrainerNichesConfig loading={loading} />
+            <WeeklyAICalendarComponent loading={loading} />
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <ClientTransformationPostGenerator loading={loading} />
               <FAQContentGenerator loading={loading} />
             </div>
             <ContentLeadAnalytics loading={loading} period={period} />
             <InternalContentIdeasGenerator loading={loading} />
+            <VideoScriptGenerator loading={loading} />
+            <EventChallengeContentKit loading={loading} />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <ContentAIFeedback loading={loading} />
+              <ContentLearningsManager loading={loading} />
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <ContentTeamAssignment loading={loading} />
+              <MobileContentApproval loading={loading} />
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <BrandKitGenerator loading={loading} />
+              <VisualStyleLearning loading={loading} />
+            </div>
+            <SaturatedTopicsDetector loading={loading} period={period} />
+            <PostCampaignInsights loading={loading} period={period} />
           </div>
         );
     }

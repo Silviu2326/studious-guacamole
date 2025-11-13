@@ -1,10 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { Card, Tabs, Badge, Button, Tooltip } from '../../../components/componentsreutilizables';
 import { FeedbackLoopRecord } from '../types';
-import { MessageSquareHeart, Sparkles, Send, BarChart } from 'lucide-react';
+import { MessageSquareHeart, Sparkles, Send, BarChart, AlertCircle, Rocket } from 'lucide-react';
+import { NegativeFeedbackMicroPlans } from './NegativeFeedbackMicroPlans';
+import { PositiveFeedbackCampaigns } from './PositiveFeedbackCampaigns';
 
 interface FeedbackLoopSectionProps {
   feedbackLoops: FeedbackLoopRecord[];
+  trainerId?: string;
 }
 
 const statusCopy: Record<FeedbackLoopRecord['status'], { label: string; variant: 'success' | 'yellow' | 'secondary' }> = {
@@ -13,8 +16,8 @@ const statusCopy: Record<FeedbackLoopRecord['status'], { label: string; variant:
   paused: { label: 'Pausado', variant: 'secondary' },
 };
 
-export const FeedbackLoopSection: React.FC<FeedbackLoopSectionProps> = ({ feedbackLoops }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'surveys' | 'insights'>('overview');
+export const FeedbackLoopSection: React.FC<FeedbackLoopSectionProps> = ({ feedbackLoops, trainerId }) => {
+  const [activeTab, setActiveTab] = useState<'overview' | 'surveys' | 'insights' | 'negative-feedback' | 'positive-campaigns'>('overview');
 
   const surveyStats = useMemo(() => {
     const totalResponses = feedbackLoops.reduce((acc, item) => acc + item.responseRate, 0);
@@ -59,6 +62,8 @@ export const FeedbackLoopSection: React.FC<FeedbackLoopSectionProps> = ({ feedba
               { id: 'overview', label: 'Resumen' },
               { id: 'surveys', label: 'Encuestas activas' },
               { id: 'insights', label: 'Hallazgos inteligentes' },
+              { id: 'negative-feedback', label: 'Feedback Negativo', icon: <AlertCircle size={16} /> },
+              { id: 'positive-campaigns', label: 'Campañas Positivas', icon: <Rocket size={16} /> },
             ]}
             activeTab={activeTab}
             onTabChange={(tabId) => setActiveTab(tabId as typeof activeTab)}
@@ -150,6 +155,48 @@ export const FeedbackLoopSection: React.FC<FeedbackLoopSectionProps> = ({ feedba
                   Activar resumen inteligente
                 </Button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'negative-feedback' && (
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-red-200 p-6 bg-gradient-to-br from-red-50 to-orange-50">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="p-2 rounded-lg bg-red-100 text-red-600">
+                  <AlertCircle size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">
+                    Micro Planes IA para Feedback Negativo
+                  </h3>
+                  <p className="text-sm text-slate-600 mt-1">
+                    Como Entrenador personal, cada feedback negativo genera automáticamente un micro plan IA (mensaje, acción, seguimiento) para resolver rápido.
+                  </p>
+                </div>
+              </div>
+              <NegativeFeedbackMicroPlans trainerId={trainerId} />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'positive-campaigns' && (
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-green-200 p-6 bg-gradient-to-br from-green-50 to-emerald-50">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="p-2 rounded-lg bg-green-100 text-green-600">
+                  <Rocket size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">
+                    Campañas Automatizadas de Feedback Positivo
+                  </h3>
+                  <p className="text-sm text-slate-600 mt-1">
+                    Como Entrenador personal, automatiza campañas basadas en feedback positivo (ej: invitar a programa premium) para aprovechar momentum.
+                  </p>
+                </div>
+              </div>
+              <PositiveFeedbackCampaigns trainerId={trainerId} />
             </div>
           </div>
         )}

@@ -25,3 +25,175 @@
 .sidebar-scroll::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Accesibilidad - Modo Alto Contraste */
+.modo-alto-contraste,
+[data-alto-contraste="true"] {
+  --color-fondo: #000000;
+  --color-texto: #ffffff;
+  --color-borde: #ffffff;
+  --color-primario: #ffff00;
+  --color-secundario: #00ffff;
+}
+
+.modo-alto-contraste *,
+[data-alto-contraste="true"] * {
+  background-color: var(--color-fondo) !important;
+  color: var(--color-texto) !important;
+  border-color: var(--color-borde) !important;
+}
+
+.modo-alto-contraste button,
+.modo-alto-contraste a,
+[data-alto-contraste="true"] button,
+[data-alto-contraste="true"] a {
+  border: 2px solid var(--color-borde) !important;
+  background-color: var(--color-fondo) !important;
+  color: var(--color-texto) !important;
+}
+
+.modo-alto-contraste button:hover,
+.modo-alto-contraste a:hover,
+[data-alto-contraste="true"] button:hover,
+[data-alto-contraste="true"] a:hover {
+  background-color: var(--color-texto) !important;
+  color: var(--color-fondo) !important;
+}
+
+.modo-alto-contraste input,
+.modo-alto-contraste textarea,
+.modo-alto-contraste select,
+[data-alto-contraste="true"] input,
+[data-alto-contraste="true"] textarea,
+[data-alto-contraste="true"] select {
+  border: 2px solid var(--color-borde) !important;
+  background-color: var(--color-fondo) !important;
+  color: var(--color-texto) !important;
+}
+
+/* Accesibilidad - Skip Links */
+.skip-links {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  z-index: 10000;
+}
+
+.skip-links:focus-within {
+  top: 0;
+}
+
+.skip-link {
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: #000;
+  color: #fff;
+  text-decoration: none;
+  margin-right: 8px;
+  border: 2px solid #fff;
+}
+
+.skip-link:focus {
+  top: 0;
+  position: absolute;
+}
+
+/* Accesibilidad - Focus Visible Mejorado */
+.focus-visible-mejorado *:focus-visible,
+[data-lector-pantalla="true"] *:focus-visible {
+  outline: 3px solid #0066cc !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.3) !important;
+}
+
+/* Accesibilidad - Screen Reader Only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Accesibilidad - Live Regions */
+[role="status"],
+[role="alert"],
+[aria-live] {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* User Story 1: Densidad de Layout - Variables CSS por defecto */
+:root {
+  --densidad-padding: 1rem;
+  --densidad-gap: 1rem;
+  --densidad-font-size: 1rem;
+}
+
+/* Densidad Compacto */
+.densidad-compacto {
+  --densidad-padding: 0.5rem;
+  --densidad-gap: 0.5rem;
+  --densidad-font-size: 0.875rem;
+}
+
+.densidad-compacto .space-y-6 > * + * {
+  margin-top: var(--densidad-gap);
+}
+
+.densidad-compacto .p-4,
+.densidad-compacto .p-6,
+.densidad-compacto .p-8 {
+  padding: var(--densidad-padding);
+}
+
+.densidad-compacto .gap-4,
+.densidad-compacto .gap-6 {
+  gap: var(--densidad-gap);
+}
+
+.densidad-compacto .text-base,
+.densidad-compacto .text-lg {
+  font-size: var(--densidad-font-size);
+}
+
+/* Densidad Estándar (por defecto) */
+.densidad-estandar {
+  --densidad-padding: 1rem;
+  --densidad-gap: 1rem;
+  --densidad-font-size: 1rem;
+}
+
+/* Densidad Amplio */
+.densidad-amplio {
+  --densidad-padding: 1.5rem;
+  --densidad-gap: 1.5rem;
+  --densidad-font-size: 1.125rem;
+}
+
+.densidad-amplio .space-y-6 > * + * {
+  margin-top: var(--densidad-gap);
+}
+
+.densidad-amplio .p-4,
+.densidad-amplio .p-6,
+.densidad-amplio .p-8 {
+  padding: var(--densidad-padding);
+}
+
+.densidad-amplio .gap-4,
+.densidad-amplio .gap-6 {
+  gap: var(--densidad-gap);
+}
+
+.densidad-amplio .text-base,
+.densidad-amplio .text-lg {
+  font-size: var(--densidad-font-size);
+}

@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Objective } from '../types';
+import { Objective, GlobalFilters } from '../types';
 import { getObjectives } from '../api/objectives';
 import { Card, Badge, Button } from '../../../components/componentsreutilizables';
 import { Target, CheckCircle, AlertCircle, XCircle, Clock, Loader2, Calendar, TrendingUp, BarChart3, Award, Milestone, Filter } from 'lucide-react';
 
 interface GoalTrackerProps {
   role: 'entrenador' | 'gimnasio';
+  globalFilters?: GlobalFilters;
+  periodo?: 'semana' | 'mes' | 'trimestre';
 }
 
 interface Milestone {
@@ -17,7 +19,7 @@ interface Milestone {
   achievedAt?: string;
 }
 
-export const GoalTracker: React.FC<GoalTrackerProps> = ({ role }) => {
+export const GoalTracker: React.FC<GoalTrackerProps> = ({ role, globalFilters, periodo }) => {
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedObjective, setSelectedObjective] = useState<string | null>(null);

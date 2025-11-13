@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Card, Button, Badge } from '../../../components/componentsreutilizables';
-import { IntelligenceOverviewResponse } from '../types';
+import { IntelligenceOverviewResponse, DecisionStyle } from '../types';
 import { 
   AlertCircle, 
   Lightbulb, 
@@ -8,11 +8,14 @@ import {
   Target,
   MessageSquare,
   Sparkles,
-  TrendingUp
+  TrendingUp,
+  BarChart3,
+  RefreshCw
 } from 'lucide-react';
 
 interface IntelligentRecommendationsProps {
   overview: IntelligenceOverviewResponse;
+  decisionStyle?: DecisionStyle;
   onCreatePlaybook?: () => void;
   onLaunchExperiment?: () => void;
   onViewFeedback?: () => void;
@@ -33,10 +36,46 @@ interface Recommendation {
 
 export const IntelligentRecommendations: React.FC<IntelligentRecommendationsProps> = ({
   overview,
+  decisionStyle,
   onCreatePlaybook,
   onLaunchExperiment,
   onViewFeedback,
 }) => {
+  // Función para adaptar descripciones según el estilo de decisión
+  const adaptDescription = (baseDescription: string, style?: DecisionStyle): string => {
+    if (!style) return baseDescription;
+    
+    switch (style) {
+      case 'rapido':
+        // Descripciones más cortas y directas
+        return baseDescription.split('.')[0] + '.';
+      case 'basado-en-datos':
+        // Mantener descripción completa con énfasis en datos
+        return baseDescription;
+      case 'iterativo':
+        // Enfoque en pasos y fases
+        return baseDescription + ' Puedes implementarlo en fases y ajustar según resultados.';
+      default:
+        return baseDescription;
+    }
+  };
+
+  // Función para adaptar títulos según el estilo
+  const adaptTitle = (baseTitle: string, style?: DecisionStyle): string => {
+    if (!style) return baseTitle;
+    
+    switch (style) {
+      case 'rapido':
+        return baseTitle; // Títulos ya son cortos
+      case 'basado-en-datos':
+        return baseTitle; // Títulos descriptivos están bien
+      case 'iterativo':
+        return baseTitle; // Títulos descriptivos están bien
+      default:
+        return baseTitle;
+    }
+  };
+
   const recommendations = useMemo<Recommendation[]>(() => {
     const recs: Recommendation[] = [];
 
@@ -48,10 +87,11 @@ export const IntelligentRecommendations: React.FC<IntelligentRecommendationsProp
     // Recomendación basada en experimentos
     const activeExperiments = overview.experiments.filter((e) => e.status === 'running');
     if (activeExperiments.length === 0) {
+      const baseDescription = 'No tienes experimentos activos. Prueba diferentes mensajes para descubrir qué funciona mejor con tu audiencia.';
       recs.push({
         id: 'no-experiments',
-        title: 'Crea tu primer test de estrategias',
-        description: 'No tienes experimentos activos. Prueba diferentes mensajes para descubrir qué funciona mejor con tu audiencia.',
+        title: adaptTitle('Crea tu primer test de estrategias', decisionStyle),
+        description: adaptDescription(baseDescription, decisionStyle),
         priority: 'high',
         action: {
           label: 'Crear Test',
@@ -65,10 +105,11 @@ export const IntelligentRecommendations: React.FC<IntelligentRecommendationsProp
     // Recomendación basada en playbooks
     const activePlaybooks = overview.playbooks.filter((p) => p.status === 'active');
     if (activePlaybooks.length < 2) {
+      const baseDescription = 'Tienes pocos playbooks activos. Crea estrategias automatizadas para mejorar el engagement de tus clientes.';
       recs.push({
         id: 'more-playbooks',
-        title: 'Amplía tu biblioteca de playbooks',
-        description: 'Tienes pocos playbooks activos. Crea estrategias automatizadas para mejorar el engagement de tus clientes.',
+        title: adaptTitle('Amplía tu biblioteca de playbooks', decisionStyle),
+        description: adaptDescription(baseDescription, decisionStyle),
         priority: 'medium',
         action: {
           label: 'Nuevo Playbook',
@@ -82,10 +123,11 @@ export const IntelligentRecommendations: React.FC<IntelligentRecommendationsProp
     // Recomendación basada en feedback loops
     const activeFeedbackLoops = overview.feedbackLoops.filter((f) => f.status === 'active');
     if (activeFeedbackLoops.length === 0) {
+      const baseDescription = 'No tienes loops de feedback activos. Recopila opiniones de tus clientes para mejorar tus estrategias.';
       recs.push({
         id: 'no-feedback',
-        title: 'Activa feedback inteligente',
-        description: 'No tienes loops de feedback activos. Recopila opiniones de tus clientes para mejorar tus estrategias.',
+        title: adaptTitle('Activa feedback inteligente', decisionStyle),
+        description: adaptDescription(baseDescription, decisionStyle),
         priority: 'high',
         action: {
           label: 'Ver Feedback',
@@ -98,10 +140,20 @@ export const IntelligentRecommendations: React.FC<IntelligentRecommendationsProp
 
     // Recomendación basada en métricas bajas
     if (hasLowMetrics) {
+      let baseDescription = 'Algunas métricas están descendiendo. Revisa tus estrategias y considera crear nuevos experimentos para mejorar los resultados.';
+      
+      // Para estilo basado en datos, agregar más detalles
+      if (decisionStyle === 'basado-en-datos') {
+        const downMetrics = overview.metrics.filter((m) => m.trend?.direction === 'down');
+        if (downMetrics.length > 0) {
+          baseDescription += ` ${downMetrics.length} métrica${downMetrics.length !== 1 ? 's' : ''} en descenso detectada${downMetrics.length !== 1 ? 's' : ''}.`;
+        }
+      }
+      
       recs.push({
         id: 'low-metrics',
-        title: 'Optimiza tus métricas de engagement',
-        description: 'Algunas métricas están descendiendo. Revisa tus estrategias y considera crear nuevos experimentos para mejorar los resultados.',
+        title: adaptTitle('Optimiza tus métricas de engagement', decisionStyle),
+        description: adaptDescription(baseDescription, decisionStyle),
         priority: 'high',
         action: {
           label: 'Ver Métricas',
@@ -115,10 +167,18 @@ export const IntelligentRecommendations: React.FC<IntelligentRecommendationsProp
     // Recomendación basada en insights de alta severidad
     const highSeverityInsights = overview.insights.filter((i) => i.severity === 'high');
     if (highSeverityInsights.length > 0) {
+      let baseDescription = `Tienes ${highSeverityInsights.length} insight${highSeverityInsights.length !== 1 ? 's' : ''} de alta prioridad que requieren tu atención.`;
+      
+      // Para estilo basado en datos, agregar más contexto
+      if (decisionStyle === 'basado-en-datos' && highSeverityInsights.length > 0) {
+        const insightSources = [...new Set(highSeverityInsights.map((i) => i.source))];
+        baseDescription += ` Fuentes: ${insightSources.join(', ')}.`;
+      }
+      
       recs.push({
         id: 'high-severity-insights',
-        title: `Revisa ${highSeverityInsights.length} insight${highSeverityInsights.length !== 1 ? 's' : ''} importante${highSeverityInsights.length !== 1 ? 's' : ''}`,
-        description: `Tienes ${highSeverityInsights.length} insight${highSeverityInsights.length !== 1 ? 's' : ''} de alta prioridad que requieren tu atención.`,
+        title: adaptTitle(`Revisa ${highSeverityInsights.length} insight${highSeverityInsights.length !== 1 ? 's' : ''} importante${highSeverityInsights.length !== 1 ? 's' : ''}`, decisionStyle),
+        description: adaptDescription(baseDescription, decisionStyle),
         priority: 'high',
         action: {
           label: 'Ver Insights',
@@ -131,10 +191,11 @@ export const IntelligentRecommendations: React.FC<IntelligentRecommendationsProp
 
     // Si no hay recomendaciones específicas, mostrar una genérica
     if (recs.length === 0) {
+      const baseDescription = 'Tus métricas están en buen estado. Considera explorar nuevas estrategias para seguir mejorando.';
       recs.push({
         id: 'all-good',
-        title: '¡Todo va bien!',
-        description: 'Tus métricas están en buen estado. Considera explorar nuevas estrategias para seguir mejorando.',
+        title: adaptTitle('¡Todo va bien!', decisionStyle),
+        description: adaptDescription(baseDescription, decisionStyle),
         priority: 'low',
         action: {
           label: 'Explorar',
@@ -144,10 +205,15 @@ export const IntelligentRecommendations: React.FC<IntelligentRecommendationsProp
       });
     }
 
-    // Ordenar por prioridad
+    // Ordenar por prioridad y limitar según estilo
     const priorityOrder = { high: 0, medium: 1, low: 2 };
-    return recs.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]).slice(0, 3);
-  }, [overview, onCreatePlaybook, onLaunchExperiment, onViewFeedback]);
+    const sortedRecs = recs.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+    
+    // Para estilo rápido, mostrar máximo 2 recomendaciones
+    // Para otros estilos, mostrar hasta 3
+    const maxRecs = decisionStyle === 'rapido' ? 2 : 3;
+    return sortedRecs.slice(0, maxRecs);
+  }, [overview, decisionStyle, onCreatePlaybook, onLaunchExperiment, onViewFeedback]);
 
   if (recommendations.length === 0) return null;
 
@@ -163,6 +229,15 @@ export const IntelligentRecommendations: React.FC<IntelligentRecommendationsProp
     low: <Zap size={16} className="text-blue-600" />,
   };
 
+  // Icono según estilo de decisión
+  const styleIcon = decisionStyle === 'rapido' 
+    ? <Zap size={16} className="text-amber-600" />
+    : decisionStyle === 'basado-en-datos'
+    ? <BarChart3 size={16} className="text-blue-600" />
+    : decisionStyle === 'iterativo'
+    ? <RefreshCw size={16} className="text-green-600" />
+    : null;
+
   return (
     <div className="mt-6 space-y-3">
       <div className="flex items-center gap-2 mb-4">
@@ -170,6 +245,18 @@ export const IntelligentRecommendations: React.FC<IntelligentRecommendationsProp
           <Lightbulb size={18} />
         </div>
         <h3 className="text-lg font-semibold text-slate-900">Recomendaciones Inteligentes</h3>
+        {styleIcon && (
+          <Badge variant="secondary" className="flex items-center gap-1">
+            {styleIcon}
+            <span className="text-xs">
+              {decisionStyle === 'rapido' 
+                ? 'Modo rápido'
+                : decisionStyle === 'basado-en-datos'
+                ? 'Modo datos'
+                : 'Modo iterativo'}
+            </span>
+          </Badge>
+        )}
         <Badge className="ml-auto bg-indigo-50 text-indigo-700">
           {recommendations.length} sugerencia{recommendations.length !== 1 ? 's' : ''}
         </Badge>

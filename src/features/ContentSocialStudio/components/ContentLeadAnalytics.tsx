@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Badge, Button, Card } from '../../../components/componentsreutilizables';
-import { getContentLeadAnalytics } from '../api/contentAnalytics';
-import type { PostLeadAnalytics, ContentPattern } from '../api/contentAnalytics';
+import { getContentSalesAnalytics } from '../api/contentAnalytics';
+import type { ContentSalesAnalytics, ContentSalesPattern } from '../types';
 import { 
   TrendingUp, 
   Users, 
@@ -13,7 +13,11 @@ import {
   Filter,
   RefreshCw,
   Eye,
-  Target
+  Target,
+  DollarSign,
+  ShoppingCart,
+  Star,
+  TrendingDown
 } from 'lucide-react';
 
 interface ContentLeadAnalyticsProps {
@@ -23,20 +27,25 @@ interface ContentLeadAnalyticsProps {
 
 export function ContentLeadAnalytics({ loading: externalLoading, period = '30d' }: ContentLeadAnalyticsProps) {
   const [analytics, setAnalytics] = useState<{
-    postsWithLeads: PostLeadAnalytics[];
-    patterns: ContentPattern[];
+    postsWithSales: ContentSalesAnalytics[];
+    patterns: ContentSalesPattern[];
     summary: {
       totalPosts: number;
       postsWithLeads: number;
+      postsWithSales: number;
       totalLeads: number;
       totalConsultations: number;
       totalInterestMessages: number;
+      totalSales: number;
+      totalRevenue: number;
       averageConversionRate: number;
+      averageROI: number;
+      topPerformingContent: ContentSalesAnalytics[];
     };
   } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [selectedPost, setSelectedPost] = useState<PostLeadAnalytics | null>(null);
-  const [filterType, setFilterType] = useState<'all' | 'consultations' | 'messages' | 'converted'>('all');
+  const [selectedPost, setSelectedPost] = useState<ContentSalesAnalytics | null>(null);
+  const [filterType, setFilterType] = useState<'all' | 'consultations' | 'messages' | 'converted' | 'sales' | 'high-priority'>('all');
 
   useEffect(() => {
     if (!externalLoading) {
@@ -51,13 +60,13 @@ export function ContentLeadAnalytics({ loading: externalLoading, period = '30d' 
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - (period === '7d' ? 7 : period === '30d' ? 30 : 90));
       
-      const data = await getContentLeadAnalytics(
+      const data = await getContentSalesAnalytics(
         startDate.toISOString(),
         endDate.toISOString()
       );
       setAnalytics(data);
     } catch (error) {
-      console.error('Error cargando analytics de leads:', error);
+      console.error('Error cargando analytics de leads y ventas:', error);
     } finally {
       setLoading(false);
     }
@@ -89,11 +98,13 @@ export function ContentLeadAnalytics({ loading: externalLoading, period = '30d' 
     return labels[type] || type;
   };
 
-  const filteredPosts = analytics?.postsWithLeads.filter(post => {
+  const filteredPosts = analytics?.postsWithSales.filter(post => {
     if (filterType === 'all') return true;
     if (filterType === 'consultations') return post.leadsGenerated.consultations > 0;
     if (filterType === 'messages') return post.leadsGenerated.interestMessages > 0;
     if (filterType === 'converted') return post.leadsGenerated.converted > 0;
+    if (filterType === 'sales') return post.sales.totalSales > 0;
+    if (filterType === 'high-priority') return post.priority === 'high';
     return true;
   }) || [];
 
@@ -119,10 +130,10 @@ export function ContentLeadAnalytics({ loading: externalLoading, period = '30d' 
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <BarChart3 className="w-6 h-6" />
-              Analytics de Leads por Contenido
+              Analytics de Leads y Ventas por Contenido
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Identifica qué posts, reels o stories generaron leads reales
+              Identifica qué piezas generan más leads/ventas para priorizar esas líneas
             </p>
           </div>
           <Button onClick={loadAnalytics} variant="outline" size="sm">
@@ -151,16 +162,25 @@ export function ContentLeadAnalytics({ loading: externalLoading, period = '30d' 
               {analytics.summary.totalConsultations} consultas
             </div>
           </div>
-          <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
-            <div className="text-sm text-gray-600 dark:text-gray-400">Mensajes de Interés</div>
-            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">
-              {analytics.summary.totalInterestMessages}
+          <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-lg">
+            <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+              <DollarSign className="w-4 h-4" />
+              Revenue Total
+            </div>
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+              {analytics.summary.totalRevenue.toFixed(0)}€
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+              {analytics.summary.totalSales} ventas
             </div>
           </div>
           <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
             <div className="text-sm text-gray-600 dark:text-gray-400">Tasa de Conversión</div>
             <div className="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1">
               {analytics.summary.averageConversionRate.toFixed(1)}%
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+              ROI: {analytics.summary.averageROI.toFixed(1)}%
             </div>
           </div>
         </div>
@@ -198,6 +218,22 @@ export function ContentLeadAnalytics({ loading: externalLoading, period = '30d' 
             <Target className="w-4 h-4 mr-2" />
             Convertidos
           </Button>
+          <Button
+            variant={filterType === 'sales' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setFilterType('sales')}
+          >
+            <ShoppingCart className="w-4 h-4 mr-2" />
+            Con Ventas
+          </Button>
+          <Button
+            variant={filterType === 'high-priority' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setFilterType('high-priority')}
+          >
+            <Star className="w-4 h-4 mr-2" />
+            Alta Prioridad
+          </Button>
         </div>
 
         {/* Lista de Posts */}
@@ -228,7 +264,7 @@ export function ContentLeadAnalytics({ loading: externalLoading, period = '30d' 
                     <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 line-clamp-2">
                       {post.postContent}
                     </p>
-                    <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-4 text-sm flex-wrap">
                       <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
                         <Users className="w-4 h-4" />
                         <span className="font-semibold">{post.leadsGenerated.total} leads</span>
@@ -237,14 +273,16 @@ export function ContentLeadAnalytics({ loading: externalLoading, period = '30d' 
                         <Calendar className="w-4 h-4" />
                         <span>{post.leadsGenerated.consultations} consultas</span>
                       </div>
-                      <div className="flex items-center gap-1 text-purple-600 dark:text-purple-400">
-                        <MessageSquare className="w-4 h-4" />
-                        <span>{post.leadsGenerated.interestMessages} mensajes</span>
-                      </div>
-                      {post.leadsGenerated.converted > 0 && (
-                        <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
-                          <Target className="w-4 h-4" />
-                          <span>{post.leadsGenerated.converted} convertidos</span>
+                      {post.sales.totalSales > 0 && (
+                        <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                          <ShoppingCart className="w-4 h-4" />
+                          <span className="font-semibold">{post.sales.totalSales} ventas</span>
+                        </div>
+                      )}
+                      {post.sales.totalRevenue > 0 && (
+                        <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                          <DollarSign className="w-4 h-4" />
+                          <span className="font-semibold">{post.sales.totalRevenue.toFixed(0)}€</span>
                         </div>
                       )}
                       <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
@@ -253,13 +291,33 @@ export function ContentLeadAnalytics({ loading: externalLoading, period = '30d' 
                       </div>
                     </div>
                   </div>
-                  <div className="ml-4">
+                  <div className="ml-4 flex flex-col items-end gap-2">
+                    {post.priority === 'high' && (
+                      <Badge variant="success" className="flex items-center gap-1">
+                        <Star className="w-3 h-3" />
+                        Alta Prioridad
+                      </Badge>
+                    )}
+                    {post.priority === 'medium' && (
+                      <Badge variant="info" className="flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3" />
+                        Media Prioridad
+                      </Badge>
+                    )}
                     <div className="text-right">
                       <div className="text-lg font-bold text-green-600 dark:text-green-400">
                         {post.conversionRate.toFixed(1)}%
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">conversión</div>
                     </div>
+                    {post.sales.totalRevenue > 0 && (
+                      <div className="text-right">
+                        <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                          {post.sales.totalRevenue.toFixed(0)}€
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">revenue</div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -272,7 +330,7 @@ export function ContentLeadAnalytics({ loading: externalLoading, period = '30d' 
           <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
-              Patrones Identificados
+              Patrones Identificados (Priorizados por Leads/Ventas)
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {analytics.patterns.slice(0, 4).map((pattern, index) => (
@@ -284,16 +342,47 @@ export function ContentLeadAnalytics({ loading: externalLoading, period = '30d' 
                     <div className="flex items-center gap-2">
                       <Badge>{getContentTypeLabel(pattern.contentType)}</Badge>
                       <Badge variant="outline">{pattern.topic}</Badge>
+                      {pattern.priority === 'high' && (
+                        <Badge variant="success" className="flex items-center gap-1">
+                          <Star className="w-3 h-3" />
+                          Alta
+                        </Badge>
+                      )}
                     </div>
                     <span className="text-sm font-semibold text-green-600 dark:text-green-400">
                       {pattern.averageLeads.toFixed(1)} leads/post
                     </span>
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                     {pattern.dayOfWeek} {pattern.timeOfDay} • {pattern.postsCount} posts
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                    {pattern.conversionRate.toFixed(1)}% tasa de conversión
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-500">Conversión:</span>{' '}
+                      <span className="font-medium">{pattern.conversionRate.toFixed(1)}%</span>
+                    </div>
+                    {pattern.averageRevenue > 0 && (
+                      <div>
+                        <span className="text-gray-500 dark:text-gray-500">Revenue/post:</span>{' '}
+                        <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                          {pattern.averageRevenue.toFixed(0)}€
+                        </span>
+                      </div>
+                    )}
+                    {pattern.averageSales > 0 && (
+                      <div>
+                        <span className="text-gray-500 dark:text-gray-500">Ventas/post:</span>{' '}
+                        <span className="font-medium">{pattern.averageSales.toFixed(1)}</span>
+                      </div>
+                    )}
+                    {pattern.roi > 0 && (
+                      <div>
+                        <span className="text-gray-500 dark:text-gray-500">ROI:</span>{' '}
+                        <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                          {pattern.roi.toFixed(1)}%
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -335,7 +424,7 @@ export function ContentLeadAnalytics({ loading: externalLoading, period = '30d' 
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
                   <div className="text-sm text-gray-600 dark:text-gray-400">Engagement</div>
                   <div className="text-lg font-semibold text-blue-600 dark:text-blue-400">
@@ -348,6 +437,22 @@ export function ContentLeadAnalytics({ loading: externalLoading, period = '30d' 
                     {selectedPost.engagement.reach.toLocaleString()}
                   </div>
                 </div>
+                {selectedPost.sales.totalSales > 0 && (
+                  <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Ventas</div>
+                    <div className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
+                      {selectedPost.sales.totalSales}
+                    </div>
+                  </div>
+                )}
+                {selectedPost.sales.totalRevenue > 0 && (
+                  <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Revenue</div>
+                    <div className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
+                      {selectedPost.sales.totalRevenue.toFixed(0)}€
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -369,6 +474,11 @@ export function ContentLeadAnalytics({ loading: externalLoading, period = '30d' 
                           {lead.type === 'interest_message' && '💬 Mensaje de interés'}
                           {lead.type === 'converted' && '✅ Cliente convertido'}
                         </div>
+                        {lead.revenue && (
+                          <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mt-1">
+                            Revenue: {lead.revenue.toFixed(2)}€
+                          </div>
+                        )}
                       </div>
                       <Badge variant={lead.status === 'converted' ? 'default' : 'outline'}>
                         {lead.status}

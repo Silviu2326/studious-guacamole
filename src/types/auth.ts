@@ -6,6 +6,7 @@ export interface User {
   password: string;
   role: UserRole;
   name: string;
+  sede?: string; // Sede/location del usuario
 }
 
 export interface AuthContextType {

@@ -9,6 +9,7 @@ import {
   TaskHistory,
   AlertRules,
 } from '../components';
+import { ObjectivesWidget } from '../../objetivos-rendimiento/components';
 import {
   CheckSquare,
   Bell,
@@ -147,6 +148,17 @@ export default function TareasAlertasPage() {
             </div>
           </div>
         </Card>
+
+        {/* Widget de Objetivos */}
+        <div className="mt-6 mb-6">
+          <ObjectivesWidget
+            maxObjectives={3}
+            statusFilter="at_risk"
+            compact={true}
+            title="Objetivos en Riesgo"
+            showAllLink={true}
+          />
+        </div>
 
         {/* Contenido de la sección activa */}
         <div className="mt-6 space-y-6">

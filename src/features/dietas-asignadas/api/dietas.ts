@@ -1,4 +1,4 @@
-import { Dieta, FiltrosDietas, SeguimientoMacros, MacrosNutricionales } from '../types';
+import { Dieta, FiltrosDietas, SeguimientoMacros, MacrosNutricionales, HistorialCambioDieta, TipoCambioDieta, CambioDetalle, ComparacionPlanAnterior, DatosExternosCliente, NotasMetricas, TipoMetrica, Comida, ComparacionSesionAnterior, TipoComida } from '../types';
 
 // Datos mock completos
 const dietasMock: Dieta[] = [
@@ -23,9 +23,15 @@ const dietasMock: Dieta[] = [
     estado: 'activa',
     restricciones: ['Sin lactosa', 'Bajo en sodio'],
     adherencia: 87,
+    pesoCliente: 68, // Peso del cliente en kg
+    vasosAgua: 8, // Vasos de agua objetivo
+    fibra: 25, // Gramos de fibra objetivo
     creadoEn: '2024-12-20T10:00:00Z',
     actualizadoEn: '2025-01-15T10:00:00Z',
     creadoPor: 'entrenador1',
+    estadoPublicacion: 'publicado',
+    ultimoAutosave: '2025-01-15T10:00:00Z',
+    publicadoEn: '2025-01-10T10:00:00Z',
   },
   {
     id: '2',
@@ -48,6 +54,9 @@ const dietasMock: Dieta[] = [
     estado: 'activa',
     restricciones: [],
     adherencia: 92,
+    pesoCliente: 82,
+    vasosAgua: 10,
+    fibra: 35,
     creadoEn: '2024-12-10T10:00:00Z',
     actualizadoEn: '2025-01-15T10:00:00Z',
     creadoPor: 'entrenador1',
@@ -65,6 +74,9 @@ const dietasMock: Dieta[] = [
     fechaInicio: '2025-01-10',
     estado: 'activa',
     adherencia: 75,
+    pesoCliente: 65,
+    vasosAgua: 8,
+    fibra: 30,
     creadoEn: '2024-12-01T10:00:00Z',
     actualizadoEn: '2025-01-12T10:00:00Z',
     creadoPor: 'entrenador1',
@@ -83,6 +95,9 @@ const dietasMock: Dieta[] = [
     fechaFin: '2025-01-11',
     estado: 'finalizada',
     adherencia: 68,
+    pesoCliente: 75,
+    vasosAgua: 9,
+    fibra: 28,
     creadoEn: '2024-12-20T10:00:00Z',
     actualizadoEn: '2025-01-11T10:00:00Z',
     creadoPor: 'entrenador1',
@@ -216,6 +231,37 @@ export async function actualizarDieta(id: string, dieta: Partial<Dieta>): Promis
   return true;
 }
 
+export async function guardarComoBorrador(id: string, dieta: Partial<Dieta>): Promise<boolean> {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  const index = dietasMock.findIndex(d => d.id === id);
+  if (index === -1) return false;
+  const ahora = new Date().toISOString();
+  dietasMock[index] = { 
+    ...dietasMock[index], 
+    ...dieta, 
+    estadoPublicacion: 'borrador',
+    ultimoAutosave: ahora,
+    actualizadoEn: ahora
+  };
+  return true;
+}
+
+export async function publicarDieta(id: string, dieta: Partial<Dieta>): Promise<boolean> {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  const index = dietasMock.findIndex(d => d.id === id);
+  if (index === -1) return false;
+  const ahora = new Date().toISOString();
+  dietasMock[index] = { 
+    ...dietasMock[index], 
+    ...dieta, 
+    estadoPublicacion: 'publicado',
+    publicadoEn: ahora,
+    ultimoAutosave: ahora,
+    actualizadoEn: ahora
+  };
+  return true;
+}
+
 export async function eliminarDieta(id: string): Promise<boolean> {
   await new Promise(resolve => setTimeout(resolve, 300));
   const index = dietasMock.findIndex(d => d.id === id);
@@ -230,6 +276,86 @@ export async function ajustarDieta(id: string, macros: MacrosNutricionales): Pro
   if (!dieta) return null;
   dieta.macros = macros;
   return dieta;
+}
+
+export type VariacionDieta = 'deficit' | 'mantenimiento' | 'superavit';
+
+export async function duplicarDieta(
+  id: string,
+  variacion?: VariacionDieta
+): Promise<Dieta | null> {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  const dietaOriginal = dietasMock.find(d => d.id === id);
+  if (!dietaOriginal) return null;
+
+  // Calcular nuevos macros según la variación
+  let nuevosMacros = { ...dietaOriginal.macros };
+  let nuevoObjetivo = dietaOriginal.objetivo;
+  let sufijoNombre = '';
+
+  if (variacion === 'deficit') {
+    // Reducir 10-15% de calorías (déficit leve)
+    nuevosMacros.calorias = Math.round(dietaOriginal.macros.calorias * 0.88);
+    nuevosMacros.carbohidratos = Math.round(dietaOriginal.macros.carbohidratos * 0.88);
+    nuevosMacros.grasas = Math.round(dietaOriginal.macros.grasas * 0.88);
+    // Mantener proteínas altas
+    nuevosMacros.proteinas = Math.round(dietaOriginal.macros.proteinas * 0.95);
+    nuevoObjetivo = 'deficit-suave';
+    sufijoNombre = ' - Déficit Leve';
+  } else if (variacion === 'superavit') {
+    // Aumentar 10-15% de calorías (superávit controlado)
+    nuevosMacros.calorias = Math.round(dietaOriginal.macros.calorias * 1.12);
+    nuevosMacros.carbohidratos = Math.round(dietaOriginal.macros.carbohidratos * 1.12);
+    nuevosMacros.grasas = Math.round(dietaOriginal.macros.grasas * 1.12);
+    nuevosMacros.proteinas = Math.round(dietaOriginal.macros.proteinas * 1.08);
+    nuevoObjetivo = 'superavit-calorico';
+    sufijoNombre = ' - Superávit';
+  } else {
+    // Mantenimiento: ajustar ligeramente hacia valores de mantenimiento
+    nuevoObjetivo = 'mantenimiento';
+    sufijoNombre = ' - Mantenimiento';
+  }
+
+  // Crear nueva dieta duplicada
+  const nuevaDieta: Dieta = {
+    ...dietaOriginal,
+    id: Date.now().toString(),
+    nombre: `${dietaOriginal.nombre}${sufijoNombre}`,
+    objetivo: nuevoObjetivo as any,
+    macros: nuevosMacros,
+    comidas: dietaOriginal.comidas.map(comida => ({
+      ...comida,
+      id: `${comida.id}-${Date.now()}-${Math.random()}`,
+      // Ajustar macros de comidas proporcionalmente
+      calorias: variacion === 'deficit' 
+        ? Math.round(comida.calorias * 0.88)
+        : variacion === 'superavit'
+        ? Math.round(comida.calorias * 1.12)
+        : comida.calorias,
+      proteinas: variacion === 'deficit'
+        ? Math.round(comida.proteinas * 0.95)
+        : variacion === 'superavit'
+        ? Math.round(comida.proteinas * 1.08)
+        : comida.proteinas,
+      carbohidratos: variacion === 'deficit'
+        ? Math.round(comida.carbohidratos * 0.88)
+        : variacion === 'superavit'
+        ? Math.round(comida.carbohidratos * 1.12)
+        : comida.carbohidratos,
+      grasas: variacion === 'deficit'
+        ? Math.round(comida.grasas * 0.88)
+        : variacion === 'superavit'
+        ? Math.round(comida.grasas * 1.12)
+        : comida.grasas,
+    })),
+    estado: 'activa',
+    estadoPublicacion: 'borrador',
+    creadoEn: new Date().toISOString(),
+    actualizadoEn: new Date().toISOString(),
+  };
+
+  dietasMock.push(nuevaDieta);
+  return nuevaDieta;
 }
 
 const fotosComidaMock = [
@@ -271,5 +397,418 @@ const seguimientoMock: SeguimientoMacros = {
 export async function getSeguimientoMacros(clienteId: string, fecha?: string): Promise<SeguimientoMacros | null> {
   await new Promise(resolve => setTimeout(resolve, 200));
   return seguimientoMock;
+}
+
+// Historial de cambios - Mock storage
+const historialCambiosMock: Record<string, HistorialCambioDieta[]> = {};
+
+// Helper para registrar cambios
+export function registrarCambioDieta(
+  dietaId: string,
+  tipoCambio: TipoCambioDieta,
+  descripcion: string,
+  cambios: CambioDetalle[],
+  snapshot?: Dieta,
+  realizadoPor?: string,
+  realizadoPorNombre?: string,
+  metadata?: Record<string, any>
+): HistorialCambioDieta {
+  const cambio: HistorialCambioDieta = {
+    id: `cambio-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    dietaId,
+    tipoCambio,
+    fechaCambio: new Date().toISOString(),
+    descripcion,
+    cambios,
+    snapshot: snapshot ? JSON.parse(JSON.stringify(snapshot)) : undefined,
+    realizadoPor,
+    realizadoPorNombre,
+    metadata,
+  };
+
+  if (!historialCambiosMock[dietaId]) {
+    historialCambiosMock[dietaId] = [];
+  }
+  historialCambiosMock[dietaId].push(cambio);
+
+  // Mantener solo los últimos 100 cambios por dieta
+  if (historialCambiosMock[dietaId].length > 100) {
+    historialCambiosMock[dietaId] = historialCambiosMock[dietaId].slice(-100);
+  }
+
+  return cambio;
+}
+
+// Obtener historial de cambios de una dieta
+export async function getHistorialCambios(dietaId: string): Promise<HistorialCambioDieta[]> {
+  await new Promise(resolve => setTimeout(resolve, 200));
+  return historialCambiosMock[dietaId] || [];
+}
+
+// Revertir a una versión anterior
+export async function revertirCambio(dietaId: string, cambioId: string): Promise<Dieta | null> {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  const historial = historialCambiosMock[dietaId] || [];
+  const cambio = historial.find(c => c.id === cambioId);
+  
+  if (!cambio || !cambio.snapshot) {
+    return null;
+  }
+
+  // Restaurar el snapshot
+  const dietaRestaurada = { ...cambio.snapshot };
+  const index = dietasMock.findIndex(d => d.id === dietaId);
+  if (index === -1) return null;
+
+  dietaRestaurada.actualizadoEn = new Date().toISOString();
+  dietasMock[index] = dietaRestaurada;
+
+  // Registrar el cambio de reversión
+  registrarCambioDieta(
+    dietaId,
+    'otro',
+    `Reversión a versión del ${new Date(cambio.fechaCambio).toLocaleString('es-ES')}`,
+    [{ campo: 'reversion', descripcion: `Revertido desde cambio ${cambioId}` }],
+    dietaRestaurada
+  );
+
+  return dietaRestaurada;
+}
+
+/**
+ * Obtiene la dieta anterior del cliente para comparación
+ */
+export async function getDietaAnterior(clienteId: string, fechaActual: string): Promise<Dieta | null> {
+  await new Promise(resolve => setTimeout(resolve, 200));
+  
+  // Obtener todas las dietas del cliente ordenadas por fecha de inicio (más recientes primero)
+  const dietasCliente = dietasMock
+    .filter(d => d.clienteId === clienteId)
+    .sort((a, b) => new Date(b.fechaInicio).getTime() - new Date(a.fechaInicio).getTime());
+  
+  // Encontrar la dieta anterior a la fecha actual
+  const fechaActualDate = new Date(fechaActual);
+  const dietaAnterior = dietasCliente.find(d => {
+    const fechaInicio = new Date(d.fechaInicio);
+    return fechaInicio < fechaActualDate;
+  });
+  
+  return dietaAnterior || null;
+}
+
+/**
+ * Compara la dieta actual con la anterior y calcula desviaciones
+ */
+export async function compararConPlanAnterior(dietaActual: Dieta): Promise<ComparacionPlanAnterior> {
+  await new Promise(resolve => setTimeout(resolve, 200));
+  
+  const dietaAnterior = await getDietaAnterior(dietaActual.clienteId, dietaActual.fechaInicio);
+  
+  if (!dietaAnterior) {
+    return {
+      dietaAnterior: null,
+      desviacion: {
+        calorias: 0,
+        proteinas: 0,
+        carbohidratos: 0,
+        grasas: 0,
+      },
+      tendencia: 'estable',
+    };
+  }
+  
+  // Calcular desviaciones porcentuales
+  const calcularDesviacion = (actual: number, anterior: number): number => {
+    if (anterior === 0) return 0;
+    return ((actual - anterior) / anterior) * 100;
+  };
+  
+  const desviacion = {
+    calorias: calcularDesviacion(dietaActual.macros.calorias, dietaAnterior.macros.calorias),
+    proteinas: calcularDesviacion(dietaActual.macros.proteinas, dietaAnterior.macros.proteinas),
+    carbohidratos: calcularDesviacion(dietaActual.macros.carbohidratos, dietaAnterior.macros.carbohidratos),
+    grasas: calcularDesviacion(dietaActual.macros.grasas, dietaAnterior.macros.grasas),
+  };
+  
+  // Determinar tendencia basada en el objetivo
+  let tendencia: 'mejora' | 'estable' | 'empeora' = 'estable';
+  
+  if (dietaActual.objetivo === 'perdida-peso' || dietaActual.objetivo === 'perdida-grasa') {
+    // Para pérdida: menos calorías es mejor
+    tendencia = desviacion.calorias < -2 ? 'mejora' : desviacion.calorias > 2 ? 'empeora' : 'estable';
+  } else if (dietaActual.objetivo === 'ganancia-muscular' || dietaActual.objetivo === 'superavit-calorico') {
+    // Para ganancia: más calorías y proteínas es mejor
+    tendencia = desviacion.calorias > 2 && desviacion.proteinas > 2 ? 'mejora' : desviacion.calorias < -2 ? 'empeora' : 'estable';
+  } else {
+    // Para mantenimiento: cambios pequeños son estables
+    const cambioPromedio = (Math.abs(desviacion.calorias) + Math.abs(desviacion.proteinas)) / 2;
+    tendencia = cambioPromedio < 3 ? 'estable' : cambioPromedio > 10 ? 'empeora' : 'estable';
+  }
+  
+  return {
+    dietaAnterior,
+    desviacion,
+    tendencia,
+  };
+}
+
+/**
+ * Obtiene datos externos del cliente (actividad, sueño, estrés)
+ */
+export async function getDatosExternosCliente(clienteId: string, fecha?: string): Promise<DatosExternosCliente | null> {
+  await new Promise(resolve => setTimeout(resolve, 200));
+  
+  // Datos mock - en producción vendría de integraciones de salud
+  const fechaConsulta = fecha || new Date().toISOString();
+  
+  // Simular datos basados en el clienteId
+  const seed = clienteId.charCodeAt(0) % 10;
+  
+  const datosExternos: DatosExternosCliente = {
+    clienteId,
+    fecha: fechaConsulta,
+    actividad: {
+      pasos: 8000 + (seed * 500),
+      distancia: 6000 + (seed * 400), // metros
+      caloriasQuemadas: 400 + (seed * 30),
+      entrenamientos: seed % 3 + 1,
+    },
+    sueño: {
+      duracion: 420 + (seed * 20), // minutos
+      calidad: seed < 3 ? 'excellent' : seed < 6 ? 'good' : seed < 8 ? 'fair' : 'poor',
+      horasSueño: 7 + (seed * 0.3),
+    },
+    estres: {
+      nivel: 20 + (seed * 5), // 0-100
+      fuente: seed < 3 ? 'Bajo' : seed < 6 ? 'Moderado' : 'Alto',
+    },
+  };
+  
+  return datosExternos;
+}
+
+// Notas de métricas - Mock storage
+const notasMetricasMock: Record<string, NotasMetricas> = {};
+
+/**
+ * Obtiene las notas de métricas para una dieta
+ */
+export async function getNotasMetricas(dietaId: string): Promise<NotasMetricas | null> {
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
+  if (notasMetricasMock[dietaId]) {
+    return { ...notasMetricasMock[dietaId] };
+  }
+  
+  // Retornar estructura vacía si no existe
+  return {
+    dietaId,
+    notas: {} as Record<TipoMetrica, string | undefined>,
+    actualizadoEn: new Date().toISOString(),
+  };
+}
+
+/**
+ * Guarda las notas de métricas para una dieta
+ */
+export async function guardarNotasMetricas(dietaId: string, notas: Record<TipoMetrica, string | undefined>): Promise<boolean> {
+  await new Promise(resolve => setTimeout(resolve, 200));
+  
+  notasMetricasMock[dietaId] = {
+    dietaId,
+    notas,
+    actualizadoEn: new Date().toISOString(),
+  };
+  
+  return true;
+}
+
+/**
+ * Actualiza una nota específica de una métrica
+ */
+export async function actualizarNotaMetrica(dietaId: string, metricaId: TipoMetrica, nota: string | undefined): Promise<boolean> {
+  await new Promise(resolve => setTimeout(resolve, 200));
+  
+  const notasActuales = await getNotasMetricas(dietaId);
+  if (!notasActuales) {
+    return false;
+  }
+  
+  notasActuales.notas[metricaId] = nota;
+  return await guardarNotasMetricas(dietaId, notasActuales.notas);
+}
+
+/**
+ * Obtiene la comida equivalente de una sesión anterior (día anterior o semana anterior)
+ */
+export async function getComidaSesionAnterior(
+  clienteId: string,
+  tipoComida: TipoComida,
+  diaSemana?: string,
+  fechaActual?: string
+): Promise<Comida | null> {
+  await new Promise(resolve => setTimeout(resolve, 200));
+  
+  // Obtener todas las dietas del cliente ordenadas por fecha
+  const dietasCliente = dietasMock
+    .filter(d => d.clienteId === clienteId)
+    .sort((a, b) => new Date(b.fechaInicio).getTime() - new Date(a.fechaInicio).getTime());
+  
+  if (dietasCliente.length === 0) return null;
+  
+  const fechaConsulta = fechaActual ? new Date(fechaActual) : new Date();
+  
+  // Buscar en la dieta anterior (día anterior)
+  const dietaAnterior = dietasCliente.find(d => {
+    const fechaInicio = new Date(d.fechaInicio);
+    return fechaInicio < fechaConsulta;
+  });
+  
+  if (dietaAnterior) {
+    // Buscar comida del mismo tipo y día
+    const comidaEncontrada = dietaAnterior.comidas.find(c => {
+      if (c.tipo !== tipoComida) return false;
+      if (diaSemana && c.dia !== diaSemana) return false;
+      return true;
+    });
+    
+    if (comidaEncontrada) {
+      return comidaEncontrada;
+    }
+  }
+  
+  // Si no se encuentra en día anterior, buscar en semana anterior (mismo día de la semana)
+  if (diaSemana) {
+    const fechaSemanaAnterior = new Date(fechaConsulta);
+    fechaSemanaAnterior.setDate(fechaSemanaAnterior.getDate() - 7);
+    
+    const dietaSemanaAnterior = dietasCliente.find(d => {
+      const fechaInicio = new Date(d.fechaInicio);
+      const diffDias = Math.abs((fechaInicio.getTime() - fechaSemanaAnterior.getTime()) / (1000 * 60 * 60 * 24));
+      return diffDias <= 3; // Permitir 3 días de margen
+    });
+    
+    if (dietaSemanaAnterior) {
+      const comidaEncontrada = dietaSemanaAnterior.comidas.find(c => 
+        c.tipo === tipoComida && c.dia === diaSemana
+      );
+      
+      if (comidaEncontrada) {
+        return comidaEncontrada;
+      }
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Compara una comida actual con su equivalente en sesión anterior
+ */
+export async function compararSesionAnterior(
+  comidaActual: Comida,
+  clienteId: string,
+  diaSemana?: string,
+  fechaActual?: string
+): Promise<ComparacionSesionAnterior> {
+  await new Promise(resolve => setTimeout(resolve, 200));
+  
+  const comidaAnterior = await getComidaSesionAnterior(
+    clienteId,
+    comidaActual.tipo,
+    diaSemana,
+    fechaActual
+  );
+  
+  if (!comidaAnterior) {
+    return {
+      comidaActual,
+      comidaAnterior: null,
+      tipoComparacion: 'dia-anterior',
+      fechaAnterior: '',
+      diferencias: {
+        calorias: 0,
+        proteinas: 0,
+        carbohidratos: 0,
+        grasas: 0,
+      },
+      porcentajesCambio: {
+        calorias: 0,
+        proteinas: 0,
+        carbohidratos: 0,
+        grasas: 0,
+      },
+      tendencia: 'estable',
+      mensaje: 'No hay sesión anterior disponible para comparar',
+    };
+  }
+  
+  // Calcular diferencias
+  const diferencias = {
+    calorias: comidaActual.calorias - comidaAnterior.calorias,
+    proteinas: comidaActual.proteinas - comidaAnterior.proteinas,
+    carbohidratos: comidaActual.carbohidratos - comidaAnterior.carbohidratos,
+    grasas: comidaActual.grasas - comidaAnterior.grasas,
+  };
+  
+  // Calcular porcentajes de cambio
+  const calcularPorcentaje = (actual: number, anterior: number): number => {
+    if (anterior === 0) return actual > 0 ? 100 : 0;
+    return ((actual - anterior) / anterior) * 100;
+  };
+  
+  const porcentajesCambio = {
+    calorias: calcularPorcentaje(comidaActual.calorias, comidaAnterior.calorias),
+    proteinas: calcularPorcentaje(comidaActual.proteinas, comidaAnterior.proteinas),
+    carbohidratos: calcularPorcentaje(comidaActual.carbohidratos, comidaAnterior.carbohidratos),
+    grasas: calcularPorcentaje(comidaActual.grasas, comidaAnterior.grasas),
+  };
+  
+  // Determinar tendencia
+  // Para la mayoría de objetivos, mantener macros similares es estable
+  // Mejora: cambios positivos en proteínas sin exceso de calorías
+  // Desviación: cambios significativos no deseados
+  const cambioCalorias = Math.abs(porcentajesCambio.calorias);
+  const cambioProteinas = porcentajesCambio.proteinas;
+  
+  let tendencia: 'mejora' | 'estable' | 'desviacion' = 'estable';
+  let mensaje = '';
+  
+  if (cambioCalorias < 5 && Math.abs(cambioProteinas) < 5) {
+    tendencia = 'estable';
+    mensaje = 'Mantiene valores similares a la sesión anterior';
+  } else if (cambioProteinas > 5 && cambioCalorias < 10) {
+    tendencia = 'mejora';
+    mensaje = 'Aumento de proteínas sin exceso calórico';
+  } else if (cambioCalorias > 15 || Math.abs(cambioProteinas) > 15) {
+    tendencia = 'desviacion';
+    mensaje = `Cambio significativo: ${cambioCalorias > 0 ? '+' : ''}${porcentajesCambio.calorias.toFixed(1)}% calorías`;
+  } else {
+    tendencia = 'estable';
+    mensaje = 'Variación dentro del rango esperado';
+  }
+  
+  // Determinar tipo de comparación
+  const fechaConsulta = fechaActual ? new Date(fechaActual) : new Date();
+  const fechaAnteriorDate = comidaAnterior.fechaComida ? new Date(comidaAnterior.fechaComida) : new Date();
+  const diffDias = Math.floor((fechaConsulta.getTime() - fechaAnteriorDate.getTime()) / (1000 * 60 * 60 * 24));
+  
+  let tipoComparacion: 'dia-anterior' | 'semana-anterior' | 'mismo-dia-semana-anterior' = 'dia-anterior';
+  if (diffDias === 7) {
+    tipoComparacion = 'mismo-dia-semana-anterior';
+  } else if (diffDias > 1 && diffDias < 7) {
+    tipoComparacion = 'semana-anterior';
+  }
+  
+  return {
+    comidaActual,
+    comidaAnterior,
+    tipoComparacion,
+    fechaAnterior: comidaAnterior.fechaComida || '',
+    diferencias,
+    porcentajesCambio,
+    tendencia,
+    mensaje,
+  };
 }
 

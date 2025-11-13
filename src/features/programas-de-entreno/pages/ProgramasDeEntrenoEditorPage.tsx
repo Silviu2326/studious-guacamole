@@ -28,12 +28,35 @@ import {
   StickyNote,
   Edit2,
   Trash2,
+  Share2,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Undo2,
+  Redo2,
+  History,
+  Bookmark,
+  BookmarkPlus,
+  CheckCircle2,
+  BarChart3,
+  X,
 } from 'lucide-react';
-import { Button, Card, Tabs, Badge, Input, Select, Modal } from '../../../components/componentsreutilizables';
+import { Button, Card, Tabs, Badge, Input, Select, Modal, Textarea } from '../../../components/componentsreutilizables';
 import { WeeklyEditorView } from '../components/WeeklyEditorView';
+import { LoadTrackingChart } from '../components/LoadTrackingChart';
 import { DailyEditorView } from '../components/DailyEditorView';
 import { ExcelSummaryView } from '../components/ExcelSummaryView';
 import type { DayPlan } from '../types';
+import { obtenerReglas, aplicarReglasInteligentes, type ReglaInteligente } from '../utils/intelligentRules';
+import { BuscarSustituirEntidades } from '../components/BuscarSustituirEntidades';
+import { CompartirExtractosChat } from '../components/CompartirExtractosChat';
+import { SubstitutionHistoryManager } from '../utils/substitutionHistory';
+import { SubstitutionPresetsManager, type SubstitutionPreset } from '../utils/substitutionPresets';
+import { TagManager } from '../components/TagManager';
+import { BulkAutomationFlow } from '../components/BulkAutomationFlow';
+import { AutomationLogViewer } from '../components/AutomationLogViewer';
+import { guardarBorrador, publicarPrograma } from '../api/programas';
+import { useAuth } from '../../../context/AuthContext';
 
 type EditorView = 'weekly' | 'daily' | 'excel';
 type LibraryTab = 'templates' | 'exercises';
@@ -358,6 +381,13 @@ type EditorHeaderProps = {
   onOpenFitCoach: () => void;
   onOpenSubstitutions: () => void;
   onOpenBatchTraining: () => void;
+  onOpenCompartirChat: () => void;
+  onOpenBuscarSustituir: () => void;
+  onOpenTagManager: () => void;
+  onOpenCharts: () => void;
+  onOpenBulkAutomation: () => void;
+  onSaveDraft: () => void;
+  lastSaveTime: string | null;
 };
 
 function EditorHeader({
@@ -368,7 +398,45 @@ function EditorHeader({
   onOpenFitCoach,
   onOpenSubstitutions,
   onOpenBatchTraining,
+  onOpenCompartirChat,
+  onOpenBuscarSustituir,
+  onOpenCharts,
+  onOpenTagManager,
+  onOpenBulkAutomation,
+  onSaveDraft,
+  lastSaveTime,
 }: EditorHeaderProps) {
+  const formatLastSaveTime = (timestamp: string | null) => {
+    if (!timestamp) return null;
+    try {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+
+      if (diffMins < 1) return 'Ahora';
+      if (diffMins < 60) return `Hace ${diffMins} min`;
+      if (diffHours < 24) return `Hace ${diffHours} h`;
+      if (diffDays === 1) return 'Ayer';
+      if (diffDays < 7) return `Hace ${diffDays} días`;
+
+      // Formato completo para fechas más antiguas
+      return date.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return null;
+    }
+  };
+
+  const formattedTime = formatLastSaveTime(lastSaveTime);
+
   return (
     <header className="rounded-3xl border border-slate-200/70 bg-white/95 px-6 py-4 shadow-sm dark:border-slate-800/70 dark:bg-slate-950/60">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -395,15 +463,43 @@ function EditorHeader({
           <Button variant="ghost" size="sm" leftIcon={<Sparkles className="h-4 w-4" />} onClick={onOpenFitCoach}>
             Fit Coach
           </Button>
+          <Button variant="ghost" size="sm" leftIcon={<Search className="h-4 w-4" />} onClick={onOpenBuscarSustituir}>
+            Buscar y Sustituir
+          </Button>
+          <Button variant="ghost" size="sm" leftIcon={<Share2 className="h-4 w-4" />} onClick={onOpenCompartirChat}>
+            Compartir Chat
+          </Button>
           <Button variant="ghost" size="sm" leftIcon={<Replace className="h-4 w-4" />} onClick={onOpenSubstitutions}>
             Sustituciones
           </Button>
           <Button variant="ghost" size="sm" leftIcon={<Settings className="h-4 w-4" />} onClick={onOpenBatchTraining}>
             Batch Training
           </Button>
-          <Button variant="secondary" size="sm" leftIcon={<Save className="h-4 w-4" />}>
-            Guardar borrador
+          <Button variant="ghost" size="sm" leftIcon={<BookmarkPlus className="h-4 w-4" />} onClick={onOpenTagManager}>
+            Tags
+          <Button variant="ghost" size="sm" leftIcon={<BarChart3 className="h-4 w-4" />} onClick={onOpenCharts}>
+            Gráficos
           </Button>
+          </Button>
+          <Button variant="ghost" size="sm" leftIcon={<Sparkles className="h-4 w-4" />} onClick={onOpenBulkAutomation}>
+            Automatización
+          </Button>
+          <div className="flex flex-col items-end">
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              leftIcon={<Save className="h-4 w-4" />}
+              onClick={onSaveDraft}
+              title={formattedTime ? `Último guardado: ${formattedTime}` : 'Guardar borrador'}
+            >
+              Guardar borrador
+            </Button>
+            {formattedTime && (
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                {formattedTime}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </header>
@@ -439,13 +535,21 @@ type LibrarySidebarProps = {
   onChangeLibrarySearch: (value: string) => void;
   equipmentFilter: string;
   onChangeEquipmentFilter: (value: string) => void;
+  categoryFilter: string;
+  onChangeCategoryFilter: (value: string) => void;
   uniqueEquipments: string[];
   filteredPinnedTemplates: TemplateExample[];
   filteredUnpinnedTemplates: TemplateExample[];
+  filteredPinnedExercises: ExerciseExample[];
+  filteredUnpinnedExercises: ExerciseExample[];
   filteredExercises: ExerciseExample[];
   pinnedTemplatesCount: number;
+  pinnedExercisesCount: number;
   onTogglePinTemplate: (templateId: string) => void;
+  onTogglePinExercise: (exerciseId: string) => void;
+  onDragStart: (type: 'template' | 'exercise', item: TemplateExample | ExerciseExample) => void;
 };
+
 
 function LibrarySidebar({
   leftCollapsed,
@@ -456,12 +560,19 @@ function LibrarySidebar({
   onChangeLibrarySearch,
   equipmentFilter,
   onChangeEquipmentFilter,
+  categoryFilter,
+  onChangeCategoryFilter,
   uniqueEquipments,
   filteredPinnedTemplates,
   filteredUnpinnedTemplates,
+  filteredPinnedExercises,
+  filteredUnpinnedExercises,
   filteredExercises,
   pinnedTemplatesCount,
+  pinnedExercisesCount,
   onTogglePinTemplate,
+  onTogglePinExercise,
+  onDragStart,
 }: LibrarySidebarProps) {
   return (
     <aside
@@ -559,7 +670,7 @@ function LibrarySidebar({
                       {filteredPinnedTemplates.map((template) => (
                         <div
                           key={template.id}
-                          className="w-full rounded-2xl border border-amber-200/70 bg-amber-50/60 p-4 transition hover:border-amber-300 hover:shadow-sm dark:border-amber-900/40 dark:bg-amber-500/10"
+                          className="w-full rounded-2xl border border-amber-200/70 draggable onDragStart={(e) => { e.dataTransfer.setData(\'application/json\', JSON.stringify({ type: \'template\', item: template })); onDragStart(\'template\', template); }} className="w-full cursor-move rounded-2xl border border-amber-200/70 bg-amber-50/60 p-4 transition hover:border-amber-300 hover:shadow-sm dark:border-amber-900/40 dark:bg-amber-500/10"
                         >
                           <div className="flex items-center justify-between gap-3">
                             <div>
@@ -597,7 +708,7 @@ function LibrarySidebar({
                   {filteredUnpinnedTemplates.map((template) => (
                     <div
                       key={template.id}
-                      className="w-full rounded-2xl border border-slate-200/70 bg-white/90 p-4 transition hover:border-indigo-300 hover:shadow-md dark:border-slate-800/70 dark:bg-slate-950/60 dark:hover:border-indigo-500/40"
+                      className="w-full rounded-2xl border border-slate-200/70 draggable onDragStart={(e) => { e.dataTransfer.setData(\'application/json\', JSON.stringify({ type: \'template\', item: template })); onDragStart(\'template\', template); }} className="w-full cursor-move rounded-2xl border border-slate-200/70 bg-white/90 p-4 transition hover:border-indigo-300 hover:shadow-md dark:border-slate-800/70 dark:bg-slate-950/60 dark:hover:border-indigo-500/40"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div>
@@ -629,25 +740,87 @@ function LibrarySidebar({
                   ))}
                 </>
               ) : (
-                filteredExercises.map((exercise) => (
-                  <button
-                    key={exercise.id}
-                    type="button"
-                    className="w-full rounded-2xl border border-slate-200/70 bg-white/90 p-4 text-left transition hover:border-emerald-300 hover:shadow-md dark:border-slate-800/70 dark:bg-slate-950/60 dark:hover:border-emerald-500/40"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{exercise.name}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-300">{exercise.target}</p>
+                <>
+                  {pinnedExercisesCount > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-[11px] font-semibold uppercase tracking-wide text-amber-600">Favoritos</div>
+                      {filteredPinnedExercises.map((exercise) => (
+                        <div
+                          key={exercise.id}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('application/json', JSON.stringify({ type: 'exercise', item: exercise }));
+                            onDragStart('exercise', exercise);
+                          }}
+                          className="w-full cursor-move rounded-2xl border border-amber-200/70 bg-amber-50/60 p-4 transition hover:border-amber-300 hover:shadow-sm dark:border-amber-900/40 dark:bg-amber-500/10"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{exercise.name}</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-300">{exercise.target}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge size="sm" variant={difficultyColorMap[exercise.difficulty].badgeVariant}>
+                                {difficultyColorMap[exercise.difficulty].label}
+                              </Badge>
+                              <button
+                                type="button"
+                                aria-label="Quitar de favoritos"
+                                className="rounded-full p-1 text-amber-500 hover:bg-amber-100/60 dark:hover:bg-amber-500/20"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onTogglePinExercise(exercise.id);
+                                }}
+                              >
+                                <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
+                              </button>
+                            </div>
+                          </div>
+                          <p className="mt-3 text-[11px] text-slate-500 dark:text-slate-300">Equipo: {exercise.equipment}</p>
+                        </div>
+                      ))}
+                      <div className="pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                        Todos los ejercicios
                       </div>
-                      <Badge size="sm" variant={difficultyColorMap[exercise.difficulty].badgeVariant}>
-                        {difficultyColorMap[exercise.difficulty].label}
-                      </Badge>
                     </div>
-                    <p className="mt-3 text-[11px] text-slate-500 dark:text-slate-300">Equipo: {exercise.equipment}</p>
-                  </button>
-                ))
-              )}
+                  )}
+                  {filteredUnpinnedExercises.map((exercise) => (
+                    <div
+                      key={exercise.id}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('application/json', JSON.stringify({ type: 'exercise', item: exercise }));
+                        onDragStart('exercise', exercise);
+                      }}
+                      className="w-full cursor-move rounded-2xl border border-slate-200/70 bg-white/90 p-4 transition hover:border-emerald-300 hover:shadow-md dark:border-slate-800/70 dark:bg-slate-950/60 dark:hover:border-emerald-500/40"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{exercise.name}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-300">{exercise.target}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge size="sm" variant={difficultyColorMap[exercise.difficulty].badgeVariant}>
+                            {difficultyColorMap[exercise.difficulty].label}
+                          </Badge>
+                          <button
+                            type="button"
+                            aria-label="Marcar como favorito"
+                            className="rounded-full p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onTogglePinExercise(exercise.id);
+                            }}
+                          >
+                            <Star className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="mt-3 text-[11px] text-slate-500 dark:text-slate-300">Equipo: {exercise.equipment}</p>
+                    </div>
+                  ))}
+                </>
+              )}}
             </div>
           </Card>
 
@@ -1061,13 +1234,45 @@ type SubstitutionsModalProps = {
   weeklyPlan: Record<DayKey, DayPlan>;
   weekDays: ReadonlyArray<DayKey>;
   onReplaceBlocks: (replacements: Array<{ day: DayKey; sessionId: string; newBlock: Partial<import('../types').DaySession> }>) => void;
+  onUpdatePlan: (plan: Record<DayKey, DayPlan>) => void;
+  historyManager: SubstitutionHistoryManager;
   onClose: () => void;
 };
 
-function SubstitutionsModal({ weeklyPlan, weekDays, onReplaceBlocks, onClose }: SubstitutionsModalProps) {
+function SubstitutionsModal({ weeklyPlan, weekDays, onReplaceBlocks, onUpdatePlan, historyManager, onClose }: SubstitutionsModalProps) {
   const [selectedBlocks, setSelectedBlocks] = useState<Set<string>>(new Set());
   const [selectedReplacement, setSelectedReplacement] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showPreview, setShowPreview] = useState(false);
+  const [filtrosAvanzados, setFiltrosAvanzados] = useState({
+    modalidad: '',
+    intensidad: '',
+    duracionMin: '',
+    duracionMax: '',
+    equipamiento: '',
+    tagsPersonalizados: [] as string[],
+  });
+  const [reglasInteligentes, setReglasInteligentes] = useState<ReglaInteligente[]>([]);
+  const [aplicarReglasAuto, setAplicarReglasAuto] = useState(true);
+  
+  // Estados para presets
+  const [presets, setPresets] = useState<SubstitutionPreset[]>([]);
+  const [showPresetsModal, setShowPresetsModal] = useState(false);
+  const [showSavePresetModal, setShowSavePresetModal] = useState(false);
+  const [presetName, setPresetName] = useState('');
+  const [presetDescription, setPresetDescription] = useState('');
+  const [presetTags, setPresetTags] = useState('');
+  const [historyInfo, setHistoryInfo] = useState(historyManager.getHistoryInfo());
+
+  // Cargar presets al montar
+  useEffect(() => {
+    setPresets(SubstitutionPresetsManager.getAllPresets());
+  }, []);
+
+  // Actualizar información del historial
+  useEffect(() => {
+    setHistoryInfo(historyManager.getHistoryInfo());
+  }, [weeklyPlan, historyManager]);
 
   // Obtener todos los bloques únicos de la semana
   const allBlocks = useMemo(() => {
@@ -1088,27 +1293,70 @@ function SubstitutionsModal({ weeklyPlan, weekDays, onReplaceBlocks, onClose }: 
     return blocks;
   }, [weeklyPlan, weekDays]);
 
+  // Cargar reglas inteligentes al montar
+  useEffect(() => {
+    setReglasInteligentes(obtenerReglas());
+  }, []);
+
   // Bloques de reemplazo disponibles (simulados desde la biblioteca)
   const replacementBlocks = useMemo(
     () => [
-      { id: 'mobility-1', name: 'Movilidad dinámica completa', modality: 'Mobility', duration: '15 min' },
-      { id: 'strength-1', name: 'Bloque de fuerza superior', modality: 'Strength', duration: '40 min' },
-      { id: 'metcon-1', name: 'MetCon corto e intenso', modality: 'MetCon', duration: '20 min' },
-      { id: 'cardio-1', name: 'Cardio zona 2', modality: 'Cardio', duration: '25 min' },
-      { id: 'core-1', name: 'Core estabilidad', modality: 'Core', duration: '15 min' },
-      { id: 'recovery-1', name: 'Recuperación activa', modality: 'Recovery', duration: '12 min' },
+      { id: 'mobility-1', name: 'Movilidad dinámica completa', modality: 'Mobility', duration: '15 min', intensity: 'Ligera', equipment: 'Bandas, Foam roller', tags: ['movilidad', 'calentamiento'] },
+      { id: 'strength-1', name: 'Bloque de fuerza superior', modality: 'Strength', duration: '40 min', intensity: 'RPE 7', equipment: 'Barra, Mancuernas', tags: ['fuerza', 'superior'] },
+      { id: 'metcon-1', name: 'MetCon corto e intenso', modality: 'MetCon', duration: '20 min', intensity: 'Alta', equipment: 'Kettlebell, Battle rope', tags: ['metcon', 'intenso'] },
+      { id: 'cardio-1', name: 'Cardio zona 2', modality: 'Cardio', duration: '25 min', intensity: 'Moderada', equipment: 'Bike, Cinta', tags: ['cardio', 'zona2'] },
+      { id: 'core-1', name: 'Core estabilidad', modality: 'Core', duration: '15 min', intensity: 'Ligera', equipment: 'Peso corporal, Bandas', tags: ['core', 'estabilidad'] },
+      { id: 'recovery-1', name: 'Recuperación activa', modality: 'Recovery', duration: '12 min', intensity: 'Regenerativa', equipment: 'Foam roller', tags: ['recuperación', 'movilidad'] },
+      { id: 'press-maquina-1', name: 'Press en máquina', modality: 'Strength', duration: '40 min', intensity: 'RPE 7', equipment: 'Máquina', tags: ['fuerza', 'máquina', 'hombro'] },
+      { id: 'goblet-squat-1', name: 'Goblet squat o split-squat', modality: 'Strength', duration: '35 min', intensity: 'RPE 6.5', equipment: 'Mancuernas', tags: ['fuerza', 'rodilla'] },
     ],
     []
   );
 
-  const filteredReplacementBlocks = useMemo(
-    () =>
-      replacementBlocks.filter((block) =>
+  const filteredReplacementBlocks = useMemo(() => {
+    let filtered = replacementBlocks.filter(
+      (block) =>
         block.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        block.modality.toLowerCase().includes(searchTerm.toLowerCase())
-      ),
-    [replacementBlocks, searchTerm]
-  );
+        block.modality.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (block.equipment && block.equipment.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    // Aplicar filtros avanzados
+    if (filtrosAvanzados.modalidad) {
+      filtered = filtered.filter((b) => b.modality === filtrosAvanzados.modalidad);
+    }
+    if (filtrosAvanzados.intensidad) {
+      filtered = filtered.filter((b) => b.intensity?.includes(filtrosAvanzados.intensidad));
+    }
+    if (filtrosAvanzados.duracionMin) {
+      const min = parseInt(filtrosAvanzados.duracionMin);
+      filtered = filtered.filter((b) => {
+        const duration = parseInt(b.duration) || 0;
+        return duration >= min;
+      });
+    }
+    if (filtrosAvanzados.duracionMax) {
+      const max = parseInt(filtrosAvanzados.duracionMax);
+      filtered = filtered.filter((b) => {
+        const duration = parseInt(b.duration) || 0;
+        return duration <= max;
+      });
+    }
+    if (filtrosAvanzados.equipamiento) {
+      filtered = filtered.filter((b) =>
+        b.equipment?.toLowerCase().includes(filtrosAvanzados.equipamiento.toLowerCase())
+      );
+    }
+    if (filtrosAvanzados.tagsPersonalizados.length > 0) {
+      filtered = filtered.filter((b) =>
+        filtrosAvanzados.tagsPersonalizados.some((tag) =>
+          b.tags?.some((t) => t.toLowerCase().includes(tag.toLowerCase()))
+        )
+      );
+    }
+
+    return filtered;
+  }, [replacementBlocks, searchTerm, filtrosAvanzados]);
 
   const toggleBlockSelection = (key: string) => {
     const newSelected = new Set(selectedBlocks);
@@ -1135,16 +1383,183 @@ function SubstitutionsModal({ weeklyPlan, weekDays, onReplaceBlocks, onClose }: 
           block: replacement.name,
           modality: replacement.modality,
           duration: replacement.duration,
-          notes: `Reemplazado desde biblioteca`,
+          intensity: replacement.intensity || '',
+          notes: `Reemplazado desde biblioteca${replacement.equipment ? ` · Equipamiento: ${replacement.equipment}` : ''}`,
         },
       };
     });
 
+    // Guardar estado antes de la sustitución para el historial
+    const planBefore = JSON.parse(JSON.stringify(weeklyPlan));
+    
+    // Aplicar las sustituciones
+    const updatedPlan: Record<DayKey, DayPlan> = { ...weeklyPlan };
+    replacements.forEach(({ day, sessionId, newBlock }) => {
+      const dayPlan = updatedPlan[day];
+      updatedPlan[day] = {
+        ...dayPlan,
+        sessions: dayPlan.sessions.map((session) =>
+          session.id === sessionId ? { ...session, ...newBlock } : session
+        ),
+      };
+    });
+
+    // Agregar al historial
+    historyManager.addEntry(
+      planBefore,
+      updatedPlan,
+      `Sustitución de ${replacements.length} bloque(s) por "${replacement.name}"`
+    );
+
+    // Actualizar el plan
+    onUpdatePlan(updatedPlan);
     onReplaceBlocks(replacements);
+    
+    // Limpiar selección
+    setSelectedBlocks(new Set());
+    setSelectedReplacement('');
+    setHistoryInfo(historyManager.getHistoryInfo());
+  };
+
+  const handleUndo = () => {
+    const previousPlan = historyManager.undo();
+    if (previousPlan) {
+      onUpdatePlan(previousPlan);
+      setHistoryInfo(historyManager.getHistoryInfo());
+    }
+  };
+
+  const handleRedo = () => {
+    const nextPlan = historyManager.redo();
+    if (nextPlan) {
+      onUpdatePlan(nextPlan);
+      setHistoryInfo(historyManager.getHistoryInfo());
+    }
+  };
+
+  const handleSavePreset = () => {
+    if (!presetName.trim() || selectedBlocks.size === 0 || !selectedReplacement) {
+      alert('Por favor completa el nombre del preset y selecciona bloques y reemplazo');
+      return;
+    }
+
+    const replacement = replacementBlocks.find((b) => b.id === selectedReplacement);
+    if (!replacement) return;
+
+    const replacements = Array.from(selectedBlocks).map((key) => {
+      const [day, sessionId] = key.split('::') as [DayKey, string];
+      return {
+        day,
+        sessionId,
+        newBlock: {
+          block: replacement.name,
+          modality: replacement.modality,
+          duration: replacement.duration,
+          intensity: replacement.intensity || '',
+          notes: `Reemplazado desde biblioteca${replacement.equipment ? ` · Equipamiento: ${replacement.equipment}` : ''}`,
+        },
+      };
+    });
+
+    const tags = presetTags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+    SubstitutionPresetsManager.savePreset(presetName, replacements, presetDescription || undefined, tags);
+    
+    setPresets(SubstitutionPresetsManager.getAllPresets());
+    setShowSavePresetModal(false);
+    setPresetName('');
+    setPresetDescription('');
+    setPresetTags('');
+    alert('Preset guardado correctamente');
+  };
+
+  const handleApplyPreset = (preset: SubstitutionPreset) => {
+    const planBefore = JSON.parse(JSON.stringify(weeklyPlan));
+    
+    // Aplicar las sustituciones del preset
+    const updatedPlan: Record<DayKey, DayPlan> = { ...weeklyPlan };
+    preset.replacements.forEach(({ day, sessionId, newBlock }) => {
+      const dayPlan = updatedPlan[day];
+      if (dayPlan) {
+        updatedPlan[day] = {
+          ...dayPlan,
+          sessions: dayPlan.sessions.map((session) =>
+            session.id === sessionId ? { ...session, ...newBlock } : session
+          ),
+        };
+      }
+    });
+
+    // Agregar al historial
+    historyManager.addEntry(planBefore, updatedPlan, `Preset aplicado: "${preset.name}"`);
+
+    // Actualizar el plan
+    onUpdatePlan(updatedPlan);
+    onReplaceBlocks(preset.replacements);
+    setShowPresetsModal(false);
+    setHistoryInfo(historyManager.getHistoryInfo());
+  };
+
+  const handleDeletePreset = (id: string) => {
+    if (confirm('¿Estás seguro de que deseas eliminar este preset?')) {
+      SubstitutionPresetsManager.deletePreset(id);
+      setPresets(SubstitutionPresetsManager.getAllPresets());
+    }
   };
 
   return (
     <div className="space-y-6">
+      {/* Barra de herramientas: Historial y Presets */}
+      <div className="flex items-center justify-between rounded-xl border border-slate-200/70 bg-white/95 p-3 dark:border-slate-800/70 dark:bg-slate-950/60">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleUndo}
+            disabled={!historyInfo.canUndo}
+            iconLeft={Undo2}
+            className="h-8"
+          >
+            Deshacer
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRedo}
+            disabled={!historyInfo.canRedo}
+            iconLeft={Redo2}
+            className="h-8"
+          >
+            Rehacer
+          </Button>
+          {historyInfo.currentDescription && (
+            <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">
+              {historyInfo.currentDescription}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowPresetsModal(true)}
+            iconLeft={Bookmark}
+            className="h-8"
+          >
+            Presets ({presets.length})
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowSavePresetModal(true)}
+            disabled={selectedBlocks.size === 0 || !selectedReplacement}
+            iconLeft={BookmarkPlus}
+            className="h-8"
+          >
+            Guardar Preset
+          </Button>
+        </div>
+      </div>
+
       <div className="rounded-2xl border border-slate-200/70 bg-slate-50 p-4 text-sm dark:border-slate-800/70 dark:bg-slate-900/40">
         <p className="text-slate-700 dark:text-slate-300">
           Selecciona los bloques que deseas reemplazar y elige un bloque de reemplazo desde la biblioteca.
@@ -1154,39 +1569,103 @@ function SubstitutionsModal({ weeklyPlan, weekDays, onReplaceBlocks, onClose }: 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Selección de bloques a reemplazar */}
         <Card className="border border-slate-200/70 bg-white/95 p-5 dark:border-slate-800/70 dark:bg-slate-950/60">
-          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-4">
-            Bloques del plan semanal ({selectedBlocks.size} seleccionados)
-          </h3>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {allBlocks.map((blockInfo) => {
-              const isSelected = selectedBlocks.has(blockInfo.key);
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+              Bloques del plan semanal ({selectedBlocks.size} seleccionados)
+            </h3>
+            {allBlocks.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (selectedBlocks.size === allBlocks.length) {
+                    setSelectedBlocks(new Set());
+                  } else {
+                    setSelectedBlocks(new Set(allBlocks.map((b) => b.key)));
+                  }
+                }}
+                className="h-auto px-2 py-1 text-xs"
+              >
+                {selectedBlocks.size === allBlocks.length ? 'Deseleccionar todos' : 'Seleccionar todos'}
+              </Button>
+            )}
+          </div>
+          
+          {/* Agrupar por día para mejor visualización */}
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {weekDays.map((day) => {
+              const dayBlocks = allBlocks.filter((b) => b.day === day);
+              if (dayBlocks.length === 0) return null;
+
+              const daySelectedCount = dayBlocks.filter((b) => selectedBlocks.has(b.key)).length;
+
               return (
-                <button
-                  key={blockInfo.key}
-                  type="button"
-                  onClick={() => toggleBlockSelection(blockInfo.key)}
-                  className={`w-full rounded-xl border p-3 text-left transition ${
-                    isSelected
-                      ? 'border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-500/10'
-                      : 'border-slate-200/70 bg-white/90 hover:border-slate-300 dark:border-slate-800/70 dark:bg-slate-950/60 dark:hover:border-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-3">
+                <div key={day} className="space-y-2">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-1">
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                      {day}
+                    </h4>
                     <div className="flex items-center gap-2">
-                      {isSelected ? (
-                        <CheckSquare className="h-4 w-4 text-indigo-500" />
-                      ) : (
-                        <Square className="h-4 w-4 text-slate-400" />
-                      )}
-                      <div>
-                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{blockInfo.block}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-300">
-                          {blockInfo.day} · {blockInfo.modality}
-                        </p>
-                      </div>
+                      <span className="text-xs text-slate-500">
+                        {daySelectedCount}/{dayBlocks.length} seleccionados
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const newSelected = new Set(selectedBlocks);
+                          const allDaySelected = dayBlocks.every((b) => newSelected.has(b.key));
+                          dayBlocks.forEach((b) => {
+                            if (allDaySelected) {
+                              newSelected.delete(b.key);
+                            } else {
+                              newSelected.add(b.key);
+                            }
+                          });
+                          setSelectedBlocks(newSelected);
+                        }}
+                        className="h-auto px-2 py-0.5 text-[10px]"
+                      >
+                        {daySelectedCount === dayBlocks.length ? 'Deseleccionar día' : 'Seleccionar día'}
+                      </Button>
                     </div>
                   </div>
-                </button>
+                  <div className="space-y-2 pl-2">
+                    {dayBlocks.map((blockInfo) => {
+                      const isSelected = selectedBlocks.has(blockInfo.key);
+                      return (
+                        <button
+                          key={blockInfo.key}
+                          type="button"
+                          onClick={() => toggleBlockSelection(blockInfo.key)}
+                          className={`w-full rounded-xl border p-3 text-left transition ${
+                            isSelected
+                              ? 'border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-500/10'
+                              : 'border-slate-200/70 bg-white/90 hover:border-slate-300 dark:border-slate-800/70 dark:bg-slate-950/60 dark:hover:border-slate-700'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2">
+                              {isSelected ? (
+                                <CheckSquare className="h-4 w-4 text-indigo-500 flex-shrink-0" />
+                              ) : (
+                                <Square className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                              )}
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                  {blockInfo.block}
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-300">
+                                  {blockInfo.modality}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -1195,6 +1674,8 @@ function SubstitutionsModal({ weeklyPlan, weekDays, onReplaceBlocks, onClose }: 
         {/* Selección de bloque de reemplazo */}
         <Card className="border border-slate-200/70 bg-white/95 p-5 dark:border-slate-800/70 dark:bg-slate-950/60">
           <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-4">Biblioteca de bloques</h3>
+          
+          {/* Búsqueda básica */}
           <div className="mb-4">
             <Input
               placeholder="Buscar bloques..."
@@ -1202,6 +1683,120 @@ function SubstitutionsModal({ weeklyPlan, weekDays, onReplaceBlocks, onClose }: 
               onChange={(e) => setSearchTerm(e.target.value)}
               leftIcon={<Search className="h-4 w-4" />}
             />
+          </div>
+
+          {/* Filtros avanzados */}
+          <div className="mb-4 space-y-3 rounded-lg border border-slate-200/70 bg-slate-50/50 p-3 dark:border-slate-800/70 dark:bg-slate-900/40">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                Filtros Avanzados
+              </h4>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  setFiltrosAvanzados({
+                    modalidad: '',
+                    intensidad: '',
+                    duracionMin: '',
+                    duracionMax: '',
+                    equipamiento: '',
+                    tagsPersonalizados: [],
+                  })
+                }
+                className="h-auto px-2 py-1 text-xs"
+              >
+                Limpiar
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Select
+                options={[
+                  { label: 'Todas las modalidades', value: '' },
+                  { label: 'Strength', value: 'Strength' },
+                  { label: 'MetCon', value: 'MetCon' },
+                  { label: 'Cardio', value: 'Cardio' },
+                  { label: 'Mobility', value: 'Mobility' },
+                  { label: 'Core', value: 'Core' },
+                  { label: 'Recovery', value: 'Recovery' },
+                  { label: 'Accessory', value: 'Accessory' },
+                ]}
+                value={filtrosAvanzados.modalidad}
+                onChange={(e) => setFiltrosAvanzados({ ...filtrosAvanzados, modalidad: e.target.value })}
+              />
+              <Select
+                options={[
+                  { label: 'Todas las intensidades', value: '' },
+                  { label: 'Ligera', value: 'Ligera' },
+                  { label: 'Moderada', value: 'Moderada' },
+                  { label: 'RPE 7', value: 'RPE 7' },
+                  { label: 'RPE 7.5', value: 'RPE 7.5' },
+                  { label: 'RPE 8', value: 'RPE 8' },
+                  { label: 'Alta', value: 'Alta' },
+                  { label: 'Regenerativa', value: 'Regenerativa' },
+                ]}
+                value={filtrosAvanzados.intensidad}
+                onChange={(e) => setFiltrosAvanzados({ ...filtrosAvanzados, intensidad: e.target.value })}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                type="number"
+                placeholder="Duración mín (min)"
+                value={filtrosAvanzados.duracionMin}
+                onChange={(e) => setFiltrosAvanzados({ ...filtrosAvanzados, duracionMin: e.target.value })}
+                className="text-xs"
+              />
+              <Input
+                type="number"
+                placeholder="Duración máx (min)"
+                value={filtrosAvanzados.duracionMax}
+                onChange={(e) => setFiltrosAvanzados({ ...filtrosAvanzados, duracionMax: e.target.value })}
+                className="text-xs"
+              />
+            </div>
+
+            <Input
+              placeholder="Equipamiento (ej: Barra, Kettlebell, Bandas...)"
+              value={filtrosAvanzados.equipamiento}
+              onChange={(e) => setFiltrosAvanzados({ ...filtrosAvanzados, equipamiento: e.target.value })}
+              className="text-xs"
+            />
+
+            <div>
+              <Input
+                placeholder="Tags personalizados (separar por comas)"
+                value={filtrosAvanzados.tagsPersonalizados.join(', ')}
+                onChange={(e) => {
+                  const tags = e.target.value
+                    .split(',')
+                    .map((tag) => tag.trim())
+                    .filter((tag) => tag.length > 0);
+                  setFiltrosAvanzados({ ...filtrosAvanzados, tagsPersonalizados: tags });
+                }}
+                className="text-xs"
+              />
+              {filtrosAvanzados.tagsPersonalizados.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {filtrosAvanzados.tagsPersonalizados.map((tag, index) => (
+                    <Badge
+                      key={index}
+                      variant="secondary"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => {
+                        const newTags = filtrosAvanzados.tagsPersonalizados.filter((_, i) => i !== index);
+                        setFiltrosAvanzados({ ...filtrosAvanzados, tagsPersonalizados: newTags });
+                      }}
+                    >
+                      {tag} ×
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {filteredReplacementBlocks.map((block) => {
@@ -1217,14 +1812,26 @@ function SubstitutionsModal({ weeklyPlan, weekDays, onReplaceBlocks, onClose }: 
                       : 'border-slate-200/70 bg-white/90 hover:border-slate-300 dark:border-slate-800/70 dark:bg-slate-950/60 dark:hover:border-slate-700'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
                       <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{block.name}</p>
                       <p className="text-xs text-slate-500 dark:text-slate-300">
-                        {block.modality} · {block.duration}
+                        {block.modality} · {block.duration} · {block.intensity}
                       </p>
+                      <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                        Equipamiento: {block.equipment}
+                      </p>
+                      {block.tags && block.tags.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {block.tags.map((tag, tagIndex) => (
+                            <Badge key={tagIndex} variant="outline" size="sm" className="text-[10px]">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    {isSelected && <div className="h-2 w-2 rounded-full bg-emerald-500" />}
+                    {isSelected && <div className="h-2 w-2 rounded-full bg-emerald-500 mt-1" />}
                   </div>
                 </button>
               );
@@ -1245,6 +1852,122 @@ function SubstitutionsModal({ weeklyPlan, weekDays, onReplaceBlocks, onClose }: 
           Reemplazar {selectedBlocks.size > 0 ? `${selectedBlocks.size} bloque(s)` : ''}
         </Button>
       </div>
+
+      {/* Modal: Guardar Preset */}
+      <Modal
+        isOpen={showSavePresetModal}
+        onClose={() => setShowSavePresetModal(false)}
+        title="Guardar Preset de Sustituciones"
+        size="md"
+      >
+        <div className="space-y-4">
+          <Input
+            label="Nombre del preset *"
+            value={presetName}
+            onChange={(e) => setPresetName(e.target.value)}
+            placeholder="Ej: Modo Deload, Semana de Competición..."
+          />
+          <Input
+            label="Descripción (opcional)"
+            value={presetDescription}
+            onChange={(e) => setPresetDescription(e.target.value)}
+            placeholder="Describe cuándo usar este preset..."
+          />
+          <Input
+            label="Tags (separados por comas)"
+            value={presetTags}
+            onChange={(e) => setPresetTags(e.target.value)}
+            placeholder="deload, competición, recuperación..."
+          />
+          <div className="rounded-lg bg-slate-50 dark:bg-slate-900/40 p-3 text-sm">
+            <p className="font-medium text-slate-700 dark:text-slate-300 mb-1">Se guardarán:</p>
+            <ul className="list-disc list-inside text-slate-600 dark:text-slate-400 space-y-1">
+              <li>{selectedBlocks.size} bloque(s) seleccionado(s)</li>
+              <li>
+                Reemplazo: {replacementBlocks.find((b) => b.id === selectedReplacement)?.name || 'Ninguno'}
+              </li>
+            </ul>
+          </div>
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="ghost" onClick={() => setShowSavePresetModal(false)}>
+              Cancelar
+            </Button>
+            <Button variant="primary" onClick={handleSavePreset} disabled={!presetName.trim()}>
+              Guardar Preset
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal: Lista de Presets */}
+      <Modal
+        isOpen={showPresetsModal}
+        onClose={() => setShowPresetsModal(false)}
+        title="Presets de Sustituciones"
+        size="lg"
+      >
+        <div className="space-y-4">
+          {presets.length === 0 ? (
+            <div className="text-center py-8 text-slate-500">
+              <Bookmark className="w-12 h-12 mx-auto mb-2 text-slate-400" />
+              <p>No hay presets guardados</p>
+              <p className="text-sm mt-1">Crea un preset desde la barra de herramientas</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {presets.map((preset) => (
+                <Card
+                  key={preset.id}
+                  className="border border-slate-200/70 bg-white/95 p-4 dark:border-slate-800/70 dark:bg-slate-950/60"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-semibold text-slate-900 dark:text-slate-100">{preset.name}</h4>
+                        {preset.tags && preset.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {preset.tags.map((tag, idx) => (
+                              <Badge key={idx} variant="outline" size="sm" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      {preset.description && (
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">{preset.description}</p>
+                      )}
+                      <p className="text-xs text-slate-500 dark:text-slate-500">
+                        {preset.replacements.length} sustitución(es) · Creado:{' '}
+                        {new Date(preset.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleApplyPreset(preset)}
+                        iconLeft={CheckSquare}
+                      >
+                        Aplicar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeletePreset(preset.id)}
+                        iconLeft={Trash2}
+                        className="text-red-600 hover:text-red-700 dark:text-red-400"
+                      >
+                        Eliminar
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -1544,13 +2267,36 @@ export default function ProgramasDeEntrenoEditorPage() {
       return false;
     }
   });
-  const [libraryTab, setLibraryTab] = useState<LibraryTab>('templates');
+  const [libraryTab, setLibraryTab] = useState<LibraryTab>(() => {
+    try {
+      const saved = localStorage.getItem('programasEditor_libraryTab');
+      return (saved as LibraryTab) || 'templates';
+    } catch {
+      return 'templates';
+    }
+  });
   const [isClientInfoOpen, setIsClientInfoOpen] = useState(false);
   const [isFitCoachOpen, setIsFitCoachOpen] = useState(false);
   const [isSubstitutionsOpen, setIsSubstitutionsOpen] = useState(false);
   const [isBatchTrainingOpen, setIsBatchTrainingOpen] = useState(false);
-  const [librarySearch, setLibrarySearch] = useState('');
-  const [equipmentFilter, setEquipmentFilter] = useState<string>('todos');
+  const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
+  const [isBulkAutomationOpen, setIsBulkAutomationOpen] = useState(false);
+  const [librarySearch, setLibrarySearch] = useState(() => {
+    try {
+      const saved = localStorage.getItem('programasEditor_librarySearch');
+      return saved || '';
+    } catch {
+      return '';
+    }
+  });
+  const [equipmentFilter, setEquipmentFilter] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('programasEditor_equipmentFilter');
+      return saved || 'todos';
+    } catch {
+      return 'todos';
+    }
+  });
   const [pinnedTemplateIds, setPinnedTemplateIds] = useState<string[]>(() => {
     try {
       const raw = localStorage.getItem('pinnedTemplates');
@@ -1572,6 +2318,18 @@ export default function ProgramasDeEntrenoEditorPage() {
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [newNoteContent, setNewNoteContent] = useState('');
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+
+  // Estado para guardar borrador
+  const [isSaveDraftModalOpen, setIsSaveDraftModalOpen] = useState(false);
+  const [draftMessage, setDraftMessage] = useState('');
+  const [lastSaveTime, setLastSaveTime] = useState<string | null>(() => {
+    try {
+      const saved = localStorage.getItem('programasEditor_lastSaveTime');
+      return saved || null;
+    } catch {
+      return null;
+    }
+  });
 
   const togglePinTemplate = useCallback((templateId: string) => {
     setPinnedTemplateIds((prev) => {
@@ -1603,6 +2361,9 @@ export default function ProgramasDeEntrenoEditorPage() {
   const [weeklyPlan, setWeeklyPlan] = useState<Record<DayKey, DayPlan>>(
     () => INITIAL_WEEKLY_PLAN,
   );
+
+  // Gestor de historial para sustituciones (undo/redo)
+  const substitutionHistoryManager = useMemo(() => new SubstitutionHistoryManager(), []);
 
   const templateExamples = useMemo(
     () => [
@@ -2110,11 +2871,32 @@ export default function ProgramasDeEntrenoEditorPage() {
     }
   }, []);
 
-  const handleLibraryTabChange = useCallback((tab: LibraryTab) => setLibraryTab(tab), []);
+  const handleLibraryTabChange = useCallback((tab: LibraryTab) => {
+    setLibraryTab(tab);
+    try {
+      localStorage.setItem('programasEditor_libraryTab', tab);
+    } catch {
+      // ignore persistence errors
+    }
+  }, []);
 
-  const handleLibrarySearchChange = useCallback((value: string) => setLibrarySearch(value), []);
+  const handleLibrarySearchChange = useCallback((value: string) => {
+    setLibrarySearch(value);
+    try {
+      localStorage.setItem('programasEditor_librarySearch', value);
+    } catch {
+      // ignore persistence errors
+    }
+  }, []);
 
-  const handleEquipmentFilterChange = useCallback((value: string) => setEquipmentFilter(value), []);
+  const handleEquipmentFilterChange = useCallback((value: string) => {
+    setEquipmentFilter(value);
+    try {
+      localStorage.setItem('programasEditor_equipmentFilter', value);
+    } catch {
+      // ignore persistence errors
+    }
+  }, []);
 
   const handleResetManualTargets = useCallback(() => {
     updateManualWeeklyTargets({ sessions: null, duration: null, calories: null });
@@ -2143,6 +2925,10 @@ export default function ProgramasDeEntrenoEditorPage() {
           onOpenFitCoach={() => setIsFitCoachOpen(true)}
           onOpenSubstitutions={() => setIsSubstitutionsOpen(true)}
           onOpenBatchTraining={() => setIsBatchTrainingOpen(true)}
+          onOpenTagManager={() => setIsTagManagerOpen(true)}
+          onOpenBulkAutomation={() => setIsBulkAutomationOpen(true)}
+          onSaveDraft={handleOpenSaveDraftModal}
+          lastSaveTime={lastSaveTime}
         />
 
         {/* View selector */}
@@ -2289,19 +3075,13 @@ export default function ProgramasDeEntrenoEditorPage() {
           weeklyPlan={weeklyPlan}
           weekDays={weekDays}
           onReplaceBlocks={(replacements) => {
-            const updatedPlan: Record<DayKey, DayPlan> = { ...weeklyPlan };
-            replacements.forEach(({ day, sessionId, newBlock }) => {
-              const dayPlan = updatedPlan[day];
-              updatedPlan[day] = {
-                ...dayPlan,
-                sessions: dayPlan.sessions.map((session) =>
-                  session.id === sessionId ? { ...session, ...newBlock } : session
-                ),
-              };
-            });
-            setWeeklyPlan(updatedPlan);
-            setIsSubstitutionsOpen(false);
+            // Esta función se llama desde handleReplace dentro del modal
+            // El plan ya se actualiza a través de onUpdatePlan
           }}
+          onUpdatePlan={(updatedPlan) => {
+            setWeeklyPlan(updatedPlan);
+          }}
+          historyManager={substitutionHistoryManager}
           onClose={() => setIsSubstitutionsOpen(false)}
         />
       </Modal>
@@ -2323,6 +3103,496 @@ export default function ProgramasDeEntrenoEditorPage() {
           onClose={() => setIsBatchTrainingOpen(false)}
         />
       </Modal>
+
+      {/* Modal: Compartir Extractos del Chat */}
+      <CompartirExtractosChat
+        open={isCompartirChatOpen}
+        onOpenChange={setIsCompartirChatOpen}
+        clienteId={selectedClient.id}
+        clienteNombre={selectedClient.nombre}
+        programaId="current-program"
+        programaNombre="Programa Actual"
+      />
+
+      {/* Modal: Buscar y Sustituir Entidades */}
+      <BuscarSustituirEntidades
+        open={isBuscarSustituirOpen}
+        onOpenChange={setIsBuscarSustituirOpen}
+        weeklyPlan={weeklyPlan}
+        weekDays={weekDays}
+        onReplace={(replacements) => {
+          const updatedPlan: Record<DayKey, DayPlan> = { ...weeklyPlan };
+          
+          replacements.forEach((replacement) => {
+            const dayPlan = updatedPlan[replacement.dia];
+            
+            if (replacement.sessionId) {
+              // Reemplazar en una sesión específica
+              updatedPlan[replacement.dia] = {
+                ...dayPlan,
+                sessions: dayPlan.sessions.map((session) => {
+                  if (session.id === replacement.sessionId) {
+                    const updatedSession = { ...session };
+                    
+                    switch (replacement.tipo) {
+                      case 'bloque':
+                        updatedSession.block = replacement.valorNuevo;
+                        break;
+                      case 'tag':
+                        // Determinar qué tag reemplazar basándose en el valor original
+                        if (session.modality === replacement.valorNuevo || session.intensity === replacement.valorNuevo) {
+                          // Ya está reemplazado o es el mismo
+                        } else if (session.modality.toLowerCase().includes(replacement.valorNuevo.toLowerCase())) {
+                          updatedSession.modality = replacement.valorNuevo;
+                        } else if (session.intensity.toLowerCase().includes(replacement.valorNuevo.toLowerCase())) {
+                          updatedSession.intensity = replacement.valorNuevo;
+                        }
+                        break;
+                      case 'nota':
+                        updatedSession.notes = replacement.valorNuevo;
+                        break;
+                    }
+                    
+                    return updatedSession;
+                  }
+                  return session;
+                }),
+              };
+            } else {
+              // Reemplazar en propiedades del día
+              switch (replacement.tipo) {
+                case 'tag':
+                  if (dayPlan.focus.toLowerCase().includes(replacement.valorNuevo.toLowerCase())) {
+                    updatedPlan[replacement.dia] = { ...dayPlan, focus: replacement.valorNuevo };
+                  } else if (dayPlan.volume.toLowerCase().includes(replacement.valorNuevo.toLowerCase())) {
+                    updatedPlan[replacement.dia] = { ...dayPlan, volume: replacement.valorNuevo };
+                  } else if (dayPlan.intensity.toLowerCase().includes(replacement.valorNuevo.toLowerCase())) {
+                    updatedPlan[replacement.dia] = { ...dayPlan, intensity: replacement.valorNuevo };
+                  } else if (dayPlan.microCycle.toLowerCase().includes(replacement.valorNuevo.toLowerCase())) {
+                    updatedPlan[replacement.dia] = { ...dayPlan, microCycle: replacement.valorNuevo };
+                  }
+                  break;
+                case 'nota':
+                  // Reemplazar en summary
+                  updatedPlan[replacement.dia] = {
+                    ...dayPlan,
+                    summary: dayPlan.summary.map((item) =>
+                      item.toLowerCase().includes(replacement.valorNuevo.toLowerCase())
+                        ? replacement.valorNuevo
+                        : item
+                    ),
+                  };
+                  break;
+              }
+            }
+          });
+          
+          setWeeklyPlan(updatedPlan);
+          setIsBuscarSustituirOpen(false);
+        }}
+      />
+
+      {/* Modal: Gestión de Tags */}
+      <TagManager
+        open={isTagManagerOpen}
+        onOpenChange={setIsTagManagerOpen}
+        weeklyPlan={weeklyPlan}
+        weekDays={weekDays}
+        onUpdatePlan={(updatedPlan) => {
+          setWeeklyPlan(updatedPlan);
+        }}
+      />
+
+      {/* Modal: Automatización Masiva */}
+      <BulkAutomationFlow
+        open={isBulkAutomationOpen}
+        onOpenChange={setIsBulkAutomationOpen}
+        weeklyPlan={weeklyPlan}
+        weekDays={weekDays}
+        onUpdatePlan={(updatedPlan) => {
+          setWeeklyPlan(updatedPlan);
+        }}
+      />
+    </div>
+  );
+}
+
+    if (activeView === 'daily' && selectedDayPlan) {
+      return (
+        <DailyEditorView
+          selectedDay={selectedDay}
+          weekDays={weekDays}
+          dayPlan={selectedDayPlan}
+          onPreviousDay={() => goToDay(-1)}
+          onNextDay={() => goToDay(1)}
+          onSelectDay={(day) => handleSelectDay(day as DayKey)}
+          onBackToWeekly={() => setActiveView('weekly')}
+        />
+      );
+    }
+
+    return (
+      <ExcelSummaryView
+        weekDays={weekDays}
+        weeklyPlan={weeklyPlan}
+        weeklyTargets={weeklyTargets}
+        onUpdateDayPlan={handleUpdateDayPlan}
+      />
+    );
+  };
+
+  const handleNavigateBack = useCallback(() => navigate(-1), [navigate]);
+
+  const handleToggleLeftPanel = useCallback(() => {
+    setLeftCollapsed((prev: boolean) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('programasEditor_leftCollapsed', JSON.stringify(next));
+      } catch {
+        // ignore persistence errors
+      }
+      return next;
+    });
+  }, []);
+
+  const handleRestoreRightPanel = useCallback(() => {
+    setRightCollapsed(false);
+    try {
+      localStorage.setItem('programasEditor_rightCollapsed', JSON.stringify(false));
+    } catch {
+      // ignore persistence errors
+    }
+  }, []);
+
+  const handleCollapseRightPanel = useCallback(() => {
+    setRightCollapsed(true);
+    try {
+      localStorage.setItem('programasEditor_rightCollapsed', JSON.stringify(true));
+    } catch {
+      // ignore persistence errors
+    }
+  }, []);
+
+  const handleLibraryTabChange = useCallback((tab: LibraryTab) => {
+    setLibraryTab(tab);
+    try {
+      localStorage.setItem('programasEditor_libraryTab', tab);
+    } catch {
+      // ignore persistence errors
+    }
+  }, []);
+
+  const handleLibrarySearchChange = useCallback((value: string) => {
+    setLibrarySearch(value);
+    try {
+      localStorage.setItem('programasEditor_librarySearch', value);
+    } catch {
+      // ignore persistence errors
+    }
+  }, []);
+
+  const handleEquipmentFilterChange = useCallback((value: string) => {
+    setEquipmentFilter(value);
+    try {
+      localStorage.setItem('programasEditor_equipmentFilter', value);
+    } catch {
+      // ignore persistence errors
+    }
+  }, []);
+
+  const handleResetManualTargets = useCallback(() => {
+    updateManualWeeklyTargets({ sessions: null, duration: null, calories: null });
+  }, [updateManualWeeklyTargets]);
+
+  const handleStartAddNote = useCallback(() => setIsAddingNote(true), []);
+
+  const handleCancelAddNote = useCallback(() => {
+    setIsAddingNote(false);
+    setNewNoteContent('');
+  }, []);
+
+  const handleChangeNewNoteContent = useCallback((value: string) => setNewNoteContent(value), []);
+
+  const handleSetEditingNoteId = useCallback((noteId: string | null) => setEditingNoteId(noteId), []);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100/80 py-8 dark:from-[#050815] dark:via-[#0b1120] dark:to-[#020617]">
+      <div className="flex w-full flex-col gap-6 px-4 md:px-6 lg:px-8">
+        {/* Top bar */}
+        <EditorHeader
+          onBack={handleNavigateBack}
+          rightCollapsed={rightCollapsed}
+          onRestoreRightPanel={handleRestoreRightPanel}
+          onOpenClientInfo={() => setIsClientInfoOpen(true)}
+          onOpenFitCoach={() => setIsFitCoachOpen(true)}
+          onOpenSubstitutions={() => setIsSubstitutionsOpen(true)}
+          onOpenBatchTraining={() => setIsBatchTrainingOpen(true)}
+          onOpenTagManager={() => setIsTagManagerOpen(true)}
+          onOpenBulkAutomation={() => setIsBulkAutomationOpen(true)}
+          onSaveDraft={handleOpenSaveDraftModal}
+          lastSaveTime={lastSaveTime}
+        />
+
+        {/* View selector */}
+        <ViewSelector activeView={activeView} onChange={(view) => setActiveView(view)} />
+
+        <div className="flex flex-col gap-6 lg:flex-row">
+          <LibrarySidebar
+            leftCollapsed={leftCollapsed}
+            onToggleCollapse={handleToggleLeftPanel}
+            libraryTab={libraryTab}
+            onChangeLibraryTab={handleLibraryTabChange}
+            librarySearch={librarySearch}
+            onChangeLibrarySearch={handleLibrarySearchChange}
+            equipmentFilter={equipmentFilter}
+            onChangeEquipmentFilter={handleEquipmentFilterChange}
+            uniqueEquipments={uniqueEquipments}
+            filteredPinnedTemplates={filteredPinnedTemplates}
+            filteredUnpinnedTemplates={filteredUnpinnedTemplates}
+            filteredExercises={filteredExercises}
+            pinnedTemplatesCount={filteredPinnedTemplates.length}
+            onTogglePinTemplate={togglePinTemplate}
+          />
+
+          <main className="flex-1 space-y-4">{renderCanvas()}</main>
+
+          <SummarySidebar
+            isCollapsed={rightCollapsed}
+            onCollapse={handleCollapseRightPanel}
+            todaysSessions={todaysSessions}
+            nextSession={nextSession}
+            weeklyOverview={weeklyOverview}
+            weeklyCalories={weeklyCalories}
+            autoWeeklyTargets={autoWeeklyTargets}
+            weeklyTargets={weeklyTargets}
+            manualWeeklyTargets={manualWeeklyTargets}
+            onResetManualTargets={handleResetManualTargets}
+            onUpdateManualTargets={updateManualWeeklyTargets}
+            contextualSuggestions={contextualSuggestions}
+            followUpNotes={followUpNotes}
+            isAddingNote={isAddingNote}
+            newNoteContent={newNoteContent}
+            onStartAddNote={handleStartAddNote}
+            onCancelAddNote={handleCancelAddNote}
+            onChangeNewNoteContent={handleChangeNewNoteContent}
+            onSaveNewNote={handleAddNote}
+            editingNoteId={editingNoteId}
+            onSetEditingNoteId={handleSetEditingNoteId}
+            onEditNote={handleEditNote}
+            onDeleteNote={handleDeleteNote}
+            activeView={activeView}
+          />
+        </div>
+      </div>
+      {/* Modal: Ficha del cliente */}
+      <Modal
+        isOpen={isClientInfoOpen}
+        onClose={() => setIsClientInfoOpen(false)}
+        title="Ficha del cliente"
+        size="lg"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-indigo-700">
+              <User className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{selectedClient.nombre}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-300">
+                {selectedClient.edad} años · {selectedClient.nivel}
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Card className="border border-slate-200/70 bg-white/95 p-4 dark:border-slate-800/70 dark:bg-slate-950/60">
+              <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Objetivos</h4>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-600 dark:text-slate-300">
+                {selectedClient.objetivos.map((o) => (
+                  <li key={o}>{o}</li>
+                ))}
+              </ul>
+            </Card>
+            <Card className="border border-slate-200/70 bg-white/95 p-4 dark:border-slate-800/70 dark:bg-slate-950/60">
+              <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Restricciones</h4>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-600 dark:text-slate-300">
+                {selectedClient.restricciones.map((r) => (
+                  <li key={r}>{r}</li>
+                ))}
+              </ul>
+            </Card>
+          </div>
+          <Card className="border border-slate-200/70 bg-white/95 p-4 dark:border-slate-800/70 dark:bg-slate-950/60">
+            <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Notas</h4>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{selectedClient.notas}</p>
+          </Card>
+        </div>
+      </Modal>
+
+      {/* Modal: Fit Coach (Recomendaciones IA) */}
+      <Modal
+        isOpen={isFitCoachOpen}
+        onClose={() => setIsFitCoachOpen(false)}
+        title={`Fit Coach · Recomendaciones para ${selectedDay}`}
+        size="xl"
+      >
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-slate-200/70 bg-slate-50 p-4 text-sm dark:border-slate-800/70 dark:bg-slate-900/40">
+            <p className="text-slate-700 dark:text-slate-300">
+              Plan del día: <span className="font-semibold text-slate-900 dark:text-slate-100">{selectedDayPlan.focus}</span> ·{' '}
+              {selectedDayPlan.volume} · {selectedDayPlan.intensity}
+            </p>
+          </div>
+          <div className="space-y-2">
+            {aiRecommendations.map((rec, idx) => (
+              <div
+                key={idx}
+                className="flex items-start gap-3 rounded-2xl border border-slate-200/70 bg-white/95 p-4 shadow-sm dark:border-slate-800/70 dark:bg-slate-950/60"
+              >
+                <div className="mt-0.5">
+                  <Sparkles className="h-4 w-4 text-indigo-500" />
+                </div>
+                <p className="text-sm text-slate-700 dark:text-slate-300">{rec}</p>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="ghost" onClick={() => setIsFitCoachOpen(false)}>
+              Cerrar
+            </Button>
+            <Button variant="secondary" onClick={() => setIsFitCoachOpen(false)}>
+              Aplicar sugerencias (próximamente)
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal: Sustituciones de ejercicios */}
+      <Modal
+        isOpen={isSubstitutionsOpen}
+        onClose={() => setIsSubstitutionsOpen(false)}
+        title="Sustituciones de ejercicios"
+        size="xl"
+      >
+        <SubstitutionsModal
+          weeklyPlan={weeklyPlan}
+          weekDays={weekDays}
+          onReplaceBlocks={(replacements) => {
+            // Esta función se llama desde handleReplace dentro del modal
+            // El plan ya se actualiza a través de onUpdatePlan
+          }}
+          onUpdatePlan={(updatedPlan) => {
+            setWeeklyPlan(updatedPlan);
+          }}
+          historyManager={substitutionHistoryManager}
+          onClose={() => setIsSubstitutionsOpen(false)}
+        />
+      </Modal>
+
+      {/* Modal: Batch Training */}
+      <Modal
+        isOpen={isBatchTrainingOpen}
+        onClose={() => setIsBatchTrainingOpen(false)}
+        title="Batch Training - Ediciones masivas"
+        size="xl"
+      >
+        <BatchTrainingModal
+          weeklyPlan={weeklyPlan}
+          weekDays={weekDays}
+          onApplyRules={(updatedPlan) => {
+            setWeeklyPlan(updatedPlan);
+            setIsBatchTrainingOpen(false);
+          }}
+          onClose={() => setIsBatchTrainingOpen(false)}
+        />
+      </Modal>
+
+      {/* Modal: Compartir Extractos del Chat */}
+      <CompartirExtractosChat
+        open={isCompartirChatOpen}
+        onOpenChange={setIsCompartirChatOpen}
+        clienteId={selectedClient.id}
+        clienteNombre={selectedClient.nombre}
+        programaId="current-program"
+        programaNombre="Programa Actual"
+      />
+
+      {/* Modal: Buscar y Sustituir Entidades */}
+      <BuscarSustituirEntidades
+        open={isBuscarSustituirOpen}
+        onOpenChange={setIsBuscarSustituirOpen}
+        weeklyPlan={weeklyPlan}
+        weekDays={weekDays}
+        onReplace={(replacements) => {
+          const updatedPlan: Record<DayKey, DayPlan> = { ...weeklyPlan };
+          
+          replacements.forEach((replacement) => {
+            const dayPlan = updatedPlan[replacement.dia];
+            
+            if (replacement.sessionId) {
+              // Reemplazar en una sesión específica
+              updatedPlan[replacement.dia] = {
+                ...dayPlan,
+                sessions: dayPlan.sessions.map((session) => {
+                  if (session.id === replacement.sessionId) {
+                    const updatedSession = { ...session };
+                    
+                    switch (replacement.tipo) {
+                      case 'bloque':
+                        updatedSession.block = replacement.valorNuevo;
+                        break;
+                      case 'tag':
+                        // Determinar qué tag reemplazar basándose en el valor original
+                        if (session.modality === replacement.valorNuevo || session.intensity === replacement.valorNuevo) {
+                          // Ya está reemplazado o es el mismo
+                        } else if (session.modality.toLowerCase().includes(replacement.valorNuevo.toLowerCase())) {
+                          updatedSession.modality = replacement.valorNuevo;
+                        } else if (session.intensity.toLowerCase().includes(replacement.valorNuevo.toLowerCase())) {
+                          updatedSession.intensity = replacement.valorNuevo;
+                        }
+                        break;
+                      case 'nota':
+                        updatedSession.notes = replacement.valorNuevo;
+                        break;
+                    }
+                    
+                    return updatedSession;
+                  }
+                  return session;
+                }),
+              };
+            } else {
+              // Reemplazar en propiedades del día
+              switch (replacement.tipo) {
+                case 'tag':
+                  if (dayPlan.focus.toLowerCase().includes(replacement.valorNuevo.toLowerCase())) {
+                    updatedPlan[replacement.dia] = { ...dayPlan, focus: replacement.valorNuevo };
+                  } else if (dayPlan.volume.toLowerCase().includes(replacement.valorNuevo.toLowerCase())) {
+                    updatedPlan[replacement.dia] = { ...dayPlan, volume: replacement.valorNuevo };
+                  } else if (dayPlan.intensity.toLowerCase().includes(replacement.valorNuevo.toLowerCase())) {
+                    updatedPlan[replacement.dia] = { ...dayPlan, intensity: replacement.valorNuevo };
+                  } else if (dayPlan.microCycle.toLowerCase().includes(replacement.valorNuevo.toLowerCase())) {
+                    updatedPlan[replacement.dia] = { ...dayPlan, microCycle: replacement.valorNuevo };
+                  }
+                  break;
+                case 'nota':
+                  // Reemplazar en summary
+                  updatedPlan[replacement.dia] = {
+                    ...dayPlan,
+                    summary: dayPlan.summary.map((item) =>
+                      item.toLowerCase().includes(replacement.valorNuevo.toLowerCase())
+                        ? replacement.valorNuevo
+                        : item
+                    ),
+                  };
+                  break;
+              }
+            }
+          });
+          
+          setWeeklyPlan(updatedPlan);
+          setIsBuscarSustituirOpen(false);
+        }}
+      />
     </div>
   );
 }

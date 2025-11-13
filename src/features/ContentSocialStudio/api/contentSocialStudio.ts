@@ -16,6 +16,27 @@ import {
   getServicePlans,
   getActiveOffers,
 } from './promotionalContent';
+import {
+  getAITemplates,
+  getAITemplateBalance,
+  getAITemplateUsage,
+} from './aiTemplates';
+import {
+  detectCalendarGaps,
+  generateGapAlerts,
+} from './calendarGaps';
+import {
+  getContentAssignments,
+  getTeamMembers,
+  getAssignmentStats,
+} from './contentAssignments';
+import {
+  getPendingApprovals,
+  getRecentApprovals,
+  getApprovalStats,
+} from './contentApprovals';
+import { getBrandKits } from './brandKit';
+import { getVisualStyleLearningSnapshot } from './visualStyleLearning';
 import type {
   AIContentAssistant,
   AIContentIdea,
@@ -343,6 +364,17 @@ export const getContentSocialStudioSnapshot = async (
     promotionalTemplates,
     servicePlans,
     activeOffers,
+    aiTemplates,
+    aiTemplateBalance,
+    aiTemplateUsage,
+    contentAssignments,
+    teamMembers,
+    assignmentStats,
+    pendingApprovals,
+    recentApprovals,
+    approvalStats,
+    brandKits,
+    visualStyleLearning,
   ] = await Promise.all([
     getSocialAnalytics(range.start.toISOString(), range.end.toISOString()),
     getSocialPosts(range.start.toISOString(), range.end.toISOString()),
@@ -362,6 +394,27 @@ export const getContentSocialStudioSnapshot = async (
     getPromotionalTemplates().catch(() => []),
     getServicePlans().catch(() => []),
     getActiveOffers().catch(() => []),
+    getAITemplates().catch(() => []),
+    getAITemplateBalance().catch(() => null),
+    getAITemplateUsage(10).catch(() => []),
+    getContentAssignments().catch(() => []),
+    getTeamMembers().catch(() => []),
+    getAssignmentStats().catch(() => ({
+      pendingAssignments: 0,
+      inProgressAssignments: 0,
+      completedAssignments: 0,
+      totalAssignments: 0,
+    })),
+    getPendingApprovals().catch(() => []),
+    getRecentApprovals(5).catch(() => []),
+    getApprovalStats().catch(() => ({
+      pendingCount: 0,
+      approvedCount: 0,
+      rejectedCount: 0,
+      needsRevisionCount: 0,
+    })),
+    getBrandKits().catch(() => []),
+    getVisualStyleLearningSnapshot().catch(() => null),
   ]);
 
   const upcoming = mapPostsToUpcoming(posts);
@@ -413,11 +466,17 @@ export const getContentSocialStudioSnapshot = async (
     );
   })();
 
+  // Detect calendar gaps
+  const gaps = await detectCalendarGaps(upcoming).catch(() => []);
+  const gapAlerts = await generateGapAlerts(gaps, upcoming).catch(() => []);
+
   const planner = {
     backlogCount: posts.filter((post) => post.status === 'draft').length,
     coverageDays: plannerCoverageDays,
     upcoming,
     aiSuggestions: mapSuggestions(suggestions),
+    gaps: gaps.length > 0 ? gaps : undefined,
+    gapAlerts: gapAlerts.length > 0 ? gapAlerts : undefined,
   };
 
   const ai = {
@@ -426,6 +485,14 @@ export const getContentSocialStudioSnapshot = async (
     brandProfile: brandProfile || undefined,
     brandProfileConfig: brandProfileConfig || undefined,
     lastUpdated: new Date().toISOString(),
+    templates:
+      aiTemplates.length > 0 && aiTemplateBalance
+        ? {
+            templates: aiTemplates,
+            balance: aiTemplateBalance,
+            recentUsage: aiTemplateUsage,
+          }
+        : undefined,
   };
 
   const snapshot: ContentSocialSnapshot = {
@@ -455,6 +522,24 @@ export const getContentSocialStudioSnapshot = async (
       activeOffers: activeOffers,
       generatedContent: [],
     },
+    contentAssignments: {
+      assignments: contentAssignments,
+      availableTeamMembers: teamMembers,
+      pendingAssignments: assignmentStats.pendingAssignments,
+      inProgressAssignments: assignmentStats.inProgressAssignments,
+    },
+    contentApprovals: {
+      pendingApprovals: pendingApprovals,
+      pendingCount: approvalStats.pendingCount,
+      recentApprovals: recentApprovals,
+    },
+    brandKits: brandKits.length > 0
+      ? {
+          kits: brandKits,
+          recentGenerations: brandKits.slice(0, 3),
+        }
+      : undefined,
+    visualStyleLearning: visualStyleLearning || undefined,
   };
 
   snapshot.metrics = buildMetrics(posts, snapshot);

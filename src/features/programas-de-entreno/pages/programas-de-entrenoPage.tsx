@@ -12,6 +12,15 @@ import {
   Copy,
   FolderTree,
   Dumbbell,
+  Activity,
+  Target,
+  AlertTriangle,
+  Calendar,
+  Settings,
+  Repeat,
+  BarChart3,
+  Zap,
+  MessageCircle,
 } from 'lucide-react';
 import {
   ProgramasList,
@@ -22,6 +31,15 @@ import {
   SeguimientoPrograma,
   DuplicadorPrograma,
   CategorizadorProgramas,
+  ContextoCliente,
+  ObjetivosProgreso,
+  AlertasActivas,
+  TimelineSesiones,
+  ReglasEncadenadas,
+  AutomatizacionesRecurrentes,
+  ResumenesDinamicos,
+  AccionesRapidasWrapper,
+  AsistenteChatWrapper,
 } from '../components';
 
 export default function ProgramasDeEntrenoPage() {
@@ -62,6 +80,16 @@ export default function ProgramasDeEntrenoPage() {
           id: 'categorias',
           label: 'Categorías',
           icon: <FolderTree size={18} />,
+        },
+        {
+          id: 'acciones-rapidas',
+          label: 'Acciones Rápidas',
+          icon: <Zap size={18} />,
+        },
+        {
+          id: 'asistente-chat',
+          label: 'Asistente Conversacional',
+          icon: <MessageCircle size={18} />,
         },
       ];
     } else {
@@ -161,6 +189,10 @@ export default function ProgramasDeEntrenoPage() {
         return <DuplicadorPrograma />;
       case 'categorias':
         return <CategorizadorProgramas />;
+      case 'acciones-rapidas':
+        return isEntrenador ? <AccionesRapidasWrapper /> : null;
+      case 'asistente-chat':
+        return isEntrenador ? <AsistenteChatWrapper /> : null;
       default:
         return <ProgramasList />;
     }

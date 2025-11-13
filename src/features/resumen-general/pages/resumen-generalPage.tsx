@@ -11,6 +11,7 @@ import {
   ClientStatus,
   RecentActivity,
 } from '../components';
+import { ObjectivesWidget } from '../../objetivos-rendimiento/components';
 import {
   getMetrics,
   getAlerts,
@@ -228,6 +229,15 @@ export default function ResumenGeneralPage() {
           />
         </div>
       </div>
+
+      {/* Widget de Objetivos */}
+      <ObjectivesWidget
+        maxObjectives={3}
+        statusFilter="in_progress"
+        compact={false}
+        title="Objetivos en Progreso"
+        showAllLink={true}
+      />
 
       {/* Gráficos y Actividad Reciente */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -10,9 +10,13 @@ export interface Programa {
   clienteId?: string;
   grupoId?: string;
   activo: boolean;
+  estado: 'borrador' | 'publicado'; // User Story: Guardar borrador sin publicar
   fechaCreacion: string;
   fechaActualizacion: string;
+  fechaPublicacion?: string; // Fecha en que se publicó el programa
   creadoPor: string;
+  // Datos del plan semanal para borradores (opcional, puede estar en otro lugar)
+  planSemanal?: Record<string, any>; // Estructura del plan semanal completo
 }
 
 export interface EjercicioPrograma {
@@ -32,6 +36,7 @@ export interface FiltrosProgramas {
   clienteId?: string;
   grupoId?: string;
   activo?: boolean;
+  estado?: 'borrador' | 'publicado'; // Filtrar por estado
   busqueda?: string;
 }
 
@@ -76,8 +81,10 @@ const mockProgramas: Programa[] = [
     ],
     clienteId: 'cliente1',
     activo: true,
+    estado: 'publicado',
     fechaCreacion: new Date('2024-01-15').toISOString(),
     fechaActualizacion: new Date('2024-01-20').toISOString(),
+    fechaPublicacion: new Date('2024-01-20').toISOString(),
     creadoPor: 'entrenador1'
   },
   {
@@ -110,8 +117,10 @@ const mockProgramas: Programa[] = [
     ],
     clienteId: 'cliente2',
     activo: true,
+    estado: 'publicado',
     fechaCreacion: new Date('2024-01-10').toISOString(),
     fechaActualizacion: new Date('2024-01-10').toISOString(),
+    fechaPublicacion: new Date('2024-01-10').toISOString(),
     creadoPor: 'entrenador1'
   },
   {
@@ -134,8 +143,10 @@ const mockProgramas: Programa[] = [
     ],
     grupoId: 'grupo1',
     activo: true,
+    estado: 'publicado',
     fechaCreacion: new Date('2024-01-01').toISOString(),
     fechaActualizacion: new Date('2024-01-01').toISOString(),
+    fechaPublicacion: new Date('2024-01-01').toISOString(),
     creadoPor: 'admin1'
   },
   {
@@ -165,8 +176,10 @@ const mockProgramas: Programa[] = [
       }
     ],
     activo: true,
+    estado: 'publicado',
     fechaCreacion: new Date('2024-01-05').toISOString(),
     fechaActualizacion: new Date('2024-01-05').toISOString(),
+    fechaPublicacion: new Date('2024-01-05').toISOString(),
     creadoPor: 'admin1'
   },
   {
@@ -197,8 +210,10 @@ const mockProgramas: Programa[] = [
     ],
     clienteId: 'cliente3',
     activo: true,
+    estado: 'publicado',
     fechaCreacion: new Date('2024-02-01').toISOString(),
     fechaActualizacion: new Date('2024-02-01').toISOString(),
+    fechaPublicacion: new Date('2024-02-01').toISOString(),
     creadoPor: 'entrenador2'
   },
   {
@@ -229,8 +244,10 @@ const mockProgramas: Programa[] = [
     ],
     grupoId: 'grupo2',
     activo: true,
+    estado: 'publicado',
     fechaCreacion: new Date('2024-01-15').toISOString(),
     fechaActualizacion: new Date('2024-01-15').toISOString(),
+    fechaPublicacion: new Date('2024-01-15').toISOString(),
     creadoPor: 'admin1'
   }
 ];
@@ -259,6 +276,9 @@ export async function getProgramas(filtros?: FiltrosProgramas): Promise<Programa
     if (filtros.activo !== undefined) {
       programas = programas.filter(p => p.activo === filtros.activo);
     }
+    if (filtros.estado) {
+      programas = programas.filter(p => p.estado === filtros.estado);
+    }
     if (filtros.busqueda) {
       const search = filtros.busqueda.toLowerCase();
       programas = programas.filter(p => 
@@ -277,14 +297,17 @@ export async function getProgramaPorId(id: string): Promise<Programa | null> {
   return programa || null;
 }
 
-export async function crearPrograma(data: Omit<Programa, 'id' | 'fechaCreacion' | 'fechaActualizacion'>): Promise<Programa | null> {
+export async function crearPrograma(data: Omit<Programa, 'id' | 'fechaCreacion' | 'fechaActualizacion' | 'fechaPublicacion'>): Promise<Programa | null> {
   await new Promise(resolve => setTimeout(resolve, 300));
   
+  const ahora = new Date().toISOString();
   const nuevoPrograma: Programa = {
     ...data,
     id: `prog-${Date.now()}`,
-    fechaCreacion: new Date().toISOString(),
-    fechaActualizacion: new Date().toISOString()
+    estado: data.estado || 'borrador', // Por defecto borrador
+    fechaCreacion: ahora,
+    fechaActualizacion: ahora,
+    fechaPublicacion: data.estado === 'publicado' ? ahora : undefined,
   };
   
   programasData.push(nuevoPrograma);
@@ -297,13 +320,87 @@ export async function actualizarPrograma(id: string, data: Partial<Programa>): P
   const index = programasData.findIndex(p => p.id === id);
   if (index === -1) return false;
   
+  const ahora = new Date().toISOString();
+  const programaActual = programasData[index];
+  
+  // Si cambia de borrador a publicado, establecer fechaPublicacion
+  const fechaPublicacion = 
+    data.estado === 'publicado' && programaActual.estado !== 'publicado'
+      ? ahora
+      : programaActual.fechaPublicacion;
+  
   programasData[index] = {
-    ...programasData[index],
+    ...programaActual,
     ...data,
-    fechaActualizacion: new Date().toISOString()
+    fechaActualizacion: ahora,
+    fechaPublicacion,
   };
   
   return true;
+}
+
+/**
+ * Guardar programa como borrador
+ * User Story: Como coach quiero guardar un borrador del programa sin publicarlo
+ */
+export async function guardarBorrador(
+  programaId: string | null,
+  data: {
+    nombre: string;
+    descripcion: string;
+    tipo: 'personalizado' | 'grupal' | 'plan-sala';
+    categoria: string;
+    planSemanal?: Record<string, any>;
+    clienteId?: string;
+    grupoId?: string;
+    creadoPor: string;
+  }
+): Promise<Programa | null> {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  if (programaId) {
+    // Actualizar borrador existente
+    const actualizado = await actualizarPrograma(programaId, {
+      ...data,
+      estado: 'borrador',
+      planSemanal: data.planSemanal,
+    });
+    if (actualizado) {
+      return programasData.find(p => p.id === programaId) || null;
+    }
+    return null;
+  } else {
+    // Crear nuevo borrador
+    return await crearPrograma({
+      ...data,
+      ejercicios: [],
+      activo: false, // Los borradores no están activos hasta publicarse
+      estado: 'borrador',
+      planSemanal: data.planSemanal,
+    });
+  }
+}
+
+/**
+ * Publicar un programa (cambiar de borrador a publicado)
+ */
+export async function publicarPrograma(programaId: string): Promise<boolean> {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  return await actualizarPrograma(programaId, {
+    estado: 'publicado',
+    activo: true,
+  });
+}
+
+/**
+ * Obtener borradores de un usuario
+ */
+export async function obtenerBorradores(creadoPor: string): Promise<Programa[]> {
+  await new Promise(resolve => setTimeout(resolve, 200));
+  return programasData.filter(p => 
+    p.estado === 'borrador' && p.creadoPor === creadoPor
+  );
 }
 
 export async function eliminarPrograma(id: string): Promise<boolean> {

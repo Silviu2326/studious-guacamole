@@ -1,7 +1,8 @@
-import { LayoutDashboard, LogOut, Award, Building2, ChevronLeft, ChevronRight, ChevronDown, TrendingUp, CalendarDays, ShieldAlert, Dumbbell, Banknote, Megaphone, Package, PackageOpen, ShoppingBag, AlertTriangle, Clock, UtensilsCrossed, FileEdit, MessageSquare, Trophy, Receipt, Wallet, Users, BarChart, Warehouse, UserPlus, Users as UsersList, ShoppingCart, ListFilter, Wrench, Ticket, Target, DollarSign, PieChart, Kanban, ClipboardList, UserCircle, ClipboardCheck, Calendar, CheckSquare, Apple, Shield, BookOpen, ChefHat, Boxes, RotateCcw, CalendarCheck, RefreshCw, Bell, Store, UserCheck, LineChart, Clipboard, UserMinus, AlertCircle, BarChart3, FileText, Globe, Briefcase, Handshake, UserCog, Star, FileCheck, ClipboardPen, Settings, FileBarChart, Database, FileSpreadsheet, Plug, Coins, Scroll, FileSpreadsheet as Payroll, Award as IncentiveIcon, Clock as TimeTrackingIcon, FileStack, ShieldCheck, Building, FileSignature, Shield as ShieldIcon, Tag, ArrowRightLeft, TrendingDown, Key, ShoppingBasket, FlaskConical, Search, Scissors, Sparkles, Mail, Image, Inbox, Gift, Brain, Layers, Filter, Video, Zap, Radio, ThumbsUp, DollarSign as DollarIcon, Palette, BarChart2, Network, Sparkles as SparklesIcon, TestTube, Workflow, HeartHandshake } from 'lucide-react';
+import { LayoutDashboard, LogOut, Award, Building2, ChevronLeft, ChevronRight, ChevronDown, TrendingUp, CalendarDays, ShieldAlert, Dumbbell, Banknote, Megaphone, Package, PackageOpen, ShoppingBag, AlertTriangle, Clock, UtensilsCrossed, FileEdit, MessageSquare, Trophy, Receipt, Wallet, Users, BarChart, Warehouse, UserPlus, Users as UsersList, ShoppingCart, ListFilter, Wrench, Ticket, Target, DollarSign, PieChart, Kanban, ClipboardList, UserCircle, ClipboardCheck, Calendar, CheckSquare, Apple, Shield, BookOpen, ChefHat, Boxes, RotateCcw, CalendarCheck, RefreshCw, Bell, Store, UserCheck, LineChart, Clipboard, UserMinus, AlertCircle, BarChart3, FileText, Globe, Briefcase, Handshake, UserCog, Star, FileCheck, ClipboardPen, Settings, FileBarChart, Database, FileSpreadsheet, Plug, Coins, Scroll, FileSpreadsheet as Payroll, Award as IncentiveIcon, Clock as TimeTrackingIcon, FileStack, ShieldCheck, Building, FileSignature, Shield as ShieldIcon, Tag, ArrowRightLeft, TrendingDown, Key, ShoppingBasket, FlaskConical, Search, Scissors, Sparkles, Mail, Image, Inbox, Gift, Brain, Layers, Filter, Video, Zap, Radio, ThumbsUp, DollarSign as DollarIcon, Palette, BarChart2, Network, Sparkles as SparklesIcon, TestTube, Workflow, HeartHandshake, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
+import { useObjectivesSummary } from '../features/objetivos-rendimiento/hooks/useObjectivesSummary';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -33,6 +34,9 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['dashboard', 'crm', 'marketing']));
+  
+  // User Story 1: Obtener resumen de objetivos para mostrar indicadores
+  const objectivesSummary = useObjectivesSummary();
 
   const role = user?.role ?? 'gimnasio';
   const isEntrenador = role === 'entrenador';
@@ -509,19 +513,66 @@ const marketingGimnasioItems: NavItem[] = [
     return true;
   });
 
+  // User Story 2: Función para obtener filtros de objetivos-rendimiento y pasarlos en la navegación
+  const getFiltersFromObjectives = (): { sede?: string; periodo?: string } => {
+    try {
+      const savedFilters = localStorage.getItem('objetivos-rendimiento-global-filters');
+      const savedPeriodo = localStorage.getItem('objetivos-rendimiento-periodo');
+      
+      if (savedFilters) {
+        const filters = JSON.parse(savedFilters);
+        const periodo = savedPeriodo || undefined;
+        
+        return {
+          sede: filters.sede || undefined,
+          periodo: periodo || undefined,
+        };
+      }
+    } catch (error) {
+      console.error('Error reading filters from localStorage:', error);
+    }
+    return {};
+  };
+
+  // User Story 2: Función para construir URL con filtros
+  const buildUrlWithFilters = (path: string): string => {
+    // Solo aplicar filtros si estamos navegando desde objetivos-rendimiento
+    if (currentPath === 'objetivos-rendimiento') {
+      const filters = getFiltersFromObjectives();
+      const params = new URLSearchParams();
+      
+      if (filters.sede) {
+        params.set('sede', filters.sede);
+      }
+      if (filters.periodo) {
+        params.set('periodo', filters.periodo);
+      }
+      
+      const queryString = params.toString();
+      return queryString ? `${path}?${queryString}` : path;
+    }
+    
+    return path;
+  };
+
   const renderNavItem = (item: NavItem) => {
     if (item.gimnasioOnly && isPersonalRole) return null;
     if (item.entrenadorOnly && !isPersonalRole) return null;
 
     const isActive = currentPath === item.id;
     const Icon = item.icon;
+    
+    // User Story 1: Mostrar indicadores para "Objetivos & Rendimiento"
+    const showObjectivesIndicators = item.id === 'objetivos-rendimiento' && !objectivesSummary.loading && objectivesSummary.total > 0;
 
     return (
       <li key={item.id}>
         <button
           onClick={() => {
             onViewChange?.(item.id);
-            navigate(item.path);
+            // User Story 2: Navegar con filtros si aplica
+            const urlWithFilters = buildUrlWithFilters(item.path);
+            navigate(urlWithFilters);
           }}
           className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-2.5 rounded-lg transition-all ${
             isActive
@@ -532,8 +583,35 @@ const marketingGimnasioItems: NavItem[] = [
           } font-medium text-sm`}
           title={isCollapsed ? item.label : ''}
         >
-          <Icon className="w-5 h-5 flex-shrink-0" />
-          {!isCollapsed && <span className="truncate">{item.label}</span>}
+          <div className="relative flex-shrink-0">
+            <Icon className="w-5 h-5" />
+            {/* User Story 1: Indicador de riesgo si hay objetivos en riesgo */}
+            {showObjectivesIndicators && objectivesSummary.atRisk > 0 && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-500 rounded-full border-2 border-white" title={`${objectivesSummary.atRisk} objetivo(s) en riesgo`} />
+            )}
+          </div>
+          {!isCollapsed && (
+            <div className="flex-1 flex items-center justify-between min-w-0">
+              <span className="truncate">{item.label}</span>
+              {/* User Story 1: Mostrar indicadores de estado */}
+              {showObjectivesIndicators && (
+                <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
+                  {objectivesSummary.onTrack > 0 && (
+                    <span className="flex items-center gap-1 px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium" title={`${objectivesSummary.onTrack} objetivo(s) on track`}>
+                      <CheckCircle2 className="w-3 h-3" />
+                      {objectivesSummary.onTrack}
+                    </span>
+                  )}
+                  {objectivesSummary.atRisk > 0 && (
+                    <span className="flex items-center gap-1 px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded text-xs font-medium" title={`${objectivesSummary.atRisk} objetivo(s) en riesgo`}>
+                      <AlertTriangle className="w-3 h-3" />
+                      {objectivesSummary.atRisk}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </button>
       </li>
     );

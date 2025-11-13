@@ -17,6 +17,7 @@ import {
   Target,
   Users,
   Workflow,
+  Send,
 } from 'lucide-react';
 import {
   ReactFlow,
@@ -38,6 +39,11 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Badge, Button, Card, Input, Select, Tabs, Textarea } from '../../../components/componentsreutilizables';
+import { BuyerPersonasEditor } from '../components/BuyerPersonasEditor';
+import { ToneAndCTAPresets } from '../components/ToneAndCTAPresets';
+import { FunnelToCampaignsExporter } from '../components/FunnelToCampaignsExporter';
+import { adaptFunnelCopy } from '../api';
+import { BuyerPersona, PainPoint, ToneAndCTAPreset, FavoriteToneConfig, FavoriteCTAConfig } from '../types';
 
 type FunnelViewId = 'funnel' | 'metrics' | 'list';
 type StageCategory =
@@ -443,6 +449,10 @@ export default function FunnelsEditorPage() {
   const [flowInstance, setFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [funnelName, setFunnelName] = useState('Reto 7 días · High Ticket Coaching');
   const [status, setStatus] = useState('borrador');
+  const [buyerPersonas, setBuyerPersonas] = useState<BuyerPersona[]>([]);
+  const [painPoints, setPainPoints] = useState<PainPoint[]>([]);
+  const [adaptingCopy, setAdaptingCopy] = useState(false);
+  const [showExporter, setShowExporter] = useState(false);
 
   const selectedNode = useMemo(
     () => nodes.find((node) => node.id === selectedNodeId) ?? null,
@@ -632,6 +642,15 @@ export default function FunnelsEditorPage() {
                   <PlayCircle className="h-4 w-4" />
                   Simular recorrido
                 </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setShowExporter(true)}
+                  className="inline-flex items-center gap-2"
+                >
+                  <Send className="h-4 w-4" />
+                  Enviar a Campañas
+                </Button>
                 <Button variant="primary" size="sm" className="inline-flex items-center gap-2">
                   <BadgeCheck className="h-4 w-4" />
                   Publicar funnel
@@ -651,7 +670,44 @@ export default function FunnelsEditorPage() {
           </div>
 
           {viewMode === 'funnel' ? (
-            <div className="grid gap-6 px-6 pb-6 lg:grid-cols-[280px,1fr,320px]">
+            <div className="px-6 pb-6 space-y-6">
+              {/* US-FA-015: Buyer Personas y Dolores Principales */}
+              <BuyerPersonasEditor
+                funnelId="current-funnel"
+                onPersonasChange={setBuyerPersonas}
+                onPainPointsChange={setPainPoints}
+                onCopyAdapt={(stageId, adaptedCopy) => {
+                  if (selectedNodeId === stageId) {
+                    updateSelectedNodeData('messaging', adaptedCopy);
+                  }
+                }}
+              />
+              
+              {/* US-FA-03: Configuraciones de Tono y CTA Favoritos */}
+              <ToneAndCTAPresets
+                onSelectPreset={(preset) => {
+                  if (selectedNodeId) {
+                    // Aplicar el preset al nodo seleccionado
+                    const toneExample = preset.toneConfig.examples?.[0] || '';
+                    const ctaText = preset.ctaConfig.ctaText;
+                    updateSelectedNodeData('messaging', `${toneExample} ${ctaText}`);
+                  }
+                }}
+                onSelectTone={(tone) => {
+                  if (selectedNodeId && tone.examples && tone.examples.length > 0) {
+                    const currentMessaging = selectedNode?.data.messaging || '';
+                    updateSelectedNodeData('messaging', `${tone.examples[0]} ${currentMessaging}`);
+                  }
+                }}
+                onSelectCTA={(cta) => {
+                  if (selectedNodeId) {
+                    const currentMessaging = selectedNode?.data.messaging || '';
+                    updateSelectedNodeData('messaging', `${currentMessaging} ${cta.ctaText}`);
+                  }
+                }}
+              />
+              
+              <div className="grid gap-6 lg:grid-cols-[280px,1fr,320px]">
               <aside className="hidden space-y-6 rounded-2xl border border-slate-200/70 bg-slate-50/70 p-4 dark:border-slate-800/60 dark:bg-slate-900/40 lg:block">
                 <div>
                   <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-100">
@@ -779,13 +835,59 @@ export default function FunnelsEditorPage() {
                       onChange={(event) => updateSelectedNodeData('delay', event.target.value)}
                       placeholder="Ej. 18h después, solo lunes-jueves"
                     />
-                    <Textarea
-                      label="Mensaje / Script"
-                      value={selectedNode.data.messaging ?? ''}
-                      rows={3}
-                      onChange={(event) => updateSelectedNodeData('messaging', event.target.value)}
-                      placeholder="Copy principal de email/WhatsApp/DM"
-                    />
+                    <div>
+                      <div className="mb-2 flex items-center justify-between">
+                        <label className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                          Mensaje / Script
+                        </label>
+                        {buyerPersonas.length > 0 && painPoints.length > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={async () => {
+                              if (!selectedNodeId || !selectedNode.data.messaging) return;
+                              setAdaptingCopy(true);
+                              try {
+                                const personaId = buyerPersonas[0]?.id || '';
+                                const painPointIds = painPoints.map((p) => p.id);
+                                const adaptation = await adaptFunnelCopy(
+                                  'current-funnel',
+                                  selectedNodeId,
+                                  selectedNode.data.messaging,
+                                  personaId,
+                                  painPointIds,
+                                );
+                                updateSelectedNodeData('messaging', adaptation.adaptedCopy);
+                              } catch (error) {
+                                console.error('Error adaptando copy:', error);
+                              } finally {
+                                setAdaptingCopy(false);
+                              }
+                            }}
+                            disabled={adaptingCopy || !selectedNode.data.messaging}
+                            className="text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-300 dark:hover:text-indigo-200"
+                          >
+                            {adaptingCopy ? (
+                              <>
+                                <Sparkles className="mr-1 h-3 w-3 animate-spin" />
+                                Adaptando...
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="mr-1 h-3 w-3" />
+                                Adaptar con IA
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                      <Textarea
+                        value={selectedNode.data.messaging ?? ''}
+                        rows={3}
+                        onChange={(event) => updateSelectedNodeData('messaging', event.target.value)}
+                        placeholder="Copy principal de email/WhatsApp/DM"
+                      />
+                    </div>
                     <Textarea
                       label="Etiquetas a aplicar"
                       value={selectedNode.data.labels ?? ''}
@@ -838,6 +940,7 @@ export default function FunnelsEditorPage() {
                   </ul>
                 </div>
               </aside>
+              </div>
             </div>
           ) : null}
 
@@ -939,7 +1042,17 @@ export default function FunnelsEditorPage() {
           ) : null}
 
           {viewMode === 'list' ? (
-            <div className="px-6 pb-6">
+            <div className="px-6 pb-6 space-y-6">
+              {/* US-FA-015: Buyer Personas y Dolores Principales */}
+              <BuyerPersonasEditor
+                funnelId="current-funnel"
+                onPersonasChange={setBuyerPersonas}
+                onPainPointsChange={setPainPoints}
+                onCopyAdapt={(stageId, adaptedCopy) => {
+                  updateSelectedNodeData('messaging', adaptedCopy);
+                }}
+              />
+              
               <Card className="overflow-hidden border border-slate-200/70 bg-white/90 dark:border-slate-800/70 dark:bg-slate-950/60">
                 <div className="border-b border-slate-200/70 bg-slate-50/70 px-6 py-3 text-sm font-semibold text-slate-700 dark:border-slate-800/70 dark:bg-slate-900/60 dark:text-slate-200">
                   Tabla editable por etapas
@@ -972,6 +1085,31 @@ export default function FunnelsEditorPage() {
           ) : null}
         </Card>
       </div>
+
+      {/* US-FA-017: Modal para exportar funnel a Campañas & Automatización */}
+      {showExporter && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">
+                  Exportar Funnel a Campañas & Automatización
+                </h2>
+                <Button variant="ghost" size="sm" onClick={() => setShowExporter(false)}>
+                  ×
+                </Button>
+              </div>
+              <FunnelToCampaignsExporter
+                funnelId="current-funnel"
+                funnelName={funnelName}
+                onExportComplete={() => {
+                  setShowExporter(false);
+                }}
+              />
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

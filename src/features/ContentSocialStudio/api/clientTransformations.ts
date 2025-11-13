@@ -152,7 +152,7 @@ export const getClientsWithProgress = async (): Promise<ClientProgressMetrics[]>
   return clients;
 };
 
-// Generar post de transformación
+// Generar post de transformación con datos reales y contenido creíble
 export const generateTransformationPost = async (
   clientId: string,
   templateId: string
@@ -169,46 +169,87 @@ export const generateTransformationPost = async (
     throw new Error('Plantilla no encontrada');
   }
 
-  // Generar contenido basado en la plantilla
+  // Validar que hay datos reales de progreso
+  const hasRealProgress = 
+    (metrics.weight && Math.abs(metrics.weight.change) > 0) ||
+    (metrics.measurements && Object.values(metrics.measurements).some(m => m && Math.abs(m.change) > 0)) ||
+    (metrics.achievements && metrics.achievements.length > 0);
+
+  if (!hasRealProgress) {
+    throw new Error('Este cliente no tiene datos de progreso suficientes para generar un post de transformación. Necesita al menos una métrica con cambio registrado.');
+  }
+
+  // Generar contenido basado en la plantilla con datos reales
   const timeframe = Math.floor(
     (new Date(metrics.currentDate).getTime() - new Date(metrics.startDate).getTime()) /
       (1000 * 60 * 60 * 24)
   );
-  const daysText = timeframe < 30 ? `${timeframe} días` : `${Math.floor(timeframe / 30)} meses`;
+  const daysText = timeframe < 30 ? `${timeframe} días` : timeframe < 60 ? `${Math.floor(timeframe / 30)} mes` : `${Math.floor(timeframe / 30)} meses`;
 
+  // Construir el cuerpo del post con datos reales y específicos
   let body = template.structure.body
     .replace('{clientName}', metrics.clientName)
     .replace('{timeframe}', daysText)
     .replace('{achievement}', metrics.achievements?.[0] || 'progreso significativo');
 
-  if (metrics.weight) {
+  // Reemplazar métricas de peso con datos reales
+  if (metrics.weight && Math.abs(metrics.weight.change) > 0) {
+    const weightChange = Math.abs(metrics.weight.change);
+    const weightDirection = metrics.weight.change < 0 ? 'perdió' : 'ganó';
     body = body
       .replace('{weightBefore}', metrics.weight.previous.toFixed(1))
       .replace('{weightAfter}', metrics.weight.current.toFixed(1))
-      .replace('{weightLoss}', Math.abs(metrics.weight.change).toFixed(1));
+      .replace('{weightLoss}', weightChange.toFixed(1))
+      .replace('{weightChange}', `${weightDirection} ${weightChange.toFixed(1)}kg`);
+  } else if (metrics.weight) {
+    // Si hay peso pero no cambio, usar el peso actual
+    body = body
+      .replace('{weightBefore}', metrics.weight.current.toFixed(1))
+      .replace('{weightAfter}', metrics.weight.current.toFixed(1))
+      .replace('{weightLoss}', '0')
+      .replace('{weightChange}', 'mantiene su peso');
   }
 
+  // Reemplazar mediciones con datos reales
   if (metrics.measurements) {
     const measurementsText = Object.entries(metrics.measurements)
-      .filter(([_, value]) => value && value.change !== 0)
+      .filter(([_, value]) => value && Math.abs(value.change) > 0)
       .map(([key, value]) => {
-        const changeText = value!.change > 0 ? `+${value!.change}` : `${value!.change}`;
-        return `${key}: ${changeText}cm`;
+        const keyLabel = key === 'waist' ? 'cintura' : 
+                        key === 'chest' ? 'pecho' :
+                        key === 'hips' ? 'cadera' :
+                        key === 'arms' ? 'brazos' :
+                        key === 'legs' ? 'piernas' : key;
+        const changeText = value!.change < 0 
+          ? `-${Math.abs(value!.change)}cm` 
+          : `+${value!.change}cm`;
+        return `${keyLabel}: ${value!.current}cm (${changeText})`;
       })
       .join(', ');
     body = body.replace('{measurements}', measurementsText || 'progreso constante');
   }
 
+  // Construir detalles de progreso con datos reales
   const progressDetails = metrics.achievements?.join(', ') || 'progreso constante';
   body = body.replace('{progressDetails}', progressDetails);
 
-  const keyMetrics = metrics.weight
-    ? `Peso: ${metrics.weight.current.toFixed(1)}kg (${metrics.weight.change > 0 ? '+' : ''}${metrics.weight.change.toFixed(1)}kg)`
-    : 'Progreso constante';
+  // Construir métricas clave con datos reales
+  const keyMetricsParts: string[] = [];
+  if (metrics.weight && Math.abs(metrics.weight.change) > 0) {
+    keyMetricsParts.push(`Peso: ${metrics.weight.current.toFixed(1)}kg (${metrics.weight.change < 0 ? '-' : '+'}${Math.abs(metrics.weight.change).toFixed(1)}kg)`);
+  }
+  if (metrics.measurements?.waist && Math.abs(metrics.measurements.waist.change) > 0) {
+    keyMetricsParts.push(`Cintura: ${metrics.measurements.waist.current}cm (${metrics.measurements.waist.change < 0 ? '-' : '+'}${Math.abs(metrics.measurements.waist.change)}cm)`);
+  }
+  const keyMetrics = keyMetricsParts.length > 0 
+    ? keyMetricsParts.join(' | ')
+    : 'Progreso constante y medible';
   body = body.replace('{keyMetrics}', keyMetrics);
 
+  // Generar caption con hook, cuerpo y CTA
   const caption = `${template.structure.hook}\n\n${body}\n\n${template.structure.cta}`;
 
+  // Hashtags relevantes para prueba social creíble
   const hashtags = [
     '#transformacion',
     '#fitness',
@@ -217,6 +258,8 @@ export const generateTransformationPost = async (
     '#motivacion',
     '#salud',
     '#bienestar',
+    '#progresoreal',
+    '#dedicacion',
   ];
 
   return {

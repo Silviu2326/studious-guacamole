@@ -47,6 +47,8 @@ import { WeeklyEditorView } from '../components/WeeklyEditorView';
 import { DailyEditorView } from '../components/DailyEditorView';
 import { ExcelSummaryView } from '../components/ExcelSummaryView';
 import { LoadTrackingChart } from '../components/LoadTrackingChart';
+import { BatchTrainingModal } from '../components/BatchTrainingModal';
+import type { BatchTrainingSummary } from '../components/BatchTrainingModal';
 import type {
   ContextoCliente,
   DayPlan,
@@ -57,7 +59,6 @@ import type {
   ResumenObjetivosProgreso,
   TimelineSesiones,
 } from '../types';
-import { obtenerReglas, type ReglaInteligente } from '../utils/intelligentRules';
 import { BuscarSustituirEntidades } from '../components/BuscarSustituirEntidades';
 import { CompartirExtractosChat } from '../components/CompartirExtractosChat';
 import { SubstitutionHistoryManager } from '../utils/substitutionHistory';
@@ -163,7 +164,7 @@ const baseWeekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sá
 const TOTAL_WEEKS = 4;
 const weekDays = Array.from({ length: TOTAL_WEEKS }, (_, weekIndex) =>
   baseWeekDays.map((day) => `${day} · Semana ${weekIndex + 1}`),
-).flat() as readonly string[];
+).flat();
 
 type DayKey = (typeof weekDays)[number];
 
@@ -1650,7 +1651,6 @@ function SubstitutionsModal({ weeklyPlan, weekDays, onReplaceBlocks, onUpdatePla
   const [selectedBlocks, setSelectedBlocks] = useState<Set<string>>(new Set());
   const [selectedReplacement, setSelectedReplacement] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [showPreview, setShowPreview] = useState(false);
   const [filtrosAvanzados, setFiltrosAvanzados] = useState({
     modalidad: '',
     intensidad: '',
@@ -1659,8 +1659,6 @@ function SubstitutionsModal({ weeklyPlan, weekDays, onReplaceBlocks, onUpdatePla
     equipamiento: '',
     tagsPersonalizados: [] as string[],
   });
-  const [reglasInteligentes, setReglasInteligentes] = useState<ReglaInteligente[]>([]);
-  const [aplicarReglasAuto, setAplicarReglasAuto] = useState(true);
   
   // Estados para presets
   const [presets, setPresets] = useState<SubstitutionPreset[]>([]);
@@ -1699,11 +1697,6 @@ function SubstitutionsModal({ weeklyPlan, weekDays, onReplaceBlocks, onUpdatePla
     });
     return blocks;
   }, [weeklyPlan, weekDays]);
-
-  // Cargar reglas inteligentes al montar
-  useEffect(() => {
-    setReglasInteligentes(obtenerReglas());
-  }, []);
 
   // Bloques de reemplazo disponibles (simulados desde la biblioteca)
   const replacementBlocks = useMemo(
@@ -1923,7 +1916,7 @@ function SubstitutionsModal({ weeklyPlan, weekDays, onReplaceBlocks, onUpdatePla
             size="sm"
             onClick={handleUndo}
             disabled={!historyInfo.canUndo}
-            iconLeft={Undo2}
+            leftIcon={<Undo2 />}
             className="h-8"
           >
             Deshacer
@@ -1933,7 +1926,7 @@ function SubstitutionsModal({ weeklyPlan, weekDays, onReplaceBlocks, onUpdatePla
             size="sm"
             onClick={handleRedo}
             disabled={!historyInfo.canRedo}
-            iconLeft={Redo2}
+            leftIcon={<Redo2 />}
             className="h-8"
           >
             Rehacer
@@ -1949,7 +1942,7 @@ function SubstitutionsModal({ weeklyPlan, weekDays, onReplaceBlocks, onUpdatePla
             variant="secondary"
             size="sm"
             onClick={() => setShowPresetsModal(true)}
-            iconLeft={Bookmark}
+            leftIcon={<Bookmark className="h-4 w-4" />}
             className="h-8"
           >
             Presets ({presets.length})
@@ -1959,7 +1952,7 @@ function SubstitutionsModal({ weeklyPlan, weekDays, onReplaceBlocks, onUpdatePla
             size="sm"
             onClick={() => setShowSavePresetModal(true)}
             disabled={selectedBlocks.size === 0 || !selectedReplacement}
-            iconLeft={BookmarkPlus}
+            leftIcon={<BookmarkPlus className="h-4 w-4" />}
             className="h-8"
           >
             Guardar Preset
@@ -2354,7 +2347,7 @@ function SubstitutionsModal({ weeklyPlan, weekDays, onReplaceBlocks, onUpdatePla
                         variant="primary"
                         size="sm"
                         onClick={() => handleApplyPreset(preset)}
-                        iconLeft={CheckSquare}
+                        leftIcon={<CheckSquare className="h-4 w-4" />}
                       >
                         Aplicar
                       </Button>
@@ -2362,7 +2355,7 @@ function SubstitutionsModal({ weeklyPlan, weekDays, onReplaceBlocks, onUpdatePla
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeletePreset(preset.id)}
-                        iconLeft={Trash2}
+                        leftIcon={<Trash2 className="h-4 w-4" />}
                         className="text-red-600 hover:text-red-700 dark:text-red-400"
                       >
                         Eliminar
@@ -2375,281 +2368,6 @@ function SubstitutionsModal({ weeklyPlan, weekDays, onReplaceBlocks, onUpdatePla
           )}
         </div>
       </Modal>
-    </div>
-  );
-}
-
-// Componente para el modal de Batch Training
-type BatchTrainingModalProps = {
-  weeklyPlan: Record<DayKey, DayPlan>;
-  weekDays: ReadonlyArray<DayKey>;
-  onApplyRules: (updatedPlan: Record<DayKey, DayPlan>) => void;
-  onClose: () => void;
-};
-
-type BatchRule = {
-  id: string;
-  type: 'modify-intensity' | 'modify-duration' | 'add-rest' | 'change-modality';
-  condition: {
-    modality?: string;
-    day?: string;
-    intensity?: string;
-  };
-  action: {
-    intensity?: string;
-    durationModifier?: number;
-    restMinutes?: number;
-    newModality?: string;
-  };
-  enabled: boolean;
-};
-
-function BatchTrainingModal({ weeklyPlan, weekDays, onApplyRules, onClose }: BatchTrainingModalProps) {
-  const [rules, setRules] = useState<BatchRule[]>([
-    {
-      id: '1',
-      type: 'modify-intensity',
-      condition: { modality: 'Strength' },
-      action: { intensity: 'RPE 8' },
-      enabled: false,
-    },
-    {
-      id: '2',
-      type: 'modify-duration',
-      condition: { modality: 'MetCon' },
-      action: { durationModifier: 5 },
-      enabled: false,
-    },
-    {
-      id: '3',
-      type: 'add-rest',
-      condition: {},
-      action: { restMinutes: 2 },
-      enabled: false,
-    },
-  ]);
-
-  const toggleRule = (ruleId: string) => {
-    setRules((prev) => prev.map((rule) => (rule.id === ruleId ? { ...rule, enabled: !rule.enabled } : rule)));
-  };
-
-  const updateRule = (ruleId: string, updates: Partial<BatchRule>) => {
-    setRules((prev) => prev.map((rule) => (rule.id === ruleId ? { ...rule, ...updates } : rule)));
-  };
-
-  const applyRules = () => {
-    const updatedPlan: Record<DayKey, DayPlan> = { ...weeklyPlan };
-    const enabledRules = rules.filter((rule) => rule.enabled);
-
-    weekDays.forEach((day) => {
-      const dayPlan = updatedPlan[day];
-
-      const updatedSessions = dayPlan.sessions.map((session: DayPlan['sessions'][number]) => {
-        let updatedSession = { ...session };
-
-        enabledRules.forEach((rule) => {
-          // Verificar condiciones
-          const matchesCondition =
-            (!rule.condition.modality || session.modality === rule.condition.modality) &&
-            (!rule.condition.day || day === rule.condition.day) &&
-            (!rule.condition.intensity || session.intensity.includes(rule.condition.intensity));
-
-          if (matchesCondition) {
-            // Aplicar acciones
-            if (rule.type === 'modify-intensity' && rule.action.intensity) {
-              updatedSession = { ...updatedSession, intensity: rule.action.intensity };
-            }
-
-            if (rule.type === 'modify-duration' && rule.action.durationModifier) {
-              const currentDuration = parseInt(session.duration) || 0;
-              const newDuration = Math.max(5, currentDuration + rule.action.durationModifier);
-              updatedSession = { ...updatedSession, duration: `${newDuration} min` };
-            }
-
-            if (rule.type === 'change-modality' && rule.action.newModality) {
-              updatedSession = { ...updatedSession, modality: rule.action.newModality };
-            }
-
-            if (rule.type === 'add-rest' && rule.action.restMinutes) {
-              updatedSession = {
-                ...updatedSession,
-                notes: `${session.notes || ''} [Descanso: ${rule.action.restMinutes} min]`.trim(),
-              };
-            }
-          }
-        });
-
-        return updatedSession;
-      });
-
-      updatedPlan[day] = {
-        ...dayPlan,
-        sessions: updatedSessions,
-      };
-    });
-
-    onApplyRules(updatedPlan);
-  };
-
-  const ruleTypes = [
-    { value: 'modify-intensity', label: 'Modificar intensidad' },
-    { value: 'modify-duration', label: 'Modificar duración' },
-    { value: 'change-modality', label: 'Cambiar modalidad' },
-    { value: 'add-rest', label: 'Añadir descanso' },
-  ];
-
-  const modalities = ['Strength', 'MetCon', 'Cardio', 'Mobility', 'Core', 'Recovery', 'Accessory', 'Plyo'];
-
-  return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-slate-200/70 bg-slate-50 p-4 text-sm dark:border-slate-800/70 dark:bg-slate-900/40">
-        <p className="text-slate-700 dark:text-slate-300">
-          Configura reglas para aplicar ediciones masivas automáticas al plan semanal. Las reglas se aplicarán a todos
-          los bloques que cumplan las condiciones especificadas.
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Reglas configuradas</h3>
-        {rules.map((rule) => (
-          <Card
-            key={rule.id}
-            className={`border p-4 dark:bg-slate-950/60 ${
-              rule.enabled
-                ? 'border-indigo-500 bg-indigo-50/50 dark:border-indigo-400 dark:bg-indigo-500/10'
-                : 'border-slate-200/70 bg-white/95 dark:border-slate-800/70'
-            }`}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-3 flex-1">
-                <button
-                  type="button"
-                  onClick={() => toggleRule(rule.id)}
-                  className="mt-1"
-                >
-                  {rule.enabled ? (
-                    <CheckSquare className="h-5 w-5 text-indigo-500" />
-                  ) : (
-                    <Square className="h-5 w-5 text-slate-400" />
-                  )}
-                </button>
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <Select
-                      options={ruleTypes}
-                      value={rule.type}
-                      onChange={(e) => updateRule(rule.id, { type: e.target.value as BatchRule['type'] })}
-                      className="flex-1"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1 block">
-                        Condición: Modalidad
-                      </label>
-                      <Select
-                        options={[{ label: 'Cualquiera', value: '' }, ...modalities.map((m) => ({ label: m, value: m }))]}
-                        value={rule.condition.modality || ''}
-                        onChange={(e) =>
-                          updateRule(rule.id, { condition: { ...rule.condition, modality: e.target.value || undefined } })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1 block">
-                        Condición: Día
-                      </label>
-                      <Select
-                        options={[
-                          { label: 'Cualquier día', value: '' },
-                          ...weekDays.map((d) => ({ label: d, value: d })),
-                        ]}
-                        value={rule.condition.day || ''}
-                        onChange={(e) =>
-                          updateRule(rule.id, { condition: { ...rule.condition, day: e.target.value || undefined } })
-                        }
-                      />
-                    </div>
-                  </div>
-                  {rule.type === 'modify-intensity' && (
-                    <div>
-                      <label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1 block">
-                        Nueva intensidad
-                      </label>
-                      <Input
-                        value={rule.action.intensity || ''}
-                        onChange={(e) => updateRule(rule.id, { action: { ...rule.action, intensity: e.target.value } })}
-                        placeholder="Ej: RPE 8"
-                      />
-                    </div>
-                  )}
-                  {rule.type === 'modify-duration' && (
-                    <div>
-                      <label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1 block">
-                        Modificar duración (minutos)
-                      </label>
-                      <Input
-                        type="number"
-                        value={rule.action.durationModifier || 0}
-                        onChange={(e) =>
-                          updateRule(rule.id, {
-                            action: { ...rule.action, durationModifier: parseInt(e.target.value) || 0 },
-                          })
-                        }
-                        placeholder="Ej: +5 o -5"
-                      />
-                    </div>
-                  )}
-                  {rule.type === 'change-modality' && (
-                    <div>
-                      <label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1 block">
-                        Nueva modalidad
-                      </label>
-                      <Select
-                        options={modalities.map((m) => ({ label: m, value: m }))}
-                        value={rule.action.newModality || ''}
-                        onChange={(e) =>
-                          updateRule(rule.id, { action: { ...rule.action, newModality: e.target.value } })
-                        }
-                      />
-                    </div>
-                  )}
-                  {rule.type === 'add-rest' && (
-                    <div>
-                      <label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1 block">
-                        Minutos de descanso
-                      </label>
-                      <Input
-                        type="number"
-                        value={rule.action.restMinutes || 0}
-                        onChange={(e) =>
-                          updateRule(rule.id, {
-                            action: { ...rule.action, restMinutes: parseInt(e.target.value) || 0 },
-                          })
-                        }
-                        placeholder="Ej: 2"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      <div className="flex items-center justify-end gap-2">
-        <Button variant="ghost" onClick={onClose}>
-          Cancelar
-        </Button>
-        <Button
-          variant="secondary"
-          onClick={applyRules}
-          disabled={rules.filter((r) => r.enabled).length === 0}
-        >
-          Aplicar reglas ({rules.filter((r) => r.enabled).length} activas)
-        </Button>
-      </div>
     </div>
   );
 }
@@ -2688,6 +2406,7 @@ export default function ProgramasDeEntrenoEditorPage() {
   const [isFitCoachOpen, setIsFitCoachOpen] = useState(false);
   const [isSubstitutionsOpen, setIsSubstitutionsOpen] = useState(false);
   const [isBatchTrainingOpen, setIsBatchTrainingOpen] = useState(false);
+  const [lastBatchSummary, setLastBatchSummary] = useState<BatchTrainingSummary | null>(null);
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
   const [isBulkAutomationOpen, setIsBulkAutomationOpen] = useState(false);
   const [isAutomationPresetsOpen, setIsAutomationPresetsOpen] = useState(false);
@@ -3294,7 +3013,7 @@ const blockExamples: BlockExample[] = useMemo(
   );
 
   const objetivosProgreso = useMemo<ResumenObjetivosProgreso>(() => {
-    const objetivos = [
+    const objetivos: ResumenObjetivosProgreso['objetivos'] = [
       {
         id: 'obj-1',
         titulo: 'Reducir grasa corporal al 22%',
@@ -3329,7 +3048,7 @@ const blockExamples: BlockExample[] = useMemo(
         id: 'obj-3',
         titulo: 'Completar 10 sesiones consecutivas de movilidad',
         descripcion: 'Establecer rutina de movilidad torácica y cadera.',
-        categoria: 'movilidad',
+        categoria: 'fitness',
         horizonte: 'corto',
         valorObjetivo: 10,
         valorActual: 10,
@@ -3436,8 +3155,6 @@ const blockExamples: BlockExample[] = useMemo(
           tipoFeedback: 'post-sesion',
           puntuacion: 7,
           comentarios: 'Buena sesión, pero la rodilla cargada al final.',
-          nivelFatiga: 7,
-          nivelDolor: 4,
         },
       },
       {
@@ -4041,6 +3758,17 @@ const blockExamples: BlockExample[] = useMemo(
           clienteAlerta={primarySuggestion}
         />
 
+        {lastBatchSummary && (
+          <div className="rounded-2xl border border-emerald-100/80 bg-emerald-50/70 p-4 text-xs text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+            <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">Resumen batch exportado</p>
+            <p>
+              {lastBatchSummary.metrics.sessionsTouched} bloques · Δ duración{' '}
+              {lastBatchSummary.metrics.totalDurationDelta >= 0 ? '+' : ''}
+              {lastBatchSummary.metrics.totalDurationDelta} min · {lastBatchSummary.affectedRules} reglas
+            </p>
+          </div>
+        )}
+
         {layoutRecommendedTemplates.length > 0 && (
           <Card className="border border-indigo-200/70 bg-white/95 p-4 shadow-sm dark:border-indigo-900/40 dark:bg-slate-950/60">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -4237,7 +3965,7 @@ const blockExamples: BlockExample[] = useMemo(
         <SubstitutionsModal
           weeklyPlan={weeklyPlan}
           weekDays={weekDays}
-          onReplaceBlocks={(replacements) => {
+          onReplaceBlocks={(_replacements) => {
             // Esta función se llama desde handleReplace dentro del modal
             // El plan ya se actualiza a través de onUpdatePlan
           }}
@@ -4259,11 +3987,16 @@ const blockExamples: BlockExample[] = useMemo(
         <BatchTrainingModal
           weeklyPlan={weeklyPlan}
           weekDays={weekDays}
+          clientId={selectedClient.id}
+          programId={currentProgramId}
           onApplyRules={(updatedPlan) => {
             setWeeklyPlan(updatedPlan);
             setIsBatchTrainingOpen(false);
           }}
           onClose={() => setIsBatchTrainingOpen(false)}
+          onExportSummary={(summary) => {
+            setLastBatchSummary(summary);
+          }}
         />
       </Modal>
 

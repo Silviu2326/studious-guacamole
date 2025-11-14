@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Button, Tabs } from '../../../components/componentsreutilizables';
 import {
   Brain,
@@ -18,6 +18,7 @@ import {
   Bookmark,
   BarChart3,
   Info,
+  Copy,
 } from 'lucide-react';
 import type { DayPlan, DaySession, ContextoCliente, ResumenObjetivosProgreso, TimelineSesiones } from '../types';
 
@@ -78,6 +79,347 @@ interface AsistenteIAProgramaProps {
 
 type ModoAsistente = 'asistente' | 'chat';
 
+interface MetricasSemanales {
+  totalSessions: number;
+  totalDuration: number;
+  promedioDiario: number;
+  dailyStats: {
+    day: DayKey;
+    sessions: number;
+    duration: number;
+  }[];
+  modalityDistribution: Record<string, number>;
+  intensidadPromedio: number;
+  intensidadMax: number;
+  intensidadMin: number;
+  diasDescanso: number;
+  diasAltaDensidad: { day: DayKey; sessions: number; duration: number }[];
+  movilidadSemanal: number;
+  acuteLoad: number;
+  chronicLoad: number;
+  loadRatio: number;
+}
+
+interface InsightProactivo {
+  id: string;
+  titulo: string;
+  descripcion: string;
+  severidad: 'info' | 'warning' | 'critical';
+  accionLabel?: string;
+}
+
+interface AlertaRapida {
+  id: string;
+  label: string;
+  detail: string;
+  tone: 'positive' | 'warning' | 'critical';
+}
+
+interface RespuestaIntencion {
+  respuesta: string;
+  razonamiento?: RazonamientoSugerencia;
+}
+
+type IntencionConsulta =
+  | 'intensidad'
+  | 'volumen'
+  | 'duracion'
+  | 'carga'
+  | 'modalidades'
+  | 'sugerencias'
+  | 'restricciones'
+  | 'dia'
+  | 'resumen'
+  | 'objetivos'
+  | 'ajustes';
+
+const INTENT_PATTERNS: Record<IntencionConsulta, RegExp[]> = {
+  intensidad: [/intensidad/, /rpe/, /esfuerzo/],
+  volumen: [/volumen/, /serie/, /repeticion/, /cantidad/],
+  duracion: [/duraci[oó]n/, /tiempo/, /minuto/, /horario/],
+  carga: [/carga/, /fatiga/, /load/],
+  modalidades: [/modalidad/, /balance/, /equilibrio/, /variedad/],
+  sugerencias: [/sugerencia/, /mejor(a|ar)/, /optimizar/, /idea/],
+  restricciones: [/restricci[oó]n/, /lesi[oó]n/, /limitaci[oó]n/, /dolor/],
+  dia: [/d[ií]a/, /semana/, /distribuci[oó]n/, /agenda/],
+  resumen: [/resumen/, /resume/],
+  objetivos: [/objetivo/, /meta/, /prop[oó]sito/],
+  ajustes: [/ajustar/, /cambiar/, /modificar/, /retocar/],
+};
+
+const WEEK_DAYS: DayKey[] = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+const CHAT_HISTORY_STORAGE_KEY = 'asistenteIA_chatHistory';
+const CHAT_SUMMARY_STORAGE_KEY = 'asistenteIA_chatSummary';
+const CHAT_NOTES_STORAGE_KEY = 'asistenteIA_chatNotes';
+const MAX_CHAT_HISTORY = 14;
+const PROMPT_TEMPLATES_STORAGE_KEY = 'asistenteIA_promptTemplates';
+const MAX_PROMPT_TEMPLATES = 6;
+const QUICK_PROMPTS = [
+  { id: 'intensidad', label: 'Intensidad', prompt: 'Analiza la intensidad del programa y dame ajustes puntuales.' },
+  { id: 'volumen', label: 'Volumen', prompt: 'Revisa el volumen semanal y sugiere equilibrios o recortes.' },
+  { id: 'restricciones', label: 'Restricciones', prompt: 'Propón adaptaciones considerando las lesiones y limitaciones del cliente.' },
+  { id: 'bloques', label: 'Bloques IA', prompt: 'Genera un bloque de movilidad de 15 min y otro de fuerza de 30 min adaptado al contexto.' },
+];
+const DEFAULT_PROMPT_TEMPLATES = [
+  { id: 'template-intensidad', label: 'Semana de descarga', prompt: 'Diseña una semana de descarga reduciendo volumen 30%.' },
+  { id: 'template-cardio', label: 'Cardio Z2', prompt: 'Añade un bloque de cardio zona 2 de 25 min para compensar sedentarismo.' },
+];
+
+const detectarIntencionConsulta = (consulta: string): IntencionConsulta[] => {
+  const halladas: IntencionConsulta[] = [];
+  (Object.entries(INTENT_PATTERNS) as [IntencionConsulta, RegExp[]][]).forEach(([intencion, patrones]) => {
+    if (patrones.some((pattern) => pattern.test(consulta))) {
+      if (!halladas.includes(intencion)) {
+        halladas.push(intencion);
+      }
+    }
+  });
+  return halladas;
+};
+
+interface BuildRespuestaContext {
+  consulta: string;
+  metricas: MetricasSemanales;
+  selectedDay: DayKey;
+  selectedDayPlan: DayPlan;
+  clientInfo?: AsistenteIAProgramaProps['clientInfo'];
+  weeklyTargets?: AsistenteIAProgramaProps['weeklyTargets'];
+  contextoCliente?: ContextoCliente;
+  chatSummary?: string;
+}
+
+const buildRespuestaPersonalizada = ({
+  consulta,
+  metricas,
+  selectedDay,
+  selectedDayPlan,
+  clientInfo,
+  weeklyTargets,
+  contextoCliente,
+  chatSummary,
+}: BuildRespuestaContext): string => {
+  let respuesta = `He revisado tu consulta sobre "${consulta}".\n\n`;
+  respuesta += `Esta semana tienes ${metricas.totalSessions} sesiones (${metricas.totalDuration} min) con un ratio agudo/crónico de ${metricas.loadRatio}. `;
+  respuesta += `Hoy (${selectedDay}) el foco es ${selectedDayPlan.focus} con ${selectedDayPlan.sessions.length} sesión(es) y ${selectedDayPlan.intensity}.\n\n`;
+
+  if (clientInfo?.objetivos?.length) {
+    respuesta += `🎯 Objetivos del cliente: ${clientInfo.objetivos.join(', ')}.\n`;
+  }
+  if (contextoCliente?.lesiones?.some((l) => l.estado === 'activa')) {
+    const lesionesActivas = contextoCliente.lesiones.filter((l) => l.estado === 'activa').map((l) => l.nombre).join(', ');
+    respuesta += `⚕️ Lesiones a considerar: ${lesionesActivas}.\n`;
+  }
+  if (weeklyTargets) {
+    respuesta += `📌 Objetivo semanal: ${weeklyTargets.sessions} sesiones · ${weeklyTargets.duration} min · ${weeklyTargets.calories} kcal.\n`;
+  }
+  if (chatSummary) {
+    respuesta += `📝 Contexto reciente: ${chatSummary}\n`;
+  }
+
+  respuesta += `\nPuedo ayudarte a ajustar intensidad, volumen, modalidades, restricciones o generar bloques específicos. Indícame qué aspecto quieres modificar y te propongo opciones concretas.`;
+  return respuesta;
+};
+
+const generarResumenConversacion = (mensajes: Mensaje[]): string => {
+  if (mensajes.length === 0) return '';
+  const ultimos = mensajes.slice(-4);
+  const partes = ultimos.map((mensaje) => {
+    const emisor = mensaje.tipo === 'usuario' ? 'Cliente' : 'Asistente';
+    const contenido = mensaje.contenido.replace(/\s+/g, ' ').trim();
+    return `${emisor}: ${contenido.substring(0, 160)}${contenido.length > 160 ? '…' : ''}`;
+  });
+  return partes.join(' | ');
+};
+
+const generarNotasConversacion = (mensajes: Mensaje[]): string[] => {
+  const asistenteMsgs = mensajes.filter((m) => m.tipo === 'asistente').slice(-3);
+  if (asistenteMsgs.length === 0) return [];
+  return asistenteMsgs.map((msg) => {
+    if (msg.razonamiento?.metricas && msg.razonamiento.metricas.length > 0) {
+      const metricaPrincipal = msg.razonamiento.metricas[0];
+      return `${msg.razonamiento?.razonamiento?.split('.')[0] ?? 'Insight'} (${metricaPrincipal.nombre}: ${metricaPrincipal.valor}${metricaPrincipal.unidad ?? ''})`;
+    }
+    const texto = msg.contenido.replace(/\s+/g, ' ').trim();
+    return texto.substring(0, 140);
+  });
+};
+
+const obtenerEtiquetaMensaje = (
+  mensaje: Mensaje,
+): { label: string; className: string } | null => {
+  if (mensaje.bloquesGenerados && mensaje.bloquesGenerados.length > 0) {
+    return {
+      label: 'Bloques',
+      className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-400/20 dark:text-emerald-100',
+    };
+  }
+  if (mensaje.razonamiento) {
+    return {
+      label: 'Análisis',
+      className: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-400/20 dark:text-indigo-100',
+    };
+  }
+  if (mensaje.contenido.toLowerCase().includes('error')) {
+    return {
+      label: 'Alerta',
+      className: 'bg-rose-100 text-rose-800 dark:bg-rose-400/20 dark:text-rose-100',
+    };
+  }
+  return null;
+};
+
+const extraerMinutos = (duracion?: string) => {
+  if (!duracion) return 0;
+  const match = duracion.match(/\d+/);
+  return match ? Number(match[0]) : 0;
+};
+
+const calcularMetricasSemanales = (
+  weeklyPlan: Record<DayKey, DayPlan>,
+  weeklyTargets?: { sessions: number; duration: number; calories: number }
+): MetricasSemanales => {
+  let totalSessions = 0;
+  let totalDuration = 0;
+  const modalityDistribution: Record<string, number> = {};
+  const intensidades: number[] = [];
+  let movilidadSemanal = 0;
+
+  const dailyStats = WEEK_DAYS.map((day) => {
+    const plan = weeklyPlan[day];
+    const sessions = plan?.sessions ?? [];
+    const duration = sessions.reduce((sum, session) => sum + extraerMinutos(session.duration), 0);
+
+    sessions.forEach((session) => {
+      modalityDistribution[session.modality] = (modalityDistribution[session.modality] || 0) + 1;
+      if (session.modality === 'Mobility' || session.modality === 'Recovery') {
+        movilidadSemanal += 1;
+      }
+      if (session.intensity) {
+        const match = session.intensity.match(/RPE\s*(\d+\.?\d*)/i);
+        if (match) {
+          intensidades.push(parseFloat(match[1]));
+        }
+      }
+    });
+
+    totalSessions += sessions.length;
+    totalDuration += duration;
+
+    return {
+      day,
+      sessions: sessions.length,
+      duration,
+    };
+  });
+
+  const diasDescanso = dailyStats.filter((stat) => stat.sessions === 0).length;
+  const diasAltaDensidad = dailyStats.filter((stat) => stat.duration > 90 || stat.sessions > 3);
+  const intensidadPromedio = intensidades.length > 0 ? intensidades.reduce((a, b) => a + b, 0) / intensidades.length : 0;
+  const intensidadMax = intensidades.length > 0 ? Math.max(...intensidades) : 0;
+  const intensidadMin = intensidades.length > 0 ? Math.min(...intensidades) : 0;
+  const acuteLoad = totalDuration;
+  const chronicLoad = weeklyTargets?.duration ?? totalDuration;
+  const loadRatio = chronicLoad > 0 ? Number((acuteLoad / chronicLoad).toFixed(2)) : 1;
+
+  return {
+    totalSessions,
+    totalDuration,
+    promedioDiario: Math.round(totalDuration / WEEK_DAYS.length),
+    dailyStats,
+    modalityDistribution,
+    intensidadPromedio,
+    intensidadMax,
+    intensidadMin,
+    diasDescanso,
+    diasAltaDensidad,
+    movilidadSemanal,
+    acuteLoad,
+    chronicLoad,
+    loadRatio,
+  };
+};
+
+const generarInsightsProactivos = (
+  metricas: MetricasSemanales,
+  selectedDayPlan: DayPlan,
+  contextoCliente?: ContextoCliente,
+  objetivosProgreso?: ResumenObjetivosProgreso
+): InsightProactivo[] => {
+  const insights: InsightProactivo[] = [];
+
+  if (metricas.loadRatio > 1.25) {
+    insights.push({
+      id: 'carga-alta',
+      titulo: 'Carga aguda superior al plan',
+      descripcion: `La carga semanal actual es ${Math.round((metricas.loadRatio - 1) * 100)}% mayor que la crónica prevista. Considera añadir recuperación.`,
+      severidad: 'warning',
+      accionLabel: 'Rebalancear semana',
+    });
+  } else if (metricas.loadRatio < 0.85 && metricas.chronicLoad > 0) {
+    insights.push({
+      id: 'carga-baja',
+      titulo: 'Carga por debajo del objetivo',
+      descripcion: 'El volumen semanal está muy por debajo del objetivo. Evalúa añadir sesiones específicas.',
+      severidad: 'info',
+      accionLabel: 'Añadir bloque',
+    });
+  }
+
+  if (metricas.diasDescanso < 2) {
+    insights.push({
+      id: 'descanso',
+      titulo: 'Descanso insuficiente',
+      descripcion: 'Solo hay un día (o ninguno) sin sesiones. Esto puede limitar la supercompensación.',
+      severidad: 'warning',
+      accionLabel: 'Insertar descanso',
+    });
+  }
+
+  if (metricas.movilidadSemanal === 0) {
+    insights.push({
+      id: 'movilidad',
+      titulo: 'Falta de movilidad/recuperación',
+      descripcion: 'No se detectan bloques de movilidad o recuperación esta semana.',
+      severidad: 'info',
+      accionLabel: 'Crear bloque Mobility',
+    });
+  }
+
+  if (selectedDayPlan.sessions.length > 4 || selectedDayPlan.sessions.some((s) => extraerMinutos(s.duration) > 60)) {
+    insights.push({
+      id: 'sobrecarga-dia',
+      titulo: 'Día con alto volumen',
+      descripcion: `El día ${selectedDayPlan.focus} supera los 60 minutos por sesión o más de 4 bloques.`,
+      severidad: 'warning',
+      accionLabel: 'Dividir sesión',
+    });
+  }
+
+  const lesionesActivas = contextoCliente?.lesiones?.filter((l) => l.estado === 'activa') ?? [];
+  if (lesionesActivas.length > 0 && metricas.intensidadPromedio > 7.5) {
+    insights.push({
+      id: 'lesiones-intensidad',
+      titulo: 'Intensidad elevada con lesiones activas',
+      descripcion: 'Revisa que los ejercicios respeten las restricciones actuales del cliente.',
+      severidad: 'critical',
+      accionLabel: 'Aplicar adaptaciones',
+    });
+  }
+
+  const objetivosActivos = objetivosProgreso?.objetivos.filter((o) => o.estado === 'in_progress') ?? [];
+  if (objetivosActivos.length > 0 && metricas.modalityDistribution['Strength'] && metricas.modalityDistribution['Strength'] < objetivosActivos.length) {
+    insights.push({
+      id: 'objetivos-fuerza',
+      titulo: 'Objetivos de fuerza con poco estímulo',
+      descripcion: 'Los bloques de fuerza son limitados respecto a los objetivos activos. Evalúa redistribuir el estímulo.',
+      severidad: 'info',
+      accionLabel: 'Añadir fuerza',
+    });
+  }
+
+  return insights;
+};
+
 export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
   weeklyPlan,
   selectedDay,
@@ -93,8 +435,146 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [inputMensaje, setInputMensaje] = useState('');
   const [procesando, setProcesando] = useState(false);
+  const [razonamientoExpandido, setRazonamientoExpandido] = useState<Set<string>>(() => new Set());
+  const [bloquesAplicados, setBloquesAplicados] = useState<Set<string>>(() => new Set());
+  const [chatSummary, setChatSummary] = useState('');
+  const [chatHighlights, setChatHighlights] = useState<string[]>([]);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [promptTemplates, setPromptTemplates] = useState(DEFAULT_PROMPT_TEMPLATES);
   const mensajesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const historyLoadedRef = useRef(false);
+  const metricasSemanales = useMemo(() => calcularMetricasSemanales(weeklyPlan, weeklyTargets), [weeklyPlan, weeklyTargets]);
+  const insightsProactivos = useMemo(
+    () => generarInsightsProactivos(metricasSemanales, selectedDayPlan, contextoCliente, objetivosProgreso),
+    [metricasSemanales, selectedDayPlan, contextoCliente, objetivosProgreso]
+  );
+  const alertasRapidas = useMemo<AlertaRapida[]>(() => {
+    const alertas: AlertaRapida[] = [];
+
+    if (metricasSemanales.diasAltaDensidad.length > 0) {
+      alertas.push({
+        id: 'alta-densidad',
+        label: 'Días exigentes',
+        detail: `${metricasSemanales.diasAltaDensidad.length} día(s) superan 90 min o 3 sesiones`,
+        tone: 'warning',
+      });
+    }
+
+    if (metricasSemanales.intensidadPromedio > 7.5) {
+      alertas.push({
+        id: 'rpe-alto',
+        label: 'RPE elevado',
+        detail: `Promedio semanal ${metricasSemanales.intensidadPromedio.toFixed(1)}`,
+        tone: 'warning',
+      });
+    }
+
+    if (metricasSemanales.diasDescanso === 0) {
+      alertas.push({
+        id: 'sin-descanso',
+        label: 'Sin días libres',
+        detail: 'Añade al menos un día de descarga',
+        tone: 'critical',
+      });
+    }
+
+    if (alertas.length === 0) {
+      alertas.push({
+        id: 'balanceado',
+        label: 'Semana equilibrada',
+        detail: 'La carga y las intensidades están dentro de parámetros saludables',
+        tone: 'positive',
+      });
+    }
+
+    return alertas;
+  }, [metricasSemanales]);
+  const maxDuracionDia = useMemo(() => {
+    const valores = metricasSemanales.dailyStats.map((stat) => stat.duration || 0);
+    return Math.max(...valores, 1);
+  }, [metricasSemanales]);
+
+  const persistConversation = useCallback((historial: Mensaje[], resumen: string, notas: string[]) => {
+    try {
+      const serializable = historial.map((mensaje) => ({
+        ...mensaje,
+        timestamp: mensaje.timestamp instanceof Date ? mensaje.timestamp.toISOString() : mensaje.timestamp,
+      }));
+      localStorage.setItem(CHAT_HISTORY_STORAGE_KEY, JSON.stringify(serializable));
+      localStorage.setItem(CHAT_SUMMARY_STORAGE_KEY, resumen);
+      localStorage.setItem(CHAT_NOTES_STORAGE_KEY, JSON.stringify(notas));
+    } catch (error) {
+      console.error('Error al persistir historial del chat', error);
+    }
+  }, []);
+
+  const persistPromptTemplates = useCallback((templates: typeof DEFAULT_PROMPT_TEMPLATES) => {
+    try {
+      localStorage.setItem(PROMPT_TEMPLATES_STORAGE_KEY, JSON.stringify(templates));
+    } catch (error) {
+      console.error('Error al guardar plantillas rápidas', error);
+    }
+  }, []);
+
+  const sincronizarMemoriaConversacion = useCallback(
+    (historial: Mensaje[]) => {
+      const resumen = generarResumenConversacion(historial);
+      const notas = generarNotasConversacion(historial);
+      setChatSummary(resumen);
+      setChatHighlights(notas);
+      persistConversation(historial, resumen, notas);
+    },
+    [persistConversation]
+  );
+
+  const appendMensaje = useCallback(
+    (mensaje: Mensaje) => {
+      setMensajes((prev) => {
+        const actualizado = [...prev, mensaje].slice(-MAX_CHAT_HISTORY);
+        sincronizarMemoriaConversacion(actualizado);
+        return actualizado;
+      });
+    },
+    [sincronizarMemoriaConversacion]
+  );
+
+  useEffect(() => {
+    if (historyLoadedRef.current) return;
+    historyLoadedRef.current = true;
+    try {
+      const storedHistory = localStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
+      if (storedHistory) {
+        const parsed: Mensaje[] = (JSON.parse(storedHistory) as Mensaje[]).map((mensaje) => ({
+          ...mensaje,
+          timestamp: mensaje.timestamp ? new Date(mensaje.timestamp) : new Date(),
+        }));
+        setMensajes(parsed);
+        sincronizarMemoriaConversacion(parsed);
+      } else {
+        const storedSummary = localStorage.getItem(CHAT_SUMMARY_STORAGE_KEY);
+        if (storedSummary) setChatSummary(storedSummary);
+        const storedNotes = localStorage.getItem(CHAT_NOTES_STORAGE_KEY);
+        if (storedNotes) setChatHighlights(JSON.parse(storedNotes));
+      }
+    } catch (error) {
+      console.error('Error al cargar historial del chat', error);
+    }
+  }, [sincronizarMemoriaConversacion]);
+
+  useEffect(() => {
+    try {
+      const storedTemplates = localStorage.getItem(PROMPT_TEMPLATES_STORAGE_KEY);
+      if (storedTemplates) {
+        const parsed = JSON.parse(storedTemplates) as typeof DEFAULT_PROMPT_TEMPLATES;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setPromptTemplates(parsed);
+        }
+      }
+    } catch (error) {
+      console.error('Error al cargar plantillas rápidas', error);
+    }
+  }, []);
 
   // Inicializar mensaje de bienvenida cuando se cambia a modo chat
   useEffect(() => {
@@ -105,9 +585,11 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
         contenido: `¡Hola! Soy tu asistente de entrenamiento. Puedo ayudarte con ajustes y sugerencias sobre el programa actual.\n\nPuedes preguntarme sobre:\n• Ajustes de intensidad o volumen\n• Sugerencias de ejercicios\n• Optimización del plan semanal\n• Análisis de carga de trabajo\n• Adaptaciones por restricciones\n\n¿En qué puedo ayudarte?`,
         timestamp: new Date(),
       };
-      setMensajes([mensajeBienvenida]);
+      const historial = [mensajeBienvenida];
+      setMensajes(historial);
+      sincronizarMemoriaConversacion(historial);
     }
-  }, [modo]);
+  }, [modo, sincronizarMemoriaConversacion, mensajes.length]);
 
   useEffect(() => {
     mensajesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -126,17 +608,9 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
     const consultaLower = consulta.toLowerCase();
 
     // Análisis del programa actual
-    const weekDays: DayKey[] = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-    const totalSessions = weekDays.reduce((acc, day) => acc + weeklyPlan[day].sessions.length, 0);
-    const totalDuration = weekDays.reduce((acc, day) => {
-      return (
-        acc +
-        weeklyPlan[day].sessions.reduce((sum, session) => {
-          const match = session.duration.match(/\d+/);
-          return sum + (match ? Number(match[0]) : 0);
-        }, 0)
-      );
-    }, 0);
+    const weekDays: DayKey[] = WEEK_DAYS;
+    const metricasActuales = calcularMetricasSemanales(weeklyPlan, weeklyTargets);
+    const totalDuration = metricasActuales.totalDuration;
 
     // Detectar si la consulta solicita generar bloques específicos
     const patronesBloques = [
@@ -162,66 +636,88 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
       }
     }
 
-    // Detectar tipo de consulta y responder
-    if (consultaLower.includes('intensidad') || consultaLower.includes('rpe')) {
-      const respuesta = analizarIntensidad(weeklyPlan, weekDays, selectedDayPlan, contextoCliente, objetivosProgreso);
-      const razonamiento = generarRazonamientoIntensidad(weeklyPlan, weekDays, selectedDayPlan, contextoCliente, objetivosProgreso);
-      return { respuesta, razonamiento };
-    }
+    const intencionesDetectadas = detectarIntencionConsulta(consultaLower);
 
-    if (consultaLower.includes('volumen') || consultaLower.includes('series')) {
-      const respuesta = analizarVolumen(weeklyPlan, weekDays, selectedDayPlan, contextoCliente);
-      const razonamiento = generarRazonamientoVolumen(weeklyPlan, weekDays, selectedDayPlan, contextoCliente);
-      return { respuesta, razonamiento };
-    }
+    const resolverIntencion = (intencion: IntencionConsulta): RespuestaIntencion | null => {
+      switch (intencion) {
+        case 'intensidad': {
+          const respuesta = analizarIntensidad(weeklyPlan, weekDays, selectedDayPlan, contextoCliente, objetivosProgreso);
+          const razonamiento = generarRazonamientoIntensidad(weeklyPlan, weekDays, selectedDayPlan, contextoCliente, objetivosProgreso);
+          return { respuesta, razonamiento };
+        }
+        case 'volumen': {
+          const respuesta = analizarVolumen(weeklyPlan, weekDays, selectedDayPlan, contextoCliente);
+          const razonamiento = generarRazonamientoVolumen(weeklyPlan, weekDays, selectedDayPlan, contextoCliente);
+          return { respuesta, razonamiento };
+        }
+        case 'duracion': {
+          const respuesta = analizarDuracion(weeklyPlan, weekDays, selectedDayPlan, totalDuration, contextoCliente);
+          const razonamiento = generarRazonamientoDuracion(weeklyPlan, weekDays, selectedDayPlan, totalDuration, weeklyTargets);
+          return { respuesta, razonamiento };
+        }
+        case 'carga': {
+          const respuesta = analizarCarga(metricasActuales, contextoCliente);
+          const razonamiento = generarRazonamientoCarga(metricasActuales);
+          return { respuesta, razonamiento };
+        }
+        case 'modalidades': {
+          const respuesta = analizarModalidades(metricasActuales, selectedDayPlan);
+          const razonamiento = generarRazonamientoModalidades(metricasActuales);
+          return { respuesta, razonamiento };
+        }
+        case 'sugerencias': {
+          const respuesta = generarSugerencias(selectedDayPlan, clientInfo, weeklyTargets, contextoCliente, objetivosProgreso, timelineSesiones);
+          const razonamiento = generarRazonamientoSugerencias(selectedDayPlan, clientInfo, weeklyTargets, contextoCliente, objetivosProgreso);
+          return { respuesta, razonamiento };
+        }
+        case 'restricciones': {
+          const respuesta = analizarRestricciones(weeklyPlan, weekDays, clientInfo, contextoCliente);
+          const razonamiento = generarRazonamientoRestricciones(clientInfo, contextoCliente);
+          return { respuesta, razonamiento };
+        }
+        case 'dia':
+          return { respuesta: analizarDistribucionSemanal(weeklyPlan, weekDays, contextoCliente) };
+        case 'resumen':
+          return { respuesta: generarResumenEstructurado(weeklyPlan, weekDays, selectedDayPlan, weeklyTargets, contextoCliente, objetivosProgreso) };
+        case 'objetivos':
+          return { respuesta: analizarObjetivos(selectedDayPlan, clientInfo, weeklyTargets, objetivosProgreso) };
+        case 'ajustes': {
+          const respuesta = generarSugerenciasAjuste(selectedDayPlan, clientInfo, contextoCliente);
+          const razonamiento = generarRazonamientoAjustes(selectedDayPlan, clientInfo, contextoCliente);
+          return { respuesta, razonamiento };
+        }
+        default:
+          return null;
+      }
+    };
 
-    if (consultaLower.includes('duración') || consultaLower.includes('tiempo') || consultaLower.includes('minutos')) {
-      const respuesta = analizarDuracion(weeklyPlan, weekDays, selectedDayPlan, totalDuration, contextoCliente);
-      const razonamiento = generarRazonamientoDuracion(weeklyPlan, weekDays, selectedDayPlan, totalDuration, weeklyTargets);
-      return { respuesta, razonamiento };
-    }
+    if (intencionesDetectadas.length > 0) {
+      const respuestasIntencion = intencionesDetectadas
+        .slice(0, 2)
+        .map(resolverIntencion)
+        .filter((resp): resp is RespuestaIntencion => Boolean(resp));
 
-    if (consultaLower.includes('sugerencia') || consultaLower.includes('mejora') || consultaLower.includes('optimizar')) {
-      const respuesta = generarSugerencias(selectedDayPlan, clientInfo, weeklyTargets, contextoCliente, objetivosProgreso, timelineSesiones);
-      const razonamiento = generarRazonamientoSugerencias(selectedDayPlan, clientInfo, weeklyTargets, contextoCliente, objetivosProgreso);
-      return { respuesta, razonamiento };
-    }
-
-    if (consultaLower.includes('restricción') || consultaLower.includes('lesión') || consultaLower.includes('limitación')) {
-      const respuesta = analizarRestricciones(weeklyPlan, weekDays, clientInfo, contextoCliente);
-      const razonamiento = generarRazonamientoRestricciones(clientInfo, contextoCliente);
-      return { respuesta, razonamiento };
-    }
-
-    if (consultaLower.includes('día') || consultaLower.includes('dia') || consultaLower.includes('semana')) {
-      return { respuesta: analizarDistribucionSemanal(weeklyPlan, weekDays, contextoCliente) };
-    }
-
-    if (consultaLower.includes('resumen') || consultaLower.includes('resume')) {
-      return { respuesta: generarResumenEstructurado(weeklyPlan, weekDays, selectedDayPlan, weeklyTargets, contextoCliente, objetivosProgreso) };
-    }
-
-    if (consultaLower.includes('objetivo') || consultaLower.includes('meta')) {
-      return { respuesta: analizarObjetivos(selectedDayPlan, clientInfo, weeklyTargets, objetivosProgreso) };
-    }
-
-    if (consultaLower.includes('modificar') || consultaLower.includes('cambiar') || consultaLower.includes('ajustar')) {
-      const respuesta = generarSugerenciasAjuste(selectedDayPlan, clientInfo, contextoCliente);
-      const razonamiento = generarRazonamientoAjustes(selectedDayPlan, clientInfo, contextoCliente);
-      return { respuesta, razonamiento };
+      if (respuestasIntencion.length > 0) {
+        const respuestaTexto = respuestasIntencion
+          .map((resp, idx) => (respuestasIntencion.length > 1 ? `${idx + 1}. ${resp.respuesta}` : resp.respuesta))
+          .join('\n\n');
+        const razonamientoPrincipal = respuestasIntencion.find((resp) => resp.razonamiento)?.razonamiento;
+        return { respuesta: respuestaTexto, razonamiento: razonamientoPrincipal };
+      }
     }
 
     // Respuesta por defecto
     return {
-      respuesta: `He analizado tu consulta sobre "${consulta}". Basándome en el programa actual${contextoCliente ? ` y los datos de ${contextoCliente.clienteNombre}` : ''}:\n\n` +
-        `• Total de sesiones semanales: ${totalSessions}\n` +
-        `• Duración total semanal: ${totalDuration} min\n` +
-        `• Día actual: ${selectedDay} - ${selectedDayPlan.focus}\n` +
-        `• Sesiones del día: ${selectedDayPlan.sessions.length}\n\n` +
-        `¿Puedes ser más específico? Por ejemplo:\n` +
-        `• "Añade calentamiento de 10 min" - Genera un bloque listo para arrastrar\n` +
-        `• "Añade bloque de fuerza de 30 min" - Crea un bloque de entrenamiento\n` +
-        `• Pregunta sobre intensidad, volumen, duración, sugerencias o restricciones`,
+      respuesta: buildRespuestaPersonalizada({
+        consulta,
+        metricas: metricasActuales,
+        selectedDay,
+        selectedDayPlan,
+        clientInfo,
+        weeklyTargets,
+        contextoCliente,
+        chatSummary,
+      }),
     };
   };
 
@@ -238,10 +734,10 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
     const tipoBloque = match[2] || match[1] || tipo;
 
     // Considerar restricciones del cliente al generar bloques
-    const tieneLesionRodilla = contextoCliente?.lesiones.some(
+    const tieneLesionRodilla = contextoCliente?.lesiones?.some(
       (l) => l.estado === 'activa' && (l.ubicacion.toLowerCase().includes('rodilla') || l.nombre.toLowerCase().includes('rodilla'))
     );
-    const tieneLesionLumbar = contextoCliente?.lesiones.some(
+    const tieneLesionLumbar = contextoCliente?.lesiones?.some(
       (l) => l.estado === 'activa' && (l.ubicacion.toLowerCase().includes('lumbar') || l.ubicacion.toLowerCase().includes('espalda'))
     );
 
@@ -378,7 +874,7 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
     let respuesta = `📊 **Análisis de intensidad:**\n\n`;
     if (contextoCliente) {
       respuesta += `**Cliente:** ${contextoCliente.clienteNombre}\n`;
-      if (contextoCliente.lesiones.some((l) => l.estado === 'activa')) {
+      if (contextoCliente?.lesiones?.some((l) => l.estado === 'activa')) {
         respuesta += `⚠️ **Atención:** Cliente con lesiones activas. Considera intensidades moderadas.\n\n`;
       }
     }
@@ -410,6 +906,85 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
     return respuesta;
   };
 
+const analizarCarga = (metricas: MetricasSemanales, contextoCliente?: ContextoCliente): string => {
+  let respuesta = `⚖️ **Balance de carga semanal**\n\n`;
+  respuesta += `• Sesiones totales: ${metricas.totalSessions}\n`;
+  respuesta += `• Duración total: ${metricas.totalDuration} min\n`;
+  respuesta += `• Carga aguda: ${metricas.acuteLoad} min\n`;
+  respuesta += `• Carga crónica estimada: ${metricas.chronicLoad} min\n`;
+  respuesta += `• Ratio agudo/crónico: ${metricas.loadRatio}\n\n`;
+
+  if (metricas.loadRatio > 1.3) {
+    respuesta += `⚠️ La carga aguda supera ampliamente la crónica. Considera añadir sesiones de baja intensidad o descanso.\n\n`;
+  } else if (metricas.loadRatio < 0.8) {
+    respuesta += `ℹ️ Estás por debajo del objetivo semanal. Puedes sumar volumen específico según los objetivos.\n\n`;
+  } else {
+    respuesta += `✅ La relación de carga está dentro de un rango saludable.\n\n`;
+  }
+
+  if (metricas.diasDescanso < 2) {
+    respuesta += `• Solo ${metricas.diasDescanso} día(s) de descanso. Podrías reservar más tiempo para recuperación.\n`;
+  }
+
+  if (contextoCliente?.lesiones?.some((l) => l.estado === 'activa')) {
+    respuesta += `• Considera la progresión gradual por las lesiones activas del cliente.\n`;
+  }
+
+  return respuesta;
+};
+
+const generarRazonamientoCarga = (metricas: MetricasSemanales): RazonamientoSugerencia => {
+  return {
+    metricas: [
+      { nombre: 'Sesiones Totales', valor: metricas.totalSessions, unidad: 'sesiones' },
+      { nombre: 'Duración Total', valor: metricas.totalDuration, unidad: 'min' },
+      { nombre: 'Ratio Agudo/Crónico', valor: metricas.loadRatio, unidad: 'ratio', tendencia: metricas.loadRatio > 1 ? 'up' : metricas.loadRatio < 1 ? 'down' : 'neutral' },
+    ],
+    razonamiento: `El análisis compara la carga semanal actual (${metricas.acuteLoad} min) contra la crónica prevista (${metricas.chronicLoad} min) para detectar sobrecargas o déficits.`,
+    factoresConsiderados: [
+      'Duración acumulada de la semana',
+      'Objetivo crónico estimado',
+      metricas.diasDescanso < 2 ? 'Número reducido de días de descanso' : undefined,
+    ].filter(Boolean) as string[],
+    confianza: 87,
+  };
+};
+
+const analizarModalidades = (metricas: MetricasSemanales, selectedDayPlan: DayPlan): string => {
+  const totalModalidades = Object.entries(metricas.modalityDistribution)
+    .map(([modality, count]) => `• ${modality}: ${count} bloque(s)`)
+    .join('\n');
+
+  let respuesta = `🧱 **Balance de modalidades**\n\n${totalModalidades || 'No hay sesiones registradas esta semana.'}\n\n`;
+  respuesta += `Día actual (${selectedDayPlan.focus}): ${selectedDayPlan.sessions.length} bloque(s) · ${selectedDayPlan.intensity}\n\n`;
+
+  if (!metricas.modalityDistribution['Mobility'] && !metricas.modalityDistribution['Recovery']) {
+    respuesta += `ℹ️ No se detectan bloques de movilidad o recuperación. Añade al menos uno para mejorar la disponibilidad física.\n`;
+  }
+
+  if ((metricas.modalityDistribution['Strength'] || 0) > (metricas.modalityDistribution['Cardio'] || 0) * 2) {
+    respuesta += `⚖️ Predomina la fuerza sobre el trabajo aeróbico. Evalúa equilibrar según objetivos.\n`;
+  }
+
+  return respuesta;
+};
+
+const generarRazonamientoModalidades = (metricas: MetricasSemanales): RazonamientoSugerencia => {
+  return {
+    metricas: [
+      { nombre: 'Modalidades Totales', valor: Object.keys(metricas.modalityDistribution).length, unidad: 'tipos' },
+      { nombre: 'Bloques Mobility/Recovery', valor: metricas.movilidadSemanal, unidad: 'bloques' },
+      { nombre: 'Días Alta Densidad', valor: metricas.diasAltaDensidad.length, unidad: 'días', tendencia: metricas.diasAltaDensidad.length > 1 ? 'up' : 'neutral' },
+    ],
+    razonamiento: 'Se revisó la cantidad de bloques por modalidad y la presencia de movilidad/recuperación para garantizar equilibrio semanal.',
+    factoresConsiderados: [
+      'Distribución de modalidades',
+      metricas.movilidadSemanal === 0 ? 'Ausencia de movilidad' : undefined,
+      metricas.diasAltaDensidad.length > 0 ? 'Días de alta densidad' : undefined,
+    ].filter(Boolean) as string[],
+    confianza: 83,
+  };
+};
   const analizarVolumen = (
     weeklyPlan: Record<DayKey, DayPlan>,
     weekDays: DayKey[],
@@ -524,8 +1099,8 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
 
     if (contextoCliente) {
       respuesta += `**Contexto del cliente (${contextoCliente.clienteNombre}):**\n`;
-      if (contextoCliente.lesiones.some((l) => l.estado === 'activa')) {
-        const lesionesActivas = contextoCliente.lesiones.filter((l) => l.estado === 'activa');
+      if (contextoCliente?.lesiones?.some((l) => l.estado === 'activa')) {
+        const lesionesActivas = contextoCliente?.lesiones?.filter((l) => l.estado === 'activa') ?? [];
         respuesta += `• ⚠️ Lesiones activas: ${lesionesActivas.map((l) => l.nombre).join(', ')}\n`;
         lesionesActivas.forEach((l) => {
           if (l.restricciones.length > 0) {
@@ -629,12 +1204,16 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
     selectedDayPlan: DayPlan,
     weeklyTargets?: AsistenteIAProgramaProps['weeklyTargets']
   ): string => {
-    const totalSessions = weekDays.reduce((acc, day) => acc + weeklyPlan[day].sessions.length, 0);
+    const totalSessions = weekDays.reduce(
+      (acc, day) => acc + (weeklyPlan[day]?.sessions?.length ?? 0),
+      0,
+    );
     const totalDuration = weekDays.reduce((acc, day) => {
+      const daySessions = weeklyPlan[day]?.sessions ?? [];
       return (
         acc +
-        weeklyPlan[day].sessions.reduce((sum, session) => {
-          const match = session.duration.match(/\d+/);
+        daySessions.reduce((sum, session) => {
+          const match = session.duration?.match(/\d+/);
           return sum + (match ? Number(match[0]) : 0);
         }, 0)
       );
@@ -756,7 +1335,7 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
       razonamiento: `El análisis se basa en ${intensidades.length} sesiones de la semana. El RPE promedio de ${promedioRPE.toFixed(1)} indica ${promedioRPE > 8 ? 'una carga de alta intensidad que requiere días de recuperación' : promedioRPE < 6 ? 'una carga moderada con margen para aumentar intensidad' : 'una distribución equilibrada de intensidades'}.`,
       factoresConsiderados: [
         'Distribución de RPE en todas las sesiones semanales',
-        contextoCliente?.lesiones.some((l) => l.estado === 'activa') ? 'Lesiones activas del cliente' : undefined,
+        contextoCliente?.lesiones?.some((l) => l.estado === 'activa') ? 'Lesiones activas del cliente' : undefined,
         objetivosProgreso?.objetivos.some((o) => o.categoria === 'fuerza') ? 'Objetivos de fuerza activos' : undefined,
       ].filter(Boolean) as string[],
       confianza: 85,
@@ -829,7 +1408,7 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
       const match = s.duration.match(/\d+/);
       return acc + (match ? Number(match[0]) : 0);
     }, 0);
-    const lesionesActivas = contextoCliente?.lesiones.filter((l) => l.estado === 'activa') || [];
+    const lesionesActivas = contextoCliente?.lesiones?.filter((l) => l.estado === 'activa') || [];
     const objetivosActivos = objetivosProgreso?.objetivos.filter((o) => o.estado === 'in_progress') || [];
 
     return {
@@ -855,7 +1434,7 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
     clientInfo?: AsistenteIAProgramaProps['clientInfo'],
     contextoCliente?: ContextoCliente
   ): RazonamientoSugerencia => {
-    const lesionesActivas = contextoCliente?.lesiones.filter((l) => l.estado === 'activa') || [];
+    const lesionesActivas = contextoCliente?.lesiones?.filter((l) => l.estado === 'activa') || [];
     const restriccionesGenerales = clientInfo?.restricciones || [];
     const todasLasRestricciones = [
       ...restriccionesGenerales,
@@ -910,7 +1489,7 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
     contextoCliente?: ContextoCliente,
     objetivosProgreso?: ResumenObjetivosProgreso
   ): RazonamientoSugerencia => {
-    const lesionesActivas = contextoCliente?.lesiones.filter((l) => l.estado === 'activa') || [];
+    const lesionesActivas = contextoCliente?.lesiones?.filter((l) => l.estado === 'activa') || [];
     const totalDuracion = bloques.reduce((acc, b) => {
       const match = b.duration.match(/\d+/);
       return acc + (match ? Number(match[0]) : 0);
@@ -955,9 +1534,11 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
       localStorage.setItem('conversacionesGuardadas', JSON.stringify(guardadas));
       
       // Marcar mensaje como guardado
-      setMensajes((prev) =>
-        prev.map((m) => (m.id === mensajeId ? { ...m, guardado: true } : m))
-      );
+      setMensajes((prev) => {
+        const actualizados = prev.map((m) => (m.id === mensajeId ? { ...m, guardado: true } : m));
+        sincronizarMemoriaConversacion(actualizados);
+        return actualizados;
+      });
     } catch (error) {
       console.error('Error al guardar conversación:', error);
     }
@@ -975,22 +1556,23 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
     });
   };
 
-  const handleEnviar = async () => {
-    if (!inputMensaje.trim() || procesando) return;
+  const handleEnviar = async (mensajeManual?: string) => {
+    const contenidoPlano = (mensajeManual ?? inputMensaje).trim();
+    if (!contenidoPlano || procesando) return;
 
     const mensajeUsuario: Mensaje = {
       id: `msg-${Date.now()}`,
       tipo: 'usuario',
-      contenido: inputMensaje.trim(),
+      contenido: contenidoPlano,
       timestamp: new Date(),
     };
 
-    setMensajes((prev) => [...prev, mensajeUsuario]);
+    appendMensaje(mensajeUsuario);
     setInputMensaje('');
     setProcesando(true);
 
     try {
-      const resultado = await procesarConsulta(inputMensaje.trim());
+      const resultado = await procesarConsulta(contenidoPlano);
       const mensajeAsistente: Mensaje = {
         id: `msg-${Date.now() + 1}`,
         tipo: 'asistente',
@@ -999,7 +1581,7 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
         bloquesGenerados: resultado.bloques,
         razonamiento: resultado.razonamiento,
       };
-      setMensajes((prev) => [...prev, mensajeAsistente]);
+      appendMensaje(mensajeAsistente);
     } catch (error) {
       const mensajeError: Mensaje = {
         id: `msg-${Date.now() + 1}`,
@@ -1007,10 +1589,74 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
         contenido: 'Lo siento, hubo un error al procesar tu consulta. Por favor, intenta de nuevo.',
         timestamp: new Date(),
       };
-      setMensajes((prev) => [...prev, mensajeError]);
+      appendMensaje(mensajeError);
     } finally {
       setProcesando(false);
     }
+  };
+
+  const handleAplicarBloque = (bloque: BloqueGenerado) => {
+    if (!onAddBlock) return;
+    const session: DaySession = {
+      id: bloque.id,
+      block: bloque.block,
+      duration: bloque.duration,
+      modality: bloque.modality as DaySession['modality'],
+      intensity: bloque.intensity,
+      time: bloque.time ?? 'Sin hora',
+      notes: bloque.notes,
+    };
+    onAddBlock(session);
+    setBloquesAplicados((prev) => {
+      const next = new Set(prev);
+      next.add(bloque.id);
+      return next;
+    });
+  };
+
+  const handleQuickPrompt = (prompt: string) => {
+    handleEnviar(prompt);
+  };
+
+  const handleCopyMensaje = async (mensaje: Mensaje) => {
+    try {
+      await navigator.clipboard.writeText(mensaje.contenido);
+      setCopiedMessageId(mensaje.id);
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    } catch (error) {
+      console.error('No se pudo copiar el mensaje', error);
+    }
+  };
+
+  const handleSavePromptTemplate = () => {
+    const texto = inputMensaje.trim();
+    if (!texto) return;
+    const nombre = window.prompt('Nombre para la plantilla', `Plantilla ${promptTemplates.length + 1}`);
+    if (!nombre) return;
+    const nuevaPlantilla = { id: `template-${Date.now()}`, label: nombre.trim(), prompt: texto };
+    setPromptTemplates((prev) => {
+      const sinDuplicados = prev.filter((tpl) => tpl.prompt !== texto);
+      const actualizadas = [...sinDuplicados, nuevaPlantilla].slice(-MAX_PROMPT_TEMPLATES);
+      persistPromptTemplates(actualizadas);
+      return actualizadas;
+    });
+    setInputMensaje('');
+  };
+
+  const handleRemovePromptTemplate = (templateId: string) => {
+    setPromptTemplates((prev) => {
+      const actualizadas = prev.filter((tpl) => tpl.id !== templateId);
+      persistPromptTemplates(actualizadas);
+      return actualizadas.length > 0 ? actualizadas : [];
+    });
+  };
+
+  const handleUsePromptTemplate = (prompt: string) => {
+    handleEnviar(prompt);
+  };
+
+  const handleAplicarSugerencia = (mensaje: Mensaje) => {
+    setInputMensaje(mensaje.contenido);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -1022,30 +1668,21 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
 
   // Generar resumen estructurado para modo Asistente
   const generarResumenModoAsistente = (): string => {
-    const weekDays: DayKey[] = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-    const totalSessions = weekDays.reduce((acc, day) => acc + weeklyPlan[day].sessions.length, 0);
-    const totalDuration = weekDays.reduce((acc, day) => {
-      return (
-        acc +
-        weeklyPlan[day].sessions.reduce((sum, session) => {
-          const match = session.duration.match(/\d+/);
-          return sum + (match ? Number(match[0]) : 0);
-        }, 0)
-      );
-    }, 0);
-
+    const totalSessions = metricasSemanales.totalSessions;
+    const totalDuration = metricasSemanales.totalDuration;
     let resumen = `📊 **Resumen del programa - ${selectedDay}**\n\n`;
     resumen += `**Día actual:**\n`;
-    resumen += `• Foco: ${selectedDayPlan.focus}\n`;
-    resumen += `• Microciclo: ${selectedDayPlan.microCycle}\n`;
-    resumen += `• Volumen: ${selectedDayPlan.volume}\n`;
-    resumen += `• Intensidad: ${selectedDayPlan.intensity}\n`;
-    resumen += `• Sesiones: ${selectedDayPlan.sessions.length}\n\n`;
+    resumen += `• Foco: ${selectedDayPlan?.focus ?? 'Sin definir'}\n`;
+    resumen += `• Microciclo: ${selectedDayPlan?.microCycle ?? 'Sin definir'}\n`;
+    resumen += `• Volumen: ${selectedDayPlan?.volume ?? 'Sin definir'}\n`;
+    resumen += `• Intensidad: ${selectedDayPlan?.intensity ?? 'Sin definir'}\n`;
+    resumen += `• Sesiones: ${selectedDayPlan?.sessions?.length ?? 0}\n\n`;
 
     resumen += `**Resumen semanal:**\n`;
     resumen += `• Total de sesiones: ${totalSessions}\n`;
     resumen += `• Duración total: ${totalDuration} min\n`;
-    resumen += `• Promedio diario: ${Math.round(totalDuration / 7)} min\n\n`;
+    resumen += `• Promedio diario: ${metricasSemanales.promedioDiario} min\n`;
+    resumen += `• Ratio carga aguda/crónica: ${metricasSemanales.loadRatio}\n\n`;
 
     if (weeklyTargets) {
       resumen += `**Objetivos:**\n`;
@@ -1055,8 +1692,13 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
     }
 
     resumen += `**Sesiones del día:**\n`;
-    selectedDayPlan.sessions.forEach((session, idx) => {
+    (selectedDayPlan?.sessions ?? []).forEach((session, idx) => {
       resumen += `${idx + 1}. ${session.block} (${session.time}) - ${session.duration} - ${session.modality} - ${session.intensity}\n`;
+    });
+
+    resumen += `\n**Distribución semanal:**\n`;
+    metricasSemanales.dailyStats.forEach((stat) => {
+      resumen += `• ${stat.day}: ${stat.sessions} sesiones · ${stat.duration} min\n`;
     });
 
     return resumen;
@@ -1093,20 +1735,168 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
 
       {/* Contenido según el modo */}
       {modo === 'asistente' ? (
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-slate-200/70 bg-slate-50 p-4 text-sm dark:border-slate-800/70 dark:bg-slate-900/40">
-            <p className="text-slate-700 dark:text-slate-300">
-              Plan del día: <span className="font-semibold text-slate-900 dark:text-slate-100">{selectedDayPlan.focus}</span> ·{' '}
-              {selectedDayPlan.volume} · {selectedDayPlan.intensity}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-slate-200/70 bg-white/95 p-6 shadow-sm dark:border-slate-800/70 dark:bg-slate-950/60">
-            <div className="flex items-start gap-3 mb-4">
-              <Sparkles className="h-5 w-5 text-indigo-500 mt-0.5" />
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Resumen estructurado</h3>
+        <div className="grid gap-4 xl:grid-cols-5">
+          <div className="space-y-4 xl:col-span-3">
+            <div className="rounded-2xl border border-slate-200/70 bg-slate-50 p-5 dark:border-slate-800/70 dark:bg-slate-900/40">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs uppercase text-slate-500 tracking-wide">Plan del día</p>
+                  <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    {selectedDay} · {selectedDayPlan.focus}
+                  </p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    {selectedDayPlan.volume} · {selectedDayPlan.intensity}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <span className="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200">
+                    Ratio carga: {metricasSemanales.loadRatio}
+                  </span>
+                  <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200">
+                    {metricasSemanales.totalSessions} sesiones
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">
-              {generarResumenModoAsistente()}
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200/70 bg-white/95 p-4 dark:border-slate-800/70 dark:bg-slate-950/60">
+                <p className="text-xs text-slate-500 uppercase">Duración total</p>
+                <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{metricasSemanales.totalDuration} min</p>
+                <p className="text-xs text-slate-500">Promedio {metricasSemanales.promedioDiario} min/día</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200/70 bg-white/95 p-4 dark:border-slate-800/70 dark:bg-slate-950/60">
+                <p className="text-xs text-slate-500 uppercase">Intensidad</p>
+                <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                  {metricasSemanales.intensidadPromedio > 0 ? metricasSemanales.intensidadPromedio.toFixed(1) : 'N/A'} RPE
+                </p>
+                <p className="text-xs text-slate-500">Rango {metricasSemanales.intensidadMin}-{metricasSemanales.intensidadMax}</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200/70 bg-white/95 p-4 dark:border-slate-800/70 dark:bg-slate-950/60">
+                <p className="text-xs text-slate-500 uppercase">Descansos</p>
+                <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{metricasSemanales.diasDescanso}</p>
+                <p className="text-xs text-slate-500">{metricasSemanales.diasAltaDensidad.length} día(s) de alta densidad</p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200/70 bg-white/95 p-6 shadow-sm dark:border-slate-800/70 dark:bg-slate-950/60">
+              <div className="flex items-start gap-3 mb-4">
+                <Sparkles className="h-5 w-5 text-indigo-500 mt-0.5" />
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Resumen estructurado</h3>
+              </div>
+              <div className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">
+                {generarResumenModoAsistente()}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200/70 bg-white/95 p-6 dark:border-slate-800/70 dark:bg-slate-950/60">
+              <div className="flex items-start gap-3 mb-4">
+                <BarChart3 className="h-5 w-5 text-indigo-500 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Distribución diaria</h3>
+                  <p className="text-xs text-slate-500">Sesiones y minutos por día</p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {metricasSemanales.dailyStats.map((stat) => (
+                  <div key={stat.day}>
+                    <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                      <span>{stat.day}</span>
+                      <span>{stat.sessions} sesiones · {stat.duration} min</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-800">
+                      <div
+                        className="h-2 rounded-full bg-indigo-500 dark:bg-indigo-400"
+                        style={{ width: `${Math.min(100, (stat.duration / maxDuracionDia) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 xl:col-span-2">
+            <div className="rounded-2xl border border-slate-200/70 bg-white/95 p-6 dark:border-slate-800/70 dark:bg-slate-950/60">
+              <div className="flex items-start gap-3 mb-4">
+                <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5" />
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Insights proactivos</h3>
+              </div>
+              {insightsProactivos.length === 0 ? (
+                <p className="text-sm text-slate-500">Todo en orden. No se detectan riesgos relevantes esta semana.</p>
+              ) : (
+                <div className="space-y-3">
+                  {insightsProactivos.map((insight) => {
+                    const colorMap: Record<InsightProactivo['severidad'], string> = {
+                      info: 'border-sky-200 bg-sky-50 text-sky-900 dark:border-sky-900/40 dark:bg-sky-900/30 dark:text-sky-100',
+                      warning: 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/30 dark:text-amber-100',
+                      critical: 'border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-900/40 dark:bg-rose-900/20 dark:text-rose-100',
+                    };
+                    return (
+                      <div key={insight.id} className={`rounded-xl border px-3 py-2 text-sm ${colorMap[insight.severidad]}`}>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-semibold">{insight.titulo}</p>
+                          {insight.accionLabel && (
+                            <span className="text-xs uppercase tracking-wide">{insight.accionLabel}</span>
+                          )}
+                        </div>
+                        <p className="mt-1 text-xs opacity-80">{insight.descripcion}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-slate-200/70 bg-white/95 p-5 dark:border-slate-800/70 dark:bg-slate-950/60">
+              <div className="flex items-start gap-3 mb-3">
+                <TrendingUp className="h-5 w-5 text-indigo-500 mt-0.5" />
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Alertas rápidas</h3>
+              </div>
+              <div className="space-y-2">
+                {alertasRapidas.map((alerta) => {
+                  const toneClasses: Record<AlertaRapida['tone'], string> = {
+                    positive: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-100 dark:border-emerald-900/40',
+                    warning: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:text-amber-100 dark:border-amber-900/40',
+                    critical: 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-900/20 dark:text-rose-100 dark:border-rose-900/40',
+                  };
+                  return (
+                    <div key={alerta.id} className={`rounded-xl border px-3 py-2 text-xs ${toneClasses[alerta.tone]}`}>
+                      <p className="font-semibold">{alerta.label}</p>
+                      <p className="opacity-80">{alerta.detail}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200/70 bg-white/95 p-5 dark:border-slate-800/70 dark:bg-slate-950/60">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Acciones rápidas</h3>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="secondary" onClick={() => setModo('chat')} leftIcon={<MessageSquare className="h-4 w-4" />}>
+                  Abrir chat inteligente
+                </Button>
+                {onAddBlock && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      handleAplicarBloque({
+                        id: `quick-mobility-${Date.now()}`,
+                        block: 'Movilidad restaurativa',
+                        duration: '12 min',
+                        modality: 'Mobility',
+                        intensity: 'Ligera',
+                        time: '09:00',
+                        notes: 'Articulaciones + respiración diafragmática',
+                      })
+                    }
+                    leftIcon={<Plus className="h-4 w-4" />}
+                  >
+                    Insertar bloque Mobility
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1123,10 +1913,81 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
             </div>
           </div>
 
+          {(chatSummary || chatHighlights.length > 0) && (
+            <div className="border-b border-slate-200/70 bg-slate-50/70 px-4 py-3 text-xs text-slate-600 dark:border-slate-800/70 dark:bg-slate-900/50 dark:text-slate-300">
+              {chatSummary && (
+                <div className="mb-2">
+                  <p className="font-semibold text-slate-900 dark:text-slate-100 mb-1 text-xs">Contexto reciente</p>
+                  <p className="line-clamp-2">{chatSummary}</p>
+                </div>
+              )}
+              {chatHighlights.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {chatHighlights.map((nota, index) => (
+                    <span
+                      key={`${nota}-${index}`}
+                      className="rounded-full bg-white px-2 py-1 text-[11px] text-slate-600 shadow-sm dark:bg-slate-800 dark:text-slate-200"
+                    >
+                      {nota}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="border-b border-slate-200/70 bg-white/80 px-4 py-2 text-xs dark:border-slate-800/70 dark:bg-slate-950/50">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-slate-500 dark:text-slate-400">Atajos:</span>
+              {QUICK_PROMPTS.map((prompt) => (
+                <button
+                  key={prompt.id}
+                  type="button"
+                  onClick={() => handleQuickPrompt(prompt.prompt)}
+                  disabled={procesando}
+                  className="rounded-full border border-slate-200/70 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-indigo-50 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  {prompt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {promptTemplates.length > 0 && (
+            <div className="border-b border-slate-200/70 bg-slate-50/70 px-4 py-2 text-xs dark:border-slate-800/70 dark:bg-slate-900/40">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-slate-500 dark:text-slate-400">Plantillas:</span>
+                {promptTemplates.map((template) => (
+                  <div
+                    key={template.id}
+                    className="flex items-center gap-1 rounded-full border border-slate-200/70 bg-white px-3 py-1 dark:border-slate-700 dark:bg-slate-900"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleUsePromptTemplate(template.prompt)}
+                      className="text-xs font-medium text-slate-700 hover:text-indigo-600 dark:text-slate-200 dark:hover:text-indigo-300"
+                    >
+                      {template.label}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePromptTemplate(template.id)}
+                      className="text-slate-400 hover:text-rose-500 dark:text-slate-500 dark:hover:text-rose-300"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Mensajes */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {mensajes.map((mensaje) => (
-              <div
+            {mensajes.map((mensaje) => {
+              const etiquetaMensaje = obtenerEtiquetaMensaje(mensaje);
+              return (
+                <div
                 key={mensaje.id}
                 className={`flex ${mensaje.tipo === 'usuario' ? 'justify-end' : 'justify-start'}`}
               >
@@ -1138,13 +1999,34 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
                   }`}
                 >
                   {mensaje.tipo === 'asistente' && (
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                         <span className="text-xs font-medium">Asistente</span>
+                        {etiquetaMensaje && (
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${etiquetaMensaje.className}`}>
+                            {etiquetaMensaje.label}
+                          </span>
+                        )}
                       </div>
-                      {mensaje.razonamiento && (
-                        <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          onClick={() => handleCopyMensaje(mensaje)}
+                          className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-100"
+                        >
+                          <Copy className="w-3 h-3" />
+                          {copiedMessageId === mensaje.id ? 'Copiado' : 'Copiar'}
+                        </button>
+                        {!mensaje.bloquesGenerados?.length && (
+                          <button
+                            onClick={() => handleAplicarSugerencia(mensaje)}
+                            className="flex items-center gap-1 text-xs text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
+                          >
+                            <Sparkles className="w-3 h-3" />
+                            Aplicar ajuste
+                          </button>
+                        )}
+                        {mensaje.razonamiento && (
                           <button
                             onClick={() => toggleRazonamiento(mensaje.id)}
                             className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
@@ -1157,24 +2039,24 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
                               <ChevronDown className="w-3 h-3" />
                             )}
                           </button>
-                          {!mensaje.guardado && (
-                            <button
-                              onClick={() => guardarConversacion(mensaje.id)}
-                              className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
-                              title="Guardar como nota o plantilla"
-                            >
-                              <Bookmark className="w-3 h-3" />
-                              Guardar
-                            </button>
-                          )}
-                          {mensaje.guardado && (
-                            <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                              <CheckCircle2 className="w-3 h-3" />
-                              Guardado
-                            </span>
-                          )}
-                        </div>
-                      )}
+                        )}
+                        {!mensaje.guardado && (
+                          <button
+                            onClick={() => guardarConversacion(mensaje.id)}
+                            className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+                            title="Guardar como nota o plantilla"
+                          >
+                            <Bookmark className="w-3 h-3" />
+                            Guardar
+                          </button>
+                        )}
+                        {mensaje.guardado && (
+                          <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="w-3 h-3" />
+                            Guardado
+                          </span>
+                        )}
+                      </div>
                     </div>
                   )}
                   <div className="whitespace-pre-wrap text-sm">{mensaje.contenido}</div>
@@ -1267,6 +2149,43 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
                       </div>
                     </div>
                   )}
+
+                  {mensaje.bloquesGenerados && mensaje.bloquesGenerados.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {mensaje.bloquesGenerados.map((bloque) => (
+                        <div
+                          key={bloque.id}
+                          className="rounded-xl border border-indigo-200 bg-white/90 p-3 text-xs text-slate-700 dark:border-indigo-500/40 dark:bg-slate-900/60 dark:text-slate-200"
+                          draggable
+                          onDragStart={(event) => {
+                            event.dataTransfer.setData('application/json', JSON.stringify(bloque));
+                            event.dataTransfer.effectAllowed = 'copy';
+                          }}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1">
+                                <GripVertical className="h-3 w-3 text-slate-400" />
+                                {bloque.block}
+                              </p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">{bloque.modality} · {bloque.duration} · {bloque.intensity}</p>
+                              {bloque.notes && <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{bloque.notes}</p>}
+                            </div>
+                            {onAddBlock && (
+                              <Button
+                                size="xs"
+                                variant="primary"
+                                onClick={() => handleAplicarBloque(bloque)}
+                                disabled={bloquesAplicados.has(bloque.id)}
+                              >
+                                {bloquesAplicados.has(bloque.id) ? 'Añadido' : 'Añadir'}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   
                   <div
                     className={`text-xs mt-2 ${
@@ -1276,8 +2195,9 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
                     {mensaje.timestamp.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
-              </div>
-            ))}
+                </div>
+              );
+            })}
             {procesando && (
               <div className="flex justify-start">
                 <div className="bg-gray-100 rounded-lg p-3 dark:bg-slate-800">
@@ -1290,7 +2210,7 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
 
           {/* Input */}
           <div className="p-4 border-t border-slate-200/70 dark:border-slate-800/70">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <input
                 ref={inputRef}
                 type="text"
@@ -1303,11 +2223,20 @@ export const AsistenteIAPrograma: React.FC<AsistenteIAProgramaProps> = ({
               />
               <Button
                 variant="primary"
-                onClick={handleEnviar}
+                onClick={() => handleEnviar()}
                 disabled={!inputMensaje.trim() || procesando}
                 leftIcon={procesando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               >
                 Enviar
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSavePromptTemplate}
+                disabled={!inputMensaje.trim()}
+                leftIcon={<Save className="w-4 h-4" />}
+              >
+                Guardar plantilla
               </Button>
             </div>
             <p className="text-xs text-gray-500 dark:text-slate-400 mt-2">

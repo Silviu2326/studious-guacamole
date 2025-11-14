@@ -111,3 +111,5 @@ Este documento resume dónde encaja cada componente aún no montado dentro del e
 Con estas ubicaciones, cada componente cubre un hueco funcional concreto del editor sin duplicar lógica existente y aprovechando estados ya presentes para mantener la coherencia de la experiencia.
 
 
+
+

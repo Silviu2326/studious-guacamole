@@ -2,6 +2,8 @@ import { memo, useState, useMemo } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   PlusCircle,
   Clock,
   Timer,
@@ -11,6 +13,11 @@ import {
   Settings,
   Zap,
   GitCompare,
+  Shuffle,
+  Wrench,
+  Bot,
+  Trash2,
+  GripVertical,
 } from 'lucide-react';
 import { Button, Card, Badge } from '../../../components/componentsreutilizables';
 import type { DayPlan, DaySession } from '../types';
@@ -18,6 +25,14 @@ import { InlineBlockEditor } from './InlineBlockEditor';
 import { IntelligentSuggestionsPanel } from './IntelligentSuggestionsPanel';
 import { ExerciseComparison } from './ExerciseComparison';
 import { compararEjercicio, obtenerSesionAnterior, obtenerHistorialSesiones } from '../utils/exerciseComparison';
+
+type LibraryDragPayload = { type: 'template' | 'exercise' | 'session'; item: any };
+
+const isLibraryDragPayload = (payload: unknown): payload is LibraryDragPayload => {
+  if (!payload || typeof payload !== 'object') return false;
+  const type = (payload as { type?: string }).type;
+  return type === 'template' || type === 'exercise' || type === 'session';
+};
 
 type DailyEditorViewProps = {
   selectedDay: string;
@@ -48,6 +63,7 @@ function DailyEditorViewComponent({
 }: DailyEditorViewProps) {
   // User Story: Modo de edición (rápida vs completa)
   const [editMode, setEditMode] = useState<'quick' | 'full'>('quick');
+  const [showSuggestions, setShowSuggestions] = useState(false);
   
   // User Story: Inline editing state
   const [editingSession, setEditingSession] = useState<{ 
@@ -70,10 +86,10 @@ function DailyEditorViewComponent({
   };
 
   // User Story: Handle double-click for inline editing
-  const handleDoubleClick = (
+const handleDoubleClick = (
     session: DaySession, 
     field: 'series' | 'repeticiones' | 'duration' | 'intensity' | 'peso' | 'tempo' | 'descanso' | 'materialAlternativo', 
-    e: React.MouseEvent<HTMLDivElement>
+    e: React.MouseEvent<HTMLElement>
   ) => {
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
@@ -86,13 +102,20 @@ function DailyEditorViewComponent({
   };
   
   // User Story: Handle click en botón de edición completa
-  const handleFullEdit = (session: DaySession, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const rect = e.currentTarget.getBoundingClientRect();
+  const handleFullEdit = (session: DaySession, anchorId?: string) => {
+    let rect: DOMRect | null = null;
+    if (anchorId) {
+      const anchor = document.getElementById(anchorId);
+      if (anchor) {
+        rect = anchor.getBoundingClientRect();
+      }
+    }
     setEditingSession({
       sessionId: session.id,
-      field: 'series', // Campo por defecto, pero fullMode mostrará todos
-      position: { x: rect.left, y: rect.top + rect.height },
+      field: 'series',
+      position: rect
+        ? { x: rect.left, y: rect.top + rect.height }
+        : { x: window.innerWidth / 2, y: window.innerHeight / 2 },
       fullMode: true,
     });
   };
@@ -128,7 +151,7 @@ function DailyEditorViewComponent({
 
   return (
     <div className="space-y-6">
-      <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-500 via-indigo-400 to-emerald-400 p-6 text-white shadow-xl">
+      <div className="mx-auto w-full max-w-6xl overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-500 via-indigo-400 to-emerald-400 p-6 text-white shadow-xl">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
@@ -182,10 +205,10 @@ function DailyEditorViewComponent({
               </Button>
             </div>
             <Button
-              variant="primary"
+              variant="ghost"
               size="sm"
               leftIcon={<PlusCircle className="h-4 w-4" />}
-              className="bg-white text-indigo-600 hover:bg-white/90"
+              className="bg-white/95 text-indigo-700 shadow-lg hover:bg-white hover:shadow-xl"
             >
               Nueva sesión
             </Button>
@@ -213,7 +236,7 @@ function DailyEditorViewComponent({
         </div>
       </div>
 
-      <div className="flex items-center gap-3 overflow-x-auto pb-2">
+      <div className="mx-auto flex w-full max-w-6xl items-center gap-3 overflow-x-auto pb-2">
         {weekDays.map((day) => {
           const isActive = day === selectedDay;
           return (
@@ -234,34 +257,56 @@ function DailyEditorViewComponent({
       </div>
 
       {/* User Story 2: Intelligent Suggestions Panel */}
-      <IntelligentSuggestionsPanel
-        selectedDay={selectedDay}
-        dayPlan={dayPlan}
-        weeklyPlan={weeklyPlan}
-        activeView="daily"
-        coachId={coachId}
-        onDragStart={(suggestion) => {
-          // Handle drag start from suggestions
-        }}
-        onSuggestionClick={(suggestion) => {
-          // Handle click on suggestion - add to day
-          if (onDropFromLibrary) {
-            onDropFromLibrary(selectedDay, suggestion.draggableData);
-          }
-        }}
-        onApplySuggestion={(suggestion) => {
-          // Handle apply suggestion
-          if (onDropFromLibrary) {
-            onDropFromLibrary(selectedDay, suggestion.draggableData);
-          }
-        }}
-        onDiscardSuggestion={(suggestionId) => {
-          // El feedback se guarda automáticamente en el componente
-        }}
-      />
+      <div className="mx-auto w-full max-w-6xl rounded-3xl border border-slate-200/70 bg-white/90 p-4 shadow-md">
+        <button
+          type="button"
+          onClick={() => setShowSuggestions((prev) => !prev)}
+          className="flex w-full items-center justify-between text-left text-sm font-semibold text-slate-700"
+        >
+          <span>Sugerencias inteligentes · {selectedDay}</span>
+          {showSuggestions ? (
+            <ChevronUp className="h-4 w-4 text-slate-500" />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-slate-500" />
+          )}
+        </button>
+        {showSuggestions ? (
+          <div className="mt-4">
+            <IntelligentSuggestionsPanel
+              selectedDay={selectedDay}
+              dayPlan={dayPlan}
+              weeklyPlan={weeklyPlan}
+              activeView="daily"
+              coachId={coachId}
+              onDragStart={(_suggestion) => {
+                // Handle drag start from suggestions
+              }}
+              onSuggestionClick={(suggestion) => {
+                if (onDropFromLibrary && isLibraryDragPayload(suggestion.draggableData)) {
+                  onDropFromLibrary(selectedDay, suggestion.draggableData);
+                }
+              }}
+              onApplySuggestion={(suggestion) => {
+                if (onDropFromLibrary && isLibraryDragPayload(suggestion.draggableData)) {
+                  onDropFromLibrary(selectedDay, suggestion.draggableData);
+                }
+              }}
+              onDiscardSuggestion={(_suggestionId) => {
+                // El feedback se guarda automáticamente en el componente
+              }}
+            />
+          </div>
+        ) : (
+          <p className="mt-3 text-xs text-slate-500">
+            Despliega para ver recomendaciones del asistente IA basadas en este día.
+          </p>
+        )}
+      </div>
 
-      <div className="grid gap-5">
-        {dayPlan.sessions.map((session, index) => (
+      <div className="mx-auto grid w-full max-w-6xl gap-5">
+        {dayPlan.sessions.map((session, index) => {
+          const fullEditAnchorId = `full-edit-${session.id}`;
+          return (
           <Card key={session.id} className="overflow-hidden border-none bg-white p-6 shadow-xl">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
@@ -311,27 +356,52 @@ function DailyEditorViewComponent({
                   size="sm"
                   onClick={() => handleCompareExercise(session)}
                   className="h-8 text-xs text-indigo-600 hover:bg-indigo-50"
-                  title="Comparar con sesión anterior"
+                  aria-label="Comparar con sesión anterior"
                 >
                   <GitCompare className="mr-1 h-3 w-3" />
                   Comparar
                 </Button>
                 {/* User Story: Botón de edición completa */}
                 {editMode === 'quick' && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => handleFullEdit(session, e)}
-                    className="h-8 text-xs text-slate-600 hover:bg-slate-100"
-                    title="Edición completa"
-                  >
-                    <Settings className="mr-1 h-3 w-3" />
-                    Completa
-                  </Button>
+                  <div id={fullEditAnchorId}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleFullEdit(session, fullEditAnchorId)}
+                      className="h-8 text-xs text-slate-600 hover:bg-slate-100"
+                      aria-label="Edición completa"
+                    >
+                      <Settings className="mr-1 h-3 w-3" />
+                      Completa
+                    </Button>
+                  </div>
                 )}
                 <Badge size="sm" variant="secondary" className="rounded-full bg-amber-100 text-amber-600">
                   pendiente
                 </Badge>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Button variant="ghost" size="sm" className="h-8 text-xs text-slate-600 hover:bg-slate-100">
+                  <Shuffle className="mr-1 h-3.5 w-3.5 text-indigo-500" />
+                  Sustituir
+                </Button>
+                <Button variant="ghost" size="sm" className="h-8 text-xs text-slate-600 hover:bg-slate-100">
+                  <Wrench className="mr-1 h-3.5 w-3.5 text-amber-500" />
+                  Variantes
+                </Button>
+                <Button variant="ghost" size="sm" className="h-8 text-xs text-slate-600 hover:bg-slate-100">
+                  <Bot className="mr-1 h-3.5 w-3.5 text-emerald-500" />
+                  IA Fix
+                </Button>
+                <Button variant="ghost" size="sm" className="h-8 text-xs text-rose-600 hover:bg-rose-50">
+                  <Trash2 className="mr-1 h-3.5 w-3.5" />
+                  Eliminar
+                </Button>
+                <div className="flex h-8 items-center rounded-full bg-slate-100 px-2 text-xs font-medium text-slate-500">
+                  <GripVertical className="mr-1 h-3.5 w-3.5" />
+                  Arrastrar
+                </div>
               </div>
             </div>
 
@@ -442,10 +512,10 @@ function DailyEditorViewComponent({
                         </span>
                       </div>
                       <div className="mt-4 flex items-center gap-2">
-                        <Button variant="ghost" size="xs">
+                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
                           Editar
                         </Button>
-                        <Button variant="ghost" size="xs">
+                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
                           Duplicar
                         </Button>
                       </div>
@@ -455,12 +525,12 @@ function DailyEditorViewComponent({
               </div>
             </div>
           </Card>
-        ))}
+        );})}
       </div>
 
       {/* User Story: Comparación de ejercicios */}
       {comparacionEjercicio && (
-        <div className="mt-4">
+        <div className="mx-auto mt-4 w-full max-w-6xl">
           <ExerciseComparison
             comparacion={comparacionEjercicio}
             onClose={() => setComparingExercise(null)}

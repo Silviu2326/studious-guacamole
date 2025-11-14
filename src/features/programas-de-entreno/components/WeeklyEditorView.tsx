@@ -1,9 +1,8 @@
 import { memo, useState, useMemo, useEffect } from 'react';
-import { Plus, AlertCircle, Tag, CheckSquare, Square, Eye, EyeOff, Calendar, ChevronLeft, ChevronRight, BookOpen, Clock } from 'lucide-react';
-import { Button, Badge, Select } from '../../../components/componentsreutilizables';
+import { Plus, AlertCircle, Tag, CheckSquare, Square, Eye, BookOpen, Clock } from 'lucide-react';
+import { Button, Badge, Select, Input } from '../../../components/componentsreutilizables';
 import type { DayPlan, DaySession } from '../types';
 import { InlineBlockEditor } from './InlineBlockEditor';
-import { LoadTrackingChart } from './LoadTrackingChart';
 import { BulkActionsPanel } from './BulkActionsPanel';
 // User Story 2: Importar utilidades de colores e iconos dinámicos
 import {
@@ -24,7 +23,7 @@ type WeeklyEditorViewProps = {
     duration: number;
     calories: number;
   };
-  onDropFromLibrary?: (day: string, data: { type: 'template' | 'exercise'; item: any }) => void;
+  onDropFromLibrary?: (day: string, data: { type: 'template' | 'block' | 'exercise'; item: any }) => void;
   onUpdateSession?: (day: string, sessionId: string, updatedSession: DaySession) => void;
   // User Story 2: Bulk actions props
   onBulkDuplicate?: (sessionIds: string[]) => void;
@@ -86,6 +85,84 @@ function WeeklyEditorViewComponent({
   // User Story 1: Overlay state
   const [overlayType, setOverlayType] = useState<OverlayType>('none');
   const [selectedReferenceWeek, setSelectedReferenceWeek] = useState<string>('');
+  // Visible days configuration
+  const [maxVisibleDays, setMaxVisibleDays] = useState(() => Math.min(4, weekDays.length));
+  const [dayFilterMode, setDayFilterMode] = useState<'manual' | 'weekday' | 'tag'>('manual');
+  const [dayFilterValue, setDayFilterValue] = useState('');
+  const [selectedDays, setSelectedDays] = useState<string[]>(() => weekDays.slice(0, Math.min(4, weekDays.length)));
+
+  useEffect(() => {
+    if (dayFilterMode !== 'manual') return;
+    setSelectedDays((prev) => {
+      const filtered = weekDays.filter((day) => prev.includes(day));
+      const needed = Math.min(maxVisibleDays, weekDays.length);
+      if (filtered.length >= needed) {
+        return filtered.slice(0, needed);
+      }
+      const extras = weekDays.filter((day) => !filtered.includes(day)).slice(0, needed - filtered.length);
+      return [...filtered, ...extras];
+    });
+  }, [weekDays, maxVisibleDays, dayFilterMode]);
+
+  const daysMatchingTag = useMemo(() => {
+    if (dayFilterMode !== 'tag' || !dayFilterValue) return [];
+    const target = dayFilterValue.toLowerCase();
+    return weekDays.filter((day) => {
+      const plan = weeklyPlan[day];
+      if (!plan) return false;
+      const dayTags = plan.tags ?? [];
+      if (dayTags.some((tag) => tag.toLowerCase().includes(target))) return true;
+      return plan.sessions.some((session) =>
+        session.tags?.some((tag) => tag.toLowerCase().includes(target)),
+      );
+    });
+  }, [dayFilterMode, dayFilterValue, weekDays, weeklyPlan]);
+
+  const daysMatchingWeekday = useMemo(() => {
+    if (dayFilterMode !== 'weekday' || !dayFilterValue) return [];
+    const target = dayFilterValue.toLowerCase();
+    return weekDays.filter((day) => day.toLowerCase().includes(target));
+  }, [dayFilterMode, dayFilterValue, weekDays]);
+
+  const visibleDays = useMemo(() => {
+    let base: readonly string[] = [];
+    if (dayFilterMode === 'manual') {
+      base = selectedDays.length > 0 ? selectedDays : weekDays;
+    } else if (dayFilterMode === 'weekday') {
+      base = daysMatchingWeekday;
+    } else if (dayFilterMode === 'tag') {
+      base = daysMatchingTag;
+    }
+    if (base.length === 0) {
+      base = weekDays;
+    }
+    return base.slice(0, Math.min(maxVisibleDays, base.length));
+  }, [selectedDays, maxVisibleDays, weekDays, dayFilterMode, daysMatchingTag, daysMatchingWeekday]);
+
+  const cardsGridTemplate = useMemo(() => {
+    if (visibleDays.length === 0) {
+      return 'repeat(auto-fit, minmax(260px, 1fr))';
+    }
+    if (visibleDays.length <= 3) {
+      return `repeat(${visibleDays.length}, minmax(280px, 1fr))`;
+    }
+    return 'repeat(auto-fit, minmax(260px, 1fr))';
+  }, [visibleDays.length]);
+
+  const shouldCenterGrid = visibleDays.length <= 2;
+
+  const handleToggleVisibleDay = (day: string) => {
+    if (dayFilterMode !== 'manual') return;
+    setSelectedDays((prev) => {
+      if (prev.includes(day)) {
+        return prev.filter((d) => d !== day);
+      }
+      if (prev.length >= maxVisibleDays) {
+        return prev;
+      }
+      return [...prev, day];
+    });
+  };
   
   // Calcular si cada día excede los objetivos semanales
   const dayExceedsTargets = useMemo(() => {
@@ -177,7 +254,7 @@ function WeeklyEditorViewComponent({
   };
 
   // User Story: Handle double-click for inline editing
-  const handleDoubleClick = (day: string, session: DaySession, field: 'series' | 'repeticiones' | 'duration' | 'intensity', e: React.MouseEvent<HTMLDivElement>) => {
+  const handleDoubleClick = (day: string, session: DaySession, field: 'series' | 'repeticiones' | 'duration' | 'intensity', e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
     setEditingSession({
@@ -270,7 +347,7 @@ function WeeklyEditorViewComponent({
       if (data) {
         try {
           const parsed = JSON.parse(data);
-          if (parsed.type === 'template' || parsed.type === 'exercise' || parsed.type === 'session') {
+          if (parsed.type === 'template' || parsed.type === 'exercise' || parsed.type === 'block' || parsed.type === 'session') {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'copy';
             setDragOverDay(day);
@@ -301,7 +378,7 @@ function WeeklyEditorViewComponent({
           
           if (fromDay === day) {
             // Reordering within same day
-            const fromIndices = parsed.indices.sort((a: number, b: number) => a - b);
+            const fromIndices = (parsed.indices as number[]).sort((a, b) => a - b);
             const newSessions = [...targetSessions];
             
             // Remove selected sessions (in reverse order to maintain indices)
@@ -328,7 +405,7 @@ function WeeklyEditorViewComponent({
             // Remove from source day
             if (onReorderSessions && weeklyPlan[fromDay]) {
               const sourceSessions = [...weeklyPlan[fromDay].sessions];
-              const fromIndices = parsed.indices.sort((a: number, b: number) => b - a);
+              const fromIndices = (parsed.indices as number[]).sort((a, b) => b - a);
               fromIndices.forEach(idx => sourceSessions.splice(idx, 1));
               onReorderSessions(fromDay, sourceSessions);
             }
@@ -348,7 +425,7 @@ function WeeklyEditorViewComponent({
     if (libraryData) {
       try {
         const parsed = JSON.parse(libraryData);
-        if (parsed.type === 'template' || parsed.type === 'exercise' || parsed.type === 'session') {
+        if (parsed.type === 'template' || parsed.type === 'exercise' || parsed.type === 'block' || parsed.type === 'session') {
           onDropFromLibrary?.(day, parsed);
           clearSelection();
           return;
@@ -389,7 +466,7 @@ function WeeklyEditorViewComponent({
           
           if (fromDay === day) {
             // Reordering within same day - append to end
-            const fromIndices = parsed.indices.sort((a: number, b: number) => b - a);
+            const fromIndices = (parsed.indices as number[]).sort((a, b) => b - a);
             const newSessions = [...targetSessions];
             const removed: typeof draggedSessions = [];
             
@@ -407,7 +484,7 @@ function WeeklyEditorViewComponent({
             // Remove from source day
             if (onReorderSessions && weeklyPlan[fromDay]) {
               const sourceSessions = [...weeklyPlan[fromDay].sessions];
-              const fromIndices = parsed.indices.sort((a: number, b: number) => b - a);
+              const fromIndices = (parsed.indices as number[]).sort((a, b) => b - a);
               fromIndices.forEach(idx => sourceSessions.splice(idx, 1));
               onReorderSessions(fromDay, sourceSessions);
             }
@@ -425,7 +502,7 @@ function WeeklyEditorViewComponent({
     if (libraryData) {
       try {
         const parsed = JSON.parse(libraryData);
-        if (parsed.type === 'template' || parsed.type === 'exercise' || parsed.type === 'session') {
+        if (parsed.type === 'template' || parsed.type === 'exercise' || parsed.type === 'block' || parsed.type === 'session') {
           onDropFromLibrary?.(day, parsed);
           clearSelection();
         }
@@ -438,16 +515,89 @@ function WeeklyEditorViewComponent({
   return (
     <div className="space-y-6">
       {/* User Story 1: Load Tracking Chart */}
-      {weeklyTargets && (
-        <LoadTrackingChart
-          weekDays={weekDays}
-          weeklyPlan={weeklyPlan}
-          weeklyTargets={weeklyTargets}
-        />
-      )}
+     
       
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Plan semanal</h2>
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-3xl border border-slate-200/70 bg-white/90 p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-950/50">
+        <div className="flex flex-col">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Días visibles</span>
+          <span className="text-sm text-slate-600">Compara hasta {weekDays.length} días. Actualmente mostrando {visibleDays.length}.</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Modo</span>
+          <div className="flex gap-2">
+            {[
+              { id: 'manual', label: 'Manual' },
+              { id: 'weekday', label: 'Por día' },
+              { id: 'tag', label: 'Por tag' },
+            ].map((mode) => (
+              <Button
+                key={mode.id}
+                variant={dayFilterMode === mode.id ? 'secondary' : 'ghost'}
+                size="sm"
+                className="h-8 px-3 text-xs"
+                onClick={() => {
+                  setDayFilterMode(mode.id as typeof dayFilterMode);
+                  setDayFilterValue('');
+                }}
+              >
+                {mode.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-500">Máx.</span>
+            <Select
+              value={String(maxVisibleDays)}
+              onChange={(e) => setMaxVisibleDays(Math.max(1, Number(e.target.value)))}
+              options={weekDays.map((_, index) => ({
+                label: `${index + 1}`,
+                value: String(index + 1),
+              }))}
+            />
+          </div>
+          {dayFilterMode === 'weekday' && (
+            <Input
+              value={dayFilterValue}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDayFilterValue(e.target.value)}
+              placeholder="Filtrar por nombre (ej. Lunes)"
+              className="w-48"
+            />
+          )}
+          {dayFilterMode === 'tag' && (
+            <Input
+              value={dayFilterValue}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDayFilterValue(e.target.value)}
+              placeholder="Tag (ej. fuerza)"
+              className="w-48"
+            />
+          )}
+        </div>
+        {dayFilterMode === 'manual' && (
+          <div className="flex flex-wrap gap-2">
+            {weekDays.map((day) => {
+              const isSelected = visibleDays.includes(day);
+              const disabled = !isSelected && visibleDays.length >= maxVisibleDays;
+              return (
+                <Button
+                  key={day}
+                  variant={isSelected ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-8 px-3 text-xs"
+                  disabled={disabled}
+                  onClick={() => handleToggleVisibleDay(day)}
+                >
+                  {day.slice(0, 3)}
+                </Button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* User Story 2: Bulk Actions Panel */}
@@ -462,27 +612,11 @@ function WeeklyEditorViewComponent({
         onApplyFilter={setSelectionFilter}
       />
 
-      <div className="overflow-x-auto">
-        <div className="grid min-w-max grid-flow-col gap-3 pb-1 sm:min-w-0 sm:grid-flow-row sm:grid-cols-3 lg:grid-cols-7">
-          {weekDays.map((day, index) => (
-            <button
-              key={day}
-              type="button"
-              onClick={() => onViewDay(day)}
-              className={`flex min-w-[160px] flex-col items-start justify-between rounded-3xl bg-gradient-to-br ${dayGradients[index % dayGradients.length]} px-5 py-4 text-left text-slate-800 shadow-md transition hover:-translate-y-1 hover:shadow-xl sm:min-w-0`}
-            >
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">{day}</span>
-              <div className="mt-3 flex items-center gap-2 text-sm text-slate-700">
-                <Calendar className="h-4 w-4" />
-                <span>Semana · Día {index + 1}</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7 auto-rows-fr">
-        {weekDays.map((day) => {
+      <div
+        className={`grid gap-6 auto-rows-fr ${shouldCenterGrid ? 'justify-center' : ''}`}
+        style={{ gridTemplateColumns: cardsGridTemplate }}
+      >
+        {visibleDays.map((day, dayIndex) => {
           const plan = weeklyPlan[day];
           const planSessions = plan?.sessions || [];
           const exceeds = dayExceedsTargets[day];
@@ -506,233 +640,241 @@ function WeeklyEditorViewComponent({
               onDragOver={handleDragOver(day)}
               onDragLeave={handleDragLeave}
               onDrop={handleDayDrop(day)}
-              className={`flex h-full flex-col rounded-3xl border p-4 shadow-lg transition hover:-translate-y-1 hover:shadow-xl ${
+              className={`group flex h-full flex-col overflow-hidden rounded-3xl border shadow-lg transition-all hover:shadow-xl ${
                 hasExceeded
-                  ? 'border-red-300 bg-red-50/50 ring-2 ring-red-200'
+                  ? 'border-red-300 bg-gradient-to-br from-red-50/80 to-white ring-2 ring-red-200'
                   : dragOverDay === day
-                  ? 'border-indigo-400 bg-indigo-50/50 ring-2 ring-indigo-200'
-                  : 'border-slate-200 bg-white'
+                  ? 'border-indigo-400 bg-gradient-to-br from-indigo-50/80 to-white ring-2 ring-indigo-200'
+                  : 'border-slate-200 bg-gradient-to-br from-white to-slate-50/50 hover:border-indigo-300'
               }`}
             >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex flex-1 flex-col gap-1">
-                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    <span>{day}</span>
-                    {hasExceeded && (
-                      <AlertCircle className="h-4 w-4 text-red-500" title="Excede objetivos semanales" />
+              {/* Day Header - Integrado con gradiente */}
+              <div className={`relative overflow-hidden rounded-t-3xl bg-gradient-to-br ${dayGradients[dayIndex % dayGradients.length]} px-5 py-4`}>
+                <div className="relative z-10 flex items-start justify-between gap-3">
+                  <div className="flex flex-1 flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-700">{day}</span>
+                      {hasExceeded && (
+                        <AlertCircle className="h-4 w-4 text-red-600" aria-label="Excede objetivos semanales" />
+                      )}
+                    </div>
+                    <h3 className="text-base font-bold text-slate-900 leading-tight">{plan?.focus ?? 'Sin plan'}</h3>
+                    {plan?.tags && plan.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {plan.tags.map((tag) => (
+                          <Badge key={tag} size="sm" variant="secondary" className="bg-white/80 text-[10px] backdrop-blur-sm">
+                            <Tag className="mr-1 h-2.5 w-2.5" />
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
                     )}
                   </div>
-                  <h3 className="text-lg font-semibold text-slate-900">{plan?.focus ?? 'Sin plan'}</h3>
-                  {plan?.tags && plan.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {plan.tags.map((tag) => (
-                        <Badge key={tag} size="xs" variant="secondary" className="text-[10px]">
-                          <Tag className="mr-1 h-2.5 w-2.5" />
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => onViewDay(day)}
+                    className="flex-shrink-0 rounded-lg bg-white/80 p-2 text-slate-600 transition hover:bg-white hover:text-indigo-600 hover:shadow-md"
+                    title="Ver detalle del día"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </button>
                 </div>
-                <div className="flex flex-col items-end gap-1 text-xs text-slate-500">
-                  <div className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-600">
-                    <BookOpen className="h-4 w-4" />
-                    {planSessions.length} {planSessions.length === 1 ? 'sesión' : 'sesiones'}
+                
+                {/* Day Stats - Compactos en header */}
+                <div className="relative z-10 mt-3 flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1.5 rounded-lg bg-white/90 px-2.5 py-1.5 text-xs font-medium text-slate-700 backdrop-blur-sm">
+                    <BookOpen className="h-3.5 w-3.5" />
+                    <span className="font-semibold">{planSessions.length}</span>
+                    <span className="hidden sm:inline">{planSessions.length === 1 ? 'sesión' : 'sesiones'}</span>
                   </div>
-                  <div className="flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-1 text-indigo-600">
-                    <Clock className="h-4 w-4" />
-                    {totalMinutes} min
+                  <div className="flex items-center gap-1.5 rounded-lg bg-indigo-100/90 px-2.5 py-1.5 text-xs font-medium text-indigo-700 backdrop-blur-sm">
+                    <Clock className="h-3.5 w-3.5" />
+                    <span className="font-semibold">{totalMinutes}</span>
+                    <span>min</span>
                   </div>
                   {Boolean(totalSeries) && (
-                    <div className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-emerald-600">
-                      <CheckSquare className="h-4 w-4" />
-                      {totalSeries} series
+                    <div className="flex items-center gap-1.5 rounded-lg bg-emerald-100/90 px-2.5 py-1.5 text-xs font-medium text-emerald-700 backdrop-blur-sm">
+                      <CheckSquare className="h-3.5 w-3.5" />
+                      <span className="font-semibold">{totalSeries}</span>
+                      <span>series</span>
                     </div>
                   )}
                   {Boolean(totalReps) && (
-                    <div className="flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-amber-600">
-                      <Plus className="h-4 w-4" />
-                      {totalReps} reps
-                    </div>
-                  )}
-                  {hasExceeded && (
-                    <div className="rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-600">
-                      Objetivo superado
+                    <div className="flex items-center gap-1.5 rounded-lg bg-amber-100/90 px-2.5 py-1.5 text-xs font-medium text-amber-700 backdrop-blur-sm">
+                      <Plus className="h-3.5 w-3.5" />
+                      <span className="font-semibold">{totalReps}</span>
+                      <span>reps</span>
                     </div>
                   )}
                 </div>
               </div>
-              <div className="mt-4 flex flex-1 flex-col">
+
+              {/* Day Content */}
+              <div className="flex flex-1 flex-col p-4">
                 {planSessions.length === 0 ? (
-                  <div className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-4 text-center text-slate-500">
-                    Sin sesiones. Crea o arrastra bloques.
+                  <div className="flex flex-1 items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50/50 p-6 text-center">
+                    <div className="space-y-2">
+                      <div className="mx-auto h-12 w-12 rounded-full bg-slate-200 flex items-center justify-center">
+                        <Plus className="h-6 w-6 text-slate-400" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-600">Sin sesiones</p>
+                      <p className="text-xs text-slate-500">Crea o arrastra bloques aquí</p>
+                    </div>
                   </div>
                 ) : (
                   <div className="flex flex-1 flex-col gap-3 overflow-hidden">
-                    <div className="flex-1 space-y-3 overflow-y-auto pr-1 md:pr-0">
+                    <div className="flex-1 space-y-2.5 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
                       {planSessions.map((session, idx) => {
                         const isSelected = selectedSessions.has(session.id);
-                        // User Story 2: Obtener icono y color según tipo de entrenamiento
                         const TipoIcon = getTipoEntrenamientoIcon(session.tipoEntrenamiento);
                         const sessionColorClass = getSessionColorClass(session.tipoEntrenamiento);
                         
                         return (
                           <div
                             key={session.id}
-                            className={`group flex cursor-move flex-col gap-3 rounded-xl border p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+                            className={`group/session relative flex cursor-move gap-3 rounded-xl border-2 bg-white p-3 shadow-sm transition-all hover:shadow-md ${
                               isSelected
                                 ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200'
-                                : sessionColorClass || 'border-slate-200 bg-white hover:border-indigo-300'
+                                : sessionColorClass || 'border-slate-200 hover:border-indigo-300 hover:shadow-md'
                             }`}
                             draggable
                             onDragStart={handleDragStart(day, idx)}
                             onDragOver={handleDragOver(day)}
                             onDrop={handleDrop(day, idx)}
                             onClick={(e) => {
-                              // User Story 1: Toggle selection on click (with Ctrl/Cmd for multi-select)
                               if (e.ctrlKey || e.metaKey) {
                                 e.stopPropagation();
                                 toggleSessionSelection(session.id);
                               }
                             }}
                           >
-                            <div className="flex flex-wrap items-start gap-3">
-                              {/* User Story 1: Checkbox for multi-select */}
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleSessionSelection(session.id);
-                                }}
-                                className="flex-shrink-0 text-indigo-600 transition hover:text-indigo-700"
-                              >
-                                {isSelected ? (
-                                  <CheckSquare className="h-5 w-5" />
-                                ) : (
-                                  <Square className="h-5 w-5 text-slate-400" />
-                                )}
-                              </button>
-                              {/* User Story 2: Icono de tipo de entrenamiento o número de índice */}
-                              {session.tipoEntrenamiento ? (
-                                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white shadow-sm">
-                                  <TipoIcon className="h-5 w-5 text-slate-600" />
-                                </div>
+                            {/* Checkbox - Más sutil */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleSessionSelection(session.id);
+                              }}
+                              className={`mt-0.5 flex-shrink-0 transition ${
+                                isSelected ? 'text-indigo-600' : 'text-slate-400 opacity-0 group-hover/session:opacity-100'
+                              }`}
+                            >
+                              {isSelected ? (
+                                <CheckSquare className="h-4 w-4" />
                               ) : (
-                                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-slate-100 text-xs font-semibold text-slate-500">
-                                  {idx + 1}
-                                </div>
+                                <Square className="h-4 w-4" />
                               )}
-                              <div className="min-w-0 flex-1 space-y-1">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="truncate text-sm font-semibold text-slate-900">{session.block}</div>
-                                  <Button
-                                    variant="ghost"
-                                    size="xs"
-                                    className="hidden whitespace-nowrap text-xs text-indigo-600 hover:text-indigo-700 group-hover:flex"
-                                    onClick={() => onViewDay(day)}
-                                    leftIcon={<Eye className="h-3.5 w-3.5" />}
-                                  >
-                                    Ver día
-                                  </Button>
-                                </div>
-                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                                  {session.time && <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{session.time}</span>}
-                                  <span
-                                    className="cursor-pointer rounded px-1 py-0.5 transition hover:bg-indigo-100"
-                                    onDoubleClick={(e) => handleDoubleClick(day, session, 'duration', e)}
-                                    title="Doble clic para editar duración"
-                                  >
-                                    {session.duration}
+                            </button>
+
+                            {/* Icon/Number */}
+                            {session.tipoEntrenamiento ? (
+                              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 to-white shadow-sm">
+                                <TipoIcon className="h-4 w-4 text-slate-700" />
+                              </div>
+                            ) : (
+                              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-slate-100 to-slate-50 text-xs font-bold text-slate-600 shadow-sm">
+                                {idx + 1}
+                              </div>
+                            )}
+
+                            {/* Session Content */}
+                            <div className="min-w-0 flex-1 space-y-1.5">
+                              <div className="flex items-start justify-between gap-2">
+                                <h4 className="text-sm font-semibold leading-snug text-slate-900 line-clamp-2 break-words">
+                                  {session.block}
+                                </h4>
+                              </div>
+                              
+                              {/* Session Metadata - Más compacto */}
+                              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
+                                {session.time && (
+                                  <span className="flex items-center gap-1 font-medium">
+                                    <Clock className="h-3 w-3 text-slate-400" />
+                                    {session.time}
                                   </span>
-                                  <span className="h-1 w-1 rounded-full bg-slate-300" />
-                                  <span>{session.modality}</span>
-                                  {(session.series || session.repeticiones) && (
-                                    <>
-                                      <span className="h-1 w-1 rounded-full bg-slate-300" />
+                                )}
+                                <span
+                                  className="cursor-pointer rounded-md px-1.5 py-0.5 font-medium text-indigo-600 transition hover:bg-indigo-50"
+                                  onDoubleClick={(e) => handleDoubleClick(day, session, 'duration', e)}
+                                  title="Doble clic para editar"
+                                >
+                                  {session.duration}
+                                </span>
+                                <span className="text-slate-400">•</span>
+                                <span className="font-medium">{session.modality}</span>
+                                {(session.series || session.repeticiones) && (
+                                  <>
+                                    <span className="text-slate-400">•</span>
+                                    <span
+                                      className="cursor-pointer rounded-md px-1.5 py-0.5 font-medium text-emerald-600 transition hover:bg-emerald-50"
+                                      onDoubleClick={(e) => handleDoubleClick(day, session, 'series', e)}
+                                      title="Doble clic para editar"
+                                    >
+                                      {session.series || '?'}s
+                                    </span>
+                                    {session.repeticiones && (
                                       <span
-                                        className="cursor-pointer rounded px-1 py-0.5 transition hover:bg-indigo-100"
-                                        onDoubleClick={(e) => handleDoubleClick(day, session, 'series', e)}
-                                        title="Doble clic para editar series"
+                                        className="cursor-pointer rounded-md px-1.5 py-0.5 font-medium text-amber-600 transition hover:bg-amber-50"
+                                        onDoubleClick={(e) => handleDoubleClick(day, session, 'repeticiones', e)}
+                                        title="Doble clic para editar"
                                       >
-                                        {session.series || '?'} series
+                                        x{session.repeticiones}
                                       </span>
-                                      {session.repeticiones && (
-                                        <span
-                                          className="cursor-pointer rounded px-1 py-0.5 transition hover:bg-indigo-100"
-                                          onDoubleClick={(e) => handleDoubleClick(day, session, 'repeticiones', e)}
-                                          title="Doble clic para editar repeticiones"
-                                        >
-                                          x {session.repeticiones}
-                                        </span>
-                                      )}
-                                    </>
-                                  )}
-                                  <span className="h-1 w-1 rounded-full bg-slate-300" />
-                                  <span
-                                    className="cursor-pointer rounded px-1 py-0.5 transition hover:bg-indigo-100"
-                                    onDoubleClick={(e) => handleDoubleClick(day, session, 'intensity', e)}
-                                    title="Doble clic para editar intensidad"
-                                  >
-                                    {session.intensity}
-                                  </span>
-                                </div>
-                                {/* User Story 2: Mostrar tipo de entrenamiento y grupos musculares */}
+                                    )}
+                                  </>
+                                )}
+                                <span className="text-slate-400">•</span>
+                                <span
+                                  className="cursor-pointer rounded-md px-1.5 py-0.5 font-medium text-slate-700 transition hover:bg-slate-100"
+                                  onDoubleClick={(e) => handleDoubleClick(day, session, 'intensity', e)}
+                                  title="Doble clic para editar"
+                                >
+                                  {session.intensity}
+                                </span>
+                              </div>
+
+                              {/* Tags - Más compactos */}
+                              {(session.tipoEntrenamiento || session.gruposMusculares?.length || session.tags?.length) && (
                                 <div className="flex flex-wrap gap-1">
                                   {session.tipoEntrenamiento && (
-                                    <Badge size="xs" variant="secondary" className="text-[10px]">
+                                    <Badge size="sm" variant="secondary" className="text-[10px] font-medium">
                                       <TipoIcon className="mr-1 h-2.5 w-2.5" />
                                       {session.tipoEntrenamiento}
                                     </Badge>
                                   )}
-                                  {session.gruposMusculares && session.gruposMusculares.map((grupo, gIdx) => {
+                                  {session.gruposMusculares?.map((grupo, gIdx) => {
                                     const GrupoIcon = getGrupoMuscularIcon(grupo);
                                     return (
                                       <Badge
                                         key={gIdx}
-                                        size="xs"
+                                        size="sm"
                                         variant="secondary"
-                                        className={`text-[10px] ${getGrupoMuscularColor(grupo)}`}
+                                        className={`text-[10px] font-medium ${getGrupoMuscularColor(grupo)}`}
                                       >
                                         <GrupoIcon className="mr-1 h-2.5 w-2.5" />
                                         {grupo}
                                       </Badge>
                                     );
                                   })}
-                                  {session.tags && session.tags.map((tag) => (
-                                    <Badge key={tag} size="xs" variant="secondary" className="text-[10px]">
+                                  {session.tags?.map((tag) => (
+                                    <Badge key={tag} size="sm" variant="secondary" className="text-[10px] font-medium">
                                       <Tag className="mr-1 h-2.5 w-2.5" />
                                       {tag}
                                     </Badge>
                                   ))}
                                 </div>
+                              )}
+
+                              {/* Drag hint - Solo en hover */}
+                              <div className="flex items-center justify-between pt-1">
+                                <span className="text-[10px] text-slate-400 opacity-0 transition group-hover/session:opacity-100">
+                                  Arrastra para reordenar
+                                </span>
                               </div>
-                            </div>
-                            <div className="flex items-center justify-between text-xs text-slate-400">
-                              <span className="hidden sm:inline">Arrastra para reordenar</span>
-                              <Button
-                                variant="ghost"
-                                size="xs"
-                                className="sm:hidden text-xs text-indigo-600"
-                                onClick={() => onViewDay(day)}
-                                leftIcon={<Eye className="h-3.5 w-3.5" />}
-                              >
-                                Ver día
-                              </Button>
                             </div>
                           </div>
                         );
                       })}
-                    </div>
-                    <div className="mt-2 flex justify-end">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-xs font-medium"
-                        onClick={() => onViewDay(day)}
-                        leftIcon={<Eye className="h-4 w-4" />}
-                      >
-                        Abrir detalle del día
-                      </Button>
                     </div>
                   </div>
                 )}

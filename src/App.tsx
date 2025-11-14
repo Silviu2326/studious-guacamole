@@ -26,7 +26,7 @@ import GeneradorDeIdeasDeContenidoConIaPage from './features/GeneradorDeIdeasDeC
 import GestionDeContenidosPremiumPage from './features/GestionDeContenidosPremium/pages/GestionDeContenidosPremiumPage';
 import { CatalogoPage } from './features/catalogo-planes';
 import { CatalogoProductosPage } from './features/catalogo-productos';
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { useState } from 'react';
 import { ExamplePage } from './components/componentsreutilizables';
@@ -366,8 +366,11 @@ export default App;
 
 function AppLayout() {
   const [activeView, setActiveView] = useState<string | undefined>(undefined);
+  const location = useLocation();
+  const hideSidebar = location.pathname.startsWith('/programas-de-entreno/editor');
+
   return (
-    <Layout activeView={activeView} onViewChange={setActiveView}>
+    <Layout activeView={activeView} onViewChange={setActiveView} hideSidebar={hideSidebar}>
       <Outlet />
     </Layout>
   );

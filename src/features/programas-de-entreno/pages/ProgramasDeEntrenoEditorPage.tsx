@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -7,11 +7,15 @@ import {
   CalendarRange,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Dumbbell,
   FileSpreadsheet,
   Flame,
   Library,
   PlusCircle,
+  Plus,
+  GripVertical,
   ScrollText,
   Save,
   Search,
@@ -25,20 +29,18 @@ import {
   Square,
   Star,
   Lightbulb,
-  Edit2,
-  Trash2,
   Share2,
-  TrendingUp,
-  TrendingDown,
-  Minus,
+  Trash2,
   Undo2,
   Redo2,
-  History,
   Bookmark,
   BookmarkPlus,
-  CheckCircle2,
+  MoreHorizontal,
+  Activity,
+  AlertTriangle,
+  Target as TargetIcon,
+  Bell,
   BarChart3,
-  X,
 } from 'lucide-react';
 import { Button, Card, Tabs, Badge, Input, Select, Modal, Textarea } from '../../../components/componentsreutilizables';
 import { WeeklyEditorView } from '../components/WeeklyEditorView';
@@ -55,7 +57,7 @@ import type {
   ResumenObjetivosProgreso,
   TimelineSesiones,
 } from '../types';
-import { obtenerReglas, aplicarReglasInteligentes, type ReglaInteligente } from '../utils/intelligentRules';
+import { obtenerReglas, type ReglaInteligente } from '../utils/intelligentRules';
 import { BuscarSustituirEntidades } from '../components/BuscarSustituirEntidades';
 import { CompartirExtractosChat } from '../components/CompartirExtractosChat';
 import { SubstitutionHistoryManager } from '../utils/substitutionHistory';
@@ -73,7 +75,7 @@ import { NotasAcuerdosRecordatorios } from '../components/NotasAcuerdosRecordato
 import type { FormulaPersonalizada } from '../utils/formulasPersonalizadas';
 
 type EditorView = 'weekly' | 'daily' | 'excel';
-type LibraryTab = 'templates' | 'exercises';
+type LibraryTab = 'templates' | 'blocks' | 'exercises';
 
 type TemplateExample = {
   id: string;
@@ -81,6 +83,9 @@ type TemplateExample = {
   focus: string;
   duration: string;
   difficulty: 'Facil' | 'Media' | 'Dificil';
+  equipment?: string;
+  sessions?: number;
+  aiTags?: string[];
 };
 
 type ExerciseExample = {
@@ -89,6 +94,45 @@ type ExerciseExample = {
   target: string;
   equipment: string;
   difficulty: 'Facil' | 'Media' | 'Dificil';
+  intensity?: 'Baja' | 'Media' | 'Alta';
+  aiTags?: string[];
+};
+
+type BlockExample = {
+  id: string;
+  name: string;
+  category: 'Calentamiento' | 'Fuerza' | 'Accesorios' | 'Movilidad' | 'HIIT' | 'Core';
+  focus: string;
+  duration: string;
+  intensity: 'Baja' | 'Media' | 'Alta';
+  level: 'Facil' | 'Media' | 'Dificil';
+  equipment: string;
+  goal: string;
+  aiTags: string[];
+};
+
+type LibraryQuickFilters = {
+  nivel: 'todos' | 'Facil' | 'Media' | 'Dificil';
+  intensidad: 'todos' | 'Baja' | 'Media' | 'Alta';
+  material: 'todos' | 'Bandas' | 'Mancuernas' | 'Barra' | 'Máquinas' | 'Peso corporal';
+  duracion: 'todos' | '<30' | '30-45' | '>45';
+  objetivo: 'todos' | 'Hipertrofia' | 'Fuerza' | 'Movilidad' | 'MetCon' | 'Pérdida de grasa' | 'Core';
+  bloque: 'todos' | BlockExample['category'];
+};
+
+const DEFAULT_LIBRARY_FILTERS: LibraryQuickFilters = {
+  nivel: 'todos',
+  intensidad: 'todos',
+  material: 'todos',
+  duracion: 'todos',
+  objetivo: 'todos',
+  bloque: 'todos',
+};
+
+const difficultyToIntensity = (difficulty: 'Facil' | 'Media' | 'Dificil'): 'Baja' | 'Media' | 'Alta' => {
+  if (difficulty === 'Facil') return 'Baja';
+  if (difficulty === 'Media') return 'Media';
+  return 'Alta';
 };
 
 const difficultyColorMap: Record<string, { badgeVariant: 'secondary' | 'green' | 'red'; label: string }> = {
@@ -115,11 +159,15 @@ const viewTabs = [
   },
 ] as const satisfies { id: EditorView; label: string; icon: JSX.Element }[];
 
-const weekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] as const;
+const baseWeekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] as const;
+const TOTAL_WEEKS = 4;
+const weekDays = Array.from({ length: TOTAL_WEEKS }, (_, weekIndex) =>
+  baseWeekDays.map((day) => `${day} · Semana ${weekIndex + 1}`),
+).flat() as readonly string[];
 
 type DayKey = (typeof weekDays)[number];
 
-const INITIAL_WEEKLY_PLAN: Record<DayKey, DayPlan> = {
+const BASE_WEEK_PLAN: Record<(typeof baseWeekDays)[number], DayPlan> = {
   Lunes: {
     microCycle: 'Semana 3 · Hipertrofia',
     focus: 'Upper body power',
@@ -381,11 +429,24 @@ const INITIAL_WEEKLY_PLAN: Record<DayKey, DayPlan> = {
   },
 };
 
+const cloneDayPlan = (plan: DayPlan): DayPlan => ({
+  ...plan,
+  summary: [...plan.summary],
+  sessions: plan.sessions.map((session) => ({ ...session, id: `${session.id}-${Math.random().toString(36).slice(2, 6)}` })),
+});
+
+const INITIAL_WEEKLY_PLAN: Record<DayKey, DayPlan> = weekDays.reduce((acc, label) => {
+  const baseDay = label.split(' · ')[0] as (typeof baseWeekDays)[number];
+  acc[label as DayKey] = cloneDayPlan(BASE_WEEK_PLAN[baseDay]);
+  return acc;
+}, {} as Record<DayKey, DayPlan>);
+
 type EditorHeaderProps = {
   onBack: () => void;
   rightCollapsed: boolean;
   onRestoreRightPanel: () => void;
   onOpenClientInfo: () => void;
+  onQuickSwitchClient: () => void;
   onOpenFitCoach: () => void;
   onOpenSubstitutions: () => void;
   onOpenBatchTraining: () => void;
@@ -396,8 +457,19 @@ type EditorHeaderProps = {
   onOpenAutomationPresets: () => void;
   onOpenBulkAutomation: () => void;
   onOpenLayoutSurvey: () => void;
+  onOpenImportTemplate: () => void;
+  activeView: EditorView;
+  onChangeView: (view: EditorView) => void;
   onSaveDraft: () => void;
   lastSaveTime: string | null;
+  clienteNombre: string;
+  clienteContexto?: string;
+  clienteAvatarUrl?: string | null;
+  programaEstado: 'borrador' | 'enviado' | 'auto-ia';
+  clienteNivel?: string | null;
+  clienteLesion?: string | null;
+  clienteObjetivo?: string | null;
+  clienteAlerta?: string | null;
 };
 
 function EditorHeader({
@@ -415,8 +487,20 @@ function EditorHeader({
   onOpenAutomationPresets,
   onOpenBulkAutomation,
   onOpenLayoutSurvey,
+  onOpenImportTemplate,
+  activeView,
+  onChangeView,
   onSaveDraft,
   lastSaveTime,
+  clienteNombre,
+  clienteContexto,
+  clienteAvatarUrl,
+  programaEstado,
+  onQuickSwitchClient,
+  clienteNivel,
+  clienteLesion,
+  clienteObjetivo,
+  clienteAlerta,
 }: EditorHeaderProps) {
   const formatLastSaveTime = (timestamp: string | null) => {
     if (!timestamp) return null;
@@ -449,74 +533,298 @@ function EditorHeader({
 
   const formattedTime = formatLastSaveTime(lastSaveTime);
 
+  const statusConfig: Record<
+    EditorHeaderProps['programaEstado'],
+    { label: string; badgeVariant: 'secondary' | 'green' | 'outline' }
+  > = {
+    borrador: { label: 'Borrador', badgeVariant: 'secondary' },
+    enviado: { label: 'Enviado', badgeVariant: 'green' },
+    'auto-ia': { label: 'Auto-IA activa', badgeVariant: 'outline' },
+  };
+
+  const clienteIniciales = useMemo(() => {
+    return clienteNombre
+      .split(' ')
+      .filter(Boolean)
+      .map((parte) => parte[0]?.toUpperCase())
+      .slice(0, 2)
+      .join('');
+  }, [clienteNombre]);
+
+  const status = statusConfig[programaEstado];
+  const [isMoreToolsOpen, setIsMoreToolsOpen] = useState(false);
+  const moreToolsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isMoreToolsOpen) return;
+    const handleClick = (event: MouseEvent) => {
+      if (!moreToolsRef.current) return;
+      if (!moreToolsRef.current.contains(event.target as Node)) {
+        setIsMoreToolsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [isMoreToolsOpen]);
+
+  const indicators = useMemo(() => {
+    const items: Array<{ id: string; label: string; tone: 'success' | 'warning' | 'info' | 'alert'; icon: JSX.Element }> = [];
+    if (clienteNivel) {
+      items.push({
+        id: 'nivel',
+        label: clienteNivel,
+        tone: 'success',
+        icon: <Activity className="h-3.5 w-3.5 text-emerald-500" />,
+      });
+    }
+    if (clienteLesion) {
+      items.push({
+        id: 'lesion',
+        label: clienteLesion,
+        tone: 'warning',
+        icon: <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />,
+      });
+    }
+    if (clienteObjetivo) {
+      items.push({
+        id: 'objetivo',
+        label: clienteObjetivo,
+        tone: 'info',
+        icon: <TargetIcon className="h-3.5 w-3.5 text-indigo-500" />,
+      });
+    }
+    if (clienteAlerta) {
+      items.push({
+        id: 'alerta',
+        label: clienteAlerta,
+        tone: 'alert',
+        icon: <Bell className="h-3.5 w-3.5 text-rose-500" />,
+      });
+    }
+    return items;
+  }, [clienteNivel, clienteLesion, clienteObjetivo, clienteAlerta]);
+
+  const vistasGroupClass =
+    'rounded-2xl border border-indigo-100 bg-white px-4 py-3 shadow-[0_8px_20px_rgba(99,102,241,0.12)] dark:border-indigo-500/30 dark:bg-slate-900/70';
+  const groupLabelClass = 'text-[11px] font-semibold uppercase tracking-wide text-slate-400';
+  const buttonGroupClass = 'flex flex-wrap items-center gap-2';
+  const groupedButtonClass = 'px-3';
+
   return (
-    <header className="rounded-3xl border border-slate-200/70 bg-white/95 px-6 py-4 shadow-sm dark:border-slate-800/70 dark:bg-slate-950/60">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />} onClick={onBack}>
-            Volver
-          </Button>
-        </div>
-        <div className="text-center">
-          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Editor de entreno</h1>
-          <p className="text-xs text-slate-500 dark:text-slate-300">
-            Diseña sesiones, plantillas y progresiones semanales con IA asistida
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {rightCollapsed && (
-            <Button variant="ghost" size="sm" onClick={onRestoreRightPanel}>
-              Restaurar panel
+    <header className="rounded-3xl border border-slate-200/70 bg-white/95 px-6 py-5 shadow-sm dark:border-slate-800/70 dark:bg-slate-950/60">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/60 pb-4 dark:border-slate-800/70">
+          <div className="flex flex-wrap items-center gap-4 min-w-0">
+            <Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />} onClick={onBack}>
+              Volver
             </Button>
-          )}
-          <Button variant="ghost" size="sm" leftIcon={<Info className="h-4 w-4" />} onClick={onOpenClientInfo}>
-            Cliente
-          </Button>
-          <Button variant="ghost" size="sm" leftIcon={<Sparkles className="h-4 w-4" />} onClick={onOpenFitCoach}>
-            Fit Coach
-          </Button>
-          <Button variant="ghost" size="sm" leftIcon={<Search className="h-4 w-4" />} onClick={onOpenBuscarSustituir}>
-            Buscar y Sustituir
-          </Button>
-          <Button variant="ghost" size="sm" leftIcon={<Share2 className="h-4 w-4" />} onClick={onOpenCompartirChat}>
-            Compartir Chat
-          </Button>
-          <Button variant="ghost" size="sm" leftIcon={<Replace className="h-4 w-4" />} onClick={onOpenSubstitutions}>
-            Sustituciones
-          </Button>
-          <Button variant="ghost" size="sm" leftIcon={<Settings className="h-4 w-4" />} onClick={onOpenBatchTraining}>
-            Batch Training
-          </Button>
-          <Button variant="ghost" size="sm" leftIcon={<BookmarkPlus className="h-4 w-4" />} onClick={onOpenTagManager}>
-            Tags
-          </Button>
-          <Button variant="ghost" size="sm" leftIcon={<BarChart3 className="h-4 w-4" />} onClick={onOpenCharts}>
-            Gráficos
-          </Button>
-          <Button variant="ghost" size="sm" leftIcon={<Lightbulb className="h-4 w-4" />} onClick={onOpenLayoutSurvey}>
-            Configurar layout
-          </Button>
-          <Button variant="ghost" size="sm" leftIcon={<Bookmark className="h-4 w-4" />} onClick={onOpenAutomationPresets}>
-            Presets de automatización
-          </Button>
-          <Button variant="ghost" size="sm" leftIcon={<Sparkles className="h-4 w-4" />} onClick={onOpenBulkAutomation}>
-            Automatización
-          </Button>
-          <div className="flex flex-col items-end">
-            <Button 
-              variant="secondary" 
-              size="sm" 
-              leftIcon={<Save className="h-4 w-4" />}
-              onClick={onSaveDraft}
-              title={formattedTime ? `Último guardado: ${formattedTime}` : 'Guardar borrador'}
-            >
-              Guardar borrador
-            </Button>
-            {formattedTime && (
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                {formattedTime}
-              </span>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-11 w-11 flex-shrink-0 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-200 text-sm font-semibold text-indigo-700 dark:from-indigo-500/20 dark:to-indigo-500/10 dark:text-indigo-200 flex items-center justify-center overflow-hidden">
+                {clienteAvatarUrl ? (
+                  <img
+                    src={clienteAvatarUrl}
+                    alt={clienteNombre}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  clienteIniciales || <User className="h-4 w-4" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{clienteNombre}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-300">{clienteContexto ?? 'Cliente activo'}</p>
+                {indicators.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-slate-500">
+                    {indicators.map((indicator) => (
+                      <span
+                        key={indicator.id}
+                        className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-800/70"
+                      >
+                        {indicator.icon}
+                        <span className="line-clamp-1">{indicator.label}</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <Button variant="secondary" size="sm" onClick={onQuickSwitchClient}>
+                Cambiar cliente
+              </Button>
+              <Button variant="ghost" size="sm" leftIcon={<Info className="h-4 w-4" />} onClick={onOpenClientInfo}>
+                Ver ficha
+              </Button>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant={status.badgeVariant}>{status.label}</Badge>
+            {programaEstado === 'auto-ia' && (
+              <Badge variant="secondary" className="flex items-center gap-1 text-emerald-600 dark:text-emerald-300">
+                <Sparkles className="h-3.5 w-3.5" />
+                Auto-IA
+              </Badge>
             )}
+            {rightCollapsed && (
+              <Button variant="ghost" size="sm" onClick={onRestoreRightPanel}>
+                Mostrar panel
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:gap-6">
+          <div className={`${vistasGroupClass} flex-1`}>
+            <p className={`${groupLabelClass} mb-2 text-indigo-500`}>Vistas</p>
+            <Tabs
+              items={viewTabs}
+              activeTab={activeView}
+              onTabChange={(tabId) => onChangeView(tabId as EditorView)}
+              variant="pills"
+              size="sm"
+              className="justify-start"
+            />
+          </div>
+
+          <div className="flex flex-1 flex-col gap-2 rounded-2xl border border-slate-200/70 bg-white/80 px-4 py-3 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/60">
+            <p className={`${groupLabelClass}`}>Acciones inteligentes</p>
+            <div className={`${buttonGroupClass}`}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={groupedButtonClass}
+                leftIcon={<Sparkles className="h-4 w-4" />}
+                onClick={onOpenFitCoach}
+              >
+                FitCoach
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={groupedButtonClass}
+                leftIcon={<Settings className="h-4 w-4" />}
+                onClick={onOpenBatchTraining}
+              >
+                BatchTraining
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={groupedButtonClass}
+                leftIcon={<Replace className="h-4 w-4" />}
+                onClick={onOpenSubstitutions}
+              >
+                Sustituciones IA
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={groupedButtonClass}
+                leftIcon={<Bookmark className="h-4 w-4" />}
+                onClick={onOpenAutomationPresets}
+              >
+                Presets inteligentes
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex flex-1 flex-col gap-2 rounded-2xl border border-slate-200/70 bg-white/80 px-4 py-3 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/60">
+            <p className={`${groupLabelClass}`}>Utilidades</p>
+            <div className={`${buttonGroupClass} justify-end`}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={groupedButtonClass}
+                leftIcon={<Search className="h-4 w-4" />}
+                onClick={onOpenBuscarSustituir}
+              >
+                Buscar y sustituir
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={groupedButtonClass}
+                leftIcon={<Lightbulb className="h-4 w-4" />}
+                onClick={onOpenLayoutSurvey}
+              >
+                Layout
+              </Button>
+              <div className="relative" ref={moreToolsRef}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`${groupedButtonClass} font-medium`}
+                  leftIcon={<MoreHorizontal className="h-4 w-4" />}
+                  onClick={() => setIsMoreToolsOpen((prev) => !prev)}
+                  aria-haspopup="menu"
+                  aria-expanded={isMoreToolsOpen}
+                >
+                  Más herramientas
+                </Button>
+                {isMoreToolsOpen && (
+                  <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                    <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
+                      {[
+                        {
+                          label: 'Importar plantilla',
+                          icon: <Library className="h-4 w-4 text-slate-500" />,
+                          action: () => onOpenImportTemplate(),
+                        },
+                        {
+                          label: 'Tags',
+                          icon: <BookmarkPlus className="h-4 w-4 text-slate-500" />,
+                          action: () => onOpenTagManager(),
+                        },
+                        {
+                          label: 'Gráficos',
+                          icon: <BarChart3 className="h-4 w-4 text-slate-500" />,
+                          action: () => onOpenCharts(),
+                        },
+                        {
+                          label: 'Compartir',
+                          icon: <Share2 className="h-4 w-4 text-slate-500" />,
+                          action: () => onOpenCompartirChat(),
+                        },
+                        {
+                          label: 'Automatización',
+                          icon: <Sparkles className="h-4 w-4 text-slate-500" />,
+                          action: () => onOpenBulkAutomation(),
+                        },
+                      ].map((item, index) => (
+                        <button
+                          key={item.label}
+                          type="button"
+                          className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 transition hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800 ${
+                            index === 0 ? '' : ''
+                          }`}
+                          onClick={() => {
+                            item.action();
+                            setIsMoreToolsOpen(false);
+                          }}
+                        >
+                          {item.icon}
+                          <span>{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col items-end">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-rose-500 text-white shadow-lg shadow-rose-200/60 transition hover:brightness-105 dark:shadow-none"
+                  leftIcon={<Save className="h-4 w-4" />}
+                  onClick={onSaveDraft}
+                >
+                  Guardar
+                </Button>
+                {formattedTime && (
+                  <span className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
+                    {formattedTime}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -525,26 +833,6 @@ function EditorHeader({
 }
 
 
-type ViewSelectorProps = {
-  activeView: EditorView;
-  onChange: (view: EditorView) => void;
-};
-
-function ViewSelector({ activeView, onChange }: ViewSelectorProps) {
-  return (
-    <Card className="border border-slate-200/70 bg-white/95 px-6 py-4 dark:border-slate-800/70 dark:bg-slate-950/60">
-      <Tabs
-        items={viewTabs}
-        activeTab={activeView}
-        onTabChange={(tabId) => onChange(tabId as EditorView)}
-        variant="pills"
-        size="sm"
-        className="justify-center"
-      />
-    </Card>
-  );
-}
-
 type LibrarySidebarProps = {
   leftCollapsed: boolean;
   onToggleCollapse: () => void;
@@ -552,21 +840,25 @@ type LibrarySidebarProps = {
   onChangeLibraryTab: (tab: LibraryTab) => void;
   librarySearch: string;
   onChangeLibrarySearch: (value: string) => void;
-  equipmentFilter: string;
-  onChangeEquipmentFilter: (value: string) => void;
-  categoryFilter: string;
-  onChangeCategoryFilter: (value: string) => void;
-  uniqueEquipments: string[];
-  filteredPinnedTemplates: TemplateExample[];
-  filteredUnpinnedTemplates: TemplateExample[];
-  filteredPinnedExercises: ExerciseExample[];
-  filteredUnpinnedExercises: ExerciseExample[];
-  filteredExercises: ExerciseExample[];
-  pinnedTemplatesCount: number;
-  pinnedExercisesCount: number;
+  searchSuggestions: string[];
+  onSelectSuggestion: (value: string) => void;
+  quickFilters: LibraryQuickFilters;
+  onUpdateQuickFilter: (filter: keyof LibraryQuickFilters, value: LibraryQuickFilters[keyof LibraryQuickFilters]) => void;
+  templateLists: {
+    pinned: TemplateExample[];
+    unpinned: TemplateExample[];
+    pinnedCount: number;
+  };
+  blockList: BlockExample[];
+  exerciseLists: {
+    pinned: ExerciseExample[];
+    unpinned: ExerciseExample[];
+    pinnedCount: number;
+  };
   onTogglePinTemplate: (templateId: string) => void;
   onTogglePinExercise: (exerciseId: string) => void;
-  onDragStart: (type: 'template' | 'exercise', item: TemplateExample | ExerciseExample) => void;
+  onDragStart: (type: 'template' | 'block' | 'exercise', item: TemplateExample | BlockExample | ExerciseExample) => void;
+  onAddToLibrary: () => void;
 };
 
 
@@ -577,26 +869,286 @@ function LibrarySidebar({
   onChangeLibraryTab,
   librarySearch,
   onChangeLibrarySearch,
-  equipmentFilter,
-  onChangeEquipmentFilter,
-  categoryFilter,
-  onChangeCategoryFilter,
-  uniqueEquipments,
-  filteredPinnedTemplates,
-  filteredUnpinnedTemplates,
-  filteredPinnedExercises,
-  filteredUnpinnedExercises,
-  filteredExercises,
-  pinnedTemplatesCount,
-  pinnedExercisesCount,
+  searchSuggestions,
+  onSelectSuggestion,
+  quickFilters,
+  onUpdateQuickFilter,
+  templateLists,
+  blockList,
+  exerciseLists,
   onTogglePinTemplate,
   onTogglePinExercise,
   onDragStart,
+  onAddToLibrary,
 }: LibrarySidebarProps) {
+  const [showHeaderDescription, setShowHeaderDescription] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
+
+  const chipsConfig: Array<{
+    id: keyof LibraryQuickFilters;
+    label: string;
+    options: { label: string; value: LibraryQuickFilters[keyof LibraryQuickFilters] }[];
+  }> = [
+    {
+      id: 'nivel',
+      label: 'Nivel',
+      options: [
+        { label: 'Todos', value: 'todos' },
+        { label: 'Fácil', value: 'Facil' },
+        { label: 'Medio', value: 'Media' },
+        { label: 'Difícil', value: 'Dificil' },
+      ],
+    },
+    {
+      id: 'intensidad',
+      label: 'Intensidad',
+      options: [
+        { label: 'Todas', value: 'todos' },
+        { label: 'Baja', value: 'Baja' },
+        { label: 'Media', value: 'Media' },
+        { label: 'Alta', value: 'Alta' },
+      ],
+    },
+    {
+      id: 'material',
+      label: 'Material',
+      options: [
+        { label: 'Todos', value: 'todos' },
+        { label: 'Bandas', value: 'Bandas' },
+        { label: 'Mancuernas', value: 'Mancuernas' },
+        { label: 'Barra', value: 'Barra' },
+        { label: 'Máquinas', value: 'Máquinas' },
+        { label: 'Peso corporal', value: 'Peso corporal' },
+      ],
+    },
+    {
+      id: 'duracion',
+      label: 'Duración',
+      options: [
+        { label: 'Todas', value: 'todos' },
+        { label: '<30’', value: '<30' },
+        { label: '30–45’', value: '30-45' },
+        { label: '>45’', value: '>45' },
+      ],
+    },
+    {
+      id: 'objetivo',
+      label: 'Objetivo',
+      options: [
+        { label: 'Todos', value: 'todos' },
+        { label: 'Hipertrofia', value: 'Hipertrofia' },
+        { label: 'Fuerza', value: 'Fuerza' },
+        { label: 'Movilidad', value: 'Movilidad' },
+        { label: 'MetCon', value: 'MetCon' },
+        { label: 'Pérdida grasa', value: 'Pérdida de grasa' },
+        { label: 'Core', value: 'Core' },
+      ],
+    },
+    {
+      id: 'bloque',
+      label: 'Tipo de bloque',
+      options: [
+        { label: 'Todos', value: 'todos' },
+        { label: 'Calentamiento', value: 'Calentamiento' },
+        { label: 'Fuerza', value: 'Fuerza' },
+        { label: 'Accesorios', value: 'Accesorios' },
+        { label: 'Movilidad', value: 'Movilidad' },
+        { label: 'HIIT', value: 'HIIT' },
+        { label: 'Core', value: 'Core' },
+      ],
+    },
+  ];
+
+  const renderTemplateCard = (template: TemplateExample, isPinned: boolean = false) => (
+    <div
+      key={template.id}
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData('application/json', JSON.stringify({ type: 'template', item: template }));
+        onDragStart('template', template);
+      }}
+      className="w-full cursor-move rounded-2xl border border-slate-200/80 bg-white/95 p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-lg dark:border-slate-800/70 dark:bg-slate-950/60 dark:hover:border-indigo-500/40"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{template.name}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-300">{template.focus}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-800/60">
+              {difficultyColorMap[template.difficulty].label}
+            </span>
+            <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
+              {template.duration}
+            </span>
+            {template.sessions && (
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-900/60">{template.sessions} sesiones</span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-label={isPinned ? 'Quitar de favoritas' : 'Marcar como favorita'}
+            className={`rounded-full p-1 ${isPinned ? 'text-amber-500' : 'text-slate-400 hover:text-amber-400'}`}
+            onClick={() => onTogglePinTemplate(template.id)}
+          >
+            <Star className={`h-4 w-4 ${isPinned ? 'fill-amber-400 text-amber-500' : ''}`} />
+          </button>
+          <GripVertical className="h-4 w-4 text-slate-300" />
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-indigo-600 dark:text-indigo-300">
+        <span className="rounded-full bg-indigo-50 px-2 py-0.5 dark:bg-indigo-500/10">IA ready</span>
+        <span className="rounded-full bg-indigo-50 px-2 py-0.5 dark:bg-indigo-500/10">Personalizable</span>
+        {template.aiTags?.slice(0, 2).map((tag) => (
+          <span key={tag} className="rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-800/60">
+            {tag}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderBlockCard = (block: BlockExample) => (
+    <div
+      key={block.id}
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData('application/json', JSON.stringify({ type: 'block', item: block }));
+        onDragStart('block', block);
+      }}
+      className="w-full cursor-move rounded-2xl border border-slate-200/80 bg-white/95 p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-lg dark:border-slate-800/70 dark:bg-slate-950/60 dark:hover:border-emerald-500/40"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-emerald-600">
+            <span>{block.category}</span>
+            <span className="text-slate-300">•</span>
+            <span>{block.goal}</span>
+          </div>
+          <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{block.name}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-300">{block.focus}</p>
+          <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-slate-500">
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-800/60">{block.duration}</span>
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-800/60">{block.intensity}</span>
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-800/60">{block.equipment}</span>
+          </div>
+        </div>
+        <GripVertical className="h-4 w-4 text-slate-300" />
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-indigo-600 dark:text-indigo-300">
+        {block.aiTags.map((tag) => (
+          <span key={tag} className="rounded-full bg-indigo-50 px-2 py-0.5 dark:bg-indigo-500/10">
+            {tag}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderExerciseCard = (exercise: ExerciseExample, isPinned: boolean = false) => (
+    <div
+      key={exercise.id}
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData('application/json', JSON.stringify({ type: 'exercise', item: exercise }));
+        onDragStart('exercise', exercise);
+      }}
+      className="w-full cursor-move rounded-2xl border border-slate-200/80 bg-white/95 p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-lg dark:border-slate-800/70 dark:bg-slate-950/60 dark:hover:border-emerald-500/40"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{exercise.name}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-300">{exercise.target}</p>
+          <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-slate-500">
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-800/60">{exercise.equipment}</span>
+            {exercise.intensity && (
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-800/60">{exercise.intensity}</span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-label={isPinned ? 'Quitar de favoritos' : 'Marcar como favorito'}
+            className={`rounded-full p-1 ${isPinned ? 'text-amber-500' : 'text-slate-400 hover:text-amber-400'}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onTogglePinExercise(exercise.id);
+            }}
+          >
+            <Star className={`h-4 w-4 ${isPinned ? 'fill-amber-400 text-amber-500' : ''}`} />
+          </button>
+          <GripVertical className="h-4 w-4 text-slate-300" />
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-indigo-600 dark:text-indigo-300">
+        {exercise.aiTags?.map((tag) => (
+          <span key={tag} className="rounded-full bg-indigo-50 px-2 py-0.5 dark:bg-indigo-500/10">
+            {tag}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderActiveList = () => {
+    if (libraryTab === 'templates') {
+      return (
+        <div className="space-y-3">
+          {templateLists.pinnedCount > 0 && (
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-500">Favoritas</p>
+              {templateLists.pinned.map((template) => renderTemplateCard(template, true))}
+              <div className="pt-2 text-[10px] uppercase tracking-wide text-slate-400">Todas las plantillas</div>
+            </div>
+          )}
+          {templateLists.unpinned.map((template) => renderTemplateCard(template))}
+          {templateLists.unpinned.length === 0 && templateLists.pinned.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-slate-200/70 p-4 text-center text-xs text-slate-500 dark:border-slate-700">
+              No hay resultados con los filtros actuales
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (libraryTab === 'blocks') {
+      return (
+        <div className="space-y-3">
+          {blockList.map((block) => renderBlockCard(block))}
+          {blockList.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-slate-200/70 p-4 text-center text-xs text-slate-500 dark:border-slate-700">
+              Ajusta los filtros para ver bloques disponibles
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-3">
+        {exerciseLists.pinnedCount > 0 && (
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-500">Favoritos</p>
+            {exerciseLists.pinned.map((exercise) => renderExerciseCard(exercise, true))}
+            <div className="pt-2 text-[10px] uppercase tracking-wide text-slate-400">Todos los ejercicios</div>
+          </div>
+        )}
+        {exerciseLists.unpinned.map((exercise) => renderExerciseCard(exercise))}
+        {exerciseLists.unpinned.length === 0 && exerciseLists.pinned.length === 0 && (
+          <div className="rounded-2xl border border-dashed border-slate-200/70 p-4 text-center text-xs text-slate-500 dark:border-slate-700">
+            No encontramos ejercicios que coincidan
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <aside
       className={`relative flex w-full flex-col gap-4 transition-all duration-300 lg:flex-shrink-0 ${
-        leftCollapsed ? 'lg:w-16' : 'lg:w-[320px]'
+        leftCollapsed ? 'lg:w-16' : 'lg:w-[340px]'
       }`}
     >
       <button
@@ -618,22 +1170,43 @@ function LibrarySidebar({
         <>
           <Card className="border border-slate-200/70 bg-white/95 p-5 dark:border-slate-800/70 dark:bg-slate-950/60">
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Library className="h-5 w-5 text-indigo-500" />
-                <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Biblioteca & bloques</h2>
+              <div>
+                <div className="flex items-center gap-2">
+                  <Library className="h-5 w-5 text-indigo-500" />
+                  <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Biblioteca & bloques</h2>
+                </div>
+                {showHeaderDescription && (
+                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-300">
+                    Arrastra bloques prediseñados, ejercicios o plantillas completas. Curado para entrenadores pro.
+                  </p>
+                )}
+                <button
+                  type="button"
+                  className="mt-1 flex items-center gap-1 text-[11px] font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-300"
+                  onClick={() => setShowHeaderDescription((prev) => !prev)}
+                >
+                  {showHeaderDescription ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                  {showHeaderDescription ? 'Ocultar descripción' : 'Mostrar descripción'}
+                </button>
               </div>
+              <Button variant="secondary" size="sm" leftIcon={<Plus className="h-4 w-4" />} onClick={onAddToLibrary}>
+                Añadir a biblioteca
+              </Button>
             </div>
-            <p className="mt-2 text-xs text-slate-500 dark:text-slate-300">
-              Arrastra bloques prediseñados, ejercicios individuales o plantillas completas.
-            </p>
 
             <div className="mt-4">
+            <div className="w-full overflow-hidden">
               <Tabs
                 items={[
                   {
                     id: 'templates',
                     label: 'Plantillas',
                     icon: <ScrollText className="h-3.5 w-3.5 text-indigo-500" />,
+                  },
+                  {
+                    id: 'blocks',
+                    label: 'Bloques',
+                    icon: <Flame className="h-3.5 w-3.5 text-amber-500" />,
                   },
                   {
                     id: 'exercises',
@@ -645,219 +1218,77 @@ function LibrarySidebar({
                 onTabChange={(tabId) => onChangeLibraryTab(tabId as LibraryTab)}
                 variant="pills"
                 size="sm"
+                className="flex w-full justify-between gap-2 whitespace-nowrap rounded-2xl bg-slate-50/80 p-1 dark:bg-slate-900/50"
               />
             </div>
+            </div>
 
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 space-y-2">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
-                  placeholder="Buscar en biblioteca..."
+                  placeholder="Buscar plantillas, bloques o ejercicios..."
                   className="pl-9"
                   value={librarySearch}
                   onChange={(e) => onChangeLibrarySearch(e.target.value)}
                 />
+                {librarySearch.length >= 2 && searchSuggestions.length > 0 && (
+                  <div className="absolute z-20 mt-1 w-full rounded-2xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                    {searchSuggestions.slice(0, 5).map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        className="w-full rounded-xl px-3 py-1.5 text-left text-xs text-slate-600 transition hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                        onClick={() => onSelectSuggestion(suggestion)}
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-              <Select
-                options={[
-                  { label: 'Todos los grupos musculares', value: 'todos' },
-                  { label: 'Push (pecho, hombro, tríceps)', value: 'push' },
-                  { label: 'Pull (espalda, bíceps)', value: 'pull' },
-                  { label: 'Lower body', value: 'lower' },
-                  { label: 'Core & estabilidad', value: 'core' },
-                ]}
-              value={categoryFilter}
-              onChange={(e) => onChangeCategoryFilter(e.target.value)}
-              />
-              {libraryTab === 'exercises' && (
-                <Select
-                  options={[
-                    { label: 'Todos los equipos', value: 'todos' },
-                    ...uniqueEquipments.slice(1).map((eq) => ({ label: eq, value: eq })),
-                  ]}
-                  value={equipmentFilter}
-                  onChange={(e) => onChangeEquipmentFilter(e.target.value)}
-                />
-              )}
+              <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/40">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-slate-400"
+                  onClick={() => setShowFilters((prev) => !prev)}
+                >
+                  <span>Filtros inteligentes</span>
+                  {showFilters ? (
+                    <ChevronUp className="h-3 w-3 text-slate-400" />
+                  ) : (
+                    <ChevronDown className="h-3 w-3 text-slate-400" />
+                  )}
+                </button>
+                {showFilters && (
+                  <div className="mt-2 space-y-2">
+                    {chipsConfig.map((group) => (
+                      <div key={group.id}>
+                        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-300">{group.label}</p>
+                        <div className="mt-1 flex flex-wrap gap-2">
+                          {group.options.map((option) => (
+                            <button
+                              key={option.label}
+                              type="button"
+                              onClick={() => onUpdateQuickFilter(group.id, option.value)}
+                              className={`rounded-full px-2.5 py-1 text-[11px] transition ${
+                                quickFilters[group.id] === option.value
+                                  ? 'bg-slate-900 text-white shadow-sm dark:bg-indigo-500/70'
+                                  : 'bg-white text-slate-500 hover:bg-slate-100 dark:bg-slate-900/60 dark:text-slate-300'
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="mt-4 space-y-3">
-              {libraryTab === 'templates' ? (
-                <>
-                  {pinnedTemplatesCount > 0 && (
-                    <div className="space-y-2">
-                      <div className="text-[11px] font-semibold uppercase tracking-wide text-amber-600">Favoritas</div>
-                      {filteredPinnedTemplates.map((template) => (
-                        <div
-                          key={template.id}
-                          draggable
-                          onDragStart={(e) => {
-                            e.dataTransfer.setData(
-                              'application/json',
-                              JSON.stringify({ type: 'template', item: template })
-                            );
-                            onDragStart('template', template);
-                          }}
-                          className="w-full cursor-move rounded-2xl border border-amber-200/70 bg-amber-50/60 p-4 transition hover:border-amber-300 hover:shadow-sm dark:border-amber-900/40 dark:bg-amber-500/10"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div>
-                              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{template.name}</p>
-                              <p className="text-xs text-slate-500 dark:text-slate-300">{template.focus}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge size="sm" variant={difficultyColorMap[template.difficulty].badgeVariant}>
-                                {difficultyColorMap[template.difficulty].label}
-                              </Badge>
-                              <Badge size="sm" variant="secondary">
-                                {template.duration}
-                              </Badge>
-                              <button
-                                type="button"
-                                aria-label="Quitar de favoritas"
-                                className="rounded-full p-1 text-amber-500 hover:bg-amber-100/60 dark:hover:bg-amber-500/20"
-                                onClick={() => onTogglePinTemplate(template.id)}
-                              >
-                                <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-indigo-600 dark:text-indigo-300">
-                            <span className="rounded-full bg-indigo-50 px-2 py-1 dark:bg-indigo-500/10">Personalizable</span>
-                            <span className="rounded-full bg-indigo-50 px-2 py-1 dark:bg-indigo-500/10">IA ready</span>
-                          </div>
-                        </div>
-                      ))}
-                      <div className="pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                        Todas las plantillas
-                      </div>
-                    </div>
-                  )}
-                  {filteredUnpinnedTemplates.map((template) => (
-                    <div
-                      key={template.id}
-                      draggable
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData(
-                          'application/json',
-                          JSON.stringify({ type: 'template', item: template })
-                        );
-                        onDragStart('template', template);
-                      }}
-                      className="w-full cursor-move rounded-2xl border border-slate-200/70 bg-white/90 p-4 transition hover:border-indigo-300 hover:shadow-md dark:border-slate-800/70 dark:bg-slate-950/60 dark:hover:border-indigo-500/40"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{template.name}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-300">{template.focus}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge size="sm" variant={difficultyColorMap[template.difficulty].badgeVariant}>
-                            {difficultyColorMap[template.difficulty].label}
-                          </Badge>
-                          <Badge size="sm" variant="secondary">
-                            {template.duration}
-                          </Badge>
-                          <button
-                            type="button"
-                            aria-label="Marcar como favorita"
-                            className="rounded-full p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                            onClick={() => onTogglePinTemplate(template.id)}
-                          >
-                            <Star className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-indigo-600 dark:text-indigo-300">
-                        <span className="rounded-full bg-indigo-50 px-2 py-1 dark:bg-indigo-500/10">Personalizable</span>
-                        <span className="rounded-full bg-indigo-50 px-2 py-1 dark:bg-indigo-500/10">IA ready</span>
-                      </div>
-                    </div>
-                  ))}
-                </>
-              ) : (
-                <>
-                  {pinnedExercisesCount > 0 && (
-                    <div className="space-y-2">
-                      <div className="text-[11px] font-semibold uppercase tracking-wide text-amber-600">Favoritos</div>
-                      {filteredPinnedExercises.map((exercise) => (
-                        <div
-                          key={exercise.id}
-                          draggable
-                          onDragStart={(e) => {
-                            e.dataTransfer.setData('application/json', JSON.stringify({ type: 'exercise', item: exercise }));
-                            onDragStart('exercise', exercise);
-                          }}
-                          className="w-full cursor-move rounded-2xl border border-amber-200/70 bg-amber-50/60 p-4 transition hover:border-amber-300 hover:shadow-sm dark:border-amber-900/40 dark:bg-amber-500/10"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div>
-                              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{exercise.name}</p>
-                              <p className="text-xs text-slate-500 dark:text-slate-300">{exercise.target}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge size="sm" variant={difficultyColorMap[exercise.difficulty].badgeVariant}>
-                                {difficultyColorMap[exercise.difficulty].label}
-                              </Badge>
-                              <button
-                                type="button"
-                                aria-label="Quitar de favoritos"
-                                className="rounded-full p-1 text-amber-500 hover:bg-amber-100/60 dark:hover:bg-amber-500/20"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onTogglePinExercise(exercise.id);
-                                }}
-                              >
-                                <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
-                              </button>
-                            </div>
-                          </div>
-                          <p className="mt-3 text-[11px] text-slate-500 dark:text-slate-300">Equipo: {exercise.equipment}</p>
-                        </div>
-                      ))}
-                      <div className="pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                        Todos los ejercicios
-                      </div>
-                    </div>
-                  )}
-                  {filteredUnpinnedExercises.map((exercise) => (
-                    <div
-                      key={exercise.id}
-                      draggable
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData('application/json', JSON.stringify({ type: 'exercise', item: exercise }));
-                        onDragStart('exercise', exercise);
-                      }}
-                      className="w-full cursor-move rounded-2xl border border-slate-200/70 bg-white/90 p-4 transition hover:border-emerald-300 hover:shadow-md dark:border-slate-800/70 dark:bg-slate-950/60 dark:hover:border-emerald-500/40"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{exercise.name}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-300">{exercise.target}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge size="sm" variant={difficultyColorMap[exercise.difficulty].badgeVariant}>
-                            {difficultyColorMap[exercise.difficulty].label}
-                          </Badge>
-                          <button
-                            type="button"
-                            aria-label="Marcar como favorito"
-                            className="rounded-full p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onTogglePinExercise(exercise.id);
-                            }}
-                          >
-                            <Star className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                      <p className="mt-3 text-[11px] text-slate-500 dark:text-slate-300">Equipo: {exercise.equipment}</p>
-                    </div>
-                  ))}
-                </>
-              )}
-            </div>
+            <div className="mt-4 space-y-3">{renderActiveList()}</div>
           </Card>
 
           <Card className="border border-slate-200/70 bg-white/95 p-5 dark:border-slate-800/70 dark:bg-slate-950/60">
@@ -2228,7 +2659,7 @@ export default function ProgramasDeEntrenoEditorPage() {
   const { user } = useAuth();
   const currentProgramId = 'current-program';
   const [activeView, setActiveView] = useState<EditorView>('weekly');
-  const [selectedDay, setSelectedDay] = useState<DayKey>('Lunes');
+  const [selectedDay, setSelectedDay] = useState<DayKey>(weekDays[0]);
   const [leftCollapsed, setLeftCollapsed] = useState(() => {
     try {
       const saved = localStorage.getItem('programasEditor_leftCollapsed');
@@ -2277,19 +2708,12 @@ export default function ProgramasDeEntrenoEditorPage() {
       return '';
     }
   });
-  const [equipmentFilter, setEquipmentFilter] = useState<string>(() => {
+  const [libraryQuickFilters, setLibraryQuickFilters] = useState<LibraryQuickFilters>(() => {
     try {
-      const saved = localStorage.getItem('programasEditor_equipmentFilter');
-      return saved || 'todos';
+      const saved = localStorage.getItem('programasEditor_quickFilters');
+      return saved ? { ...DEFAULT_LIBRARY_FILTERS, ...(JSON.parse(saved) as Partial<LibraryQuickFilters>) } : DEFAULT_LIBRARY_FILTERS;
     } catch {
-      return 'todos';
-    }
-  });
-  const [categoryFilter, setCategoryFilter] = useState<string>(() => {
-    try {
-      return localStorage.getItem('programasEditor_categoryFilter') || 'todos';
-    } catch {
-      return 'todos';
+      return DEFAULT_LIBRARY_FILTERS;
     }
   });
   const [pinnedTemplateIds, setPinnedTemplateIds] = useState<string[]>(() => {
@@ -2335,6 +2759,7 @@ export default function ProgramasDeEntrenoEditorPage() {
   });
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [saveDraftError, setSaveDraftError] = useState<string | null>(null);
+  const [programStatus] = useState<'borrador' | 'enviado' | 'auto-ia'>('borrador');
 
   const togglePinTemplate = useCallback((templateId: string) => {
     setPinnedTemplateIds((prev) => {
@@ -2405,34 +2830,43 @@ export default function ProgramasDeEntrenoEditorPage() {
   // Gestor de historial para sustituciones (undo/redo)
   const substitutionHistoryManager = useMemo(() => new SubstitutionHistoryManager(), []);
 
-  const templateExamples = useMemo(
+  const templateExamples: TemplateExample[] = useMemo(
     () => [
       {
         id: 'hypertrophy-4d',
         name: 'Hipertrofia · 4 días',
-        focus: 'Upper / Lower alterno',
+      focus: 'Hipertrofia upper / lower alterno',
         duration: '45-60 min',
         difficulty: 'Media' as const,
+      equipment: 'Barra, Mancuernas',
+      sessions: 4,
+      aiTags: ['hipertrofia', 'upper/lower', 'volumen controlado'],
       },
       {
         id: 'fat-loss-hiit',
         name: 'Pérdida grasa HIIT',
-        focus: 'Circuitos + Finisher',
+      focus: 'Pérdida de grasa · Circuitos + Finisher',
         duration: '35-40 min',
         difficulty: 'Dificil' as const,
+      equipment: 'Kettlebell, Air bike',
+      sessions: 3,
+      aiTags: ['fat loss', 'hiit', 'metcon'],
       },
       {
         id: 'mobility-reset',
         name: 'Reset movilidad & core',
-        focus: 'Estabilidad + respiración',
+      focus: 'Movilidad + core · Estabilidad + respiración',
         duration: '30 min',
         difficulty: 'Facil' as const,
+      equipment: 'Bandas, Peso corporal',
+      sessions: 2,
+      aiTags: ['movilidad', 'core', 'respiración'],
       },
     ],
     [],
   );
 
-  const exerciseExamples = useMemo(
+  const exerciseExamples: ExerciseExample[] = useMemo(
     () => [
       {
         id: 'front-squat',
@@ -2440,6 +2874,8 @@ export default function ProgramasDeEntrenoEditorPage() {
         target: 'Cuádriceps · Core',
         equipment: 'Barra olímpica',
         difficulty: 'Dificil' as const,
+      intensity: 'Alta' as const,
+      aiTags: ['fuerza', 'bilateral', 'barra'],
       },
       {
         id: 'pullup-last',
@@ -2447,6 +2883,8 @@ export default function ProgramasDeEntrenoEditorPage() {
         target: 'Espalda · Bíceps',
         equipment: 'Chaleco lastre',
         difficulty: 'Dificil' as const,
+      intensity: 'Alta' as const,
+      aiTags: ['tracción', 'calistenia'],
       },
       {
         id: 'kb-complex',
@@ -2454,6 +2892,8 @@ export default function ProgramasDeEntrenoEditorPage() {
         target: 'Full body · Metcon',
         equipment: 'Kettlebell 16-20kg',
         difficulty: 'Media' as const,
+      intensity: 'Media' as const,
+      aiTags: ['metcon', 'emom', 'kettlebell'],
       },
       {
         id: 'tempo-pushup',
@@ -2461,84 +2901,253 @@ export default function ProgramasDeEntrenoEditorPage() {
         target: 'Pecho · Estabilidad',
         equipment: 'Peso corporal',
         difficulty: 'Facil' as const,
+      intensity: 'Baja' as const,
+      aiTags: ['core', 'tempo', 'push'],
       },
     ],
     [],
   );
 
+const blockExamples: BlockExample[] = useMemo(
+  () => [
+    {
+      id: 'block-warmup-mobility',
+      name: 'Reset de movilidad torácica',
+      category: 'Calentamiento' as const,
+      focus: 'Apertura torácica + activación escapular',
+      duration: '10 min',
+      intensity: 'Baja' as const,
+      level: 'Facil' as const,
+      equipment: 'Bandas, Foam roller',
+      goal: 'Movilidad',
+      aiTags: ['movilidad', 'preparación', 'respiración'],
+    },
+    {
+      id: 'block-strength-upper',
+      name: 'Bloque fuerza Upper ondulante',
+      category: 'Fuerza' as const,
+      focus: 'Press + tirón pesado',
+      duration: '35 min',
+      intensity: 'Alta' as const,
+      level: 'Media' as const,
+      equipment: 'Barra, Mancuernas',
+      goal: 'Fuerza',
+      aiTags: ['upper', 'superserie', 'volumen controlado'],
+    },
+    {
+      id: 'block-acc-core',
+      name: 'Core + estabilidad anti-rotación',
+      category: 'Core' as const,
+      focus: 'Control lumbo-pélvico y respiración',
+      duration: '15 min',
+      intensity: 'Media' as const,
+      level: 'Facil' as const,
+      equipment: 'Bandas, Cable',
+      goal: 'Core',
+      aiTags: ['anti-rotación', 'control', 'respiración'],
+    },
+    {
+      id: 'block-hiit-bike',
+      name: 'HIIT bike + sled contrast',
+      category: 'HIIT' as const,
+      focus: 'Capacidad anaeróbica + potencia',
+      duration: '20 min',
+      intensity: 'Alta' as const,
+      level: 'Dificil' as const,
+      equipment: 'Bike, Trineo',
+      goal: 'MetCon',
+      aiTags: ['anaeróbico', 'sled', 'intervalos'],
+    },
+    {
+      id: 'block-mobility-hips',
+      name: 'Flujo movilidad cadera 360º',
+      category: 'Movilidad' as const,
+      focus: 'Cadera + cadena posterior',
+      duration: '12 min',
+      intensity: 'Baja' as const,
+      level: 'Facil' as const,
+      equipment: 'Peso corporal',
+      goal: 'Movilidad',
+      aiTags: ['cadera', 'flow', 'control articular'],
+    },
+  ],
+  [],
+);
+
   const selectedDayPlan = weeklyPlan[selectedDay];
-  const pinnedTemplates = useMemo(
-    () => templateExamples.filter((t) => pinnedTemplateIds.includes(t.id)),
-    [templateExamples, pinnedTemplateIds],
-  );
-  const unpinnedTemplates = useMemo(
-    () => templateExamples.filter((t) => !pinnedTemplateIds.includes(t.id)),
-    [templateExamples, pinnedTemplateIds],
-  );
-  const filteredPinnedTemplates = useMemo(() => {
-    return pinnedTemplates.filter((t) => {
-      const matchesSearch = t.name.toLowerCase().includes(librarySearch.toLowerCase());
-      const matchesCategory =
-        categoryFilter === 'todos' ||
-        t.focus?.toLowerCase().includes(categoryFilter.toLowerCase());
-      return matchesSearch && matchesCategory;
-    });
-  }, [pinnedTemplates, librarySearch, categoryFilter]);
-  const filteredUnpinnedTemplates = useMemo(() => {
-    return unpinnedTemplates.filter((t) => {
-      const matchesSearch = t.name.toLowerCase().includes(librarySearch.toLowerCase());
-      const matchesCategory =
-        categoryFilter === 'todos' ||
-        t.focus?.toLowerCase().includes(categoryFilter.toLowerCase());
-      return matchesSearch && matchesCategory;
-    });
-  }, [unpinnedTemplates, librarySearch, categoryFilter]);
-  const uniqueEquipments = useMemo(() => {
-    const all = Array.from(new Set(exerciseExamples.map((e) => e.equipment)));
-    return ['Todos los equipos', ...all];
-  }, [exerciseExamples]);
-  const filteredExercises = useMemo(() => {
-    const bySearch = exerciseExamples.filter((e) =>
-      e.name.toLowerCase().includes(librarySearch.toLowerCase()),
-    );
-    if (equipmentFilter === 'todos') return bySearch;
-    return bySearch.filter((e) =>
-      e.equipment.toLowerCase().includes(equipmentFilter.toLowerCase()),
-    );
-  }, [exerciseExamples, librarySearch, equipmentFilter]);
-  const pinnedExercises = useMemo(
-    () => exerciseExamples.filter((e) => pinnedExerciseIds.includes(e.id)),
-    [exerciseExamples, pinnedExerciseIds],
-  );
-  const unpinnedExercises = useMemo(
-    () => exerciseExamples.filter((e) => !pinnedExerciseIds.includes(e.id)),
-    [exerciseExamples, pinnedExerciseIds],
-  );
-  const filteredPinnedExercises = useMemo(() => {
-    const bySearch = pinnedExercises.filter((e) =>
-      e.name.toLowerCase().includes(librarySearch.toLowerCase()),
-    );
-    if (equipmentFilter === 'todos') return bySearch;
-    return bySearch.filter((e) =>
-      e.equipment.toLowerCase().includes(equipmentFilter.toLowerCase()),
-    );
-  }, [pinnedExercises, librarySearch, equipmentFilter]);
-  const filteredUnpinnedExercises = useMemo(() => {
-    const bySearch = unpinnedExercises.filter((e) =>
-      e.name.toLowerCase().includes(librarySearch.toLowerCase()),
-    );
-    if (equipmentFilter === 'todos') return bySearch;
-    return bySearch.filter((e) =>
-      e.equipment.toLowerCase().includes(equipmentFilter.toLowerCase()),
-    );
-  }, [unpinnedExercises, librarySearch, equipmentFilter]);
-  const pinnedTemplatesCount = pinnedTemplates.length;
-  const pinnedExercisesCount = pinnedExercises.length;
 
   const parseDurationInMinutes = useCallback((duration: string) => {
     const match = duration.match(/\d+/);
     return match ? Number(match[0]) : 0;
   }, []);
+
+  const durationBucketFor = useCallback(
+    (duration: string) => {
+      const minutes = parseDurationInMinutes(duration);
+      if (minutes === 0) return 'todos';
+      if (minutes < 30) return '<30';
+      if (minutes <= 45) return '30-45';
+      return '>45';
+    },
+    [parseDurationInMinutes],
+  );
+
+  const librarySearchTerm = librarySearch.trim().toLowerCase();
+
+  const filteredTemplates = useMemo(() => {
+    return templateExamples.filter((template) => {
+      if (
+        librarySearchTerm &&
+        ![template.name, template.focus, template.equipment, ...(template.aiTags ?? [])]
+          .filter(Boolean)
+          .some((field) => field!.toLowerCase().includes(librarySearchTerm))
+      ) {
+        return false;
+      }
+
+      if (libraryQuickFilters.nivel !== 'todos' && template.difficulty !== libraryQuickFilters.nivel) return false;
+
+      if (
+        libraryQuickFilters.intensidad !== 'todos' &&
+        difficultyToIntensity(template.difficulty) !== libraryQuickFilters.intensidad
+      ) {
+        return false;
+      }
+
+      if (libraryQuickFilters.duracion !== 'todos' && durationBucketFor(template.duration) !== libraryQuickFilters.duracion) {
+        return false;
+      }
+
+      if (libraryQuickFilters.material !== 'todos') {
+        if (!template.equipment || !template.equipment.toLowerCase().includes(libraryQuickFilters.material.toLowerCase())) {
+          return false;
+        }
+      }
+
+      if (
+        libraryQuickFilters.objetivo !== 'todos' &&
+        !template.focus.toLowerCase().includes(libraryQuickFilters.objetivo.toLowerCase())
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [templateExamples, librarySearchTerm, libraryQuickFilters, durationBucketFor]);
+
+  const templateLists = useMemo(() => {
+    const pinned = filteredTemplates.filter((template) => pinnedTemplateIds.includes(template.id));
+    const unpinned = filteredTemplates.filter((template) => !pinnedTemplateIds.includes(template.id));
+    return {
+      pinned,
+      unpinned,
+      pinnedCount: pinned.length,
+    };
+  }, [filteredTemplates, pinnedTemplateIds]);
+
+  const filteredBlocks = useMemo(() => {
+    return blockExamples.filter((block) => {
+      if (
+        librarySearchTerm &&
+        ![block.name, block.focus, block.goal, ...(block.aiTags ?? [])]
+          .filter(Boolean)
+          .some((field) => field!.toLowerCase().includes(librarySearchTerm))
+      ) {
+        return false;
+      }
+
+      if (libraryQuickFilters.nivel !== 'todos' && block.level !== libraryQuickFilters.nivel) return false;
+      if (libraryQuickFilters.intensidad !== 'todos' && block.intensity !== libraryQuickFilters.intensidad) return false;
+      if (libraryQuickFilters.material !== 'todos' && !block.equipment.toLowerCase().includes(libraryQuickFilters.material.toLowerCase())) {
+        return false;
+      }
+      if (libraryQuickFilters.duracion !== 'todos' && durationBucketFor(block.duration) !== libraryQuickFilters.duracion) {
+        return false;
+      }
+      if (libraryQuickFilters.objetivo !== 'todos' && !block.goal.toLowerCase().includes(libraryQuickFilters.objetivo.toLowerCase())) {
+        return false;
+      }
+      if (libraryQuickFilters.bloque !== 'todos' && block.category !== libraryQuickFilters.bloque) return false;
+
+      return true;
+    });
+  }, [blockExamples, libraryQuickFilters, durationBucketFor, librarySearchTerm]);
+
+  const filteredExercises = useMemo(() => {
+    return exerciseExamples.filter((exercise) => {
+      if (
+        librarySearchTerm &&
+        ![exercise.name, exercise.target, exercise.equipment, ...(exercise.aiTags ?? [])]
+          .filter(Boolean)
+          .some((field) => field!.toLowerCase().includes(librarySearchTerm))
+      ) {
+        return false;
+      }
+
+      if (libraryQuickFilters.nivel !== 'todos' && exercise.difficulty !== libraryQuickFilters.nivel) return false;
+
+      const exerciseIntensity = exercise.intensity ?? difficultyToIntensity(exercise.difficulty);
+      if (libraryQuickFilters.intensidad !== 'todos' && exerciseIntensity !== libraryQuickFilters.intensidad) return false;
+
+      if (
+        libraryQuickFilters.material !== 'todos' &&
+        !exercise.equipment.toLowerCase().includes(libraryQuickFilters.material.toLowerCase())
+      ) {
+        return false;
+      }
+
+      if (
+        libraryQuickFilters.objetivo !== 'todos' &&
+        !exercise.target.toLowerCase().includes(libraryQuickFilters.objetivo.toLowerCase())
+      ) {
+        return false;
+      }
+
+      if (libraryQuickFilters.duracion !== 'todos' && libraryQuickFilters.duracion === '<30') {
+        // consider bodyweight/aux exercises as cortos
+      }
+
+      return true;
+    });
+  }, [exerciseExamples, libraryQuickFilters, librarySearchTerm]);
+
+  const exerciseLists = useMemo(() => {
+    const pinned = filteredExercises.filter((exercise) => pinnedExerciseIds.includes(exercise.id));
+    const unpinned = filteredExercises.filter((exercise) => !pinnedExerciseIds.includes(exercise.id));
+    return {
+      pinned,
+      unpinned,
+      pinnedCount: pinned.length,
+    };
+  }, [filteredExercises, pinnedExerciseIds]);
+
+  const searchSuggestions = useMemo(() => {
+    if (librarySearch.trim().length < 2) return [];
+    const term = librarySearch.trim().toLowerCase();
+    const pool = new Set<string>();
+
+    templateExamples.forEach((template) => {
+      pool.add(template.name);
+      pool.add(template.focus);
+      template.aiTags?.forEach((tag) => pool.add(tag));
+    });
+    blockExamples.forEach((block) => {
+      pool.add(block.name);
+      pool.add(block.goal);
+      block.aiTags.forEach((tag) => pool.add(tag));
+    });
+    exerciseExamples.forEach((exercise) => {
+      pool.add(exercise.name);
+      pool.add(exercise.target);
+      pool.add(exercise.equipment);
+      exercise.aiTags?.forEach((tag) => pool.add(tag));
+    });
+
+    return Array.from(pool)
+      .filter((item): item is string => Boolean(item))
+      .filter((item) => item.toLowerCase().includes(term))
+      .slice(0, 8);
+  }, [librarySearch, templateExamples, blockExamples, exerciseExamples]);
 
   const weeklyOverview = useMemo(() => {
     return weekDays.reduce(
@@ -2613,9 +3222,11 @@ export default function ProgramasDeEntrenoEditorPage() {
       objetivos: ['Pérdida de grasa', 'Mejorar fuerza tren inferior', 'Mejorar postura'],
       restricciones: ['Tendinopatía rotuliana leve', 'Límites en impacto alto', 'Evitar hiperextensión lumbar'],
       notas: 'Prefiere sesiones de 40-50 min, 4 días/semana. Historial de running recreativo.',
+      avatarUrl: null as string | null,
     }),
     [],
   );
+  const clientContext = `${selectedClient.nivel} · ${selectedClient.objetivos[0] ?? 'Objetivo activo'}`;
 
   const contextoCliente = useMemo<ContextoCliente>(
     () => ({
@@ -2979,6 +3590,7 @@ export default function ProgramasDeEntrenoEditorPage() {
 
     return [];
   }, [activeView, weeklyPlan, weekDays, weeklyOverview, weeklyTargets, weeklyCalories, selectedDayPlan]);
+  const primarySuggestion = contextualSuggestions[0] ?? null;
 
   const handleUpdateDayPlan = useCallback(
     (day: string, updates: Partial<DayPlan>) => {
@@ -3118,6 +3730,7 @@ export default function ProgramasDeEntrenoEditorPage() {
               },
             }));
           }}
+        onDropFromLibrary={(day, payload) => handleDropFromLibrary(day as DayKey, payload)}
         />
       );
     }
@@ -3196,23 +3809,27 @@ export default function ProgramasDeEntrenoEditorPage() {
     }
   }, []);
 
-  const handleEquipmentFilterChange = useCallback((value: string) => {
-    setEquipmentFilter(value);
-    try {
-      localStorage.setItem('programasEditor_equipmentFilter', value);
-    } catch {
-      // ignore persistence errors
-    }
-  }, []);
+  const handleSelectLibrarySuggestion = useCallback(
+    (value: string) => {
+      handleLibrarySearchChange(value);
+    },
+    [handleLibrarySearchChange],
+  );
 
-  const handleCategoryFilterChange = useCallback((value: string) => {
-    setCategoryFilter(value);
-    try {
-      localStorage.setItem('programasEditor_categoryFilter', value);
-    } catch {
-      // ignore persistence errors
-    }
-  }, []);
+  const handleQuickFilterChange = useCallback(
+    (filter: keyof LibraryQuickFilters, value: LibraryQuickFilters[keyof LibraryQuickFilters]) => {
+      setLibraryQuickFilters((prev) => {
+        const next = { ...prev, [filter]: value };
+        try {
+          localStorage.setItem('programasEditor_quickFilters', JSON.stringify(next));
+        } catch {
+          // ignore
+        }
+        return next;
+      });
+    },
+    [],
+  );
 
   const handleResetManualTargets = useCallback(() => {
     updateManualWeeklyTargets({ sessions: null, duration: null, calories: null });
@@ -3293,8 +3910,98 @@ export default function ProgramasDeEntrenoEditorPage() {
   }, []);
 
   const handleLibraryDragStart = useCallback(
-    (_type: 'template' | 'exercise', _item: TemplateExample | ExerciseExample) => {
-      // Placeholder for analytics or contextual hints
+    (_type: 'template' | 'block' | 'exercise', _item: TemplateExample | BlockExample | ExerciseExample) => {
+      // Placeholder for analytics o métricas
+    },
+    [],
+  );
+
+  const handleQuickClientSwitch = useCallback(() => {
+    setIsClientInfoOpen(true);
+  }, [setIsClientInfoOpen]);
+
+  const handleImportTemplate = useCallback(() => {
+    setLeftCollapsed((prev: boolean) => {
+      if (prev) {
+        try {
+          localStorage.setItem('programasEditor_leftCollapsed', JSON.stringify(false));
+        } catch {
+          // ignore persistence errors
+        }
+        return false;
+      }
+      return prev;
+    });
+
+    setLibraryTab('templates');
+    try {
+      localStorage.setItem('programasEditor_libraryTab', 'templates');
+    } catch {
+      // ignore persistence errors
+    }
+  }, [setLeftCollapsed, setLibraryTab]);
+
+  const handleAddToLibrary = useCallback(() => {
+    console.info('Añadir a biblioteca - próximamente');
+  }, []);
+
+  const handleDropFromLibrary = useCallback(
+    (day: DayKey, data: { type: 'template' | 'block' | 'exercise'; item: TemplateExample | BlockExample | ExerciseExample }) => {
+      const createSession = () => {
+        const base = {
+          id: `lib-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          time: '10:00',
+          duration: '30 min',
+          modality: 'Custom',
+          intensity: 'Media',
+          notes: 'Añadido desde biblioteca',
+        };
+
+        if (data.type === 'template') {
+          const template = data.item as TemplateExample;
+          return {
+            ...base,
+            block: template.name,
+            duration: template.duration,
+            modality: template.focus.includes('Mob') ? 'Mobility' : 'Strength',
+            intensity: difficultyToIntensity(template.difficulty),
+            notes: template.focus,
+          };
+        }
+        if (data.type === 'block') {
+          const block = data.item as BlockExample;
+          return {
+            ...base,
+            block: block.name,
+            duration: block.duration,
+            modality: block.category,
+            intensity: block.intensity,
+            notes: block.focus,
+          };
+        }
+
+        const exercise = data.item as ExerciseExample;
+        return {
+          ...base,
+          block: exercise.name,
+          duration: '12 min',
+          modality: exercise.target.includes('Core') ? 'Core' : 'Accessory',
+          intensity: exercise.intensity ?? difficultyToIntensity(exercise.difficulty),
+          notes: `Equipo: ${exercise.equipment}`,
+        };
+      };
+
+      setWeeklyPlan((prev) => {
+        const dayPlan = prev[day];
+        if (!dayPlan) return prev;
+        return {
+          ...prev,
+          [day]: {
+            ...dayPlan,
+            sessions: [...dayPlan.sessions, createSession()],
+          },
+        };
+      });
     },
     [],
   );
@@ -3308,6 +4015,7 @@ export default function ProgramasDeEntrenoEditorPage() {
           rightCollapsed={rightCollapsed}
           onRestoreRightPanel={handleRestoreRightPanel}
           onOpenClientInfo={() => setIsClientInfoOpen(true)}
+          onQuickSwitchClient={handleQuickClientSwitch}
           onOpenFitCoach={() => setIsFitCoachOpen(true)}
           onOpenSubstitutions={() => setIsSubstitutionsOpen(true)}
           onOpenBatchTraining={() => setIsBatchTrainingOpen(true)}
@@ -3316,14 +4024,22 @@ export default function ProgramasDeEntrenoEditorPage() {
           onOpenTagManager={() => setIsTagManagerOpen(true)}
           onOpenCharts={() => setIsChartsOpen(true)}
           onOpenLayoutSurvey={() => setIsLayoutSurveyOpen(true)}
-        onOpenAutomationPresets={() => setIsAutomationPresetsOpen(true)}
+          onOpenAutomationPresets={() => setIsAutomationPresetsOpen(true)}
+          onOpenImportTemplate={handleImportTemplate}
           onOpenBulkAutomation={() => setIsBulkAutomationOpen(true)}
           onSaveDraft={handleOpenSaveDraftModal}
           lastSaveTime={lastSaveTime}
+          activeView={activeView}
+          onChangeView={(view) => setActiveView(view)}
+          clienteNombre={selectedClient.nombre}
+          clienteContexto={clientContext}
+          clienteAvatarUrl={selectedClient.avatarUrl}
+          programaEstado={programStatus}
+          clienteNivel={selectedClient.nivel}
+          clienteLesion={selectedClient.restricciones[0] ?? null}
+          clienteObjetivo={selectedClient.objetivos[0] ?? null}
+          clienteAlerta={primarySuggestion}
         />
-
-        {/* View selector */}
-        <ViewSelector activeView={activeView} onChange={(view) => setActiveView(view)} />
 
         {layoutRecommendedTemplates.length > 0 && (
           <Card className="border border-indigo-200/70 bg-white/95 p-4 shadow-sm dark:border-indigo-900/40 dark:bg-slate-950/60">
@@ -3374,21 +4090,17 @@ export default function ProgramasDeEntrenoEditorPage() {
             onChangeLibraryTab={handleLibraryTabChange}
             librarySearch={librarySearch}
             onChangeLibrarySearch={handleLibrarySearchChange}
-            equipmentFilter={equipmentFilter}
-            onChangeEquipmentFilter={handleEquipmentFilterChange}
-            categoryFilter={categoryFilter}
-            onChangeCategoryFilter={handleCategoryFilterChange}
-            uniqueEquipments={uniqueEquipments}
-            filteredPinnedTemplates={filteredPinnedTemplates}
-            filteredUnpinnedTemplates={filteredUnpinnedTemplates}
-            filteredPinnedExercises={filteredPinnedExercises}
-            filteredUnpinnedExercises={filteredUnpinnedExercises}
-            filteredExercises={filteredExercises}
-            pinnedTemplatesCount={pinnedTemplatesCount}
-            pinnedExercisesCount={pinnedExercisesCount}
+            searchSuggestions={searchSuggestions}
+            onSelectSuggestion={handleSelectLibrarySuggestion}
+            quickFilters={libraryQuickFilters}
+            onUpdateQuickFilter={handleQuickFilterChange}
+            templateLists={templateLists}
+            blockList={filteredBlocks}
+            exerciseLists={exerciseLists}
             onTogglePinTemplate={togglePinTemplate}
             onTogglePinExercise={togglePinExercise}
             onDragStart={handleLibraryDragStart}
+            onAddToLibrary={handleAddToLibrary}
           />
 
           <main className="flex-1 space-y-4">{renderCanvas()}</main>

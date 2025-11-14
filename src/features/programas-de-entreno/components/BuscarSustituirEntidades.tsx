@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import type { DayPlan, DaySession } from '../types';
 
-type DayKey = 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes' | 'Sábado' | 'Domingo';
+type DayKey = string;
 
 interface BuscarSustituirEntidadesProps {
   open: boolean;

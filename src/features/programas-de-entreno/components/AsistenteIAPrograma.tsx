@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import type { DayPlan, DaySession, ContextoCliente, ResumenObjetivosProgreso, TimelineSesiones } from '../types';
 
-type DayKey = 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes' | 'Sábado' | 'Domingo';
+type DayKey = string;
 
 interface RazonamientoSugerencia {
   metricas?: {

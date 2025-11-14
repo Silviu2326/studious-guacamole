@@ -1,39 +1,35 @@
 import { useCallback, useMemo, useState, useEffect } from 'react';
 import {
+  AlertCircle,
   BarChart3,
   Calculator,
+  Calendar,
   Check,
-  Clipboard,
+  CheckCircle2,
   Columns,
-  Copy,
-  Download,
   Dumbbell,
   Filter,
   FileSpreadsheet,
   LineChart,
+  MoreHorizontal,
   PieChart,
   Plus,
   Redo,
   Rows,
-  Save,
-  Scissors,
   Search,
   Settings,
   SortAsc,
-  SortDesc,
+  Sparkles,
+  Table2,
+  TrendingDown,
+  TrendingUp,
   Trash2,
   Undo,
+  User,
   X,
+  XCircle,
   ZoomIn,
   ZoomOut,
-  AlertCircle,
-  User,
-  CheckCircle2,
-  TrendingUp,
-  TrendingDown,
-  XCircle,
-  Table2,
-  Calendar,
 } from 'lucide-react';
 import { Button, Input } from '../../../components/componentsreutilizables';
 import type { DayPlan, PreferenciasCoachExcel, GrupoMuscular, ContextoCliente, ResumenObjetivosProgreso } from '../types';
@@ -79,6 +75,14 @@ type ExcelSummaryViewProps = {
 
 const EXCEL_ROW_OFFSET = 2;
 
+const SHEET_DESCRIPTIONS: Record<string, string> = {
+  'Resumen semanal': 'Indicadores globales de volumen, intensidad y calorías por día.',
+  'Detalle sesiones': 'Listado granular de sesiones, bloques y notas por jornada.',
+  'Volumen · grupos': 'Análisis automático de volumen y minutos por grupo muscular.',
+  'Intensidad · día': 'Distribución de RPE, RIR estimado y tonelaje diario.',
+  'Fatiga · IA': 'Panel de sobrecarga con recomendaciones IA para ajustar el microciclo.',
+};
+
 const parseFirstNumber = (value: string) => {
   const match = value.match(/\d+(?:[.,]\d+)?/);
   return match ? Number(match[0].replace(',', '.')) : null;
@@ -108,6 +112,8 @@ export function ExcelSummaryView({ weekDays, weeklyPlan, onUpdateDayPlan, weekly
   const [preferencias, setPreferencias] = useState<PreferenciasCoachExcel | null>(null);
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [hasCheckedPreferences, setHasCheckedPreferences] = useState(false);
+  const [showMoreActions, setShowMoreActions] = useState(false);
+  const [showEmbeddedCharts, setShowEmbeddedCharts] = useState(true);
 
   // Cargar preferencias del coach
   useEffect(() => {
@@ -129,6 +135,97 @@ export function ExcelSummaryView({ weekDays, weeklyPlan, onUpdateDayPlan, weekly
 
     loadPreferences();
   }, [user?.id]);
+
+  const muscleGroupSummary = useMemo(() => {
+    const summary: Record<string, { volume: number; duration: number }> = {};
+    weekDays.forEach((day) => {
+      const plan = weeklyPlan[day];
+      plan?.sessions.forEach((session) => {
+        const grupos = session.gruposMusculares?.length ? session.gruposMusculares : ['full-body'];
+        const duration = parseFirstNumber(session.duration ?? '') ?? 0;
+        const volume = session.series ?? 1;
+        grupos.forEach((grupo) => {
+          if (!summary[grupo]) {
+            summary[grupo] = { volume: 0, duration: 0 };
+          }
+          summary[grupo].volume += volume;
+          summary[grupo].duration += duration;
+        });
+      });
+    });
+    return Object.entries(summary)
+      .map(([grupo, data]) => ({ grupo, volume: data.volume, duration: data.duration }))
+      .sort((a, b) => b.volume - a.volume);
+  }, [weekDays, weeklyPlan]);
+
+  const intensityDistribution = useMemo(() => {
+    return weekDays.map((day) => {
+      const plan = weeklyPlan[day];
+      let totalRpe = 0;
+      let rpeCount = 0;
+      let tonnage = 0;
+      plan?.sessions.forEach((session) => {
+        const rpeMatch = session.intensity?.match(/(\d+(?:\.\d+)?)/);
+        if (rpeMatch) {
+          totalRpe += parseFloat(rpeMatch[1]);
+          rpeCount += 1;
+        }
+        const series = session.series ?? 0;
+        const reps = parseFirstNumber(session.repeticiones ?? '') ?? 0;
+        tonnage += series * reps;
+      });
+      const averageRpe = rpeCount > 0 ? Number((totalRpe / rpeCount).toFixed(1)) : null;
+      const rir = averageRpe !== null ? Math.max(0, Number((10 - averageRpe).toFixed(1))) : null;
+      return {
+        day,
+        rpe: averageRpe,
+        rir,
+        tonnage,
+      };
+    });
+  }, [weekDays, weeklyPlan]);
+
+  const fatigueInsights = useMemo(() => {
+    return weekDays.map((day) => {
+      const plan = weeklyPlan[day];
+      const totalMinutes = plan?.sessions.reduce((total, session) => total + (parseFirstNumber(session.duration) ?? 0), 0) ?? 0;
+      const reference = weeklyTargets?.duration ?? 60;
+      const overloadPercentage = reference > 0 ? Math.round(((totalMinutes - reference) / reference) * 100) : 0;
+      let recommendation = 'OK';
+      if (overloadPercentage >= 25) {
+        recommendation = 'Sugiere día de descarga';
+      } else if (overloadPercentage >= 15) {
+        recommendation = 'Reducir volumen accesorios';
+      } else if (overloadPercentage <= -10) {
+        recommendation = 'Aumentar estímulo progresivo';
+      }
+      return {
+        day,
+        overload: overloadPercentage,
+        recommendation,
+      };
+    });
+  }, [weekDays, weeklyPlan, weeklyTargets]);
+
+  const weeklyAnalytics = useMemo(() => {
+    const totalMinutes = weekDays.reduce((acc, day) => {
+      const plan = weeklyPlan[day];
+      return acc + (plan?.sessions.reduce((total, session) => total + (parseFirstNumber(session.duration) ?? 0), 0) ?? 0);
+    }, 0);
+    const avgRpe =
+      intensityDistribution.filter((item) => item.rpe !== null).reduce((acc, item) => acc + (item.rpe ?? 0), 0) /
+      (intensityDistribution.filter((item) => item.rpe !== null).length || 1);
+    const topMuscle = muscleGroupSummary[0];
+    const fatigueCritical =
+      fatigueInsights.find((item) => item.overload >= 15) ??
+      fatigueInsights.sort((a, b) => b.overload - a.overload)[0];
+    return {
+      totalMinutes,
+      avgRpe: Number(avgRpe.toFixed(1)),
+      topMuscle,
+      fatigueCritical,
+    };
+  }, [weekDays, weeklyPlan, intensityDistribution, muscleGroupSummary, fatigueInsights]);
 
   const handlePreferencesSaved = async () => {
     if (!user?.id) return;
@@ -241,6 +338,57 @@ export function ExcelSummaryView({ weekDays, weeklyPlan, onUpdateDayPlan, weekly
       });
     });
 
+    const muscleHeader: ExcelRow = {
+      A: { value: 'GRUPO', bold: true, backgroundColor: '#f3f4f6' },
+      B: { value: 'SERIES', bold: true, backgroundColor: '#f3f4f6' },
+      C: { value: 'MINUTOS', bold: true, backgroundColor: '#f3f4f6' },
+    };
+
+    const muscleRows: ExcelRow[] = [
+      muscleHeader,
+      ...muscleGroupSummary.map((item) => ({
+        A: { value: item.grupo },
+        B: { value: item.volume },
+        C: { value: item.duration },
+      })),
+    ];
+
+    const intensityHeader: ExcelRow = {
+      A: { value: 'DÍA', bold: true, backgroundColor: '#f3f4f6' },
+      B: { value: 'RPE MEDIO', bold: true, backgroundColor: '#f3f4f6' },
+      C: { value: 'RIR EST.', bold: true, backgroundColor: '#f3f4f6' },
+      D: { value: 'TONELAJE EST.', bold: true, backgroundColor: '#f3f4f6' },
+    };
+
+    const intensityRows: ExcelRow[] = [
+      intensityHeader,
+      ...intensityDistribution.map((item) => ({
+        A: { value: item.day },
+        B: { value: item.rpe ?? '—' },
+        C: { value: item.rir ?? '—' },
+        D: { value: item.tonnage },
+      })),
+    ];
+
+    const fatigueHeader: ExcelRow = {
+      A: { value: 'DÍA', bold: true, backgroundColor: '#f3f4f6' },
+      B: { value: 'SOBRECARGA %', bold: true, backgroundColor: '#f3f4f6' },
+      C: { value: 'RECOMENDACIÓN IA', bold: true, backgroundColor: '#f3f4f6' },
+    };
+
+    const fatigueRows: ExcelRow[] = [
+      fatigueHeader,
+      ...fatigueInsights.map((item) => ({
+        A: { value: item.day },
+        B: {
+          value: `${item.overload}%`,
+          backgroundColor:
+            item.overload >= 20 ? '#fee2e2' : item.overload <= -10 ? '#dbeafe' : undefined,
+        },
+        C: { value: item.recommendation },
+      })),
+    ];
+
     return [
       {
         name: 'Resumen semanal',
@@ -252,8 +400,23 @@ export function ExcelSummaryView({ weekDays, weeklyPlan, onUpdateDayPlan, weekly
         columns: ['A', 'B', 'C', 'D', 'E', 'F'],
         data: detailRows,
       },
+      {
+        name: 'Volumen · grupos',
+        columns: ['A', 'B', 'C'],
+        data: muscleRows,
+      },
+      {
+        name: 'Intensidad · día',
+        columns: ['A', 'B', 'C', 'D'],
+        data: intensityRows,
+      },
+      {
+        name: 'Fatiga · IA',
+        columns: ['A', 'B', 'C'],
+        data: fatigueRows,
+      },
     ];
-  }, [weekDays, weeklyPlan, weeklyTargets]);
+  }, [weekDays, weeklyPlan, weeklyTargets, muscleGroupSummary, intensityDistribution, fatigueInsights]);
 
   const currentSheet = sheets[activeSheet] ?? sheets[0];
 
@@ -499,160 +662,230 @@ export function ExcelSummaryView({ weekDays, weeklyPlan, onUpdateDayPlan, weekly
 
   return (
     <div className="space-y-6 font-sans text-slate-700 dark:text-slate-700 relative">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm dark:border-slate-800 dark:bg-slate-950">
-        <div>
-          <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Resumen semanal · Vista Excel</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Replica el formato de una hoja de cálculo: selecciona filas, revisa totales y exporta los datos.
-          </p>
+      <div className="rounded-3xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Vista Excel · Editor IA</p>
+            <h2 className="text-2xl font-semibold text-slate-900">Planificación semanal</h2>
+            <p className="text-sm text-slate-500">
+              Analiza el programa como una hoja de cálculo dinámica: selecciona rangos, aplica IA y exporta insights.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="ghost" size="sm" leftIcon={<Undo className="h-4 w-4" />}>
+              Deshacer
+            </Button>
+            <Button variant="ghost" size="sm" leftIcon={<Redo className="h-4 w-4" />}>
+              Rehacer
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={<FileSpreadsheet className="h-4 w-4" />}
+            >
+              Exportar .xlsx
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<Settings className="h-4 w-4" />}
+              onClick={() => setShowQuestionnaire(true)}
+            >
+              Preferencias
+            </Button>
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                leftIcon={<MoreHorizontal className="h-4 w-4" />}
+                onClick={() => setShowMoreActions((prev) => !prev)}
+              >
+                Más
+              </Button>
+              {showMoreActions && (
+                <div className="absolute right-0 z-30 mt-2 w-56 rounded-2xl border border-slate-200 bg-white p-2 text-xs shadow-xl">
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-slate-600 transition hover:bg-slate-50"
+                    onClick={() => {
+                      setShowAddRow(true);
+                      setShowMoreActions(false);
+                    }}
+                  >
+                    <Rows className="h-4 w-4" />
+                    Añadir filas
+                  </button>
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-slate-600 transition hover:bg-slate-50"
+                    onClick={() => {
+                      setShowAddColumn(true);
+                      setShowMoreActions(false);
+                    }}
+                  >
+                    <Columns className="h-4 w-4" />
+                    Añadir columnas
+                  </button>
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-slate-600 transition hover:bg-slate-50"
+                    onClick={() => {
+                      setShowCharts(true);
+                      setShowMoreActions(false);
+                    }}
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    Insertar gráfico
+                  </button>
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-rose-500 transition hover:bg-rose-50"
+                    onClick={() => {
+                      setShowAddRow(false);
+                      setShowAddColumn(false);
+                      setShowCharts(false);
+                      setShowMoreActions(false);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                    Limpiar acciones
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+      {showEmbeddedCharts && (
+        <div className="grid gap-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-500 p-4 text-white shadow">
+            <p className="text-xs uppercase tracking-wide text-white/70">Carga semanal</p>
+            <p className="mt-2 text-3xl font-semibold">{weeklyAnalytics.totalMinutes} min</p>
+            <p className="text-xs text-white/80">Duración total planificada</p>
+          </div>
+          <div className="rounded-2xl border border-slate-100 p-4">
+            <p className="text-xs uppercase tracking-wide text-slate-400">Grupo con más volumen</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">
+              {weeklyAnalytics.topMuscle?.grupo ?? '—'}
+            </p>
+            <p className="text-sm text-slate-500">
+              {weeklyAnalytics.topMuscle
+                ? `${weeklyAnalytics.topMuscle.volume} series · ${weeklyAnalytics.topMuscle.duration} min`
+                : 'Sin datos registrados'}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-100 p-4">
+            <p className="text-xs uppercase tracking-wide text-slate-400">Intensidad media</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">{weeklyAnalytics.avgRpe}/10 RPE</p>
+            <p className="text-sm text-slate-500">Estimación basada en los bloques del plan</p>
+          </div>
+          <div className="rounded-2xl border border-slate-100 p-4">
+            <p className="text-xs uppercase tracking-wide text-slate-400">Fatiga IA</p>
+            {weeklyAnalytics.fatigueCritical ? (
+              <>
+                <p className="mt-2 text-2xl font-semibold text-slate-900">
+                  {weeklyAnalytics.fatigueCritical.day}
+                </p>
+                <p className="text-sm text-slate-500">
+                  Sobrecarga {weeklyAnalytics.fatigueCritical.overload}% ·{' '}
+                  {weeklyAnalytics.fatigueCritical.recommendation}
+                </p>
+              </>
+            ) : (
+              <p className="mt-2 text-sm text-slate-500">Sin alertas esta semana</p>
+            )}
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            leftIcon={<Settings className="h-4 w-4" />}
-            onClick={() => setShowQuestionnaire(true)}
+      )}
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <div className="flex flex-1 min-w-[220px] items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+            <Search className="h-4 w-4 text-slate-400" />
+            <input
+              className="w-full bg-transparent focus:outline-none"
+              placeholder="Buscar días, bloques o ejercicios..."
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+            />
+          </div>
+          <Button
+            variant={showFilters ? 'secondary' : 'ghost'}
+            size="sm"
+            leftIcon={<Filter className="h-4 w-4" />}
+            onClick={() => setShowFilters((prev) => !prev)}
           >
-            Configurar vista
+            Filtros
           </Button>
-          <Button variant="primary" size="sm" leftIcon={<FileSpreadsheet className="h-4 w-4" />}>
-            Exportar .xlsx
+          <Button
+            variant={showAddColumn || showAddRow ? 'secondary' : 'ghost'}
+            size="sm"
+            leftIcon={<Columns className="h-4 w-4" />}
+            onClick={() => {
+              setShowAddColumn((prev) => !prev);
+              setShowAddRow(false);
+            }}
+          >
+            Columnas
           </Button>
-          <Button variant="secondary" size="sm">
-            Importar
+          <Button
+            variant={showFormulaBar ? 'secondary' : 'ghost'}
+            size="sm"
+            leftIcon={<Calculator className="h-4 w-4" />}
+            onClick={() => setShowFormulaBar((prev) => !prev)}
+          >
+            Fórmulas
           </Button>
-          <Button variant="ghost" size="sm">
-            Compartir vista
+          <Button
+            variant={showEmbeddedCharts ? 'secondary' : 'ghost'}
+            size="sm"
+            leftIcon={<BarChart3 className="h-4 w-4" />}
+            onClick={() => setShowEmbeddedCharts((prev) => !prev)}
+          >
+            Analytics
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            leftIcon={<Sparkles className="h-4 w-4" />}
+            onClick={() => {
+              if (!selectedRange && currentSheet?.data?.[1]) {
+                setSelectedCell('1-A');
+                setRangeStart('1-A');
+                setSelectedRange({ start: '1-A', end: '1-A' });
+              }
+              setShowRightPanel(true);
+            }}
+          >
+            IA Insight
           </Button>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-        <div className="border-b border-slate-200 bg-gradient-to-r from-emerald-600 to-sky-600 px-6 py-4 text-white">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 bg-white px-6 py-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <FileSpreadsheet className="h-6 w-6 text-white" />
-              <div>
-                <h2 className="text-lg font-bold">Planificación semanal</h2>
-                <p className="text-sm text-emerald-100">Vista estilo Excel para controlar sesiones y cargas</p>
-              </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-400">Hoja activa</p>
+              <h3 className="text-lg font-semibold text-slate-900">{currentSheet.name}</h3>
+              <p className="text-xs text-slate-500">{SHEET_DESCRIPTIONS[currentSheet.name] ?? 'Análisis específico del programa.'}</p>
             </div>
-            <div className="flex items-center gap-2">
-              <button className="rounded-lg bg-white/20 px-3 py-2 text-white transition hover:bg-white/30" type="button">
-                <Save className="h-4 w-4" />
-              </button>
-              <button className="rounded-lg bg-white/20 px-3 py-2 text-white transition hover:bg-white/30" type="button">
-                <Download className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1">
-              <button className="rounded p-2 transition hover:bg-slate-200" type="button">
-                <Undo className="h-4 w-4" />
-              </button>
-              <button className="rounded p-2 transition hover:bg-slate-200" type="button">
-                <Redo className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="h-6 w-px bg-slate-300" />
-            <div className="flex items-center gap-1">
-              <button className="rounded p-2 transition hover:bg-slate-200" type="button">
-                <Scissors className="h-4 w-4" />
-              </button>
-              <button className="rounded p-2 transition hover:bg-slate-200" type="button">
-                <Copy className="h-4 w-4" />
-              </button>
-              <button className="rounded p-2 transition hover:bg-slate-200" type="button">
-                <Clipboard className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="h-6 w-px bg-slate-300" />
-            <div className="flex items-center gap-1">
-              <button
-                className={`rounded p-2 transition ${showAddRow ? 'bg-emerald-200 text-emerald-700' : 'hover:bg-slate-200'}`}
-                type="button"
-                onClick={() => setShowAddRow((prev) => !prev)}
-              >
-                <Rows className="h-4 w-4" />
-              </button>
-              <button
-                className={`rounded p-2 transition ${showAddColumn ? 'bg-emerald-200 text-emerald-700' : 'hover:bg-slate-200'}`}
-                type="button"
-                onClick={() => setShowAddColumn((prev) => !prev)}
-              >
-                <Columns className="h-4 w-4" />
-              </button>
-              <button className="rounded p-2 transition hover:bg-slate-200" type="button">
-                <Trash2 className="h-4 w-4 text-red-600" />
-              </button>
-            </div>
-            <div className="h-6 w-px bg-slate-300" />
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 rounded border border-slate-300 bg-white px-2">
-                <Search className="h-4 w-4 text-slate-500" />
-                <input
-                  className="h-7 bg-transparent text-xs focus:outline-none"
-                  placeholder="Buscar..."
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                />
-              </div>
-              <button
-                className={`rounded p-2 transition ${showFilters ? 'bg-emerald-200 text-emerald-700' : 'hover:bg-slate-200'}`}
-                type="button"
-                onClick={() => setShowFilters((prev) => !prev)}
-              >
-                <Filter className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="h-6 w-px bg-slate-300" />
-            <div className="flex items-center gap-1">
-              <button className="rounded p-2 transition hover:bg-slate-200" type="button" onClick={() => setSortColumn('A')}>
-                <SortAsc className="h-4 w-4" />
-              </button>
-              <button
-                className="rounded p-2 transition hover:bg-slate-200"
-                type="button"
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="ghost" size="sm" leftIcon={<Calculator className="h-4 w-4" />} onClick={() => setShowFormulaBar((prev) => !prev)}>
+                Fórmula
+              </Button>
+              <Button variant="ghost" size="sm" leftIcon={<BarChart3 className="h-4 w-4" />} onClick={() => setShowCharts((prev) => !prev)}>
+                Insertar gráfico
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                leftIcon={<SortAsc className="h-4 w-4" />}
                 onClick={() => {
                   setSortColumn('A');
                   setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
                 }}
               >
-                <SortDesc className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="h-6 w-px bg-slate-300" />
-            <div className="flex items-center gap-1">
-              <button
-                className={`rounded p-2 transition ${showFormulaBar ? 'bg-sky-200 text-sky-700' : 'hover:bg-slate-200'}`}
-                type="button"
-                onClick={() => setShowFormulaBar((prev) => !prev)}
-              >
-                <Calculator className="h-4 w-4" />
-              </button>
-              <button
-                className={`rounded p-2 transition ${showCharts ? 'bg-purple-200 text-purple-700' : 'hover:bg-slate-200'}`}
-                type="button"
-                onClick={() => setShowCharts((prev) => !prev)}
-              >
-                <BarChart3 className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="h-6 w-px bg-slate-300" />
-            <div className="flex items-center gap-1">
-              <button className="rounded p-2 transition hover:bg-slate-200" type="button">
-                <ZoomIn className="h-4 w-4" />
-              </button>
-              <button className="rounded p-2 transition hover:bg-slate-200" type="button">
-                <ZoomOut className="h-4 w-4" />
-              </button>
-              <button className="rounded p-2 transition hover:bg-slate-200" type="button">
-                <Settings className="h-4 w-4" />
-              </button>
+                Orden {sortDirection === 'asc' ? 'ASC' : 'DESC'}
+              </Button>
             </div>
           </div>
         </div>
@@ -840,6 +1073,18 @@ export function ExcelSummaryView({ weekDays, weeklyPlan, onUpdateDayPlan, weekly
                       
                       // Verificar si la celda está en el rango seleccionado
                       const isInRange = selectedRange && isCellInRange(cellId, selectedRange);
+                      let cellTooltip: string | undefined;
+                      if (!isHeaderRow) {
+                        if (column === 'F') {
+                          cellTooltip = 'Duración incluye descansos estimados según tus configuraciones.';
+                        } else if (column === 'G') {
+                          cellTooltip = 'Calorías aproximadas calculadas sobre la carga de trabajo.';
+                        } else if (column === 'D') {
+                          cellTooltip = 'Volumen estimado a partir del número de series efectivas.';
+                        } else if (column === 'E') {
+                          cellTooltip = 'Intensidad declarada (RPE) o notas cualitativas.';
+                        }
+                      }
 
                       return (
                         <div
@@ -851,6 +1096,7 @@ export function ExcelSummaryView({ weekDays, weeklyPlan, onUpdateDayPlan, weekly
                           } ${isEditableGoal ? 'bg-blue-50/50 hover:bg-blue-100/50' : ''} ${
                             isInRange ? 'ring-2 ring-blue-400 bg-blue-50' : ''
                           }`}
+                          title={cellTooltip}
                           onClick={(e) => handleCellClick(cellId, e)}
                           onDoubleClick={() => {
                             if (isEditableGoal) {
@@ -944,6 +1190,12 @@ export function ExcelSummaryView({ weekDays, weeklyPlan, onUpdateDayPlan, weekly
                 {selectedCell && <span>Celda: {selectedCell}</span>}
                 {selectedRows.length > 0 && <span>Seleccionadas: {selectedRows.length}</span>}
                 {sortColumn && <span>Ordenado por: {sortColumn.toUpperCase()} ({sortDirection})</span>}
+                {calculateRangeStatistics && (
+                  <span>
+                    Selección: {calculateRangeStatistics.totalCells} celdas · Volumen {calculateRangeStatistics.totalVolume} · Duración {calculateRangeStatistics.totalDuration} min · RPE{' '}
+                    {calculateRangeStatistics.averageRPE ? calculateRangeStatistics.averageRPE.toFixed(1) : '—'}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1">

@@ -349,7 +349,7 @@ export class DuplicateDetectionService {
   }
 
   // Detectar duplicados con formato simplificado para el modal
-  static async detectDuplicates(
+  static async detectDuplicatesSimple(
     lead: Lead,
     threshold: number = 0.7
   ): Promise<Array<{

@@ -1,7 +1,7 @@
 import { IntegrationGalleryContainer } from '../components';
-import { Card } from '../../../components/componentsreutilizables';
 import { MetricCards } from '../../../components/componentsreutilizables';
-import { Plug, Network, TrendingUp, AlertCircle } from 'lucide-react';
+import { Button } from '../../../components/componentsreutilizables';
+import { Plug, Network, TrendingUp, BookOpen, HelpCircle, Zap } from 'lucide-react';
 
 /**
  * Página principal de Integraciones y Automatización
@@ -31,8 +31,8 @@ export default function IntegracionesYAutomatizacionPage() {
       value: '12',
       subtitle: '+2 este mes',
       trend: { value: 20, direction: 'up' as const },
-      icon: <Network size={24} />,
-      color: 'info' as const,
+      icon: <Zap size={24} />,
+      color: 'warning' as const,
     },
     {
       id: 'tiempo-ahorrado',
@@ -45,32 +45,73 @@ export default function IntegracionesYAutomatizacionPage() {
     },
     {
       id: 'conectividades-fallidas',
-      title: 'Conectividades Fallidas',
-      value: '1',
-      subtitle: 'Requiere atención',
-      trend: { value: 0, direction: 'down' as const },
-      icon: <AlertCircle size={24} />,
-      color: 'warning' as const,
+      title: 'Estado del Sistema',
+      value: '99.9%',
+      subtitle: 'Uptime mensual',
+      trend: { value: 0, direction: 'up' as const },
+      icon: <Network size={24} />,
+      color: 'success' as const,
     },
   ];
 
+  const handleDocumentation = () => {
+    window.open('https://docs.example.com/integrations', '_blank');
+  };
+
+  const handleSupport = () => {
+    window.open('mailto:soporte@example.com?subject=Ayuda con Integraciones', '_blank');
+  };
+
+  const handleViewAutomations = () => {
+    // Simular navegación o scroll
+    const element = document.getElementById('integrations-gallery');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      alert('Navegando a la sección de automatizaciones...');
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      {/* Header */}
-      <div className="border-b border-gray-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6">
-          <div className="py-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-xl mr-4 ring-1 ring-blue-200/70">
-                <Plug size={24} className="text-blue-600" />
+    <div className="min-h-screen bg-gray-50/50">
+      {/* Header with Background Pattern */}
+      <div className="relative bg-white border-b border-gray-200 overflow-hidden">
+        <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] -z-10" />
+        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
+          <div className="py-10">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div className="flex items-center gap-5">
+                <div className="p-3 bg-blue-600 rounded-2xl shadow-lg shadow-blue-200 ring-4 ring-blue-50">
+                  <Plug size={32} className="text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
+                    Integraciones y Automatización
+                  </h1>
+                  <p className="mt-2 text-lg text-gray-600 max-w-2xl">
+                    Conecta tus herramientas favoritas y automatiza flujos de trabajo para escalar tu negocio.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
-                  Integraciones y Automatización
-                </h1>
-                <p className="text-gray-600">
-                  Conecta herramientas externas para automatizar tus operaciones y mejorar la experiencia de tus clientes
-                </p>
+              <div className="flex items-center gap-3">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-gray-600 hover:bg-gray-100"
+                  onClick={handleDocumentation}
+                >
+                  <BookOpen size={18} className="mr-2" />
+                  Documentación
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-gray-600 hover:bg-gray-100"
+                  onClick={handleSupport}
+                >
+                  <HelpCircle size={18} className="mr-2" />
+                  Soporte
+                </Button>
               </div>
             </div>
           </div>
@@ -78,38 +119,42 @@ export default function IntegracionesYAutomatizacionPage() {
       </div>
 
       {/* Contenido principal */}
-      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
-        <div className="space-y-6">
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-8">
           {/* Stats Cards */}
-          <MetricCards data={statsData} />
+          <div className="grid grid-cols-1 gap-6">
+            <MetricCards data={statsData} />
+          </div>
 
-          {/* Info Card */}
-          <Card variant="default" padding="lg" className="bg-blue-50 border-blue-200">
+          {/* Info Banner */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                <Network size={20} className="text-blue-600" />
+              <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0 text-blue-600">
+                <Zap size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                  Beneficios de las integraciones
+                <h3 className="text-lg font-bold text-blue-900">
+                  Potencia tu productividad
                 </h3>
-                <p className="text-sm text-blue-800 mb-3">
-                  Las integraciones te permiten automatizar tareas repetitivas, sincronizar datos 
-                  entre plataformas y ofrecer una experiencia fluida a tus clientes. Desde pagos 
-                  automáticos hasta sincronización de calendarios, optimiza tu flujo de trabajo.
+                <p className="text-blue-700 mt-1 max-w-3xl">
+                  Las integraciones activas están ahorrando un promedio de 8 horas semanales a tu equipo. 
+                  Configura nuevas automatizaciones para optimizar aún más tus procesos.
                 </p>
-                <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-                  <li>Reduce la entrada manual de datos</li>
-                  <li>Mejora la comunicación con tus clientes</li>
-                  <li>Centraliza la gestión financiera</li>
-                  <li>Optimiza el agendamiento de clases</li>
-                </ul>
               </div>
             </div>
-          </Card>
+            <Button 
+              variant="primary" 
+              className="whitespace-nowrap shadow-md"
+              onClick={handleViewAutomations}
+            >
+              Ver Automatizaciones
+            </Button>
+          </div>
 
           {/* Integrations Gallery */}
-          <IntegrationGalleryContainer />
+          <div id="integrations-gallery">
+            <IntegrationGalleryContainer />
+          </div>
         </div>
       </div>
     </div>

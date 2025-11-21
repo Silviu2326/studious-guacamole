@@ -166,6 +166,7 @@ import FunnelsEditorPage from './features/FunnelsAdquisicion/pages/FunnelsEditor
 import LandingPageEditorPage from './features/FunnelsAdquisicion/pages/LandingPageEditorPage';
 import LandingPageCraftEditorPage from './features/FunnelsAdquisicion/pages/LandingPageCraftEditorPage';
 import FunnelsLeadMagnetFactoryPage from './features/FunnelsAdquisicion/pages/LeadMagnetFactoryPage';
+import EditorPage from './features/EditorEntrenamiento/pages/EditorPage';
 
 function ProtectedRoute() {
   const { user } = useAuth();
@@ -219,6 +220,7 @@ function App() {
             <Route path="/alertas-restricciones-alimentarias" element={<AlertasRestriccionesAlimentariasPage />} />
             <Route path="/disponibilidad-turnos-staff" element={<DisponibilidadTurnosStaffPage />} />
             <Route path="/editor-de-entreno" element={<EditorDeEntrenoPage />} />
+            <Route path="/editor-definitivo" element={<EditorPage />} />
             <Route path="/encuestas-satisfaccin-npscsat" element={<EncuestasSatisfaccinNPSCSATPage />} />
             <Route path="/eventos-retos-especiales" element={<EventosRetosEspecialesPage />} />
             <Route path="/eventos-retos" element={<EventosRetosPage />} />

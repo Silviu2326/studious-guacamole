@@ -4,6 +4,7 @@ import { useFitCoach, ActionCardData } from '../hooks/useFitCoach';
 import { FatigueChart } from './visualizations';
 import { Week } from '../types/training';
 import { InsightsPanel } from './panels/InsightsPanel';
+import { useProgramContext } from '../context/ProgramContext';
 
 export const FitCoachPanel: React.FC = () => {
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
@@ -11,6 +12,7 @@ export const FitCoachPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState('Chat'); // Default active tab
   
   const { messages, alerts, isTyping, sendMessage, dismissAlert, setAlerts } = useFitCoach();
+  const { weeks } = useProgramContext();
   const [inputMessage, setInputMessage] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -26,56 +28,6 @@ export const FitCoachPanel: React.FC = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [isMobilePanelOpen]);
-
-  // Mock Data for Fatigue Chart
-  const mockWeeksForFatigue: Week[] = Array.from({ length: 12 }).map((_, i) => ({
-    id: `week-${i}`,
-    name: `Sem ${i + 1}`,
-    days: [
-      {
-        id: `day-${i}-1`,
-        name: 'Upper',
-        tags: [],
-        blocks: [
-          {
-            id: `block-${i}-1`,
-            name: 'Main',
-            type: 'main',
-            exercises: [
-              {
-                id: `ex-${i}-1`,
-                name: 'Bench',
-                type: 'strength',
-                tags: [],
-                sets: Array(4).fill({ id: 's1', type: 'working', reps: 8, rpe: 7 + (i % 3) * 0.5 })
-              }
-            ]
-          }
-        ]
-      },
-      {
-        id: `day-${i}-2`,
-        name: 'Lower',
-        tags: [],
-        blocks: [
-          {
-            id: `block-${i}-2`,
-            name: 'Main',
-            type: 'main',
-            exercises: [
-              {
-                id: `ex-${i}-2`,
-                name: 'Squat',
-                type: 'strength',
-                tags: [],
-                sets: Array(5).fill({ id: 's2', type: 'working', reps: 5, rpe: 8 + (i % 2) * 0.5 })
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  }));
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -314,7 +266,7 @@ export const FitCoachPanel: React.FC = () => {
                                         
                                         {/* Re-adding FatigueChart here as it was part of Insights but not strictly the Radar Chart */}
                                         <div className="mt-6">
-                                            <FatigueChart weeks={mockWeeksForFatigue} />
+                                            <FatigueChart weeks={weeks} />
                                         </div>
                                       </div>
                                     )}

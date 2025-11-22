@@ -89,14 +89,36 @@ foreach ($Prompt in $prompts) {
     Write-Host $Prompt
     Write-Host "--------------------------------------------------"
 
-    try {
+    $job = Start-Job -ScriptBlock {
+        param($p)
         $ErrorActionPreference = "SilentlyContinue"
-        $output = & gemini --yolo "$Prompt" 2>&1 | Out-String
-        $ErrorActionPreference = "Continue"
+        # Ejecutar gemini y capturar salida y error
+        $res = & gemini --yolo "$p" 2>&1 | Out-String
+        return @{ Output = $res; ExitCode = $LASTEXITCODE }
+    } -ArgumentList $Prompt
 
-        $cleanOutput = $output.Trim()
+    # Esperar hasta 600 segundos (10 minutos) con aviso cada minuto
+    $maxSeconds = 600
+    $elapsed = 0
+    $completed = $null
 
-        if ($LASTEXITCODE -eq 0 -or $LASTEXITCODE -eq $null) {
+    while ($elapsed -lt $maxSeconds) {
+        $completed = Wait-Job -Job $job -Timeout 60
+        if ($completed) {
+            break
+        }
+        $elapsed += 60
+        Write-Host "  [En espera] Han pasado $($elapsed / 60) minuto(s)..." -ForegroundColor DarkGray
+    }
+
+    if ($completed) {
+        $result = Receive-Job -Job $job
+        $output = $result.Output
+        $exitCode = $result.ExitCode
+        
+        $cleanOutput = if ($output) { $output.Trim() } else { "" }
+
+        if ($exitCode -eq 0 -or $exitCode -eq $null) {
             if ($cleanOutput -and $cleanOutput.Length -gt 0) {
                 Write-Host $cleanOutput
             } else {
@@ -106,15 +128,41 @@ foreach ($Prompt in $prompts) {
             Write-Host "  -> Comando ejecutado exitosamente" -ForegroundColor Green
         } else {
             Write-Host $cleanOutput -ForegroundColor Red
-            throw "El comando falló con código de salida: $LASTEXITCODE"
+            Write-Host "Error: El comando falló con código de salida: $exitCode" -ForegroundColor Red
+            
+            # Guardar prompt fallido (error de ejecución)
+            $failedLog = "failed_prompts.json"
+            $failedData = @()
+            if (Test-Path $failedLog) {
+                try {
+                    $content = Get-Content $failedLog -Raw
+                    if ($content) { $failedData = @($content | ConvertFrom-Json) }
+                } catch {}
+            }
+            $failedData += @{ prompt = $Prompt; reason = "Execution Error (ExitCode: $exitCode)"; timestamp = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss") }
+            $failedData | ConvertTo-Json -Depth 4 | Set-Content $failedLog -Encoding UTF8
+            Write-Host "  -> Prompt fallido guardado en $failedLog" -ForegroundColor Yellow
         }
-    } catch {
-        Write-Host ""
-        Write-Host "Error al conectar con Gemini CLI: $_" -ForegroundColor Red
-        Write-Host "Verifica que Gemini CLI esté correctamente instalado y configurado" -ForegroundColor Yellow
-        Write-Host "   Prueba ejecutar: gemini --help" -ForegroundColor Yellow
-        exit 1
+    } else {
+        # Timeout alcanzado
+        Write-Host "Error: El prompt excedió el tiempo límite de 10 minutos." -ForegroundColor Red
+        Stop-Job -Job $job
+        
+        # Guardar prompt fallido (timeout)
+        $failedLog = "failed_prompts.json"
+        $failedData = @()
+        if (Test-Path $failedLog) {
+            try {
+                $content = Get-Content $failedLog -Raw
+                if ($content) { $failedData = @($content | ConvertFrom-Json) }
+            } catch {}
+        }
+        $failedData += @{ prompt = $Prompt; reason = "Timeout (>10min)"; timestamp = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss") }
+        $failedData | ConvertTo-Json -Depth 4 | Set-Content $failedLog -Encoding UTF8
+        Write-Host "  -> Prompt fallido guardado en $failedLog" -ForegroundColor Yellow
     }
+
+    Remove-Job -Job $job
 }
 
 Write-Host "==================================================" -ForegroundColor DarkGray

@@ -15,6 +15,7 @@ import { ExerciseDetailModal } from '../components/modals/ExerciseDetailModal';
 import { PreferencesModal } from '../components/modals/PreferencesModal';
 import { AIProgramGenerator } from '../components/modals/AIProgramGenerator';
 import { TagManagerModal } from '../components/modals/TagManagerModal';
+import { BatchTrainingModal } from '../components/modals/BatchTraining/BatchTrainingModal';
 
 import { CommandPalette } from '../components/overlays/CommandPalette';
 import { EditorTour } from '../components/onboarding/EditorTour';
@@ -53,6 +54,14 @@ export const EditorLayout: React.FC = () => {
                   <ExerciseDetailModal />
                   <PreferencesModal />
                   <TagManagerModal />
+                  <UIContextConsumer>
+                    {({ isBatchTrainingOpen, setBatchTrainingOpen }) => (
+                      <BatchTrainingModal 
+                        isOpen={isBatchTrainingOpen} 
+                        onClose={() => setBatchTrainingOpen(false)} 
+                      />
+                    )}
+                  </UIContextConsumer>
                   <AIProgramGenerator />
                   <EditorTour />
                 </div>
@@ -64,4 +73,11 @@ export const EditorLayout: React.FC = () => {
       </UserPreferencesProvider>
     </UIProvider>
   );
+};
+
+// Helper to consume context inside the provider tree
+import { useUIContext } from '../context/UIContext';
+const UIContextConsumer: React.FC<{ children: (context: ReturnType<typeof useUIContext>) => React.ReactNode }> = ({ children }) => {
+  const context = useUIContext();
+  return <>{children(context)}</>;
 };

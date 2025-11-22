@@ -5,36 +5,38 @@ import { Button } from '../../../../components/componentsreutilizables/Button';
 import { VersioningService, Version } from '../../services/VersioningService';
 import { useProgramContext } from '../../context/ProgramContext';
 import { useUIContext } from '../../context/UIContext';
-import { Day } from '../../types/training';
+import { Week } from '../../types/training';
 
 export const VersionHistoryModal: React.FC = () => {
   const { isVersionHistoryOpen, setVersionHistoryOpen } = useUIContext();
-  const { daysData, setProgramData, saveCurrentVersion } = useProgramContext();
+  const { weeks, setProgramData, saveCurrentVersion } = useProgramContext();
   const [versions, setVersions] = useState<Version[]>([]);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
-  const originalDataRef = useRef<Day[] | null>(null);
+  const originalDataRef = useRef<Week[] | null>(null);
 
   useEffect(() => {
     if (isVersionHistoryOpen) {
       // Load versions
       setVersions(VersioningService.getVersions());
       // Backup current state
-      originalDataRef.current = JSON.parse(JSON.stringify(daysData));
+      originalDataRef.current = JSON.parse(JSON.stringify(weeks));
       setPreviewingId(null);
     } else {
       // Reset when closed (cleanup if needed)
       originalDataRef.current = null;
     }
-  }, [isVersionHistoryOpen]);
+  }, [isVersionHistoryOpen, weeks]);
 
   const handlePreview = (version: Version) => {
-    setProgramData(version.data);
+    // Assuming version.data matches the expected Week[] structure
+    // If migrating from Day[], we might need a transformer here
+    setProgramData(version.data as Week[]);
     setPreviewingId(version.id);
   };
 
   const handleRestore = (version: Version) => {
     // 1. Set the data
-    setProgramData(version.data);
+    setProgramData(version.data as Week[]);
     // 2. Save as a new version
     saveCurrentVersion(`Restaurado desde ${version.label}`);
     // 3. Close modal

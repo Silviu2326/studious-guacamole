@@ -18,8 +18,8 @@ import { useCanvasDnd } from '../hooks/useCanvasDnd';
 import { DragPreview } from '../components/DragPreview';
 
 export const GlobalDnDContext: React.FC<{children: React.ReactNode}> = ({ children }) => {
-  const { daysData, setProgramData } = useProgramContext();
-  const { handleDragEnd: handleLibraryDrop } = useCanvasDnd(daysData, setProgramData);
+  const { weeks, setProgramData } = useProgramContext();
+  const { handleDragEnd: handleLibraryDrop } = useCanvasDnd(weeks, setProgramData);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

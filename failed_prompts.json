@@ -1,0 +1,22 @@
+﻿[
+    {
+        "value":  [
+                      {
+                          "reason":  "Timeout (\u003e10min)",
+                          "timestamp":  "2025-11-22 16:04:59",
+                          "prompt":  "**35_Implement_Week_Navigation**: UX/NAVEGACIÃ“N. **ÃMBITO: `src/features/EditorEntrenamiento`**. Es difÃ­cil navegar programas largos sin un Ã­ndice.\n\n**Instrucciones:**\n1. Crea un componente `WeekNavigator.tsx` que se muestre como una barra lateral flotante o sticky a la izquierda del `EditorCanvas`.\n2. Este componente debe listar \u0027Semana 1\u0027, \u0027Semana 2\u0027, etc., como enlaces rÃ¡pidos.\n3. Al hacer clic en una semana, el `EditorCanvas` debe hacer scroll suave hasta la posiciÃ³n de esa semana (usando `refs` o `react-window` mÃ©todos como `scrollToItem`).\n4. Resalta la semana actualmente visible en el viewport.\n\n**Referencias:**\n- Problema 3 en `@analisis_profundo_faltantes.md`."
+                      },
+                      {
+                          "reason":  "Timeout (\u003e10min)",
+                          "timestamp":  "2025-11-22 16:47:08",
+                          "prompt":  "**40_Fix_EmptyWeek_AI_Button**: ACCIÃ“N IA. **ÃMBITO: `src/features/EditorEntrenamiento`**. El botÃ³n \u0027Generar con IA\u0027 en semanas vacÃ­as muestra un alert.\n\n**Instrucciones:**\n1. En `EditorCanvas.tsx` (componente `EmptyWeekState`), reemplaza el `alert()` del botÃ³n \u0027Generar con IA\u0027.\n2. ConÃ©ctalo para que abra el modal `AIProgramGenerator` (a travÃ©s de `UIContext`).\n3. AsegÃºrate de pasarle el Ã­ndice de la semana actual al generador, para que sepa dÃ³nde insertar el contenido generado.\n\n**Referencias:**\n- Problema 1 en `@analisis_profundo_faltantes.md`."
+                      }
+                  ],
+        "Count":  2
+    },
+    {
+        "reason":  "Timeout (\u003e10min)",
+        "timestamp":  "2025-11-22 17:27:43",
+        "prompt":  "**46_Implement_Global_Filtering**: UX/BÃšSQUEDA. **ÃMBITO: `src/features/EditorEntrenamiento`**. La barra de filtros en `EditorCanvas` no filtra nada realmente.\n\n**Instrucciones:**\n1. En `EditorCanvas.tsx`, asegÃºrate de que el estado `searchTerm` y `activeFilters` se usen para filtrar la lista de `weeks` o `daysData` antes de pasarlos al renderizado (`WeekRow` o lista).\n2. Si un dÃ­a no cumple los criterios de filtro, debe ocultarse o atenuarse visualmente (opacity 0.3).\n3. Asegura que el filtrado por Tags (#Fuerza) funcione correctamente leyendo los tags de cada dÃ­a.\n\n**Referencias:**\n- Problema 3 (NavegaciÃ³n/Filtrado) en `@analisis_profundo_faltantes.md`."
+    }
+]

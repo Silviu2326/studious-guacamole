@@ -4,7 +4,7 @@ import { Button } from '../../../../../components/componentsreutilizables/Button
 import { StepSelection } from './StepSelection';
 import { StepConfiguration } from './StepConfiguration';
 import { StepPreview } from './StepPreview';
-import { useBatchTraining, BatchActionType } from '../../hooks/useBatchTraining';
+import { useBatchTraining, BatchActionType } from '../../../hooks/useBatchTraining';
 
 interface BatchTrainingModalProps {
   isOpen: boolean;
@@ -15,11 +15,11 @@ export const BatchTrainingModal: React.FC<BatchTrainingModalProps> = ({ isOpen, 
   const { 
     currentStep, 
     selectedAction, 
-    // config, // Will be passed to steps in future
+    config, 
     nextStep, 
     prevStep, 
     selectAction, 
-    // updateConfig, // Will be passed to steps in future
+    updateConfig, 
     applyChanges,
     reset
   } = useBatchTraining();
@@ -68,9 +68,9 @@ export const BatchTrainingModal: React.FC<BatchTrainingModalProps> = ({ isOpen, 
       case 1:
         return <StepSelection onSelect={handleSelect} selectedOption={getSelectedOptionId()} />;
       case 2:
-        return <StepConfiguration />;
+        return <StepConfiguration config={config} onChange={updateConfig} action={selectedAction} />;
       case 3:
-        return <StepPreview />;
+        return <StepPreview config={config} action={selectedAction} />;
       default:
         return null;
     }

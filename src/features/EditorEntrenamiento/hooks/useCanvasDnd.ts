@@ -1,5 +1,5 @@
 import { DragEndEvent } from '@dnd-kit/core';
-import { Day, Block, Exercise, Set } from '../types/training';
+import { Day, Block, Exercise, Set, Week } from '../types/training';
 import { LibraryExercise, LibraryBlock, MOCK_EXERCISES } from '../../../data/libraryMocks';
 
 // Helper to generate unique IDs
@@ -46,8 +46,8 @@ const mapLibraryBlockToBlock = (libBlock: LibraryBlock): Block => {
 };
 
 export const useCanvasDnd = (
-  daysData: Day[],
-  setDaysData: (days: Day[]) => void
+  weeks: Week[],
+  setWeeks: (weeks: Week[]) => void
 ) => {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -67,12 +67,25 @@ export const useCanvasDnd = (
 
     if (isLibraryItem && isDroppingOnDay) {
       const dayId = overData.dayId;
-      const targetDayIndex = daysData.findIndex(d => d.id === dayId);
+      
+      // Find the week and day index
+      let weekIndex = -1;
+      let dayIndex = -1;
 
-      if (targetDayIndex === -1) return;
+      weeks.forEach((w, wIdx) => {
+          const dIdx = w.days.findIndex(d => d.id === dayId);
+          if (dIdx !== -1) {
+              weekIndex = wIdx;
+              dayIndex = dIdx;
+          }
+      });
 
-      const newDaysData = [...daysData];
-      const targetDay = { ...newDaysData[targetDayIndex] };
+      if (weekIndex === -1 || dayIndex === -1) return;
+
+      const newWeeks = [...weeks];
+      const targetWeek = { ...newWeeks[weekIndex] };
+      const newDays = [...targetWeek.days];
+      const targetDay = { ...newDays[dayIndex] };
       const newBlocks = [...targetDay.blocks];
 
       if (activeData.itemType === 'block') {
@@ -101,8 +114,11 @@ export const useCanvasDnd = (
       // Simple recalc of totalDuration (sum of block durations)
       targetDay.totalDuration = newBlocks.reduce((acc, b) => acc + (b.duration || 0), 0);
 
-      newDaysData[targetDayIndex] = targetDay;
-      setDaysData(newDaysData);
+      newDays[dayIndex] = targetDay;
+      targetWeek.days = newDays;
+      newWeeks[weekIndex] = targetWeek;
+
+      setWeeks(newWeeks);
     }
   };
 

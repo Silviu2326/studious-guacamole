@@ -1,18 +1,38 @@
 import React from 'react';
 import { ds } from '../../../../../features/adherencia/ui/ds';
+import { BatchConfig, BatchActionType } from '../../../hooks/useBatchTraining';
 
-export const StepPreview: React.FC = () => {
+interface StepPreviewProps {
+  config?: BatchConfig;
+  action?: BatchActionType;
+}
+
+export const StepPreview: React.FC<StepPreviewProps> = ({ config, action }) => {
+  // Mock summary derived from config if available, otherwise static
+  const weekCount = config ? config.weekRange.end - config.weekRange.start + 1 : 4;
+  
+  const getTitle = () => {
+    switch (action) {
+      case 'linear_progression': return 'PROGRESIÓN LINEAL';
+      case 'duplicate_week': return 'DUPLICAR SEMANA';
+      case 'mass_adjustment': return 'AJUSTE MASIVO';
+      case 'reorganize_days': return 'REORGANIZAR DÍAS';
+      case 'apply_template': return 'APLICAR PLANTILLA';
+      default: return 'CONFIGURACIÓN';
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center space-x-2 mb-4">
          <span className="text-2xl">🔄</span>
          <h3 className={`${ds.typography.h3} ${ds.color.textPrimary} ${ds.color.textPrimaryDark}`}>
-          PROGRESIÓN LINEAL - Vista Previa
+          {getTitle()} - Vista Previa
         </h3>
       </div>
 
       <p className="text-gray-600 dark:text-gray-300">
-        Se aplicarán cambios a 24 ejercicios en 4 semanas:
+        Se aplicarán cambios en {weekCount} semanas:
       </p>
 
       <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">

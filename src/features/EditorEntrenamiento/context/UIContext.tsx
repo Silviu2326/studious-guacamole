@@ -32,6 +32,10 @@ interface UIContextType {
   // Tag Manager Modal
   isTagManagerOpen: boolean;
   setTagManagerOpen: (isOpen: boolean) => void;
+
+  // Batch Training Modal
+  isBatchTrainingOpen: boolean;
+  setBatchTrainingOpen: (isOpen: boolean) => void;
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
@@ -45,6 +49,7 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isClientPreviewOpen, setClientPreviewOpen] = useState(false);
   const [isAIProgramGeneratorOpen, setAIProgramGeneratorOpen] = useState(false);
   const [isTagManagerOpen, setTagManagerOpen] = useState(false);
+  const [isBatchTrainingOpen, setBatchTrainingOpen] = useState(false);
   
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [isExerciseDetailModalOpen, setExerciseDetailModalOpen] = useState(false);
@@ -74,7 +79,9 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       isAIProgramGeneratorOpen,
       setAIProgramGeneratorOpen,
       isTagManagerOpen,
-      setTagManagerOpen
+      setTagManagerOpen,
+      isBatchTrainingOpen,
+      setBatchTrainingOpen
     }}>
       {children}
     </UIContext.Provider>

@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { Day, Tag } from '../types/training';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
+import { Day, Tag, Week } from '../types/training';
 import { VersioningService } from '../services/VersioningService';
 import { offlineQueue } from '../utils/offlineQueue';
 import { MockApiService } from '../services/MockApiService';
@@ -7,9 +7,10 @@ import { MockApiService } from '../services/MockApiService';
 import { useHistory } from '../hooks/useHistory';
 
 interface ProgramContextType {
-  daysData: Day[];
+  weeks: Week[];
+  daysData: Day[]; // Computed for backward compatibility
   updateDay: (dayId: string, newDay: Day) => void;
-  setProgramData: (data: Day[]) => void;
+  setProgramData: (data: Week[]) => void; // Updated to accept Week[]
   saveCurrentVersion: (label?: string) => void;
   isSaving: boolean;
   lastSavedAt: Date | null;
@@ -26,6 +27,7 @@ interface ProgramContextType {
   updateTag: (tagId: string, updates: Partial<Tag>) => void;
   deleteTag: (tagId: string) => void;
   mergeTags: (sourceTagId: string, targetTagId: string) => void;
+  addWeek: () => void;
 }
 
 const ProgramContext = createContext<ProgramContextType | undefined>(undefined);
@@ -39,7 +41,11 @@ const INITIAL_TAGS: Tag[] = [
 ];
 
 // Mock Initial Data
-const INITIAL_DAYS_DATA: Day[] = [
+const INITIAL_WEEKS: Week[] = [
+  {
+    id: 'w1',
+    name: 'Semana 1',
+    days: [
     {
       id: 'd1',
       name: 'LUNES',
@@ -99,25 +105,33 @@ const INITIAL_DAYS_DATA: Day[] = [
     { id: 'd5', name: 'VIERNES', tags: [{id: 't1', label: 'Fuerza', color: 'blue', category: 'pattern'}], blocks: [], totalDuration: 40, averageRpe: 8 },
     { id: 'd6', name: 'SÁBADO', tags: [{id: 't1', label: 'Fuerza', color: 'blue', category: 'pattern'}], blocks: [], totalDuration: 30, averageRpe: 4 },
     { id: 'd7', name: 'DOMINGO', tags: [{id: 't1', label: 'Descanso', color: 'gray', category: 'other'}], blocks: [], totalDuration: 0, averageRpe: 0 },
-  ];
+  ]
+  }
+];
 
 export const ProgramProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { state: daysData, set: setDaysData, undo, redo, canUndo, canRedo } = useHistory<Day[]>(INITIAL_DAYS_DATA);
+  const { state: weeks, set: setWeeks, undo, redo, canUndo, canRedo } = useHistory<Week[]>(INITIAL_WEEKS);
   const [globalTags, setGlobalTags] = useState<Tag[]>(INITIAL_TAGS);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   
+  // Computed property for backward compatibility
+  const daysData = useMemo(() => weeks.flatMap(week => week.days), [weeks]);
+
   // Offline Sync State
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
 
   const updateDay = useCallback((dayId: string, newDay: Day) => {
-    setDaysData(prev => prev.map(d => d.id === dayId ? newDay : d));
-  }, [setDaysData]);
+    setWeeks(prevWeeks => prevWeeks.map(week => ({
+      ...week,
+      days: week.days.map(d => d.id === dayId ? newDay : d)
+    })));
+  }, [setWeeks]);
 
-  const setProgramData = useCallback((data: Day[]) => {
-    setDaysData(data);
-  }, [setDaysData]);
+  const setProgramData = useCallback((data: Week[]) => {
+    setWeeks(data);
+  }, [setWeeks]);
 
   // Tag Management
   const createTag = useCallback((tag: Tag) => {
@@ -127,40 +141,46 @@ export const ProgramProvider: React.FC<{ children: ReactNode }> = ({ children })
   const updateTag = useCallback((tagId: string, updates: Partial<Tag>) => {
     setGlobalTags(prev => prev.map(t => t.id === tagId ? { ...t, ...updates } : t));
     
-    // Update occurrences in daysData
-    setDaysData(prevDays => prevDays.map(day => {
-        // Update day tags
-        const updatedDayTags = day.tags.map(t => t.id === tagId ? { ...t, ...updates } : t);
-        
-        // Update block/exercise tags
-        const updatedBlocks = day.blocks.map(block => {
-            const updatedExercises = block.exercises.map(ex => {
-                const updatedExTags = ex.tags.map(t => t.id === tagId ? { ...t, ...updates } : t);
-                return { ...ex, tags: updatedExTags };
+    // Update occurrences in weeks
+    setWeeks(prevWeeks => prevWeeks.map(week => ({
+        ...week,
+        days: week.days.map(day => {
+            // Update day tags
+            const updatedDayTags = day.tags.map(t => t.id === tagId ? { ...t, ...updates } : t);
+            
+            // Update block/exercise tags
+            const updatedBlocks = day.blocks.map(block => {
+                const updatedExercises = block.exercises.map(ex => {
+                    const updatedExTags = ex.tags.map(t => t.id === tagId ? { ...t, ...updates } : t);
+                    return { ...ex, tags: updatedExTags };
+                });
+                return { ...block, exercises: updatedExercises };
             });
-            return { ...block, exercises: updatedExercises };
-        });
 
-        return { ...day, tags: updatedDayTags, blocks: updatedBlocks };
-    }));
-  }, [setDaysData]);
+            return { ...day, tags: updatedDayTags, blocks: updatedBlocks };
+        })
+    })));
+  }, [setWeeks]);
 
   const deleteTag = useCallback((tagId: string) => {
     setGlobalTags(prev => prev.filter(t => t.id !== tagId));
     
-    // Remove occurrences in daysData
-    setDaysData(prevDays => prevDays.map(day => {
-        const updatedDayTags = day.tags.filter(t => t.id !== tagId);
-        const updatedBlocks = day.blocks.map(block => {
-            const updatedExercises = block.exercises.map(ex => {
-                const updatedExTags = ex.tags.filter(t => t.id !== tagId);
-                return { ...ex, tags: updatedExTags };
+    // Remove occurrences in weeks
+    setWeeks(prevWeeks => prevWeeks.map(week => ({
+        ...week,
+        days: week.days.map(day => {
+            const updatedDayTags = day.tags.filter(t => t.id !== tagId);
+            const updatedBlocks = day.blocks.map(block => {
+                const updatedExercises = block.exercises.map(ex => {
+                    const updatedExTags = ex.tags.filter(t => t.id !== tagId);
+                    return { ...ex, tags: updatedExTags };
+                });
+                return { ...block, exercises: updatedExercises };
             });
-            return { ...block, exercises: updatedExercises };
-        });
-        return { ...day, tags: updatedDayTags, blocks: updatedBlocks };
-    }));
-  }, [setDaysData]);
+            return { ...day, tags: updatedDayTags, blocks: updatedBlocks };
+        })
+    })));
+  }, [setWeeks]);
 
   const mergeTags = useCallback((sourceTagId: string, targetTagId: string) => {
     const targetTag = globalTags.find(t => t.id === targetTagId);
@@ -168,83 +188,102 @@ export const ProgramProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     setGlobalTags(prev => prev.filter(t => t.id !== sourceTagId));
 
-    setDaysData(prevDays => prevDays.map(day => {
-        // Update day tags
-        let dayTags = day.tags.filter(t => t.id !== sourceTagId);
-        // Check if targetTag is already present
-        if (day.tags.some(t => t.id === sourceTagId) && !dayTags.some(t => t.id === targetTagId)) {
-            dayTags.push(targetTag);
-        }
-        
-        const updatedBlocks = day.blocks.map(block => {
-            const updatedExercises = block.exercises.map(ex => {
-                let exTags = ex.tags.filter(t => t.id !== sourceTagId);
-                if (ex.tags.some(t => t.id === sourceTagId) && !exTags.some(t => t.id === targetTagId)) {
-                    exTags.push(targetTag);
-                }
-                return { ...ex, tags: exTags };
+    setWeeks(prevWeeks => prevWeeks.map(week => ({
+        ...week,
+        days: week.days.map(day => {
+            // Update day tags
+            let dayTags = day.tags.filter(t => t.id !== sourceTagId);
+            // Check if targetTag is already present
+            if (day.tags.some(t => t.id === sourceTagId) && !dayTags.some(t => t.id === targetTagId)) {
+                dayTags.push(targetTag);
+            }
+            
+            const updatedBlocks = day.blocks.map(block => {
+                const updatedExercises = block.exercises.map(ex => {
+                    let exTags = ex.tags.filter(t => t.id !== sourceTagId);
+                    if (ex.tags.some(t => t.id === sourceTagId) && !exTags.some(t => t.id === targetTagId)) {
+                        exTags.push(targetTag);
+                    }
+                    return { ...ex, tags: exTags };
+                });
+                return { ...block, exercises: updatedExercises };
             });
-            return { ...block, exercises: updatedExercises };
-        });
 
-        return { ...day, tags: dayTags, blocks: updatedBlocks };
+            return { ...day, tags: dayTags, blocks: updatedBlocks };
+        })
+    })));
+  }, [globalTags, setWeeks]);
+
+  const addWeek = useCallback(() => {
+    const daysOfWeek = ['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO', 'DOMINGO'];
+    const newDays: Day[] = daysOfWeek.map(dayName => ({
+      id: crypto.randomUUID(),
+      name: dayName,
+      blocks: [],
+      tags: [],
+      totalDuration: 0,
+      averageRpe: 0
     }));
-  }, [globalTags, setDaysData]);
+
+    const newWeek: Week = {
+        id: crypto.randomUUID(),
+        name: `Semana ${weeks.length + 1}`,
+        days: newDays
+    };
+    
+    setWeeks(prev => [...prev, newWeek]);
+  }, [weeks.length, setWeeks]);
 
   const bulkUpdateExercises = useCallback((targetIds: string[], action: { type: 'SET_PROPERTY' | 'MULTIPLY_PROPERTY' | 'ADD_SETS_FACTOR', field: string, value: number }) => {
-    setDaysData(prevDays => {
-      // Create a deep clone to avoid mutating state directly during traversal
-      // using JSON parse/stringify for simplicity, or map structure
-      // For complex objects, map is better to preserve prototypes if any (though here they are plain objects)
-      
-      return prevDays.map(day => {
-        // If Day is selected, everything inside is selected
-        const daySelected = targetIds.includes(day.id);
-        
-        // If no blocks/exercises need update and day not selected, return as is (optimization)
-        // But we need to traverse to find if children are selected
-        
-        const updatedBlocks = day.blocks.map(block => {
-            const blockSelected = daySelected || targetIds.includes(block.id);
+    setWeeks(prevWeeks => {
+      return prevWeeks.map(week => ({
+          ...week,
+          days: week.days.map(day => {
+            // If Day is selected, everything inside is selected
+            const daySelected = targetIds.includes(day.id);
             
-            const updatedExercises = block.exercises.map(ex => {
-                const exSelected = blockSelected || targetIds.includes(ex.id);
+            const updatedBlocks = day.blocks.map(block => {
+                const blockSelected = daySelected || targetIds.includes(block.id);
                 
-                if (!exSelected) return ex;
+                const updatedExercises = block.exercises.map(ex => {
+                    const exSelected = blockSelected || targetIds.includes(ex.id);
+                    
+                    if (!exSelected) return ex;
 
-                // Apply Action
-                let newSets = [...ex.sets];
+                    // Apply Action
+                    let newSets = [...ex.sets];
 
-                if (action.type === 'SET_PROPERTY') {
-                    newSets = newSets.map(set => ({ ...set, [action.field]: action.value }));
-                } else if (action.type === 'ADD_SETS_FACTOR') {
-                    // E.g. multiply sets count by 1.2
-                    const currentCount = newSets.length;
-                    if (currentCount > 0) {
-                        const newCount = Math.max(1, Math.round(currentCount * action.value));
-                        if (newCount > currentCount) {
-                            // Add copies of the last set
-                            const lastSet = newSets[newSets.length - 1];
-                            for (let i = 0; i < newCount - currentCount; i++) {
-                                newSets.push({ ...lastSet, id: crypto.randomUUID() });
+                    if (action.type === 'SET_PROPERTY') {
+                        newSets = newSets.map(set => ({ ...set, [action.field]: action.value }));
+                    } else if (action.type === 'ADD_SETS_FACTOR') {
+                        // E.g. multiply sets count by 1.2
+                        const currentCount = newSets.length;
+                        if (currentCount > 0) {
+                            const newCount = Math.max(1, Math.round(currentCount * action.value));
+                            if (newCount > currentCount) {
+                                // Add copies of the last set
+                                const lastSet = newSets[newSets.length - 1];
+                                for (let i = 0; i < newCount - currentCount; i++) {
+                                    newSets.push({ ...lastSet, id: crypto.randomUUID() });
+                                }
+                            } else if (newCount < currentCount) {
+                                // Remove sets
+                                newSets = newSets.slice(0, newCount);
                             }
-                        } else if (newCount < currentCount) {
-                            // Remove sets
-                            newSets = newSets.slice(0, newCount);
                         }
                     }
-                }
 
-                return { ...ex, sets: newSets };
+                    return { ...ex, sets: newSets };
+                });
+
+                return { ...block, exercises: updatedExercises };
             });
 
-            return { ...block, exercises: updatedExercises };
-        });
-
-        return { ...day, blocks: updatedBlocks };
-      });
+            return { ...day, blocks: updatedBlocks };
+          })
+      }));
     });
-  }, [setDaysData]);
+  }, [setWeeks]);
 
   const processSyncQueue = useCallback(async () => {
     const queue = offlineQueue.getQueue();
@@ -300,7 +339,9 @@ export const ProgramProvider: React.FC<{ children: ReactNode }> = ({ children })
     
     // 1. Always save locally immediately (Local First)
     try {
-      VersioningService.saveVersion(daysData, label);
+      // We need to save 'weeks' now, but VersioningService might expect Day[] or we can change it to expect any data
+      // Assuming VersioningService uses generic type T
+      VersioningService.saveVersion(weeks, label);
       setLastSavedAt(new Date());
     } catch (e) {
       console.error('Local save failed', e);
@@ -308,18 +349,18 @@ export const ProgramProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     // 2. Try to save to "Remote" (Mock API)
     try {
-      await MockApiService.saveProgram(daysData, label);
+      await MockApiService.saveProgram(weeks, label);
     } catch (error) {
       console.warn('Remote save failed, adding to offline queue', error);
       offlineQueue.addOperation({
         type: 'save_program',
-        data: daysData,
+        data: weeks,
         label
       });
     } finally {
       setIsSaving(false);
     }
-  }, [daysData]);
+  }, [weeks]);
 
   // Autosave effect
   useEffect(() => {
@@ -332,6 +373,7 @@ export const ProgramProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   return (
     <ProgramContext.Provider value={{ 
+      weeks,
       daysData, 
       updateDay, 
       setProgramData,
@@ -349,7 +391,8 @@ export const ProgramProvider: React.FC<{ children: ReactNode }> = ({ children })
       createTag,
       updateTag,
       deleteTag,
-      mergeTags
+      mergeTags,
+      addWeek
     }}>
       {children}
     </ProgramContext.Provider>

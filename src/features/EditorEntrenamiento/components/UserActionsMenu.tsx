@@ -1,8 +1,11 @@
 import React from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import { Settings, LogOut, User, DollarSign, Users } from 'lucide-react';
+import { useUIContext } from '../context/UIContext';
 
 const UserActionsMenu: React.FC = () => {
+  const { setPreferencesModalOpen } = useUIContext();
+
   return (
     <div className="flex items-center">
       {/* Settings Button for Desktop */}
@@ -10,7 +13,7 @@ const UserActionsMenu: React.FC = () => {
         className="hidden lg:flex items-center justify-center w-8 h-8 rounded-full text-gray-600 hover:bg-gray-100 transition-colors mr-2"
         aria-label="Configuración"
         title="Configuración del Editor"
-        onClick={() => alert('Abrir Modal de Preferencias del Editor')}
+        onClick={() => setPreferencesModalOpen(true)}
       >
         <Settings className="w-5 h-5" />
       </button>
@@ -81,7 +84,7 @@ const UserActionsMenu: React.FC = () => {
               <Menu.Item className="lg:hidden">
                 {({ active }) => (
                   <button
-                    onClick={() => alert('Abrir Modal de Preferencias del Editor (Mobile)')}
+                    onClick={() => setPreferencesModalOpen(true)}
                     className={`${
                       active ? 'bg-blue-500 text-white' : 'text-gray-900'
                     } group flex w-full items-center rounded-md px-2 py-2 text-sm`}

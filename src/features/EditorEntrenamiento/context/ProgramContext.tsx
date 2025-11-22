@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { Day } from '../types/training';
+import { Day, Tag } from '../types/training';
 import { VersioningService } from '../services/VersioningService';
 import { offlineQueue } from '../utils/offlineQueue';
 import { MockApiService } from '../services/MockApiService';
@@ -20,9 +20,23 @@ interface ProgramContextType {
   canUndo: boolean;
   canRedo: boolean;
   bulkUpdateExercises: (targetIds: string[], action: { type: 'SET_PROPERTY' | 'MULTIPLY_PROPERTY' | 'ADD_SETS_FACTOR', field: string, value: number }) => void;
+  // Tag Management
+  globalTags: Tag[];
+  createTag: (tag: Tag) => void;
+  updateTag: (tagId: string, updates: Partial<Tag>) => void;
+  deleteTag: (tagId: string) => void;
+  mergeTags: (sourceTagId: string, targetTagId: string) => void;
 }
 
 const ProgramContext = createContext<ProgramContextType | undefined>(undefined);
+
+const INITIAL_TAGS: Tag[] = [
+  { id: 't1', label: 'Fuerza', color: 'blue', category: 'pattern' },
+  { id: 't2', label: 'Upper', color: 'red', category: 'muscle' },
+  { id: 't3', label: 'Cardio', color: 'green', category: 'other' },
+  { id: 't4', label: 'HIIT', color: 'orange', category: 'intensity' },
+  { id: 't5', label: 'Descanso', color: 'gray', category: 'other' },
+];
 
 // Mock Initial Data
 const INITIAL_DAYS_DATA: Day[] = [
@@ -81,14 +95,15 @@ const INITIAL_DAYS_DATA: Day[] = [
       totalDuration: 0,
       averageRpe: 0
     },
-    { id: 'd4', name: 'JUEVES', tags: [{id: 't1', label: 'Fuerza', color: '', category: 'other'}], blocks: [], totalDuration: 70, averageRpe: 7 },
-    { id: 'd5', name: 'VIERNES', tags: [{id: 't1', label: 'Híbrido', color: '', category: 'other'}], blocks: [], totalDuration: 40, averageRpe: 8 },
-    { id: 'd6', name: 'SÁBADO', tags: [{id: 't1', label: 'Activo', color: '', category: 'other'}], blocks: [], totalDuration: 30, averageRpe: 4 },
-    { id: 'd7', name: 'DOMINGO', tags: [{id: 't1', label: 'Descanso', color: '', category: 'other'}], blocks: [], totalDuration: 0, averageRpe: 0 },
+    { id: 'd4', name: 'JUEVES', tags: [{id: 't1', label: 'Fuerza', color: 'blue', category: 'pattern'}], blocks: [], totalDuration: 70, averageRpe: 7 },
+    { id: 'd5', name: 'VIERNES', tags: [{id: 't1', label: 'Fuerza', color: 'blue', category: 'pattern'}], blocks: [], totalDuration: 40, averageRpe: 8 },
+    { id: 'd6', name: 'SÁBADO', tags: [{id: 't1', label: 'Fuerza', color: 'blue', category: 'pattern'}], blocks: [], totalDuration: 30, averageRpe: 4 },
+    { id: 'd7', name: 'DOMINGO', tags: [{id: 't1', label: 'Descanso', color: 'gray', category: 'other'}], blocks: [], totalDuration: 0, averageRpe: 0 },
   ];
 
 export const ProgramProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { state: daysData, set: setDaysData, undo, redo, canUndo, canRedo } = useHistory<Day[]>(INITIAL_DAYS_DATA);
+  const [globalTags, setGlobalTags] = useState<Tag[]>(INITIAL_TAGS);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   
@@ -103,6 +118,78 @@ export const ProgramProvider: React.FC<{ children: ReactNode }> = ({ children })
   const setProgramData = useCallback((data: Day[]) => {
     setDaysData(data);
   }, [setDaysData]);
+
+  // Tag Management
+  const createTag = useCallback((tag: Tag) => {
+    setGlobalTags(prev => [...prev, tag]);
+  }, []);
+
+  const updateTag = useCallback((tagId: string, updates: Partial<Tag>) => {
+    setGlobalTags(prev => prev.map(t => t.id === tagId ? { ...t, ...updates } : t));
+    
+    // Update occurrences in daysData
+    setDaysData(prevDays => prevDays.map(day => {
+        // Update day tags
+        const updatedDayTags = day.tags.map(t => t.id === tagId ? { ...t, ...updates } : t);
+        
+        // Update block/exercise tags
+        const updatedBlocks = day.blocks.map(block => {
+            const updatedExercises = block.exercises.map(ex => {
+                const updatedExTags = ex.tags.map(t => t.id === tagId ? { ...t, ...updates } : t);
+                return { ...ex, tags: updatedExTags };
+            });
+            return { ...block, exercises: updatedExercises };
+        });
+
+        return { ...day, tags: updatedDayTags, blocks: updatedBlocks };
+    }));
+  }, [setDaysData]);
+
+  const deleteTag = useCallback((tagId: string) => {
+    setGlobalTags(prev => prev.filter(t => t.id !== tagId));
+    
+    // Remove occurrences in daysData
+    setDaysData(prevDays => prevDays.map(day => {
+        const updatedDayTags = day.tags.filter(t => t.id !== tagId);
+        const updatedBlocks = day.blocks.map(block => {
+            const updatedExercises = block.exercises.map(ex => {
+                const updatedExTags = ex.tags.filter(t => t.id !== tagId);
+                return { ...ex, tags: updatedExTags };
+            });
+            return { ...block, exercises: updatedExercises };
+        });
+        return { ...day, tags: updatedDayTags, blocks: updatedBlocks };
+    }));
+  }, [setDaysData]);
+
+  const mergeTags = useCallback((sourceTagId: string, targetTagId: string) => {
+    const targetTag = globalTags.find(t => t.id === targetTagId);
+    if (!targetTag) return;
+
+    setGlobalTags(prev => prev.filter(t => t.id !== sourceTagId));
+
+    setDaysData(prevDays => prevDays.map(day => {
+        // Update day tags
+        let dayTags = day.tags.filter(t => t.id !== sourceTagId);
+        // Check if targetTag is already present
+        if (day.tags.some(t => t.id === sourceTagId) && !dayTags.some(t => t.id === targetTagId)) {
+            dayTags.push(targetTag);
+        }
+        
+        const updatedBlocks = day.blocks.map(block => {
+            const updatedExercises = block.exercises.map(ex => {
+                let exTags = ex.tags.filter(t => t.id !== sourceTagId);
+                if (ex.tags.some(t => t.id === sourceTagId) && !exTags.some(t => t.id === targetTagId)) {
+                    exTags.push(targetTag);
+                }
+                return { ...ex, tags: exTags };
+            });
+            return { ...block, exercises: updatedExercises };
+        });
+
+        return { ...day, tags: dayTags, blocks: updatedBlocks };
+    }));
+  }, [globalTags, setDaysData]);
 
   const bulkUpdateExercises = useCallback((targetIds: string[], action: { type: 'SET_PROPERTY' | 'MULTIPLY_PROPERTY' | 'ADD_SETS_FACTOR', field: string, value: number }) => {
     setDaysData(prevDays => {
@@ -257,7 +344,12 @@ export const ProgramProvider: React.FC<{ children: ReactNode }> = ({ children })
       redo,
       canUndo,
       canRedo,
-      bulkUpdateExercises
+      bulkUpdateExercises,
+      globalTags,
+      createTag,
+      updateTag,
+      deleteTag,
+      mergeTags
     }}>
       {children}
     </ProgramContext.Provider>

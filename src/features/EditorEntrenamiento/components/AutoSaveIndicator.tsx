@@ -7,15 +7,17 @@ export type AutoSaveStatus = 'saving' | 'saved' | 'error';
 
 interface AutoSaveIndicatorProps {
   status: AutoSaveStatus;
-  lastSavedAt?: Date;
+  lastSavedAt?: Date | null;
   errorMessage?: string;
   onRetry?: () => void;
+  onClick?: () => void;
 }
 
 export const AutoSaveIndicator: React.FC<AutoSaveIndicatorProps> = ({
   status,
   lastSavedAt,
-  onRetry
+  onRetry,
+  onClick
 }) => {
   // Hidden on mobile (< 640px), flex on tablet/desktop. Text hidden on tablet.
   const containerClasses = "hidden sm:flex items-center gap-2 text-sm font-medium transition-colors duration-200";
@@ -47,7 +49,13 @@ export const AutoSaveIndicator: React.FC<AutoSaveIndicatorProps> = ({
 
   // Status 'saved'
   return (
-    <div className={`${containerClasses} text-gray-500`} role="status" aria-live="polite">
+    <div 
+      className={`${containerClasses} text-gray-500 ${onClick ? 'cursor-pointer hover:text-gray-700' : ''}`} 
+      role="button" 
+      aria-live="polite"
+      onClick={onClick}
+      title="Click para ver historial de versiones"
+    >
       <Check className="w-4 h-4" aria-hidden="true" />
       <span className={textClasses}>
         {lastSavedAt

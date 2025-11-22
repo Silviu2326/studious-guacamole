@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Search, User, Plus } from 'lucide-react';
+import { ChevronDown, Search, User, Plus, Sparkles } from 'lucide-react';
+import { useUIContext } from '../context/UIContext';
 
 interface Client {
   id: string;
@@ -55,6 +56,7 @@ export interface ClientSelectorHandle {
 }
 
 const ClientSelector = React.forwardRef<ClientSelectorHandle>((_, ref) => {
+  const { setAIProgramGeneratorOpen } = useUIContext();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client>(MOCK_CLIENTS[0]);
@@ -236,7 +238,17 @@ const ClientSelector = React.forwardRef<ClientSelectorHandle>((_, ref) => {
 
             {/* Footer */}
             <div className="p-3 border-t border-gray-100 bg-gray-50/50 flex flex-col gap-2">
-                <button className="w-full flex items-center justify-center gap-2 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm">
+                <button 
+                    onClick={() => {
+                        setAIProgramGeneratorOpen(true);
+                        setIsOpen(false);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                >
+                    <Sparkles className="w-4 h-4" />
+                    Nuevo Programa con IA
+                </button>
+                <button className="w-full flex items-center justify-center gap-2 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors">
                     <Plus className="w-4 h-4" />
                     Nuevo Cliente
                 </button>

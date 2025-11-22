@@ -1,79 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, BarChart2, AlertTriangle, TrendingUp, Send, Bot, PieChart as PieChartIcon, Activity, Info, AlertCircle, CheckCircle } from 'lucide-react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
-} from 'recharts';
-
-interface Alert {
-  id: string;
-  level: 'critical' | 'warning' | 'info';
-  title: string;
-  message: string;
-  action?: {
-    label: string;
-    handler: () => void;
-  };
-}
+import { MessageSquare, BarChart2, AlertTriangle, TrendingUp, Send, Bot, Info, AlertCircle, CheckCircle } from 'lucide-react';
+import { useFitCoach, ActionCardData } from '../hooks/useFitCoach';
+import { FatigueChart } from './visualizations';
+import { Week } from '../types/training';
+import { InsightsPanel } from './panels/InsightsPanel';
 
 export const FitCoachPanel: React.FC = () => {
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
   const [isMobilePanelOpen, setIsMobilePanelOpen] = useState(false); // Controls drawer on mobile/tablet
   const [activeTab, setActiveTab] = useState('Chat'); // Default active tab
-  const [messages, setMessages] = useState([
-    { id: 1, text: '¡Hola! Estoy analizando el programa de María López. ¿En qué puedo ayudarte?', isUser: false },
-    { id: 2, text: 'Optimiza la semana 1', isUser: true },
-    { id: 3, text: 'He analizado la Semana 1 y encontré 3 oportunidades de mejora: 1. Balance Push/Pull. 2. Volumen de Core. 3. Distribución de RPE.', isUser: false },
-    { id: 4, text: '¿Quieres que aplique todas las mejoras?', isUser: false },
-  ]);
+  
+  const { messages, alerts, isTyping, sendMessage, dismissAlert, setAlerts } = useFitCoach();
   const [inputMessage, setInputMessage] = useState('');
-  const [alerts, setAlerts] = useState<Alert[]>([
-    {
-      id: '1',
-      level: 'critical',
-      title: 'Progresión de volumen excesiva',
-      message: 'Sem 2 -> Sem 3: +18% de volumen. Recomendado: máximo +10% semanal.',
-      action: {
-        label: 'Ajustar automáticamente',
-        handler: () => console.log('Ajustando volumen...'),
-      },
-    },
-    {
-      id: '2',
-      level: 'warning',
-      title: 'Desequilibrio Push/Pull',
-      message: 'Ratio actual: 65/35 (recomendado: 55/45).',
-      action: {
-        label: 'Ver sugerencias',
-        handler: () => console.log('Ver sugerencias push/pull...'),
-      },
-    },
-    {
-      id: '3',
-      level: 'info',
-      title: 'Día domingo vacío',
-      message: 'El día domingo no tiene asignación. ¿Deseas agregar descanso activo?',
-      action: {
-        label: 'Agregar descanso',
-        handler: () => console.log('Agregando descanso...'),
-      },
-    },
-  ]);
-
-  const [isTyping, setIsTyping] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -89,38 +27,55 @@ export const FitCoachPanel: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, [isMobilePanelOpen]);
 
-  // Mock Data for Insights
-  const weeklyVolumeData = [
-    { name: 'Sem 1', volume: 180 },
-    { name: 'Sem 2', volume: 195 },
-    { name: 'Sem 3', volume: 210 },
-    { name: 'Sem 4', volume: 140 },
-  ];
-
-  const muscleDistributionData = [
-    { name: 'Upper', value: 50 },
-    { name: 'Lower', value: 50 },
-  ];
-
-  const movementPatternsData = [
-    { subject: 'Push', A: 65, fullMark: 100 },
-    { subject: 'Pull', A: 35, fullMark: 100 },
-    { subject: 'Squat', A: 80, fullMark: 100 },
-    { subject: 'Hinge', A: 70, fullMark: 100 },
-    { subject: 'Carry', A: 40, fullMark: 100 },
-  ];
-
-  // Colors from spec
-  const COLORS = {
-    primary: '#1E3A8A', // Azul oscuro
-    secondary: '#3B82F6', // Azul claro
-    success: '#10B981', // Verde
-    warning: '#F59E0B', // Naranja
-    error: '#EF4444', // Rojo
-    chartColors: ['#1E3A8A', '#10B981', '#F59E0B', '#EF4444'],
-  };
-
-  const hasData = true; // Toggle this to test Empty State
+  // Mock Data for Fatigue Chart
+  const mockWeeksForFatigue: Week[] = Array.from({ length: 12 }).map((_, i) => ({
+    id: `week-${i}`,
+    name: `Sem ${i + 1}`,
+    days: [
+      {
+        id: `day-${i}-1`,
+        name: 'Upper',
+        tags: [],
+        blocks: [
+          {
+            id: `block-${i}-1`,
+            name: 'Main',
+            type: 'main',
+            exercises: [
+              {
+                id: `ex-${i}-1`,
+                name: 'Bench',
+                type: 'strength',
+                tags: [],
+                sets: Array(4).fill({ id: 's1', type: 'working', reps: 8, rpe: 7 + (i % 3) * 0.5 })
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: `day-${i}-2`,
+        name: 'Lower',
+        tags: [],
+        blocks: [
+          {
+            id: `block-${i}-2`,
+            name: 'Main',
+            type: 'main',
+            exercises: [
+              {
+                id: `ex-${i}-2`,
+                name: 'Squat',
+                type: 'strength',
+                tags: [],
+                sets: Array(5).fill({ id: 's2', type: 'working', reps: 5, rpe: 8 + (i % 2) * 0.5 })
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }));
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -132,45 +87,8 @@ export const FitCoachPanel: React.FC = () => {
 
   const handleSendMessage = (text: string = inputMessage) => {
     if (!text.trim()) return;
-
-    // Add user message
-    setMessages(prev => [...prev, { id: Date.now(), text: text, isUser: true }]);
+    sendMessage(text);
     setInputMessage('');
-    setIsTyping(true);
-
-    // Simulate bot response
-    setTimeout(() => {
-      setIsTyping(false);
-      
-      // Simulate Action Card for specific input
-      if (text.toLowerCase().includes('balance') || text.toLowerCase().includes('push')) {
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          { 
-            id: Date.now() + 1, 
-            text: 'He analizado el balance de tu programa y detecté una oportunidad de mejora importante.', 
-            isUser: false,
-            actionCard: {
-              title: 'Desbalance Push/Pull',
-              description: 'Ratio actual 3:1. Se recomienda acercarse a 1:1 para prevenir lesiones.',
-              actions: [
-                { label: 'Corregir (+Remo)', onClick: () => alert('Acción ejecutada: Agregando ejercicios de remo...') },
-                { label: 'Ignorar', onClick: () => alert('Alerta ignorada') }
-              ]
-            }
-          },
-        ]);
-      } else {
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          { id: Date.now() + 1, text: 'Entendido. Estoy procesando tu solicitud para optimizar el programa.', isUser: false },
-        ]);
-      }
-    }, 1500);
-  };
-
-  const dismissAlert = (id: string) => {
-    setAlerts(alerts.filter((alert) => alert.id !== id));
   };
 
   const SuggestionChip: React.FC<{ text: string; onClick: () => void }> = ({ text, onClick }) => (
@@ -189,13 +107,7 @@ export const FitCoachPanel: React.FC = () => {
     'Crea un día de pierna',
   ];
 
-  interface ActionCardProps {
-    title: string;
-    description: string;
-    actions: { label: string; onClick: () => void }[];
-  }
-
-  const ActionCard: React.FC<ActionCardProps> = ({ title, description, actions }) => (
+  const ActionCard: React.FC<ActionCardData> = ({ title, description, actions }) => (
     <div className="card bg-white border border-gray-200 p-3 rounded-lg shadow-sm mt-2 mb-1">
       <h4 className="font-bold text-sm text-gray-800 flex items-center gap-2">
         <AlertTriangle size={14} className="text-orange-500" />
@@ -208,7 +120,7 @@ export const FitCoachPanel: React.FC = () => {
             key={idx}
             onClick={action.onClick}
             className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-              idx === 0 
+              action.type === 'primary' || (!action.type && idx === 0)
                 ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
@@ -260,9 +172,6 @@ export const FitCoachPanel: React.FC = () => {
     { id: 'Metricas', label: 'Métricas', icon: TrendingUp },
   ];
 
-  const panelWidthClass = isDesktopCollapsed ? 'w-12' : 'w-80'; // 48px vs 320px
-  const maxWidthClass = isDesktopCollapsed ? '' : 'max-w-[400px]'; // Max width for ultrawide monitors
-
   const getAlertStyle = (level: string) => {
     switch (level) {
       case 'critical':
@@ -285,6 +194,7 @@ export const FitCoachPanel: React.FC = () => {
         ></div>
       )}
     <aside
+      id="tour-fitcoach-panel"
       role="region"
       aria-label="FitCoach Panel"
       className={`
@@ -398,114 +308,14 @@ export const FitCoachPanel: React.FC = () => {
                                         id="insights-panel"
                                         role="tabpanel"
                                         aria-labelledby="Insights-tab"
-                                        className="flex-1 overflow-y-auto p-4 space-y-6"
+                                        className="flex-1 overflow-y-auto p-4"
                                       >
-                                        <div className="mb-4">
-                                          <h4 className="text-lg font-bold text-gray-900 mb-1">Insights del Programa</h4>
-                                          <p className="text-xs text-gray-500">Análisis en tiempo real de tu programación</p>
+                                        <InsightsPanel />
+                                        
+                                        {/* Re-adding FatigueChart here as it was part of Insights but not strictly the Radar Chart */}
+                                        <div className="mt-6">
+                                            <FatigueChart weeks={mockWeeksForFatigue} />
                                         </div>
-                  
-                                        {!hasData ? (
-                                          <div className="flex flex-col items-center justify-center h-64 text-center p-6 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50">
-                                            <Activity className="w-12 h-12 text-gray-300 mb-3" />
-                                            <h5 className="text-sm font-medium text-gray-900">Sin datos suficientes</h5>
-                                            <p className="text-xs text-gray-500 mt-1">Agrega ejercicios al calendario para generar insights y gráficas.</p>
-                                          </div>
-                                        ) : (
-                                          <>
-                                            {/* 1. Volumen Semanal */}
-                                            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                                              <h5 className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3">Volumen Semanal (Series)</h5>
-                                              <div className="h-40 w-full">
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                  <BarChart data={weeklyVolumeData}>
-                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                                                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6B7280' }} axisLine={false} tickLine={false} />
-                                                    <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} axisLine={false} tickLine={false} />
-                                                    <Tooltip 
-                                                      contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '4px', fontSize: '12px' }}
-                                                      cursor={{ fill: '#F3F4F6' }}
-                                                    />
-                                                    <Bar dataKey="volume" fill={COLORS.primary} radius={[4, 4, 0, 0]} />
-                                                  </BarChart>
-                                                </ResponsiveContainer>
-                                              </div>
-                                              <div className="mt-2 flex items-center gap-2 text-xs text-green-600 bg-green-50 p-2 rounded">
-                                                <TrendingUp size={14} />
-                                                <span>Progresión: +8% vs sem anterior</span>
-                                              </div>
-                                            </div>
-                  
-                                            {/* 2. Distribución Muscular */}
-                                            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                                              <h5 className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3">Balance Muscular</h5>
-                                              <div className="h-40 w-full flex">
-                                                <div className="w-1/2 h-full relative">
-                                                  <ResponsiveContainer width="100%" height="100%">
-                                                    <PieChart>
-                                                      <Pie
-                                                        data={muscleDistributionData}
-                                                        cx="50%"
-                                                        cy="50%"
-                                                        innerRadius={30}
-                                                        outerRadius={50}
-                                                        paddingAngle={5}
-                                                        dataKey="value"
-                                                      >
-                                                        {muscleDistributionData.map((entry, index) => (
-                                                          <Cell key={`cell-${index}`} fill={COLORS.chartColors[index % COLORS.chartColors.length]} />
-                                                        ))}
-                                                      </Pie>
-                                                    </PieChart>
-                                                  </ResponsiveContainer>
-                                                  {/* Center Label */}
-                                                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                                    <span className="text-xs font-bold text-gray-700">50/50</span>
-                                                  </div>
-                                                </div>
-                                                <div className="w-1/2 flex flex-col justify-center space-y-2 pl-2">
-                                                  <div className="flex items-center text-xs">
-                                                    <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: COLORS.chartColors[0] }}></div>
-                                                    <span className="text-gray-600">Upper (50%)</span>
-                                                  </div>
-                                                  <div className="flex items-center text-xs">
-                                                    <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: COLORS.chartColors[1] }}></div>
-                                                    <span className="text-gray-600">Lower (50%)</span>
-                                                  </div>
-                                                </div>
-                                              </div>
-                                              <div className="mt-1 text-xs text-gray-500 text-center italic">
-                                                Balance óptimo logrado
-                                              </div>
-                                            </div>
-                  
-                                            {/* 3. Patrones de Movimiento */}
-                                            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                                              <h5 className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3">Patrones de Movimiento</h5>
-                                              <div className="h-48 w-full">
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={movementPatternsData}>
-                                                    <PolarGrid stroke="#E5E7EB" />
-                                                    <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: '#4B5563' }} />
-                                                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                                                    <Radar
-                                                      name="Programa Actual"
-                                                      dataKey="A"
-                                                      stroke={COLORS.secondary}
-                                                      fill={COLORS.secondary}
-                                                      fillOpacity={0.4}
-                                                    />
-                                                    <Tooltip contentStyle={{ fontSize: '12px' }}/>
-                                                  </RadarChart>
-                                                </ResponsiveContainer>
-                                              </div>
-                                              <div className="mt-2 p-2 bg-yellow-50 border border-yellow-100 rounded text-xs text-yellow-800 flex items-start gap-2">
-                                                <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
-                                                <span>Desbalance Push/Pull detectado (65/35). Se recomienda agregar tracción.</span>
-                                              </div>
-                                            </div>
-                                          </>
-                                        )}
                                       </div>
                                     )}
                   
@@ -680,5 +490,3 @@ export const FitCoachPanel: React.FC = () => {
                   </>
   );
 };
-
-

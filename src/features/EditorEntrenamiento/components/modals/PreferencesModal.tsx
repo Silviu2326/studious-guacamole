@@ -3,11 +3,11 @@ import { Save, Calendar, Scale, Layout } from 'lucide-react';
 import { Modal } from '../../../../components/componentsreutilizables/Modal';
 import { Button } from '../../../../components/componentsreutilizables/Button';
 import { useUIContext } from '../../context/UIContext';
-import { useUserPreferences, UnitSystem, FirstDayOfWeek, DefaultView } from '../../context/UserPreferencesContext';
+import { useUserPreferences } from '../../context/UserPreferencesContext';
 
 export const PreferencesModal: React.FC = () => {
   const { isPreferencesModalOpen, setPreferencesModalOpen } = useUIContext();
-  const { units, firstDayOfWeek, defaultView, autoSave, updatePreferences } = useUserPreferences();
+  const { units, firstDayOfWeek, defaultView, density, autoSave, updatePreferences } = useUserPreferences();
 
   const handleClose = () => {
     setPreferencesModalOpen(false);
@@ -118,6 +118,38 @@ export const PreferencesModal: React.FC = () => {
               }`}
             >
               <span className="font-medium">Excel (Lista)</span>
+            </button>
+          </div>
+        </div>
+
+        <hr className="border-gray-100" />
+
+        {/* Layout Density */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-gray-800 font-medium">
+            <Layout size={18} className="text-blue-500" />
+            <h4>Densidad del Diseño</h4>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => updatePreferences({ density: 'comfortable' })}
+              className={`flex items-center justify-center py-3 px-4 rounded-lg border transition-all ${
+                density === 'comfortable'
+                  ? 'bg-blue-50 border-blue-500 text-blue-700 ring-1 ring-blue-500'
+                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <span className="font-medium">Cómodo</span>
+            </button>
+            <button
+              onClick={() => updatePreferences({ density: 'compact' })}
+              className={`flex items-center justify-center py-3 px-4 rounded-lg border transition-all ${
+                density === 'compact'
+                  ? 'bg-blue-50 border-blue-500 text-blue-700 ring-1 ring-blue-500'
+                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <span className="font-medium">Compacto</span>
             </button>
           </div>
         </div>

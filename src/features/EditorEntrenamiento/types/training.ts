@@ -16,6 +16,10 @@ export interface Set {
   percentage?: number; // % of 1RM
   rest?: number; // seconds
   notes?: string;
+  // Actual/Realized values
+  actualReps?: number | string;
+  actualWeight?: number;
+  actualRpe?: number;
 }
 
 export interface Exercise {
@@ -24,8 +28,11 @@ export interface Exercise {
   type: ExerciseType;
   sets: Set[];
   notes?: string;
+  tempo?: string;
   videoUrl?: string;
   tags: Tag[];
+  groupId?: string;
+  groupLabel?: string;
 }
 
 export interface Block {
@@ -46,6 +53,14 @@ export interface Day {
   tags: Tag[];
   totalDuration?: number;
   averageRpe?: number;
+  notes?: string;
+  feedback?: DayFeedback;
+}
+
+export interface DayFeedback {
+  sessionRpe: number; // 1-10
+  pain: boolean;
+  enjoyment: number; // 1-5
   notes?: string;
 }
 

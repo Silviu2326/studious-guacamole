@@ -3,11 +3,13 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 export type UnitSystem = 'metric' | 'imperial';
 export type FirstDayOfWeek = 'monday' | 'sunday';
 export type DefaultView = 'weekly' | 'excel';
+export type LayoutDensity = 'compact' | 'comfortable';
 
 export interface UserPreferences {
   units: UnitSystem;
   firstDayOfWeek: FirstDayOfWeek;
   defaultView: DefaultView;
+  density: LayoutDensity;
   autoSave: boolean;
 }
 
@@ -19,6 +21,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   units: 'metric',
   firstDayOfWeek: 'monday',
   defaultView: 'weekly',
+  density: 'comfortable',
   autoSave: true,
 };
 

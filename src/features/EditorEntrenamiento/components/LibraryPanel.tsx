@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Box, Dumbbell, LayoutTemplate, Search, X, SlidersHorizontal } from 'lucide-react';
-import { useDraggable, DragOverlay, useDndContext } from '@dnd-kit/core';
+import { useDraggable } from '@dnd-kit/core';
 import { MOCK_EXERCISES, MOCK_BLOCKS } from '../../../data/libraryMocks';
 import { LibraryCard } from './LibraryCard';
+import { useTemplateManager } from '../hooks/useTemplateManager';
+import { SaveTemplateModal } from './modals/SaveTemplateModal';
 
 const normalizeText = (text: string) => {
   return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -27,13 +29,13 @@ const DraggableLibraryCard: React.FC<DraggableLibraryCardProps> = ({ id, data, .
 };
 
 export const LibraryPanel: React.FC = () => {
-  // Access the DndContext state to render the DragOverlay
-  const { active } = useDndContext();
-
   const [activeTab, setActiveTab] = useState<'blocks' | 'exercises' | 'templates'>(() => {
     const storedTab = localStorage.getItem('libraryActiveTab');
     return (storedTab as 'blocks' | 'exercises' | 'templates') || 'exercises';
   });
+
+  const { templates, saveAsTemplate, deleteTemplate } = useTemplateManager();
+  const [isSaveModalOpen, setSaveModalOpen] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showFiltersPopover, setShowFiltersPopover] = useState<boolean>(false);
@@ -70,6 +72,12 @@ export const LibraryPanel: React.FC = () => {
       normalizeText(block.name).includes(normalizeText(searchQuery))
     );
   }, [searchQuery]);
+  
+  const filteredTemplates = useMemo(() => {
+      return templates.filter(t => 
+        normalizeText(t.name).includes(normalizeText(searchQuery))
+      );
+  }, [templates, searchQuery]);
 
   const isSearching = searchQuery.length > 0 || activeFilterCount > 0;
 
@@ -95,8 +103,12 @@ export const LibraryPanel: React.FC = () => {
     setSearchQuery('');
   };
 
+  const handleSaveTemplate = (name: string, sanitize: boolean) => {
+    saveAsTemplate(name, sanitize);
+  };
+
   return (
-    <aside className="w-60 relative border-r border-gray-200 bg-white flex flex-col h-full">
+    <aside id="tour-library-panel" className="w-60 relative border-r border-gray-200 bg-white flex flex-col h-full">
       {/* HEADER DE NAVEGACIÓN (Tabs) */}
       <div className="flex justify-around p-2 border-b border-gray-200 bg-white z-20">
         <button
@@ -315,39 +327,65 @@ export const LibraryPanel: React.FC = () => {
         )}
 
         {activeTab === 'templates' && (
-          <div className="p-2">
+          <div className="p-2 space-y-1">
             <div className="sticky top-0 bg-white z-10 py-2 px-2 border-b border-gray-100">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase">Plantillas</h3>
+                <h3 className="text-xs font-semibold text-gray-400 uppercase">Plantillas ({filteredTemplates.length})</h3>
             </div>
-            <p className="text-sm text-gray-500 px-2 py-4 text-center">Contenido de Plantillas próximamente...</p>
+            {filteredTemplates.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 text-center px-4">
+                    <div className="bg-gray-100 p-3 rounded-full mb-3">
+                        <LayoutTemplate className="text-gray-400" size={24} />
+                    </div>
+                    <p className="text-sm font-medium text-gray-900">No hay plantillas guardadas</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                        Guarda tu programación actual para reutilizarla
+                    </p>
+                </div>
+            ) : (
+                filteredTemplates.map(template => (
+                    <div key={template.id} className="group relative">
+                         <DraggableLibraryCard
+                            id={`template-${template.id}`}
+                            data={{ ...template, itemType: 'template' }}
+                            title={template.name}
+                            subtitle={new Date(template.createdAt).toLocaleDateString()}
+                            type="template"
+                         />
+                         <button 
+                            onClick={(e) => { e.stopPropagation(); deleteTemplate(template.id); }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 text-red-500 rounded bg-white shadow-sm"
+                            title="Eliminar"
+                         >
+                            <X size={14} />
+                         </button>
+                    </div>
+                ))
+            )}
           </div>
         )}
       </div>
 
       {/* ACCIONES GLOBALES (Footer) */}
       <div className="p-3 border-t border-gray-200 bg-white z-20">
-        <button className="w-full py-2 px-4 bg-blue-900 text-white font-medium rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+        <button 
+            className="w-full py-2 px-4 bg-blue-900 text-white font-medium rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            onClick={() => {
+                if (activeTab === 'templates') {
+                    setSaveModalOpen(true);
+                }
+            }}
+        >
           {activeTab === 'blocks' && '+ Crear Bloque'}
           {activeTab === 'exercises' && '+ Crear Ejercicio'}
           {activeTab === 'templates' && '+ Guardar Plantilla'}
         </button>
       </div>
 
-      <DragOverlay>
-        {active && active.data.current ? (
-          <div style={{ width: '240px' }}>
-            <LibraryCard
-                title={active.data.current.name}
-                subtitle={
-                    active.data.current.itemType === 'block'
-                    ? `${active.data.current.type} • ${active.data.current.estimatedDuration} min`
-                    : `${(active.data.current.muscleGroup || []).join(', ')} • ${active.data.current.equipment}`
-                }
-                type={active.data.current.itemType}
-            />
-          </div>
-        ) : null}
-      </DragOverlay>
+      <SaveTemplateModal 
+        isOpen={isSaveModalOpen}
+        onClose={() => setSaveModalOpen(false)}
+        onSave={handleSaveTemplate}
+      />
     </aside>
   );
 };

@@ -1,7 +1,7 @@
 // src/features/EditorEntrenamiento/components/TopBar.tsx
 
 import React, { useEffect, useRef } from 'react';
-import { Sparkles, Menu, Download } from 'lucide-react';
+import { Sparkles, Menu, Download, WifiOff, RefreshCw, CornerUpLeft, CornerUpRight, Smartphone } from 'lucide-react';
 
 import ClientSelector, { ClientSelectorHandle } from './ClientSelector';
 import AutoSaveIndicator from './AutoSaveIndicator';
@@ -12,8 +12,8 @@ import { useEditorToast } from './feedback/ToastSystem';
 import { ExportModal } from './modals/ExportModal';
 
 export const TopBar: React.FC = () => {
-  const { isFitCoachOpen, toggleFitCoach, setCommandPaletteOpen, setVersionHistoryOpen, setExportModalOpen } = useUIContext();
-  const { isSaving, lastSavedAt, saveCurrentVersion } = useProgramContext();
+  const { isFitCoachOpen, toggleFitCoach, setCommandPaletteOpen, setVersionHistoryOpen, setExportModalOpen, setClientPreviewOpen } = useUIContext();
+  const { isSaving, lastSavedAt, saveCurrentVersion, isOffline, pendingSyncCount, undo, redo, canUndo, canRedo } = useProgramContext();
   const { addToast } = useEditorToast();
   const clientSelectorRef = useRef<ClientSelectorHandle>(null);
   
@@ -47,11 +47,24 @@ export const TopBar: React.FC = () => {
           duration: 3000
         });
       }
+
+      // Cmd+Z: Undo
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (canUndo) undo();
+      }
+
+      // Cmd+Shift+Z or Cmd+Y: Redo
+      if (((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'z') || 
+          ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'y')) {
+        e.preventDefault();
+        if (canRedo) redo();
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleFitCoach, addToast, setCommandPaletteOpen, saveCurrentVersion]);
+  }, [toggleFitCoach, addToast, setCommandPaletteOpen, saveCurrentVersion, undo, redo, canUndo, canRedo]);
 
   return (
     <>
@@ -82,16 +95,70 @@ export const TopBar: React.FC = () => {
             <span className="font-bold text-xl text-gray-900 hidden lg:block tracking-tight">FitPro</span>
           </a>
           <ClientSelector ref={clientSelectorRef} />
+          
+          <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
+
+          {/* Undo/Redo Actions */}
+          <div className="flex items-center gap-1 hidden sm:flex">
+            <button
+              onClick={undo}
+              disabled={!canUndo}
+              className={`p-1.5 rounded-lg transition-colors ${
+                canUndo 
+                  ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' 
+                  : 'text-gray-300 cursor-not-allowed'
+              }`}
+              aria-label="Deshacer (Cmd+Z)"
+              title="Deshacer (Cmd+Z)"
+            >
+              <CornerUpLeft size={18} />
+            </button>
+            <button
+              onClick={redo}
+              disabled={!canRedo}
+              className={`p-1.5 rounded-lg transition-colors ${
+                canRedo 
+                  ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' 
+                  : 'text-gray-300 cursor-not-allowed'
+              }`}
+              aria-label="Rehacer (Cmd+Shift+Z)"
+              title="Rehacer (Cmd+Shift+Z)"
+            >
+              <CornerUpRight size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Zona Central */}
-        <div className="flex justify-center items-center">
-          {/* Aquí irán elementos centrales, como alertas globales */}
+        <div className="flex justify-center items-center gap-2">
+          {/* Offline / Sync Indicator */}
+          {isOffline && (
+            <div className="flex items-center gap-2 px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-medium border border-amber-200 animate-pulse">
+              <WifiOff size={14} />
+              <span>Sin conexión - Guardando localmente</span>
+            </div>
+          )}
+          
+          {!isOffline && pendingSyncCount > 0 && (
+            <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium border border-blue-200">
+              <RefreshCw size={14} className="animate-spin" />
+              <span>Sincronizando ({pendingSyncCount})...</span>
+            </div>
+          )}
         </div>
 
         {/* Zona Derecha */}
         <div className="flex justify-end items-center space-x-2 lg:space-x-4">
           
+          <button
+            onClick={() => setClientPreviewOpen(true)}
+            className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500"
+            title="Ver como Cliente (Móvil)"
+          >
+            <Smartphone size={16} />
+            <span className="hidden xl:inline">Vista Cliente</span>
+          </button>
+
           <button
             onClick={() => setExportModalOpen(true)}
             className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500"

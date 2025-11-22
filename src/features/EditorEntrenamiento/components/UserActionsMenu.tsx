@@ -1,10 +1,10 @@
 import React from 'react';
 import { Menu, Transition } from '@headlessui/react';
-import { Settings, LogOut, User, DollarSign, Users } from 'lucide-react';
+import { Settings, LogOut, User, DollarSign, Users, Tags } from 'lucide-react';
 import { useUIContext } from '../context/UIContext';
 
 const UserActionsMenu: React.FC = () => {
-  const { setPreferencesModalOpen } = useUIContext();
+  const { setPreferencesModalOpen, setTagManagerOpen } = useUIContext();
 
   return (
     <div className="flex items-center">
@@ -50,6 +50,19 @@ const UserActionsMenu: React.FC = () => {
                   >
                     <User className="mr-2 h-4 w-4" aria-hidden="true" />
                     Mi Perfil
+                  </button>
+                )}
+              </Menu.Item>
+              <Menu.Item>
+                {({ active }) => (
+                  <button
+                    onClick={() => setTagManagerOpen(true)}
+                    className={`${
+                      active ? 'bg-blue-500 text-white' : 'text-gray-900'
+                    } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                  >
+                    <Tags className="mr-2 h-4 w-4" aria-hidden="true" />
+                    Gestión de Tags
                   </button>
                 )}
               </Menu.Item>

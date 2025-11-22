@@ -20,6 +20,18 @@ interface UIContextType {
   // Preferences Modal
   isPreferencesModalOpen: boolean;
   setPreferencesModalOpen: (isOpen: boolean) => void;
+
+  // Client Preview
+  isClientPreviewOpen: boolean;
+  setClientPreviewOpen: (isOpen: boolean) => void;
+
+  // AI Program Generator
+  isAIProgramGeneratorOpen: boolean;
+  setAIProgramGeneratorOpen: (isOpen: boolean) => void;
+
+  // Tag Manager Modal
+  isTagManagerOpen: boolean;
+  setTagManagerOpen: (isOpen: boolean) => void;
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
@@ -30,6 +42,9 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isVersionHistoryOpen, setVersionHistoryOpen] = useState(false);
   const [isExportModalOpen, setExportModalOpen] = useState(false);
   const [isPreferencesModalOpen, setPreferencesModalOpen] = useState(false);
+  const [isClientPreviewOpen, setClientPreviewOpen] = useState(false);
+  const [isAIProgramGeneratorOpen, setAIProgramGeneratorOpen] = useState(false);
+  const [isTagManagerOpen, setTagManagerOpen] = useState(false);
   
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [isExerciseDetailModalOpen, setExerciseDetailModalOpen] = useState(false);
@@ -53,7 +68,13 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       isExerciseDetailModalOpen,
       setExerciseDetailModalOpen,
       isPreferencesModalOpen,
-      setPreferencesModalOpen
+      setPreferencesModalOpen,
+      isClientPreviewOpen,
+      setClientPreviewOpen,
+      isAIProgramGeneratorOpen,
+      setAIProgramGeneratorOpen,
+      isTagManagerOpen,
+      setTagManagerOpen
     }}>
       {children}
     </UIContext.Provider>

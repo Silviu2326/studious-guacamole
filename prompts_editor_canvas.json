@@ -1,13 +1,95 @@
 {
   "prompts": [
-    "**01_Canvas_Foundation_And_Nav**: INICIO DEL MONTAJE. Quiero que configures el contenedor principal y la navegación superior en `src/features/EditorEntrenamiento/components/EditorCanvas.tsx`. \n\n**Instrucciones:**\n1. Crea el elemento `<main>` con `flex-1`, `bg-gray-50` y `overflow-y-auto`.\n2. Implementa el `CanvasHeader` (Sticky Top) con el borde inferior gris y el selector de vistas (Segmented Control: Semanal/Excel/Timeline).\n3. Asegúrate de que el header se quede fijo al hacer scroll.\n\n**Referencias Obligatorias:**\n- Revisa @spec-editor-canvas.md (Sección 1 y 2) para la estructura exacta.\n- Revisa @editor_entrenamiento_definitivo.md para copiar los estilos visuales del 'Top Bar' minimalista.",
-    "**02_Program_Header_Context**: CONTINUACIÓN. Debajo del `CanvasHeader` en `src/features/EditorEntrenamiento/components/EditorCanvas.tsx`, implementa la Cabecera del Programa (`ProgramHeader`).\n\n**Instrucciones:**\n1. Añade un `H1` editable para el Título del Programa (ej: 'Semana 1: Hipertrofia').\n2. Implementa los selectores (Dropdowns) para 'Mesociclo' y 'Microciclo'.\n3. Crea el componente visual de `Tags` (Chips) que permita añadir/eliminar etiquetas.\n\n**Referencias Obligatorias:**\n- Revisa @spec-editor-canvas.md (Sección 3.A).\n- Revisa @editor_entrenamiento_definitivo.md para la estética de los inputs transparentes y los badges de tags.",
-    "**03_Weekly_Grid_System**: ESTRUCTURA DE GRID. Implementa el sistema de rejilla para los días en `src/features/EditorEntrenamiento/components/EditorCanvas.tsx`.\n\n**Instrucciones:**\n1. Crea un contenedor `WeeklyGrid` debajo del Header del Programa.\n2. Define el CSS Grid: 7 columnas en Desktop (`grid-cols-7`), y comportamiento de lista vertical o wrap en Mobile/Tablet.\n3. Prepara el renderizado iterativo de los 7 días de la semana (aunque las tarjetas estén vacías por ahora).\n\n**Referencias Obligatorias:**\n- Revisa @spec-editor-canvas.md (Sección 3.B y 6) para los breakpoints responsivos.\n- Revisa @editor_entrenamiento_definitivo.md para los espaciados (gaps) entre columnas.",
-    "**04_DayCard_Collapsed_UI**: COMPONENTE TARJETA. Desarrolla el componente visual `DayCard` en su estado **COLAPSADO** dentro de `src/features/EditorEntrenamiento/components/EditorCanvas.tsx`.\n\n**Instrucciones:**\n1. Renderiza la tarjeta con: Header (Nombre Día + Tags), Body (Título Sesión + Iconos Resumen), Footer (Botón '+Info').\n2. Usa estilos de tarjeta: fondo blanco, sombra suave (`shadow-sm`), bordes redondeados (`rounded-xl`).\n3. Añade el menú de opciones (`...`) en el footer.\n\n**Referencias Obligatorias:**\n- Revisa @spec-editor-canvas.md (Sección 3.B - Estado Colapsado).\n- Revisa @diagramas_visuales_mejorados.md (Sección 2) para la distribución exacta de los elementos.",
-    "**05_DayCard_Expansion_Logic**: LÓGICA DE EXPANSIÓN. Implementa la interactividad para expandir una tarjeta en `src/features/EditorEntrenamiento/components/EditorCanvas.tsx`.\n\n**Instrucciones:**\n1. Al hacer click en '+Info', la tarjeta seleccionada debe cambiar de estado.\n2. Visualmente, la tarjeta expandida debe ocupar el 100% del ancho de la fila del grid (col-span-full en grid) o comportarse como un acordeón.\n3. Asegura una transición suave entre estado colapsado y expandido.\n\n**Referencias Obligatorias:**\n- Revisa @spec-editor-canvas.md (Sección 3.B - Estado Expandido).\n- Revisa @editor_entrenamiento_definitivo.md para ver cómo maneja el layout expandido.",
-    "**06_Internal_Blocks_And_Exercises**: CONTENIDO DETALLADO. Dentro de la `DayCard` expandida en `src/features/EditorEntrenamiento/components/EditorCanvas.tsx`, implementa la renderización de Bloques y Ejercicios.\n\n**Instrucciones:**\n1. Crea el componente `TrainingBlock` (agrupador con título).\n2. Dentro del bloque, crea filas `ExerciseRow`.\n3. Cada fila debe tener inputs para: Nombre, Series, Reps, RPE/Carga y Descanso.\n4. Añade botones para borrar/mover ejercicios.\n\n**Referencias Obligatorias:**\n- Revisa @spec-editor-canvas.md (Sección 3.C).\n- Revisa @diagramas_visuales_mejorados.md (Sección 3) para el diseño de la tabla de ejercicios.",
-    "**07_Drag_And_Drop_Infrastructure**: DND CORE. Integra la librería `@dnd-kit` en `src/features/EditorEntrenamiento/components/EditorCanvas.tsx`.\n\n**Instrucciones:**\n1. Envuelve el área necesaria con `<DndContext>`.\n2. Configura los sensores (Mouse, Touch, Keyboard).\n3. Define las zonas de caída (`Droppable`): El día completo (para añadir al final) y entre ejercicios (para reordenar).\n\n**Referencias Obligatorias:**\n- Revisa @spec-editor-canvas.md (Sección 4 y 7).\n- Revisa @editor_entrenamiento_definitivo.md para entender el flujo de interacción.",
-    "**08_Drag_And_Drop_Visuals**: DND FEEDBACK. Implementa el feedback visual del arrastre en `src/features/EditorEntrenamiento/components/EditorCanvas.tsx`.\n\n**Instrucciones:**\n1. Implementa `<DragOverlay>` para mostrar el elemento que se está moviendo (con opacidad y sombra).\n2. Añade estilos visuales a las Drop Zones cuando un elemento pasa por encima (borde azul dashed, fondo azul claro).\n3. Asegura que el 'Placeholder' indique dónde caerá el elemento.\n\n**Referencias Obligatorias:**\n- Revisa @spec-editor-canvas.md (Sección 8 - Estados Visuales).\n- Revisa @editor_entrenamiento_definitivo.md para la consistencia visual.",
-    "**09_Footer_And_Final_Polish**: CIERRE Y ACCIONES. Implementa el Footer flotante/fijo al final del canvas en `src/features/EditorEntrenamiento/components/EditorCanvas.tsx`.\n\n**Instrucciones:**\n1. Añade los botones de acción global: '[+ Agregar Semana]', '[⚡ BatchTraining]', '[📋 Copiar Programa]'.\n2. Asegura que el footer tenga suficiente margen inferior para no quedar pegado al borde.\n3. Revisa el archivo completo para asegurar coherencia visual.\n\n**Referencias Obligatorias:**\n- Revisa @spec-editor-canvas.md (Sección 7).\n- Revisa @editor_entrenamiento_definitivo.md para los estilos de botones primarios y secundarios."
+    "**01_Canvas_Foundation_And_Nav**: INICIO DEL MONTAJE. **ÁMBITO: SOLO `src/features/EditorEntrenamiento`**. Quiero que configures el contenedor principal y la navegación superior en `src/features/EditorEntrenamiento/components/EditorCanvas.tsx`. 
+
+**Instrucciones:**
+1. Crea el elemento `<main>` con `flex-1`, `bg-gray-50` y `overflow-y-auto`.
+2. Implementa el `CanvasHeader` (Sticky Top) con el borde inferior gris y el selector de vistas (Segmented Control: Semanal/Excel/Timeline).
+3. Asegúrate de que el header se quede fijo al hacer scroll.
+
+**Referencias Obligatorias:**
+- Revisa @spec-editor-canvas.md (Sección 1 y 2) para la estructura exacta.
+- Revisa @editor_entrenamiento_definitivo.md para copiar los estilos visuales del 'Top Bar' minimalista.",
+    "**02_Program_Header_Context**: CONTINUACIÓN. **ÁMBITO: SOLO `src/features/EditorEntrenamiento`**. Debajo del `CanvasHeader` en `src/features/EditorEntrenamiento/components/EditorCanvas.tsx`, implementa la Cabecera del Programa (`ProgramHeader`).
+
+**Instrucciones:**
+1. Añade un `H1` editable para el Título del Programa (ej: 'Semana 1: Hipertrofia').
+2. Implementa los selectores (Dropdowns) para 'Mesociclo' y 'Microciclo'.
+3. Crea el componente visual de `Tags` (Chips) que permita añadir/eliminar etiquetas.
+
+**Referencias Obligatorias:**
+- Revisa @spec-editor-canvas.md (Sección 3.A).
+- Revisa @editor_entrenamiento_definitivo.md para la estética de los inputs transparentes y los badges de tags.",
+    "**03_Weekly_Grid_System**: ESTRUCTURA DE GRID. **ÁMBITO: SOLO `src/features/EditorEntrenamiento`**. Implementa el sistema de rejilla para los días en `src/features/EditorEntrenamiento/components/EditorCanvas.tsx`.
+
+**Instrucciones:**
+1. Crea un contenedor `WeeklyGrid` debajo del Header del Programa.
+2. Define el CSS Grid: 7 columnas en Desktop (`grid-cols-7`), y comportamiento de lista vertical o wrap en Mobile/Tablet.
+3. Prepara el renderizado iterativo de los 7 días de la semana (aunque las tarjetas estén vacías por ahora).
+
+**Referencias Obligatorias:**
+- Revisa @spec-editor-canvas.md (Sección 3.B y 6) para los breakpoints responsivos.
+- Revisa @editor_entrenamiento_definitivo.md para los espaciados (gaps) entre columnas.",
+    "**04_DayCard_Collapsed_UI**: COMPONENTE TARJETA. **ÁMBITO: SOLO `src/features/EditorEntrenamiento`**. Desarrolla el componente visual `DayCard` en su estado **COLAPSADO** dentro de `src/features/EditorEntrenamiento/components/EditorCanvas.tsx` (o extráelo a `src/features/EditorEntrenamiento/components/canvas/DayCard.tsx` si prefieres organización, pero mantente en el feature).
+
+**Instrucciones:**
+1. Renderiza la tarjeta con: Header (Nombre Día + Tags), Body (Título Sesión + Iconos Resumen), Footer (Botón '+Info').
+2. Usa estilos de tarjeta: fondo blanco, sombra suave (`shadow-sm`), bordes redondeados (`rounded-xl`).
+3. Añade el menú de opciones (`...`) en el footer.
+
+**Referencias Obligatorias:**
+- Revisa @spec-editor-canvas.md (Sección 3.B - Estado Colapsado).
+- Revisa @diagramas_visuales_mejorados.md (Sección 2) para la distribución exacta de los elementos.",
+    "**05_DayCard_Expansion_Logic**: LÓGICA DE EXPANSIÓN. **ÁMBITO: SOLO `src/features/EditorEntrenamiento`**. Implementa la interactividad para expandir una tarjeta en `src/features/EditorEntrenamiento/components/EditorCanvas.tsx`.
+
+**Instrucciones:**
+1. Al hacer click en '+Info', la tarjeta seleccionada debe cambiar de estado.
+2. Visualmente, la tarjeta expandida debe ocupar el 100% del ancho de la fila del grid (col-span-full en grid) o comportarse como un acordeón.
+3. Asegura una transición suave entre estado colapsado y expandido.
+
+**Referencias Obligatorias:**
+- Revisa @spec-editor-canvas.md (Sección 3.B - Estado Expandido).
+- Revisa @editor_entrenamiento_definitivo.md para ver cómo maneja el layout expandido.",
+    "**06_Internal_Blocks_And_Exercises**: CONTENIDO DETALLADO. **ÁMBITO: SOLO `src/features/EditorEntrenamiento`**. Dentro de la `DayCard` expandida en `src/features/EditorEntrenamiento/components/EditorCanvas.tsx`, implementa la renderización de Bloques y Ejercicios.
+
+**Instrucciones:**
+1. Crea el componente `TrainingBlock` (agrupador con título).
+2. Dentro del bloque, crea filas `ExerciseRow`.
+3. Cada fila debe tener inputs para: Nombre, Series, Reps, RPE/Carga y Descanso.
+4. Añade botones para borrar/mover ejercicios.
+
+**Referencias Obligatorias:**
+- Revisa @spec-editor-canvas.md (Sección 3.C).
+- Revisa @diagramas_visuales_mejorados.md (Sección 3) para el diseño de la tabla de ejercicios.",
+    "**07_Drag_And_Drop_Infrastructure**: DND CORE. **ÁMBITO: SOLO `src/features/EditorEntrenamiento`**. Integra la librería `@dnd-kit` en `src/features/EditorEntrenamiento/components/EditorCanvas.tsx`.
+
+**Instrucciones:**
+1. Envuelve el área necesaria con `<DndContext>`.
+2. Configura los sensores (Mouse, Touch, Keyboard).
+3. Define las zonas de caída (`Droppable`): El día completo (para añadir al final) y entre ejercicios (para reordenar).
+
+**Referencias Obligatorias:**
+- Revisa @spec-editor-canvas.md (Sección 4 y 7).
+- Revisa @editor_entrenamiento_definitivo.md para entender el flujo de interacción.",
+    "**08_Drag_And_Drop_Visuals**: DND FEEDBACK. **ÁMBITO: SOLO `src/features/EditorEntrenamiento`**. Implementa el feedback visual del arrastre en `src/features/EditorEntrenamiento/components/EditorCanvas.tsx`.
+
+**Instrucciones:**
+1. Implementa `<DragOverlay>` para mostrar el elemento que se está moviendo (con opacidad y sombra).
+2. Añade estilos visuales a las Drop Zones cuando un elemento pasa por encima (borde azul dashed, fondo azul claro).
+3. Asegura que el 'Placeholder' indique dónde caerá el elemento.
+
+**Referencias Obligatorias:**
+- Revisa @spec-editor-canvas.md (Sección 8 - Estados Visuales).
+- Revisa @editor_entrenamiento_definitivo.md para la consistencia visual.",
+    "**09_Footer_And_Final_Polish**: CIERRE Y ACCIONES. **ÁMBITO: SOLO `src/features/EditorEntrenamiento`**. Implementa el Footer flotante/fijo al final del canvas en `src/features/EditorEntrenamiento/components/EditorCanvas.tsx`.
+
+**Instrucciones:**
+1. Añade los botones de acción global: '[+ Agregar Semana]', '[⚡ BatchTraining]', '[📋 Copiar Programa]'.
+2. Asegura que el footer tenga suficiente margen inferior para no quedar pegado al borde.
+3. Revisa el archivo completo para asegurar coherencia visual.
+
+**Referencias Obligatorias:**
+- Revisa @spec-editor-canvas.md (Sección 7).
+- Revisa @editor_entrenamiento_definitivo.md para los estilos de botones primarios y secundarios."
   ]
 }

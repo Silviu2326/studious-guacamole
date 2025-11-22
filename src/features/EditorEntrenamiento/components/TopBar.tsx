@@ -1,57 +1,118 @@
-import React from 'react';
-import { ChevronDown, Save, Zap, User, Settings, Menu } from 'lucide-react';
+// src/features/EditorEntrenamiento/components/TopBar.tsx
+
+import React, { useEffect, useRef } from 'react';
+import { Sparkles, Menu } from 'lucide-react';
+
+import ClientSelector, { ClientSelectorHandle } from './ClientSelector';
+import AutoSaveIndicator from './AutoSaveIndicator';
+import { useUIContext } from '../context/UIContext';
+import UserActionsMenu from './UserActionsMenu';
 
 export const TopBar: React.FC = () => {
+  const { isFitCoachOpen, toggleFitCoach } = useUIContext();
+  const clientSelectorRef = useRef<ClientSelectorHandle>(null);
+  
+  // Mock notification state - connect to real store later
+  const hasNotification = false; 
+
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd+K or Ctrl+K: Focus Client Selector
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        clientSelectorRef.current?.open();
+      }
+
+      // Cmd+/ or Ctrl+/: Toggle FitCoach
+      if ((e.metaKey || e.ctrlKey) && e.key === '/') {
+        e.preventDefault();
+        toggleFitCoach();
+      }
+      
+      // Cmd+S or Ctrl+S: Manual Save (Prevent browser save)
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        // Trigger save logic here if available
+        console.log('Manual save triggered');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleFitCoach]);
+
   return (
-    <header className="h-16 border-b border-gray-200 bg-white flex items-center justify-between px-4 sticky top-0 z-20">
-      <div className="flex items-center gap-4">
-        {/* Mobile Menu Trigger (Visible only on small screens) */}
-        <button className="lg:hidden p-2 hover:bg-gray-100 rounded-lg">
-          <Menu className="w-5 h-5 text-gray-600" />
+    <header className="h-16 sticky top-0 z-50 bg-white border-b border-gray-200 px-4 lg:px-6 flex items-center justify-between">
+      {/* Zona Izquierda */}
+      <div className="flex justify-start items-center gap-4">
+        {/* Hamburger Menu - Mobile Only (< 640px) */}
+        <button 
+          className="sm:hidden p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+          aria-label="Abrir menú de navegación"
+          aria-haspopup="true"
+        >
+          <Menu className="w-6 h-6" />
         </button>
 
-        {/* Logo Area */}
-        <div className="flex items-center gap-2 font-bold text-xl text-blue-900">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
-            FP
+        {/* Logo - Hidden on Mobile, Icon on Tablet, Full on Desktop */}
+        <a 
+          href="/dashboard" 
+          className="hidden sm:flex items-center gap-2 group focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg p-1"
+          aria-label="Ir al Dashboard"
+        >
+          <div className="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center shadow-sm group-hover:bg-blue-700 transition">
+            {/* Isotipo placeholder */}
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.41-7-7.05h2.92c0 2.22 1.44 4.1 3.5 4.77V19.93zm6.93-2.61a7.994 7.994 0 00-.73-1.63L14.47 16h-.14c-.93 0-1.7-.63-1.92-1.5-.06-.18-.11-.35-.11-.5h-2.18v2.18h-.18v-2.18H7.17v-2.18H5.17V9.67h2.18V7.5h2.18v2.17h2.18v-2.17h2.18v2.17h2.18v2.17h2.18v2.18c.06 0 .11.02.17.02l.62-1.37a7.957 7.957 0 00.72-1.63l1.24-2.75h-.02a7.994 7.994 0 00-.73-1.63l-.42-.92h-.14c-.93 0-1.7-.63-1.92-1.5-.06-.18-.11-.35-.11-.5h-2.18V7.5h-.18v2.18H7.17v2.18H5.17V9.67h2.18V7.5h2.18v2.17h2.18v-2.17h2.18v2.17h2.18v2.17h2.18v2.18c.06 0 .11.02.17.02l.62-1.37a7.957 7.957 0 00.72-1.63l1.24-2.75h-.02c.93 0 1.7.63 1.92 1.5.06.18.11.35.11.5zM12 4c4.41 0 8 3.59 8 8s-3.59 8-8 8-8-3.59-8-8 3.59-8 8-8z"/>
+            </svg>
           </div>
-          <span className="hidden sm:block">FitPro</span>
-        </div>
-
-        <div className="h-6 w-px bg-gray-300 mx-2 hidden sm:block"></div>
-
-        {/* Client Selector */}
-        <button className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 rounded-md transition-colors border border-transparent hover:border-gray-200">
-          <div className="w-6 h-6 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-xs font-medium">
-            ML
-          </div>
-          <span className="text-sm font-medium text-gray-700">María López</span>
-          <ChevronDown className="w-4 h-4 text-gray-400" />
-        </button>
+          <span className="font-bold text-xl text-gray-900 hidden lg:block tracking-tight">FitPro</span>
+        </a>
+        <ClientSelector ref={clientSelectorRef} />
       </div>
 
-      <div className="flex items-center gap-4">
-        {/* Auto-save Status */}
-        <div className="hidden md:flex items-center gap-2 text-xs text-gray-500">
-          <Save className="w-3 h-3" />
-          <span>Guardado hace 2s</span>
-        </div>
+      {/* Zona Central */}
+      <div className="flex justify-center items-center">
+        {/* Aquí irán elementos centrales, como alertas globales */}
+      </div>
 
-        {/* FitCoach Toggle */}
-        <button className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-full hover:bg-indigo-100 transition-colors">
-          <Zap className="w-4 h-4" />
-          <span className="text-sm font-medium hidden sm:block">FitCoach</span>
+      {/* Zona Derecha */}
+      <div className="flex justify-end items-center space-x-2 lg:space-x-4">
+        {/* Indicador de Guardado */}
+        <AutoSaveIndicator status="saved" lastSavedAt={new Date()} />
+        
+        <div className="h-6 w-px bg-gray-200 mx-2 hidden sm:block"></div>
+
+        {/* Toggle FitCoach - Hidden on Mobile, Icon on Tablet, Full on Desktop */}
+        <button
+          onClick={toggleFitCoach}
+          className={`
+            relative hidden sm:flex items-center justify-center sm:justify-start gap-2 rounded-full transition-all border
+            p-2 sm:px-3 sm:py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500
+            ${isFitCoachOpen 
+              ? 'bg-indigo-100 text-indigo-700 border-indigo-200 hover:bg-indigo-200' 
+              : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+            }
+          `}
+          aria-label={isFitCoachOpen ? "Cerrar FitCoach IA" : "Abrir FitCoach IA"}
+          aria-pressed={isFitCoachOpen}
+          title="FitCoach IA (Cmd+/)"
+        >
+          <Sparkles className={`w-4 h-4 ${isFitCoachOpen ? 'fill-indigo-700' : ''}`} aria-hidden="true" />
+          <span className="hidden lg:inline font-medium text-sm">FitCoach</span>
+          
+          {/* Notification Badge */}
+          {hasNotification && (
+            <span className="absolute top-0 right-0 -mt-1 -mr-1 flex h-2.5 w-2.5" role="status" aria-label="Nuevas notificaciones">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border-2 border-white"></span>
+            </span>
+          )}
         </button>
 
-        <div className="h-6 w-px bg-gray-300 mx-2"></div>
-
-        {/* Actions */}
-        <button className="p-2 hover:bg-gray-100 rounded-full text-gray-600">
-          <User className="w-5 h-5" />
-        </button>
-        <button className="p-2 hover:bg-gray-100 rounded-full text-gray-600">
-          <Settings className="w-5 h-5" />
-        </button>
+        {/* User Actions Menu (Profile, Settings) */}
+        <UserActionsMenu />
       </div>
     </header>
   );

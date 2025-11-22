@@ -157,7 +157,7 @@ export const EditorCanvas: React.FC = () => {
   };
 
   return (
-    <div id="tour-editor-canvas" className="p-4 pb-20 h-full flex flex-col">
+    <div id="tour-editor-canvas" className="flex-1 w-full min-w-0 p-4 pb-20 h-full flex flex-col">
       <div className="no-print">
         <GlobalFilterBar
           searchTerm={searchTerm}

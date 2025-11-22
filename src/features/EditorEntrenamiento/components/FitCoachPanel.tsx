@@ -198,7 +198,7 @@ export const FitCoachPanel: React.FC = () => {
       role="region"
       aria-label="FitCoach Panel"
       className={`
-        fixed inset-y-0 right-0 z-50 w-full md:w-80 lg:w-96 xl:max-w-[400px] // Base width for drawer and desktop
+        fixed inset-y-0 right-0 z-50 w-full md:w-80 lg:w-96 // Base width for drawer and desktop
         flex flex-col h-full bg-white border-l border-gray-200 shadow-lg // Common styles
         transform transition-transform duration-300 ease-in-out
         ${isMobilePanelOpen ? 'translate-x-0' : 'translate-x-full'} // Slide-in/out for mobile/tablet

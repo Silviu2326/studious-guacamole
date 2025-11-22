@@ -369,7 +369,7 @@ export default App;
 function AppLayout() {
   const [activeView, setActiveView] = useState<string | undefined>(undefined);
   const location = useLocation();
-  const hideSidebar = location.pathname.startsWith('/programas-de-entreno/editor');
+  const hideSidebar = location.pathname.startsWith('/programas-de-entreno/editor') || location.pathname === '/editor-definitivo';
 
   return (
     <Layout activeView={activeView} onViewChange={setActiveView} hideSidebar={hideSidebar}>

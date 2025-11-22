@@ -36,11 +36,11 @@ export const EditorLayout: React.FC = () => {
                 </div>
                 
                 <div className="flex-1 flex overflow-hidden">
-                  <div className="no-print h-full">
+                  <div className="no-print h-full flex-shrink-0">
                     <LibraryPanel />
                   </div>
                   <EditorCanvas />
-                  <div className="no-print h-full">
+                  <div className="no-print h-full flex-shrink-0">
                     <FitCoachPanel />
                   </div>
                 </div>

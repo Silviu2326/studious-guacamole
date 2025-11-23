@@ -5,7 +5,7 @@ interface EmptyDayStateProps {
   dayName: string;
   isMonday: boolean;
   onCopyFromMonday?: () => void;
-  onUseAI?: () => void;
+  onSmartFill?: () => void;
   isCompact?: boolean;
 }
 
@@ -13,12 +13,12 @@ export const EmptyDayState: React.FC<EmptyDayStateProps> = ({
   dayName,
   isMonday,
   onCopyFromMonday,
-  onUseAI,
+  onSmartFill,
   isCompact = false
 }) => {
   return (
     <div className={`flex flex-col items-center justify-center text-center h-full w-full rounded-lg border-2 border-dashed border-gray-200 bg-gray-50/50 hover:bg-gray-50 transition-colors ${isCompact ? 'p-2' : 'p-4 gap-3'}`}>
-      
+
       {!isCompact && (
         <div className="text-gray-300">
           <Plus size={24} />
@@ -38,8 +38,22 @@ export const EmptyDayState: React.FC<EmptyDayStateProps> = ({
 
       {!isCompact && (
         <div className="flex flex-col gap-2 w-full mt-2">
+          {/* Prominent SmartFill Button */}
+          {onSmartFill && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onSmartFill();
+              }}
+              className="flex items-center justify-center gap-2 text-sm font-semibold text-white bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 py-2.5 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <Sparkles size={16} className="animate-pulse" />
+              <span>Rellenar con IA</span>
+            </button>
+          )}
+
           {!isMonday && onCopyFromMonday && (
-            <button 
+            <button
               onClick={(e) => {
                 e.stopPropagation();
                 onCopyFromMonday();
@@ -48,19 +62,6 @@ export const EmptyDayState: React.FC<EmptyDayStateProps> = ({
             >
               <Copy size={12} />
               <span>Copiar del Lunes</span>
-            </button>
-          )}
-          
-          {onUseAI && (
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                onUseAI();
-              }}
-              className="flex items-center justify-center gap-2 text-xs text-purple-600 hover:text-purple-700 hover:bg-purple-50 py-1.5 px-2 rounded transition-colors"
-            >
-              <Sparkles size={12} />
-              <span>Asistente IA</span>
             </button>
           )}
         </div>

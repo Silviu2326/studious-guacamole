@@ -10,6 +10,8 @@ import { ContextMenu, ContextMenuItem } from '../common/ContextMenu';
 import { useCollaboration, Collaborator } from '../../context/CollaborationContext';
 import { useUserPreferences } from '../../context/UserPreferencesContext';
 import { EmptyDayState } from './EmptyDayState';
+import { useValidation } from '../../hooks/useValidation';
+import { useUIContext } from '../../context/UIContext';
 
 export interface DayCardProps {
   day: Day;
@@ -40,6 +42,12 @@ export const DayCard: React.FC<DayCardProps> = ({
   const { activeUsers, currentUser } = useCollaboration();
   const { density } = useUserPreferences();
   const isCompact = density === 'compact';
+
+  // Validation
+  const { getDayAlerts } = useValidation();
+  const { openFitCoach } = useUIContext();
+  const alerts = getDayAlerts(day.id);
+  const hasAlerts = alerts.length > 0;
 
   // Determine if the day is locked (either by prop or by context)
   const isLockedBy = propIsLockedBy || activeUsers.find(
@@ -74,7 +82,7 @@ export const DayCard: React.FC<DayCardProps> = ({
     if (!onUpdateDay || isLockedBy) return;
     // Check for duplicates
     if (day.tags.find(t => t.id === tag.id)) return;
-    
+
     const newTags = [...day.tags, tag];
     onUpdateDay(day.id, { ...day, tags: newTags });
   };
@@ -84,7 +92,7 @@ export const DayCard: React.FC<DayCardProps> = ({
     const newTags = day.tags.filter(t => t.id !== tagId);
     onUpdateDay(day.id, { ...day, tags: newTags });
   };
-  
+
   const handleUpdateBlock = (blockId: string, newBlock: Block) => {
     if (!onUpdateDay) return;
     // Note: Block locking is handled inside TrainingBlock, but we check here too
@@ -114,8 +122,8 @@ export const DayCard: React.FC<DayCardProps> = ({
       if (copiedDayStr) {
         const copiedDay = JSON.parse(copiedDayStr);
         // Maintain current day ID and name, replace content
-        onUpdateDay(day.id, { 
-          ...day, 
+        onUpdateDay(day.id, {
+          ...day,
           blocks: copiedDay.blocks || [],
           tags: copiedDay.tags || []
         });
@@ -129,6 +137,34 @@ export const DayCard: React.FC<DayCardProps> = ({
     if (!onUpdateDay || isLockedBy) return;
     if (window.confirm('¿Estás seguro de que quieres limpiar este día?')) {
       onUpdateDay(day.id, { ...day, blocks: [], tags: [] });
+    }
+  };
+
+  const handleDuplicateBlock = (blockId: string) => {
+    if (!onUpdateDay || isLockedBy) return;
+    const blockIndex = day.blocks.findIndex(b => b.id === blockId);
+    if (blockIndex === -1) return;
+
+    const blockToDuplicate = day.blocks[blockIndex];
+    const newBlock = {
+      ...blockToDuplicate,
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
+      exercises: blockToDuplicate.exercises.map(e => ({
+        ...e,
+        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)
+      }))
+    };
+
+    const newBlocks = [...day.blocks];
+    newBlocks.splice(blockIndex + 1, 0, newBlock);
+    onUpdateDay(day.id, { ...day, blocks: newBlocks });
+  };
+
+  const handleRemoveBlock = (blockId: string) => {
+    if (!onUpdateDay || isLockedBy) return;
+    if (window.confirm('¿Estás seguro de eliminar este bloque?')) {
+      const newBlocks = day.blocks.filter(b => b.id !== blockId);
+      onUpdateDay(day.id, { ...day, blocks: newBlocks });
     }
   };
 
@@ -163,28 +199,44 @@ export const DayCard: React.FC<DayCardProps> = ({
     }
   ];
 
-  const cardClasses = `day-card bg-white shadow-sm rounded-xl ${isCompact ? 'p-2' : 'p-4'} flex flex-col h-full transition-all duration-300 ease-in-out relative border ${
-    isOver 
-      ? 'border-blue-500 border-dashed bg-blue-50 ring-2 ring-blue-200' 
-      : 'border-transparent hover:border-gray-200'
-  } ${
-    isExpanded ? 'col-span-full ring-1 ring-blue-500/20 shadow-md' : ''
-  } ${
-    isDimmed ? 'opacity-40 grayscale-[0.5] pointer-events-none' : ''
-  } ${
-    isLockedBy ? 'opacity-90' : ''
-  }`;
+  const cardClasses = `day-card group bg-white shadow-sm rounded-xl ${isCompact ? 'p-2' : 'p-4'} flex flex-col h-full transition-all duration-300 ease-in-out relative border ${isOver
+    ? 'border-blue-500 border-dashed bg-blue-50 ring-2 ring-blue-200'
+    : 'border-transparent hover:border-gray-200'
+    } ${isExpanded ? 'col-span-full ring-1 ring-blue-500/20 shadow-md' : ''
+    } ${isDimmed ? 'opacity-40 grayscale-[0.5] pointer-events-none' : ''
+    } ${isLockedBy ? 'opacity-90' : ''
+    }`;
 
   return (
     <>
-      <div 
-        ref={setNodeRef} 
+      <div
+        ref={setNodeRef}
         className={cardClasses}
       >
+        {/* Quick Actions Overlay */}
+        {!isLockedBy && (
+          <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+            <button
+              onClick={(e) => { e.stopPropagation(); handleCopyDay(); }}
+              className="p-1.5 bg-white text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md shadow-sm border border-gray-100 transition-colors"
+              title="Copiar día"
+            >
+              <Copy size={14} />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleClearDay(); }}
+              className="p-1.5 bg-white text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md shadow-sm border border-gray-100 transition-colors"
+              title="Limpiar día"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        )}
+
         {/* Locking Overlay for Day */}
         {isLockedBy && (
           <div className="absolute inset-0 z-20 bg-white/50 backdrop-blur-[1px] rounded-xl flex items-center justify-center cursor-not-allowed">
-             <div className="bg-white px-3 py-2 rounded-full shadow-lg border border-gray-200 flex items-center gap-2 animate-in fade-in zoom-in duration-200">
+            <div className="bg-white px-3 py-2 rounded-full shadow-lg border border-gray-200 flex items-center gap-2 animate-in fade-in zoom-in duration-200">
               <Lock size={14} className="text-gray-500" />
               <div className="flex items-center gap-1.5">
                 {isLockedBy.avatar && (
@@ -199,14 +251,28 @@ export const DayCard: React.FC<DayCardProps> = ({
         )}
 
         {/* Header with Context Menu Trigger */}
-        <div 
+        <div
           className={`flex justify-between items-center mb-2 ${!isLockedBy ? 'cursor-context-menu' : ''}`}
           onContextMenu={handleContextMenu}
         >
-          <h3 className={`font-bold ${isCompact ? 'text-xs' : 'text-sm'} text-gray-800`}>{day.name}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className={`font-bold ${isCompact ? 'text-xs' : 'text-sm'} text-gray-800`}>{day.name}</h3>
+            {hasAlerts && (
+              <div
+                className="cursor-pointer text-yellow-500 hover:text-yellow-600 animate-pulse"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openFitCoach('Alertas');
+                }}
+                title={alerts.map(a => a.message).join('\n')}
+              >
+                <AlertCircle size={16} />
+              </div>
+            )}
+          </div>
           {isEditingTags && !isLockedBy ? (
             <div className="max-w-[180px]">
-              <TagInput 
+              <TagInput
                 tags={day.tags}
                 onAddTag={handleTagAdd}
                 onRemoveTag={handleTagRemove}
@@ -215,7 +281,7 @@ export const DayCard: React.FC<DayCardProps> = ({
               />
             </div>
           ) : (
-            <div 
+            <div
               className={`flex gap-1 rounded px-1 -mx-1 py-0.5 transition-colors min-h-[24px] items-center ${!isLockedBy ? 'cursor-pointer hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none' : ''}`}
               role="button"
               tabIndex={isLockedBy ? -1 : 0}
@@ -242,182 +308,97 @@ export const DayCard: React.FC<DayCardProps> = ({
                     </span>
                   ))}
                   {day.tags.length > 2 && (
-                    <span className="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">
+                    <span className="text-xs text-gray-400">
                       +{day.tags.length - 2}
                     </span>
                   )}
                 </>
-              ) : (
-                 <span className="text-xs text-gray-400 hover:text-blue-500 flex items-center gap-1">
-                   <Plus size={12} /> 
-                 </span>
-              )}
+              ) : null}
             </div>
           )}
         </div>
 
-        {/* Body */}
-        <div className="flex-grow mb-2">
-          {day.blocks.length > 0 ? (
-             <input 
-               type="text" 
-               defaultValue={day.blocks[0]?.name || "Sesión"} // Placeholder logic for session title
-               aria-label="Nombre de la sesión"
-               disabled={!!isLockedBy}
-               className={`${isCompact ? 'text-xs' : 'text-sm'} font-semibold text-gray-900 w-full border-none p-0 focus:ring-0 mb-1 focus-visible:ring-2 focus-visible:ring-blue-500 rounded disabled:bg-transparent disabled:text-gray-500`}
-             />
+        {/* Content: Blocks or Empty State */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {day.blocks.length === 0 ? (
+            <EmptyDayState
+              onUseAI={onUseAI}
+              onCopyFromMonday={onCopyFromMonday}
+            />
           ) : (
-              <p className={`${isCompact ? 'text-xs' : 'text-sm'} font-semibold text-gray-400 mb-1`}>Descanso</p>
-          )}
-        </div>
-
-        {/* Expanded Content */}
-        <div className={`expanded-content-wrapper ${!isExpanded ? 'hidden' : ''}`}>
-          <div className="my-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-            {day.blocks.map((block) => (
-              <TrainingBlock 
-                key={block.id} 
-                block={block} 
-                onUpdateBlock={(newBlock) => handleUpdateBlock(block.id, newBlock)}
-                isLockedBy={activeUsers.find(u => u.focusedElementId === block.id && u.id !== currentUser?.id)}
-              />
-            ))}
-             <button 
-                disabled={!!isLockedBy}
-                className="w-full py-2 mt-2 flex justify-center items-center gap-2 border-2 border-dashed border-gray-200 rounded-lg text-gray-400 hover:border-blue-300 hover:text-blue-500 transition-colors text-xs font-medium no-print focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-200 disabled:hover:text-gray-400"
-                aria-label="Agregar Bloque de Entrenamiento"
-             >
-                <Plus size={14} aria-hidden="true" />
-                Agregar Bloque
-             </button>
-          </div>
-
-          {/* Feedback Loop Section */}
-          {(day.feedback || (day.date && new Date(day.date).setHours(23,59,59,999) < Date.now())) && (
-            <div className="mb-3 p-3 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg border border-indigo-100 text-sm">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-semibold text-indigo-800 flex items-center gap-2">
-                  <MessageSquare size={14} />
-                  Feedback del Cliente
-                </h4>
-                {day.feedback && (
-                   <span className="text-[10px] font-medium px-1.5 py-0.5 bg-indigo-100 text-indigo-600 rounded-full border border-indigo-200">
-                     Completado
-                   </span>
-                )}
-              </div>
-              
-              {day.feedback ? (
-                <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                        <div className="bg-white/80 p-2 rounded border border-indigo-100 flex items-center justify-between shadow-sm">
-                            <span className="text-gray-600 text-xs flex items-center gap-1"><Activity size={10} /> RPE</span>
-                            <span className="font-bold text-indigo-700">{day.feedback.sessionRpe}/10</span>
-                        </div>
-                        <div className="bg-white/80 p-2 rounded border border-indigo-100 flex items-center justify-between shadow-sm">
-                            <span className="text-gray-600 text-xs flex items-center gap-1"><AlertCircle size={10} /> Dolor</span>
-                            <span className={`font-bold flex items-center gap-1 ${day.feedback.pain ? 'text-red-500' : 'text-green-500'}`}>
-                                {day.feedback.pain ? <ThumbsUp size={12} className="rotate-180" /> : <ThumbsUp size={12} />}
-                                {day.feedback.pain ? 'Sí' : 'No'}
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <div className="bg-white/80 p-2 rounded border border-indigo-100 flex items-center justify-between shadow-sm">
-                         <span className="text-gray-600 text-xs flex items-center gap-1"><Star size={10} /> Disfrute</span>
-                         <div className="flex gap-0.5">
-                            {[1, 2, 3, 4, 5].map(star => (
-                                <Star 
-                                    key={star} 
-                                    size={12} 
-                                    className={star <= (day.feedback?.enjoyment || 0) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"} 
-                                />
-                            ))}
-                         </div>
-                    </div>
-
-                    {day.feedback.notes && (
-                        <div className="bg-white/80 p-2 rounded border border-indigo-100 shadow-sm">
-                            <p className="text-gray-600 text-xs italic">"{day.feedback.notes}"</p>
-                        </div>
-                    )}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-xs italic text-center py-2">
-                   El cliente no ha dejado feedback para este día.
-                </p>
-              )}
-
-               <button 
-                  onClick={() => {
-                      // Mock FitCoach Chat integration
-                      alert(`[FitCoach Mock] Abriendo asistente para ajustar la semana basada en el feedback del día: ${day.name}`);
-                  }}
-                  className="w-full mt-3 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded border border-indigo-200 text-xs font-medium flex items-center justify-center gap-2 transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
-               >
-                  <TrendingUp size={14} />
-                  Ajustar siguiente semana
-               </button>
+            <div className="space-y-2">
+              {day.blocks.map((block) => (
+                <TrainingBlock
+                  key={block.id}
+                  block={block}
+                  onUpdateBlock={(newBlock) => handleUpdateBlock(block.id, newBlock)}
+                  isLockedBy={isLockedBy}
+                  onDuplicate={() => handleDuplicateBlock(block.id)}
+                  onRemove={() => handleRemoveBlock(block.id)}
+                />
+              ))}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex justify-between items-center mt-auto pt-2 border-t border-transparent relative no-print">
-          <button 
-              className="text-sm text-blue-600 font-medium hover:text-blue-800 flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none rounded px-1" 
-              onClick={onToggleExpand}
-              aria-label={isExpanded ? "Colapsar detalles del día" : "Ver más información del día"}
+      <div className="flex justify-between items-center mt-auto pt-2 border-t border-transparent relative no-print">
+        <button
+          className="text-sm text-blue-600 font-medium hover:text-blue-800 flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none rounded px-1"
+          onClick={onToggleExpand}
+          aria-label={isExpanded ? "Colapsar detalles del día" : "Ver más información del día"}
+        >
+          {isExpanded ? 'Colapsar' : '+ Info'}
+        </button>
+
+        <div ref={menuRef} className="relative">
+          <button
+            disabled={!!isLockedBy}
+            className="text-gray-400 hover:text-gray-700 p-1 rounded-md hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none disabled:opacity-50"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Opciones del día"
+            aria-haspopup="true"
+            aria-expanded={isMenuOpen}
           >
-            {isExpanded ? 'Colapsar' : '+ Info'}
+            <MoreHorizontal size={16} aria-hidden="true" />
           </button>
-          
-          <div ref={menuRef} className="relative">
-            <button 
-              disabled={!!isLockedBy}
-              className="text-gray-400 hover:text-gray-700 p-1 rounded-md hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none disabled:opacity-50"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              aria-label="Opciones del día"
-              aria-haspopup="true"
-              aria-expanded={isMenuOpen}
-            >
-                <MoreHorizontal size={16} aria-hidden="true" />
-            </button>
-            
-            {isMenuOpen && !isLockedBy && (
-              <div className="absolute right-0 bottom-full mb-2 w-40 bg-white rounded-md shadow-lg border border-gray-100 z-10 overflow-hidden">
-                <button 
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
-                  onClick={() => {
-                    setIsSmartFillOpen(true);
-                    setIsMenuOpen(false);
-                  }}
-                  aria-label="Smart Fill: Rellenar entrenamiento automáticamente"
-                >
-                  <Zap size={14} className="text-yellow-500" aria-hidden="true" />
-                  Smart Fill
-                </button>
-                {/* Add more options here later */}
-              </div>
-            )}
-          </div>
+
+          {isMenuOpen && !isLockedBy && (
+            <div className="absolute right-0 bottom-full mb-2 w-40 bg-white rounded-md shadow-lg border border-gray-100 z-10 overflow-hidden">
+              <button
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+                onClick={() => {
+                  setIsSmartFillOpen(true);
+                  setIsMenuOpen(false);
+                }}
+                aria-label="Smart Fill: Rellenar entrenamiento automáticamente"
+              >
+                <Zap size={14} className="text-yellow-500" aria-hidden="true" />
+                Smart Fill
+              </button>
+              {/* Add more options here later */}
+            </div>
+          )}
         </div>
       </div>
+    </div >
 
-      <SmartFillModal 
+      <SmartFillModal
         isOpen={isSmartFillOpen}
         onClose={() => setIsSmartFillOpen(false)}
         onConfirm={handleSmartFillConfirm}
       />
-      
-      {contextMenu && !isLockedBy && (
-        <ContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          items={contextMenuItems}
-          onClose={() => setContextMenu(null)}
-        />
-      )}
+
+  {
+    contextMenu && !isLockedBy && (
+      <ContextMenu
+        x={contextMenu.x}
+        y={contextMenu.y}
+        items={contextMenuItems}
+        onClose={() => setContextMenu(null)}
+      />
+    )
+  }
     </>
   );
 };

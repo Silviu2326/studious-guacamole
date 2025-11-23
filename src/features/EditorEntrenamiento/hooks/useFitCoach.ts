@@ -28,6 +28,8 @@ export interface Alert {
   };
 }
 
+import { FitCoachMemoryService } from '../services/FitCoachMemoryService';
+
 export const useFitCoach = () => {
   const [messages, setMessages] = useState<Message[]>([
     { id: 1, text: '¡Hola! Estoy analizando el programa de María López. ¿En qué puedo ayudarte?', isUser: false },
@@ -74,6 +76,41 @@ export const useFitCoach = () => {
   const processCommand = (text: string): Partial<Message> | null => {
     const lowerText = text.toLowerCase();
 
+    // Check for memories first to personalize
+    const patterns = FitCoachMemoryService.analyzePatterns();
+    const recentMemories = FitCoachMemoryService.getMemories().slice(0, 3);
+
+    if (lowerText.includes('sugerencia') || lowerText.includes('ayuda') || lowerText.includes('que hago')) {
+      if (patterns.length > 0) {
+        let suggestionText = `He notado algunos patrones en tu estilo de programación: ${patterns.join(', ')}.`;
+
+        if (patterns.includes('Prefiere reutilizar días existentes')) {
+          suggestionText += ' Dado que sueles reutilizar días, ¿te gustaría que active el modo "Smart Fill" para completar la semana basándome en tus días favoritos?';
+          return {
+            text: suggestionText,
+            actionCard: {
+              title: 'Sugerencia de Productividad',
+              description: 'Activar Smart Fill para autocompletar.',
+              actions: [
+                { label: 'Activar Smart Fill', onClick: () => console.log('Activating Smart Fill'), type: 'primary' }
+              ]
+            }
+          };
+        }
+
+        return {
+          text: `${suggestionText} ¿Quieres que optimice el plan basándome en esto?`,
+          actionCard: {
+            title: 'Sugerencia Personalizada',
+            description: 'Basado en tus acciones recientes.',
+            actions: [
+              { label: 'Aplicar optimizaciones', onClick: () => console.log('Applying personalized opts'), type: 'primary' }
+            ]
+          }
+        };
+      }
+    }
+
     if (lowerText.includes('optimiza')) {
       return {
         text: 'He detectado que la intensidad del Martes es muy alta seguida de otro día intenso. Recomiendo alternar con un día de recuperación activa.',
@@ -81,13 +118,13 @@ export const useFitCoach = () => {
           title: 'Optimización de Recuperación',
           description: 'Mover sesión de HIIT del Miércoles al Viernes para permitir recuperación del SNC.',
           actions: [
-            { 
-              label: 'Aplicar cambio', 
+            {
+              label: 'Aplicar cambio',
               onClick: () => console.log('Optimizando calendario...'),
               type: 'primary'
             },
-            { 
-              label: 'Ignorar', 
+            {
+              label: 'Ignorar',
               onClick: () => console.log('Ignorado'),
               type: 'secondary'
             }
@@ -103,13 +140,13 @@ export const useFitCoach = () => {
           title: 'Modificación por Lesión (Rodilla)',
           description: 'Sustituir "Jump Squats" y "Lunges" por ejercicios de bajo impacto.',
           actions: [
-            { 
-              label: 'Sustituir ejercicios', 
+            {
+              label: 'Sustituir ejercicios',
               onClick: () => console.log('Sustituyendo ejercicios...'),
               type: 'primary'
             },
-            { 
-              label: 'Ver alternativas', 
+            {
+              label: 'Ver alternativas',
               onClick: () => console.log('Mostrando alternativas'),
               type: 'secondary'
             }
@@ -125,13 +162,13 @@ export const useFitCoach = () => {
           title: 'Ajuste de Tiempo',
           description: 'Convertir sesiones de fuerza de 60min a formato Super-Sets (45min).',
           actions: [
-            { 
-              label: 'Aplicar Super-Sets', 
+            {
+              label: 'Aplicar Super-Sets',
               onClick: () => console.log('Aplicando super-sets...'),
               type: 'primary'
             },
-            { 
-              label: 'Mantener actual', 
+            {
+              label: 'Mantener actual',
               onClick: () => console.log('Mantener'),
               type: 'secondary'
             }
@@ -147,13 +184,13 @@ export const useFitCoach = () => {
           title: 'Desbalance Push/Pull',
           description: 'Ratio actual 3:1. Se recomienda acercarse a 1:1 para prevenir lesiones.',
           actions: [
-            { 
-              label: 'Corregir (+Remo)', 
+            {
+              label: 'Corregir (+Remo)',
               onClick: () => console.log('Agregando ejercicios de remo...'),
               type: 'primary'
             },
-            { 
-              label: 'Ignorar', 
+            {
+              label: 'Ignorar',
               onClick: () => console.log('Alerta ignorada'),
               type: 'secondary'
             }
@@ -162,9 +199,16 @@ export const useFitCoach = () => {
       };
     }
 
-    // Default response
+    // Default response with memory context
+    let defaultText = 'Entendido. Estoy procesando tu solicitud para optimizar el programa. ¿Necesitas ayuda con algo específico como lesiones, tiempo o balance?';
+
+    if (recentMemories.length > 0) {
+      const lastAction = recentMemories[0];
+      defaultText += ` (Por cierto, vi que recientemente: ${lastAction.content})`;
+    }
+
     return {
-      text: 'Entendido. Estoy procesando tu solicitud para optimizar el programa. ¿Necesitas ayuda con algo específico como lesiones, tiempo o balance?',
+      text: defaultText,
     };
   };
 
@@ -179,7 +223,7 @@ export const useFitCoach = () => {
     // Simulate bot response
     setTimeout(() => {
       const response = processCommand(text);
-      
+
       if (response) {
         const botMessage: Message = {
           id: Date.now() + 1,
@@ -189,7 +233,7 @@ export const useFitCoach = () => {
         };
         setMessages(prev => [...prev, botMessage]);
       }
-      
+
       setIsTyping(false);
     }, 1500);
   }, []);

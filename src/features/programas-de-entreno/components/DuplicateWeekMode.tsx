@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, Button, Input, Select } from '../../../components/componentsreutilizables';
 import type { DayPlan, DaySession } from '../types';
+import { FitCoachMemoryService } from '../../EditorEntrenamiento/services/FitCoachMemoryService';
 
 type Props = {
   weekDays: ReadonlyArray<string>;
@@ -143,10 +144,17 @@ export function DuplicateWeekMode({ weekDays, workingPlan, setWorkingPlan, setMa
       variationType === 'none'
         ? 'sin variaciones'
         : variationType === 'progression'
-        ? `con progresión de ${progressionPercent}%`
-        : variationType === 'intensity'
-        ? `con ajuste de intensidad ${intensityDelta > 0 ? '+' : ''}${intensityDelta}`
-        : 'con rotación de ejercicios';
+          ? `con progresión de ${progressionPercent}%`
+          : variationType === 'intensity'
+            ? `con ajuste de intensidad ${parseFloat(intensityDelta) > 0 ? '+' : ''}${intensityDelta}`
+            : 'con rotación de ejercicios';
+
+    // FitCoach Memory: Log this action
+    FitCoachMemoryService.saveMemory(
+      `Duplicó la Semana ${sourceWeek} a las semanas ${targetWeeks.join(', ')} (${variationText})`,
+      'action',
+      { type: 'week_duplication', source: sourceWeek, targets: targetWeeks, variation: variationType }
+    );
 
     setManualApplyStatus(
       `Semana ${sourceWeek} duplicada a semana(s) ${targetWeeks.join(', ')} ${variationText}. Revisa y aplica los cambios para guardarlos en el programa.`,
@@ -281,6 +289,9 @@ export function DuplicateWeekMode({ weekDays, workingPlan, setWorkingPlan, setMa
     </div>
   );
 }
+
+
+
 
 
 

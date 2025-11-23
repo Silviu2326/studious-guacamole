@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Box, Dumbbell, LayoutTemplate, Search, X, SlidersHorizontal } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { Box, Dumbbell, LayoutTemplate, Search, X, SlidersHorizontal, Sparkles, Lightbulb } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import { MOCK_EXERCISES, MOCK_BLOCKS } from '../../../data/libraryMocks';
 import { LibraryCard } from './LibraryCard';
 import { useTemplateManager } from '../hooks/useTemplateManager';
 import { SaveTemplateModal } from './modals/SaveTemplateModal';
+import { useProgramContext } from '../context/ProgramContext';
 
 const normalizeText = (text: string) => {
   return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -13,20 +14,27 @@ const normalizeText = (text: string) => {
 interface DraggableLibraryCardProps extends React.ComponentProps<typeof LibraryCard> {
   id: string;
   data: any;
+  className?: string;
 }
 
-const DraggableLibraryCard: React.FC<DraggableLibraryCardProps> = ({ id, data, ...props }) => {
+const DraggableLibraryCard: React.FC<DraggableLibraryCardProps> = ({ id, data, className, ...props }) => {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id,
     data,
   });
 
   return (
-    <div ref={setNodeRef} {...listeners} {...attributes} className={isDragging ? 'opacity-50' : ''}>
+    <div ref={setNodeRef} {...listeners} {...attributes} className={`${isDragging ? 'opacity-50' : ''} ${className || ''}`}>
       <LibraryCard {...props} />
     </div>
   );
 };
+
+const AI_TEMPLATES = [
+  { id: 'ai-hypertrophy', name: 'Hipertrofia 4 días', goal: 'hypertrophy', days: 4, itemType: 'ai-template' },
+  { id: 'ai-strength', name: 'Fuerza 3 días', goal: 'strength', days: 3, itemType: 'ai-template' },
+  { id: 'ai-fat-loss', name: 'Pérdida de grasa 5 días', goal: 'fat-loss', days: 5, itemType: 'ai-template' },
+];
 
 export const LibraryPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'blocks' | 'exercises' | 'templates'>(() => {
@@ -34,7 +42,40 @@ export const LibraryPanel: React.FC = () => {
     return (storedTab as 'blocks' | 'exercises' | 'templates') || 'exercises';
   });
 
+  // Resizing Logic
+  const sidebarRef = useRef<HTMLElement>(null);
+  const [width, setWidth] = useState(280);
+  const [isResizing, setIsResizing] = useState(false);
+
+  const startResizing = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  const stopResizing = useCallback(() => setIsResizing(false), []);
+
+  const resize = useCallback((mouseMoveEvent: MouseEvent) => {
+      if (isResizing && sidebarRef.current) {
+          const newWidth = mouseMoveEvent.clientX - sidebarRef.current.getBoundingClientRect().left;
+          if (newWidth > 240 && newWidth < 600) {
+              setWidth(newWidth);
+          }
+      }
+  }, [isResizing]);
+
+  useEffect(() => {
+      if (isResizing) {
+        window.addEventListener("mousemove", resize);
+        window.addEventListener("mouseup", stopResizing);
+      }
+      return () => {
+          window.removeEventListener("mousemove", resize);
+          window.removeEventListener("mouseup", stopResizing);
+      };
+  }, [isResizing, resize, stopResizing]);
+
   const { templates, saveAsTemplate, deleteTemplate } = useTemplateManager();
+  const { weeks } = useProgramContext();
   const [isSaveModalOpen, setSaveModalOpen] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -43,6 +84,104 @@ export const LibraryPanel: React.FC = () => {
   // Filter states
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>([]);
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
+
+  // Smart Suggestions Logic
+  const smartSuggestions = useMemo(() => {
+    const suggestions: any[] = [];
+    const normalizedQuery = normalizeText(searchQuery);
+
+    // 1. Search Based Suggestions (Specific Triggers)
+    if (normalizedQuery.includes('tendinopatia') || normalizedQuery.includes('tendon')) {
+        suggestions.push({
+            id: 'sug-rehab-patellar',
+            name: 'Rehab: Tendinopatía Rotuliana',
+            type: 'warmup',
+            estimatedDuration: 15,
+            exercises: [] 
+        });
+        suggestions.push({
+            id: 'sug-iso-knee',
+            name: 'Isométricos Rodilla',
+            type: 'warmup',
+            estimatedDuration: 10,
+            exercises: []
+        });
+    }
+
+    // 2. Context Based Suggestions (if no specific search trigger found so far)
+    if (suggestions.length === 0) {
+        // Analyze Program Content
+        let lowerBodyCount = 0;
+        let upperBodyCount = 0;
+
+        weeks.forEach(week => {
+            week.days.forEach(day => {
+                day.blocks.forEach(block => {
+                    block.exercises.forEach(ex => {
+                        const name = normalizeText(ex.name);
+                        // Simple heuristic
+                        if (name.includes('squat') || name.includes('sentadilla') || name.includes('deadlift') || name.includes('peso muerto') || name.includes('leg')) {
+                            lowerBodyCount++;
+                        } else if (name.includes('bench') || name.includes('banca') || name.includes('press') || name.includes('row') || name.includes('remo')) {
+                            upperBodyCount++;
+                        }
+                    });
+                });
+            });
+        });
+
+        // Determine Context
+        if (normalizedQuery.length === 0) { // Only suggest based on context if no search
+            if (lowerBodyCount > upperBodyCount) {
+                suggestions.push({
+                    id: 'sug-warmup-leg',
+                    name: 'Calentamiento Pierna Completo',
+                    type: 'warmup',
+                    estimatedDuration: 12,
+                    exercises: []
+                });
+                suggestions.push({
+                    id: 'sug-mobility-hip',
+                    name: 'Movilidad de Cadera',
+                    type: 'warmup',
+                    estimatedDuration: 8,
+                    exercises: []
+                });
+            } else if (upperBodyCount > lowerBodyCount) {
+                suggestions.push({
+                    id: 'sug-warmup-upper',
+                    name: 'Calentamiento Torso',
+                    type: 'warmup',
+                    estimatedDuration: 10,
+                    exercises: []
+                });
+                suggestions.push({
+                    id: 'sug-mobility-shoulder',
+                    name: 'Movilidad de Hombro',
+                    type: 'warmup',
+                    estimatedDuration: 8,
+                    exercises: []
+                });
+            } else {
+                suggestions.push({
+                    id: 'sug-warmup-general',
+                    name: 'Activación General',
+                    type: 'warmup',
+                    estimatedDuration: 10,
+                    exercises: []
+                });
+            }
+        }
+    }
+    
+    // If we have a search query that IS NOT a trigger, we might want to filter these suggestions or just return empty
+    // But for now, let's keep the logic simple: 
+    // If specific trigger -> show specific suggestions.
+    // If no search -> show context suggestions.
+    // If generic search -> show filtered blocks (handled by filteredBlocks).
+
+    return suggestions;
+  }, [searchQuery, weeks]);
 
   useEffect(() => {
     localStorage.setItem('libraryActiveTab', activeTab);
@@ -108,38 +247,49 @@ export const LibraryPanel: React.FC = () => {
   };
 
   return (
-    <aside id="tour-library-panel" className="w-60 relative border-r border-gray-200 bg-white flex flex-col h-full">
+    <aside 
+      ref={sidebarRef}
+      id="tour-library-panel" 
+      className="relative border-r border-gray-200 bg-white flex flex-col h-full group"
+      style={{ width: `${width}px`, minWidth: '240px', maxWidth: '600px' }}
+    >
       {/* HEADER DE NAVEGACIÓN (Tabs) */}
-      <div className="flex justify-around p-2 border-b border-gray-200 bg-white z-20">
+      <div className="grid grid-cols-3 gap-1 p-2 border-b border-gray-200 bg-white z-20">
         <button
-          className={`flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors duration-200 ${
+          className={`flex items-center justify-center gap-1 px-1 py-2 text-xs font-medium transition-colors duration-200 rounded w-full ${
             activeTab === 'blocks'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
+              ? 'text-blue-700 bg-blue-50'
+              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
           }`}
           onClick={() => setActiveTab('blocks')}
+          title="Bloques"
         >
-          <Box size={16} /> Bloques
+          <Box size={14} /> 
+          <span className="truncate">Bloques</span>
         </button>
         <button
-          className={`flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors duration-200 ${
+          className={`flex items-center justify-center gap-1 px-1 py-2 text-xs font-medium transition-colors duration-200 rounded w-full ${
             activeTab === 'exercises'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
+              ? 'text-blue-700 bg-blue-50'
+              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
           }`}
           onClick={() => setActiveTab('exercises')}
+          title="Ejercicios"
         >
-          <Dumbbell size={16} /> Ejercicios
+          <Dumbbell size={14} />
+          <span className="truncate">Ejercicios</span>
         </button>
         <button
-          className={`flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors duration-200 ${
+          className={`flex items-center justify-center gap-1 px-1 py-2 text-xs font-medium transition-colors duration-200 rounded w-full ${
             activeTab === 'templates'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
+              ? 'text-blue-700 bg-blue-50'
+              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
           }`}
           onClick={() => setActiveTab('templates')}
+          title="Plantillas"
         >
-          <LayoutTemplate size={16} /> Plantillas
+          <LayoutTemplate size={14} />
+          <span className="truncate">Plantillas</span>
         </button>
       </div>
 
@@ -237,6 +387,27 @@ export const LibraryPanel: React.FC = () => {
       <div className="flex-1 overflow-y-auto relative">
         {activeTab === 'blocks' && (
           <div className="p-2 space-y-1">
+            {smartSuggestions.length > 0 && (
+                <>
+                    <div className="sticky top-0 bg-white z-10 py-2 px-2 border-b border-gray-100 flex items-center gap-2">
+                        <Lightbulb size={14} className="text-yellow-500" />
+                        <h3 className="text-xs font-semibold text-yellow-600 uppercase">Bloques Sugeridos</h3>
+                    </div>
+                    {smartSuggestions.map(block => (
+                        <DraggableLibraryCard
+                            key={block.id}
+                            id={`smart-${block.id}`}
+                            data={{ ...block, itemType: 'block' }}
+                            title={block.name}
+                            subtitle={`Sugerido • ${block.estimatedDuration} min`}
+                            type="block"
+                            className="border-l-4 border-l-yellow-400"
+                        />
+                    ))}
+                    <div className="h-4"></div>
+                </>
+            )}
+
             <div className="sticky top-0 bg-white z-10 py-2 px-2 border-b border-gray-100">
                 <h3 className="text-xs font-semibold text-gray-400 uppercase">Bloques ({filteredBlocks.length})</h3>
             </div>
@@ -328,8 +499,25 @@ export const LibraryPanel: React.FC = () => {
 
         {activeTab === 'templates' && (
           <div className="p-2 space-y-1">
-            <div className="sticky top-0 bg-white z-10 py-2 px-2 border-b border-gray-100">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase">Plantillas ({filteredTemplates.length})</h3>
+             {/* AI Templates Section */}
+             <div className="sticky top-0 bg-white z-10 py-2 px-2 border-b border-gray-100 flex items-center gap-2">
+                <Sparkles size={14} className="text-purple-500" />
+                <h3 className="text-xs font-semibold text-purple-600 uppercase">Plantillas IA</h3>
+            </div>
+            {AI_TEMPLATES.map(template => (
+                 <DraggableLibraryCard
+                    key={template.id}
+                    id={`ai-${template.id}`}
+                    data={template}
+                    title={template.name}
+                    subtitle={`Generado por IA • ${template.days} días`}
+                    type="template"
+                    className="border-l-4 border-l-purple-400"
+                 />
+            ))}
+
+            <div className="sticky top-0 bg-white z-10 py-2 px-2 border-b border-gray-100 mt-2">
+                <h3 className="text-xs font-semibold text-gray-400 uppercase">Mis Plantillas ({filteredTemplates.length})</h3>
             </div>
             {filteredTemplates.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-center px-4">
@@ -385,6 +573,10 @@ export const LibraryPanel: React.FC = () => {
         isOpen={isSaveModalOpen}
         onClose={() => setSaveModalOpen(false)}
         onSave={handleSaveTemplate}
+      />
+      <div
+        className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-50 transition-colors opacity-0 group-hover:opacity-100"
+        onMouseDown={startResizing}
       />
     </aside>
   );

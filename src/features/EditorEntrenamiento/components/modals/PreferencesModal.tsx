@@ -37,21 +37,19 @@ export const PreferencesModal: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => updatePreferences({ units: 'metric' })}
-              className={`flex items-center justify-center py-3 px-4 rounded-lg border transition-all ${
-                units === 'metric'
+              className={`flex items-center justify-center py-3 px-4 rounded-lg border transition-all ${units === 'metric'
                   ? 'bg-blue-50 border-blue-500 text-blue-700 ring-1 ring-blue-500'
                   : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <span className="font-medium">Métrico (kg/km)</span>
             </button>
             <button
               onClick={() => updatePreferences({ units: 'imperial' })}
-              className={`flex items-center justify-center py-3 px-4 rounded-lg border transition-all ${
-                units === 'imperial'
+              className={`flex items-center justify-center py-3 px-4 rounded-lg border transition-all ${units === 'imperial'
                   ? 'bg-blue-50 border-blue-500 text-blue-700 ring-1 ring-blue-500'
                   : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <span className="font-medium">Imperial (lbs/mi)</span>
             </button>
@@ -69,21 +67,19 @@ export const PreferencesModal: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => updatePreferences({ firstDayOfWeek: 'monday' })}
-              className={`flex items-center justify-center py-3 px-4 rounded-lg border transition-all ${
-                firstDayOfWeek === 'monday'
+              className={`flex items-center justify-center py-3 px-4 rounded-lg border transition-all ${firstDayOfWeek === 'monday'
                   ? 'bg-blue-50 border-blue-500 text-blue-700 ring-1 ring-blue-500'
                   : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <span className="font-medium">Lunes</span>
             </button>
             <button
               onClick={() => updatePreferences({ firstDayOfWeek: 'sunday' })}
-              className={`flex items-center justify-center py-3 px-4 rounded-lg border transition-all ${
-                firstDayOfWeek === 'sunday'
+              className={`flex items-center justify-center py-3 px-4 rounded-lg border transition-all ${firstDayOfWeek === 'sunday'
                   ? 'bg-blue-50 border-blue-500 text-blue-700 ring-1 ring-blue-500'
                   : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <span className="font-medium">Domingo</span>
             </button>
@@ -101,21 +97,19 @@ export const PreferencesModal: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => updatePreferences({ defaultView: 'weekly' })}
-              className={`flex items-center justify-center py-3 px-4 rounded-lg border transition-all ${
-                defaultView === 'weekly'
+              className={`flex items-center justify-center py-3 px-4 rounded-lg border transition-all ${defaultView === 'weekly'
                   ? 'bg-blue-50 border-blue-500 text-blue-700 ring-1 ring-blue-500'
                   : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <span className="font-medium">Semanal</span>
             </button>
             <button
               onClick={() => updatePreferences({ defaultView: 'excel' })}
-              className={`flex items-center justify-center py-3 px-4 rounded-lg border transition-all ${
-                defaultView === 'excel'
+              className={`flex items-center justify-center py-3 px-4 rounded-lg border transition-all ${defaultView === 'excel'
                   ? 'bg-blue-50 border-blue-500 text-blue-700 ring-1 ring-blue-500'
                   : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <span className="font-medium">Excel (Lista)</span>
             </button>
@@ -133,24 +127,54 @@ export const PreferencesModal: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => updatePreferences({ density: 'comfortable' })}
-              className={`flex items-center justify-center py-3 px-4 rounded-lg border transition-all ${
-                density === 'comfortable'
+              className={`flex items-center justify-center py-3 px-4 rounded-lg border transition-all ${density === 'comfortable'
                   ? 'bg-blue-50 border-blue-500 text-blue-700 ring-1 ring-blue-500'
                   : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <span className="font-medium">Cómodo</span>
             </button>
             <button
               onClick={() => updatePreferences({ density: 'compact' })}
-              className={`flex items-center justify-center py-3 px-4 rounded-lg border transition-all ${
-                density === 'compact'
+              className={`flex items-center justify-center py-3 px-4 rounded-lg border transition-all ${density === 'compact'
                   ? 'bg-blue-50 border-blue-500 text-blue-700 ring-1 ring-blue-500'
                   : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <span className="font-medium">Compacto</span>
             </button>
+          </div>
+
+          {/* Visual Preview */}
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
+            <h5 className="text-xs font-medium text-gray-500 mb-3 uppercase tracking-wider">Vista Previa</h5>
+            <div className="grid grid-cols-2 gap-4">
+              {/* Comfortable Preview */}
+              <div className="space-y-2">
+                <span className="text-xs text-gray-500 block text-center mb-1">Cómodo</span>
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 flex flex-col gap-3">
+                  <div className="flex justify-between items-center">
+                    <div className="h-4 w-20 bg-gray-200 rounded"></div>
+                    <div className="h-4 w-4 bg-gray-100 rounded-full"></div>
+                  </div>
+                  <div className="h-8 w-full bg-blue-50 rounded border border-blue-100"></div>
+                  <div className="h-8 w-full bg-gray-50 rounded border border-gray-100"></div>
+                </div>
+              </div>
+
+              {/* Compact Preview */}
+              <div className="space-y-2">
+                <span className="text-xs text-gray-500 block text-center mb-1">Compacto</span>
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-2 flex flex-col gap-1.5">
+                  <div className="flex justify-between items-center">
+                    <div className="h-3 w-16 bg-gray-200 rounded"></div>
+                    <div className="h-3 w-3 bg-gray-100 rounded-full"></div>
+                  </div>
+                  <div className="h-6 w-full bg-blue-50 rounded border border-blue-100"></div>
+                  <div className="h-6 w-full bg-gray-50 rounded border border-gray-100"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -167,8 +191,8 @@ export const PreferencesModal: React.FC = () => {
               <p className="text-xs text-gray-500">Guardar cambios automáticamente</p>
             </div>
           </div>
-          
-          <button 
+
+          <button
             onClick={() => updatePreferences({ autoSave: !autoSave })}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${autoSave ? 'bg-blue-600' : 'bg-gray-200'}`}
           >

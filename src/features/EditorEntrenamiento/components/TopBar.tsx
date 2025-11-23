@@ -1,7 +1,7 @@
 // src/features/EditorEntrenamiento/components/TopBar.tsx
 
-import React, { useEffect, useRef } from 'react';
-import { Sparkles, Menu, Download, WifiOff, RefreshCw, CornerUpLeft, CornerUpRight, Smartphone } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Sparkles, Menu, Download, WifiOff, RefreshCw, CornerUpLeft, CornerUpRight, Smartphone, Plus, Flame, Package } from 'lucide-react';
 
 import ClientSelector, { ClientSelectorHandle } from './ClientSelector';
 import AutoSaveIndicator from './AutoSaveIndicator';
@@ -10,15 +10,68 @@ import { useProgramContext } from '../context/ProgramContext';
 import UserActionsMenu from './UserActionsMenu';
 import { useEditorToast } from './feedback/ToastSystem';
 import { ExportModal } from './modals/ExportModal';
+import { VariationGeneratorModal } from './modals/VariationGeneratorModal';
+import { generateProgramVariation } from '../logic/aiGenerator';
 
 export const TopBar: React.FC = () => {
-  const { isFitCoachOpen, toggleFitCoach, setCommandPaletteOpen, setVersionHistoryOpen, setExportModalOpen, setClientPreviewOpen } = useUIContext();
-  const { isSaving, lastSavedAt, saveCurrentVersion, isOffline, pendingSyncCount, undo, redo, canUndo, canRedo } = useProgramContext();
+  const { isFitCoachOpen, toggleFitCoach, setCommandPaletteOpen, setVersionHistoryOpen, setExportModalOpen, setClientPreviewOpen, setBatchTrainingOpen } = useUIContext();
+  const { isSaving, lastSavedAt, saveCurrentVersion, isOffline, pendingSyncCount, undo, redo, canUndo, canRedo, addWeek, weeks, setProgramData } = useProgramContext();
   const { addToast } = useEditorToast();
   const clientSelectorRef = useRef<ClientSelectorHandle>(null);
   
+  const [isVariationModalOpen, setVariationModalOpen] = useState(false);
+  const [isGeneratingVariation, setGeneratingVariation] = useState(false);
+  
   // Mock notification state - connect to real store later
   const hasNotification = false; 
+
+  const handleCopyProgram = async () => {
+      try {
+          const programJson = JSON.stringify(weeks, null, 2);
+          await navigator.clipboard.writeText(programJson);
+          addToast({
+              type: 'success',
+              title: 'Programa Copiado',
+              message: 'El JSON del programa se ha copiado al portapapeles.',
+              duration: 3000
+          });
+      } catch (err) {
+          console.error('Error copying program:', err);
+          addToast({
+              type: 'error',
+              title: 'Error al copiar',
+              message: 'No se pudo copiar el programa al portapapeles.',
+              duration: 3000
+          });
+      }
+  };
+
+  const handleGenerateVariation = async (instruction: string) => {
+      setGeneratingVariation(true);
+      
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      try {
+          const newWeeks = generateProgramVariation(weeks, instruction);
+          setProgramData(newWeeks);
+          addToast({
+              type: 'success',
+              title: 'Variación Generada',
+              message: 'Se ha creado una nueva versión del programa basada en tus instrucciones.',
+              duration: 4000
+          });
+          setVariationModalOpen(false);
+      } catch (err) {
+          addToast({
+              type: 'error',
+              title: 'Error',
+              message: 'No se pudo generar la variación.',
+          });
+      } finally {
+          setGeneratingVariation(false);
+      }
+  }; 
 
   // Global Keyboard Shortcuts
   useEffect(() => {
@@ -150,6 +203,39 @@ export const TopBar: React.FC = () => {
         {/* Zona Derecha */}
         <div className="flex justify-end items-center space-x-2 lg:space-x-4">
           
+          {/* New Actions Moved from Footer */}
+          <div className="hidden xl:flex items-center gap-2 mr-2">
+             <button 
+                onClick={addWeek}
+                className="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                title="Agregar Semana"
+             >
+                <Plus size={20} />
+             </button>
+             <button 
+                onClick={() => setBatchTrainingOpen(true)}
+                className="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                title="Batch Training"
+             >
+                <Flame size={20} />
+             </button>
+             <button 
+                onClick={handleCopyProgram}
+                className="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                title="Copiar Programa"
+             >
+                <Package size={20} />
+             </button>
+             <button 
+                onClick={() => setVariationModalOpen(true)}
+                className="p-2 text-purple-600 hover:bg-purple-50 rounded-full transition-colors"
+                title="Generar Variación IA"
+             >
+                <Sparkles size={20} />
+             </button>
+             <div className="h-6 w-px bg-gray-200"></div>
+          </div>
+
           <button
             onClick={() => setClientPreviewOpen(true)}
             className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500"
@@ -208,6 +294,12 @@ export const TopBar: React.FC = () => {
         </div>
       </header>
       <ExportModal />
+      <VariationGeneratorModal
+        isOpen={isVariationModalOpen}
+        onClose={() => setVariationModalOpen(false)}
+        onGenerate={handleGenerateVariation}
+        isGenerating={isGeneratingVariation}
+      />
     </>
   );
 };

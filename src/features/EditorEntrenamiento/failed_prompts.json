@@ -1,0 +1,32 @@
+﻿[
+    {
+        "value":  [
+                      {
+                          "value":  [
+                                        {
+                                            "reason":  "Timeout (\u003e10min)",
+                                            "timestamp":  "2025-11-23 13:23:49",
+                                            "prompt":  "**24_Injury_Risk_Alerts**: FEATURE/SAFETY. **ÃMBITO: `src/features/EditorEntrenamiento/logic/validationEngine.ts`**. Implementar Alertas Proactivas de Riesgo de LesiÃ³n.\n\n**Instrucciones:**\n1. En `validationEngine.ts`, aÃ±ade reglas que detecten patrones de riesgo de lesiÃ³n.\n2. Ejemplos: \u0027Volumen de hombro ha aumentado 40% en 2 semanas\u0027, \u0027ACWR \u003e 1.5 (zona de riesgo)\u0027.\n3. Estas alertas deben aparecer en la pestaÃ±a \u0027Alertas\u0027 de FitCoach con severidad crÃ­tica (rojo).\n4. Ofrece sugerencias automÃ¡ticas: \u0027Reducir volumen de hombro en 20%\u0027 o \u0027AÃ±adir semana de descarga\u0027.\n5. Esto ayuda a Alex a prevenir lesiones en sus clientes.\n\n**Referencias:**\n- P2.15: Falta de AnÃ¡lisis de Riesgo de LesiÃ³n."
+                                        },
+                                        {
+                                            "reason":  "Timeout (\u003e10min)",
+                                            "timestamp":  "2025-11-23 14:05:23",
+                                            "prompt":  "**29_Contextual_Onboarding_Advanced_Features**: UX/ONBOARDING. **ÃMBITO: `src/features/EditorEntrenamiento/components/modals/`**. Crear Onboarding Contextual para Funcionalidades Avanzadas.\n\n**Instrucciones:**\n1. Cuando Alex abre `BatchTrainingModal` o `SmartFillModal` por primera vez, muestra un mini-tour explicando cÃ³mo funciona.\n2. Usa un flag en `localStorage` para no repetir el tour en sesiones futuras.\n3. Incluye un botÃ³n \u0027Saltar\u0027 para usuarios experimentados.\n4. Esto reduce la fricciÃ³n al descubrir funcionalidades complejas.\n\n**Referencias:**\n- P1.8: Falta de Onboarding Contextual."
+                                        }
+                                    ],
+                          "Count":  2
+                      },
+                      {
+                          "reason":  "Execution Error (ExitCode: 1)",
+                          "timestamp":  "2025-11-23 14:14:39",
+                          "prompt":  "**30_Progress_Indicators_Async_Operations**: UX/FEEDBACK. **ÃMBITO: `src/features/EditorEntrenamiento/components/AutoSaveIndicator.tsx`**. Mejorar Indicadores de Progreso para Operaciones Largas.\n\n**Instrucciones:**\n1. Crea un componente `ProgressIndicator.tsx` que muestre una barra de progreso con porcentaje y mensaje descriptivo.\n2. Ãšsalo en operaciones largas como \u0027Generando programa con IA\u0027 o \u0027Aplicando progresiÃ³n a 12 semanas\u0027.\n3. Actualiza el progreso en tiempo real (ej. \u0027Procesando semana 3 de 12...\u0027).\n4. Esto tranquiliza a Alex de que el sistema estÃ¡ trabajando.\n\n**Referencias:**\n- P1.3: Feedback Insuficiente en Operaciones AsÃ­ncronas."
+                      }
+                  ],
+        "Count":  2
+    },
+    {
+        "reason":  "Execution Error (ExitCode: 1)",
+        "timestamp":  "2025-11-23 14:23:32",
+        "prompt":  "**29_Contextual_Onboarding_Advanced_Features**: UX/ONBOARDING. **ÃMBITO: `src/features/EditorEntrenamiento/components/modals/`**. Crear Onboarding Contextual para Funcionalidades Avanzadas.\n\n**Instrucciones:**\n1. Cuando Alex abre `BatchTrainingModal` o `SmartFillModal` por primera vez, muestra un mini-tour explicando cÃ³mo funciona.\n2. Usa un flag en `localStorage` para no repetir el tour en sesiones futuras.\n3. Incluye un botÃ³n \u0027Saltar\u0027 para usuarios experimentados.\n4. Esto reduce la fricciÃ³n al descubrir funcionalidades complejas.\n\n**Referencias:**\n- P1.8: Falta de Onboarding Contextual."
+    }
+]

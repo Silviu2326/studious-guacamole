@@ -2,15 +2,25 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { Exercise } from '../types/training';
 
 interface UIContextType {
+  // FitCoach
   isFitCoachOpen: boolean;
   toggleFitCoach: () => void;
+  openFitCoach: (tab?: string) => void;
+  fitCoachActiveTab: string;
+  setFitCoachActiveTab: (tab: string) => void;
+
+  // Command Palette
   isCommandPaletteOpen: boolean;
   setCommandPaletteOpen: (isOpen: boolean) => void;
+
+  // Version History
   isVersionHistoryOpen: boolean;
   setVersionHistoryOpen: (isOpen: boolean) => void;
+
+  // Export Modal
   isExportModalOpen: boolean;
   setExportModalOpen: (isOpen: boolean) => void;
-  
+
   // Exercise Detail Modal
   selectedExercise: Exercise | null;
   setSelectedExercise: (exercise: Exercise | null) => void;
@@ -42,6 +52,7 @@ const UIContext = createContext<UIContextType | undefined>(undefined);
 
 export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isFitCoachOpen, setIsFitCoachOpen] = useState(false);
+  const [fitCoachActiveTab, setFitCoachActiveTab] = useState('Chat');
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [isVersionHistoryOpen, setVersionHistoryOpen] = useState(false);
   const [isExportModalOpen, setExportModalOpen] = useState(false);
@@ -50,7 +61,7 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAIProgramGeneratorOpen, setAIProgramGeneratorOpen] = useState(false);
   const [isTagManagerOpen, setTagManagerOpen] = useState(false);
   const [isBatchTrainingOpen, setBatchTrainingOpen] = useState(false);
-  
+
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [isExerciseDetailModalOpen, setExerciseDetailModalOpen] = useState(false);
 
@@ -58,10 +69,18 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     setIsFitCoachOpen((prev) => !prev);
   };
 
+  const openFitCoach = (tab?: string) => {
+    if (tab) setFitCoachActiveTab(tab);
+    setIsFitCoachOpen(true);
+  };
+
   return (
-    <UIContext.Provider value={{ 
-      isFitCoachOpen, 
+    <UIContext.Provider value={{
+      isFitCoachOpen,
       toggleFitCoach,
+      openFitCoach,
+      fitCoachActiveTab,
+      setFitCoachActiveTab,
       isCommandPaletteOpen,
       setCommandPaletteOpen,
       isVersionHistoryOpen,

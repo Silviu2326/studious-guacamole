@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { 
   ChevronDown, 
   ChevronRight, 
@@ -32,7 +32,7 @@ interface FlatRow {
 }
 
 export const ExcelView: React.FC<ExcelViewProps> = ({ weeks = [] }) => {
-  const { bulkUpdateExercises } = useProgramContext();
+  const { bulkUpdateExercises, setProgramData, weeks: contextWeeks } = useProgramContext();
   
   // State for expanded rows
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
@@ -78,6 +78,96 @@ export const ExcelView: React.FC<ExcelViewProps> = ({ weeks = [] }) => {
         bulkUpdateExercises(selectedIds, { type: 'ADD_SETS_FACTOR', field: 'sets', value: 1.2 });
     }
   };
+
+  // Update Handler
+  const handleUpdate = useCallback((path: string[], field: string, value: any) => {
+      const newWeeks = [...contextWeeks];
+      const [weekId, dayId, blockId, exerciseId] = path;
+
+      const week = newWeeks.find(w => w.id === weekId);
+      if (!week) return;
+
+      if (path.length === 1) { // Week Update
+           (week as any)[field] = value;
+      } else {
+          const day = week.days.find(d => d.id === dayId);
+          if (!day) return;
+
+          if (path.length === 2) { // Day Update
+              (day as any)[field] = value;
+          } else {
+              const block = day.blocks.find(b => b.id === blockId);
+              if (!block) return;
+
+              if (path.length === 3) { // Block Update
+                  (block as any)[field] = value;
+              } else {
+                  const exercise = block.exercises.find(e => e.id === exerciseId);
+                  if (!exercise) return;
+
+                   // Exercise Update
+                   if (field === 'setsReps') {
+                       // Parse "3x10" or "3 x 10"
+                       const parts = String(value).toLowerCase().split('x');
+                       let setsCount = exercise.sets.length;
+                       let repsVal: string | number = '';
+                       
+                       if (parts.length === 2) {
+                           const s = parseInt(parts[0].trim());
+                           if (!isNaN(s)) setsCount = s;
+                           repsVal = parts[1].trim();
+                           const rNum = parseInt(repsVal as string);
+                           if (!isNaN(rNum) && String(rNum) === repsVal) repsVal = rNum;
+                       } else if (parts.length === 1) {
+                           // Assume just reps if it's not a sets format
+                           repsVal = parts[0].trim();
+                           const rNum = parseInt(repsVal as string);
+                           if (!isNaN(rNum) && String(rNum) === repsVal) repsVal = rNum;
+                       }
+
+                       // Update sets array
+                       const currentSets = [...exercise.sets];
+                       if (setsCount > currentSets.length) {
+                           const lastSet = currentSets[currentSets.length - 1] || { id: 'temp', type: 'working', reps: repsVal };
+                           for (let i = currentSets.length; i < setsCount; i++) {
+                               currentSets.push({ ...lastSet, id: crypto.randomUUID(), reps: repsVal });
+                           }
+                       } else if (setsCount < currentSets.length) {
+                           currentSets.splice(setsCount);
+                       }
+                       
+                       // Update reps for all sets (simple mode)
+                       currentSets.forEach(s => s.reps = repsVal);
+                       exercise.sets = currentSets;
+
+                   } else if (field === 'load') {
+                       // Parse "100kg" or "80%" or "100"
+                       const valStr = String(value).trim();
+                       const isPercentage = valStr.includes('%');
+                       const numVal = parseFloat(valStr.replace(/[^\d.]/g, ''));
+                       
+                       if (!isNaN(numVal)) {
+                           exercise.sets.forEach(s => {
+                               if (isPercentage) {
+                                   s.percentage = numVal;
+                                   delete s.weight;
+                               } else {
+                                   s.weight = numVal;
+                                   delete s.percentage;
+                               }
+                           });
+                       }
+                   } else if (field === 'rpe') {
+                       // Update RPE for all sets
+                        exercise.sets.forEach(s => s.rpe = value);
+                   } else {
+                       (exercise as any)[field] = value;
+                   }
+              }
+          }
+      }
+      setProgramData(newWeeks);
+  }, [contextWeeks, setProgramData]);
 
   // Flatten data for table rendering
   const rows = useMemo(() => {
@@ -191,8 +281,8 @@ export const ExcelView: React.FC<ExcelViewProps> = ({ weeks = [] }) => {
 
   // Helper to render Duration
   const renderDuration = (data: any, type: RowType) => {
-      if (type === 'day') return `${(data as Day).totalDuration ?? 0}'`;
-      if (type === 'block') return `${(data as Block).duration ?? 0}'`;
+      if (type === 'day') return `${(data as Day).totalDuration ?? 0}`;
+      if (type === 'block') return `${(data as Block).duration ?? 0}`;
       return '';
   };
 
@@ -277,7 +367,12 @@ export const ExcelView: React.FC<ExcelViewProps> = ({ weeks = [] }) => {
                     {row.type === 'week' && (
                         <div className="flex items-center gap-1 cursor-pointer" onClick={() => toggleExpand(row.id)}>
                             {row.isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                            <span>{row.data.name}</span>
+                            <input
+                              type="text"
+                              defaultValue={row.data.name}
+                              onBlur={(e) => handleUpdate(row.path, 'name', e.target.value)}
+                              className="bg-transparent border-none w-full focus:ring-2 focus:ring-blue-200 rounded px-1 py-0.5"
+                            />
                         </div>
                     )}
                 </td>
@@ -287,7 +382,12 @@ export const ExcelView: React.FC<ExcelViewProps> = ({ weeks = [] }) => {
                     {row.type === 'day' && (
                          <div className="flex items-center gap-1 cursor-pointer pl-2" onClick={() => toggleExpand(row.id)}>
                             {row.isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                            <span>{(row.data as Day).name}</span>
+                            <input
+                              type="text"
+                              defaultValue={(row.data as Day).name}
+                              onBlur={(e) => handleUpdate(row.path, 'name', e.target.value)}
+                              className="bg-transparent border-none w-full focus:ring-2 focus:ring-blue-200 rounded px-1 py-0.5 font-semibold text-gray-800"
+                            />
                         </div>
                     )}
                 </td>
@@ -309,21 +409,21 @@ export const ExcelView: React.FC<ExcelViewProps> = ({ weeks = [] }) => {
                         {row.type === 'exercise' && <span className="text-gray-300">├─</span>}
                         
                         {/* Content Input */}
-                        <input 
-                            type="text" 
-                            defaultValue={
-                                row.type === 'week' ? (row.data as Week).name :
-                                row.type === 'day' ? (row.data as Day).name :
-                                row.type === 'block' ? (row.data as Block).name :
-                                (row.data as Exercise).name
-                            }
-                            className={`
-                                bg-transparent border-none w-full focus:ring-2 focus:ring-blue-200 rounded px-1 py-0.5
-                                ${row.type === 'day' ? 'font-semibold text-gray-800' : ''}
-                                ${row.type === 'block' ? 'font-medium text-gray-700' : ''}
-                                ${row.type === 'exercise' ? 'text-gray-600' : ''}
-                            `}
-                        />
+                        {row.type !== 'week' && row.type !== 'day' && (
+                          <input 
+                              type="text" 
+                              defaultValue={
+                                  row.type === 'block' ? (row.data as Block).name :
+                                  (row.data as Exercise).name
+                              }
+                              onBlur={(e) => handleUpdate(row.path, 'name', e.target.value)}
+                              className={`
+                                  bg-transparent border-none w-full focus:ring-2 focus:ring-blue-200 rounded px-1 py-0.5
+                                  ${row.type === 'block' ? 'font-medium text-gray-700' : ''}
+                                  ${row.type === 'exercise' ? 'text-gray-600' : ''}
+                              `}
+                          />
+                        )}
                     </div>
                 </td>
 
@@ -334,29 +434,38 @@ export const ExcelView: React.FC<ExcelViewProps> = ({ weeks = [] }) => {
 
                 {/* Duration Column */}
                 <td className="p-2 border-r border-b border-gray-100 text-center">
-                   <input 
-                        type="text"
-                        defaultValue={renderDuration(row.data, row.type)}
-                        className="bg-transparent border-none w-full text-center focus:ring-2 focus:ring-blue-200 rounded px-1 py-0.5 text-gray-600"
-                   />
+                   {(row.type === 'day' || row.type === 'block') && (
+                     <input 
+                          type="number"
+                          defaultValue={renderDuration(row.data, row.type)}
+                          onBlur={(e) => handleUpdate(row.path, row.type === 'day' ? 'totalDuration' : 'duration', parseFloat(e.target.value))}
+                          className="bg-transparent border-none w-full text-center focus:ring-2 focus:ring-blue-200 rounded px-1 py-0.5 text-gray-600"
+                     />
+                   )}
                 </td>
 
                 {/* RPE Column */}
                 <td className="p-2 border-r border-b border-gray-100 text-center">
+                   {(row.type === 'day' || row.type === 'block' || row.type === 'exercise') && (
                     <input 
-                        type="text"
+                        type="number"
                         defaultValue={renderRpe(row.data, row.type)}
+                        onBlur={(e) => handleUpdate(row.path, row.type === 'day' ? 'averageRpe' : 'rpe', parseFloat(e.target.value))}
                         className="bg-transparent border-none w-full text-center focus:ring-2 focus:ring-blue-200 rounded px-1 py-0.5 text-gray-600 font-medium"
-                   />
+                    />
+                   )}
                 </td>
 
-                {/* Sets/Reps Column (Merged for simplicty in this view or specific logic) */}
+                {/* Sets/Reps Column */}
                 <td className="p-2 border-r border-b border-gray-100 text-center">
+                    {row.type === 'exercise' && (
                      <input 
                         type="text"
                         defaultValue={renderSetsReps(row.data, row.type)}
+                        onBlur={(e) => handleUpdate(row.path, 'setsReps', e.target.value)}
                         className="bg-transparent border-none w-full text-center focus:ring-2 focus:ring-blue-200 rounded px-1 py-0.5 text-gray-600"
                    />
+                   )}
                 </td>
                 
                  {/* Carga/Weight Column */}
@@ -365,6 +474,7 @@ export const ExcelView: React.FC<ExcelViewProps> = ({ weeks = [] }) => {
                           <input 
                             type="text"
                             defaultValue={(row.data as Exercise).sets[0]?.weight ? `${(row.data as Exercise).sets[0]?.weight}kg` : (row.data as Exercise).sets[0]?.percentage ? `${(row.data as Exercise).sets[0]?.percentage}%` : '-'}
+                            onBlur={(e) => handleUpdate(row.path, 'load', e.target.value)}
                             className="bg-transparent border-none w-full text-center focus:ring-2 focus:ring-blue-200 rounded px-1 py-0.5 text-gray-600"
                        />
                      )}
@@ -376,6 +486,7 @@ export const ExcelView: React.FC<ExcelViewProps> = ({ weeks = [] }) => {
                         type="text" 
                         placeholder="Agregar nota..."
                         defaultValue={(row.data as any).notes || ''}
+                        onBlur={(e) => handleUpdate(row.path, 'notes', e.target.value)}
                         className="bg-transparent border-none w-full focus:ring-2 focus:ring-blue-200 rounded px-1 py-0.5 text-gray-500 italic text-xs"
                     />
                 </td>

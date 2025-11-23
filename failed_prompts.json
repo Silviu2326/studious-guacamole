@@ -2,21 +2,30 @@
     {
         "value":  [
                       {
-                          "reason":  "Timeout (\u003e10min)",
-                          "timestamp":  "2025-11-22 16:04:59",
-                          "prompt":  "**35_Implement_Week_Navigation**: UX/NAVEGACIÃ“N. **ÃMBITO: `src/features/EditorEntrenamiento`**. Es difÃ­cil navegar programas largos sin un Ã­ndice.\n\n**Instrucciones:**\n1. Crea un componente `WeekNavigator.tsx` que se muestre como una barra lateral flotante o sticky a la izquierda del `EditorCanvas`.\n2. Este componente debe listar \u0027Semana 1\u0027, \u0027Semana 2\u0027, etc., como enlaces rÃ¡pidos.\n3. Al hacer clic en una semana, el `EditorCanvas` debe hacer scroll suave hasta la posiciÃ³n de esa semana (usando `refs` o `react-window` mÃ©todos como `scrollToItem`).\n4. Resalta la semana actualmente visible en el viewport.\n\n**Referencias:**\n- Problema 3 en `@analisis_profundo_faltantes.md`."
+                          "value":  [
+                                        {
+                                            "value":  " ",
+                                            "Count":  2
+                                        },
+                                        {
+                                            "reason":  "Execution Error (ExitCode: 1)",
+                                            "timestamp":  "2025-11-23 00:00:37",
+                                            "prompt":  "**15_Smart_Block_Library**: FEATURE/AI. **ÃMBITO: `src/features/EditorEntrenamiento/components/LibraryPanel.tsx`**. Crear Biblioteca de Bloques Inteligente Contextual.\n\n**Instrucciones:**\n1. En la pestaÃ±a \u0027Bloques\u0027 de `LibraryPanel.tsx`, aÃ±ade una secciÃ³n \u0027Bloques Sugeridos\u0027.\n2. Analiza el contexto del programa actual (ej. si hay muchos ejercicios de pierna, sugiere \u0027Bloque de Calentamiento para Pierna\u0027).\n3. Si Alex busca \u0027tendinopatÃ­a\u0027, muestra bloques especÃ­ficos para esa condiciÃ³n.\n4. Esto hace que la biblioteca sea proactiva y no solo reactiva.\n\n**Referencias:**\n- P2.5: Falta de Biblioteca de Bloques Inteligente."
+                                        }
+                                    ],
+                          "Count":  2
                       },
                       {
-                          "reason":  "Timeout (\u003e10min)",
-                          "timestamp":  "2025-11-22 16:47:08",
-                          "prompt":  "**40_Fix_EmptyWeek_AI_Button**: ACCIÃ“N IA. **ÃMBITO: `src/features/EditorEntrenamiento`**. El botÃ³n \u0027Generar con IA\u0027 en semanas vacÃ­as muestra un alert.\n\n**Instrucciones:**\n1. En `EditorCanvas.tsx` (componente `EmptyWeekState`), reemplaza el `alert()` del botÃ³n \u0027Generar con IA\u0027.\n2. ConÃ©ctalo para que abra el modal `AIProgramGenerator` (a travÃ©s de `UIContext`).\n3. AsegÃºrate de pasarle el Ã­ndice de la semana actual al generador, para que sepa dÃ³nde insertar el contenido generado.\n\n**Referencias:**\n- Problema 1 en `@analisis_profundo_faltantes.md`."
+                          "reason":  "Execution Error (ExitCode: 1)",
+                          "timestamp":  "2025-11-23 00:00:50",
+                          "prompt":  "**16_Client_Progress_Analysis**: FEATURE/ANALYTICS. **ÃMBITO: `src/features/EditorEntrenamiento/components/FitCoachPanel.tsx`**. AÃ±adir AnÃ¡lisis de Progreso del Cliente.\n\n**Instrucciones:**\n1. Crea una nueva pestaÃ±a en `FitCoachPanel.tsx` llamada \u0027Progreso\u0027.\n2. Esta pestaÃ±a debe mostrar grÃ¡ficos de evoluciÃ³n del cliente: 1RM en ejercicios clave, peso corporal, medidas.\n3. Incluye insights automÃ¡ticos: \u0027MarÃ­a ha aumentado su 1RM en Press Banca un 15% en 8 semanas\u0027.\n4. Esto permite a Alex demostrar resultados fÃ¡cilmente a sus clientes.\n\n**Referencias:**\n- P2.6: Falta de AnÃ¡lisis de Progreso del Cliente."
                       }
                   ],
         "Count":  2
     },
     {
-        "reason":  "Timeout (\u003e10min)",
-        "timestamp":  "2025-11-22 17:27:43",
-        "prompt":  "**46_Implement_Global_Filtering**: UX/BÃšSQUEDA. **ÃMBITO: `src/features/EditorEntrenamiento`**. La barra de filtros en `EditorCanvas` no filtra nada realmente.\n\n**Instrucciones:**\n1. En `EditorCanvas.tsx`, asegÃºrate de que el estado `searchTerm` y `activeFilters` se usen para filtrar la lista de `weeks` o `daysData` antes de pasarlos al renderizado (`WeekRow` o lista).\n2. Si un dÃ­a no cumple los criterios de filtro, debe ocultarse o atenuarse visualmente (opacity 0.3).\n3. Asegura que el filtrado por Tags (#Fuerza) funcione correctamente leyendo los tags de cada dÃ­a.\n\n**Referencias:**\n- Problema 3 (NavegaciÃ³n/Filtrado) en `@analisis_profundo_faltantes.md`."
+        "reason":  "Execution Error (ExitCode: 1)",
+        "timestamp":  "2025-11-23 00:01:02",
+        "prompt":  "**17_Program_Comparison**: FEATURE/ANALYTICS. **ÃMBITO: `src/features/EditorEntrenamiento/components/views/`**. Implementar Vista de ComparaciÃ³n de Programas.\n\n**Instrucciones:**\n1. Crea un nuevo componente `ComparisonView.tsx` que muestre dos programas lado a lado.\n2. Permite a Alex seleccionar dos programas (ej. \u0027Programa A\u0027 vs \u0027Programa B\u0027).\n3. Resalta las diferencias: volumen total, distribuciÃ³n de patrones, intensidad promedio.\n4. Esto ayuda a Alex a evaluar quÃ© programa es mejor para un cliente especÃ­fico.\n\n**Referencias:**\n- P2.7: Falta de ComparaciÃ³n de Programas."
     }
 ]

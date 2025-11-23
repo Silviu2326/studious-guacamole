@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Plus, Flame, Package, LayoutGrid, FileSpreadsheet, BarChart3 } from 'lucide-react';
+import { Plus, Flame, Package, LayoutGrid, FileSpreadsheet, BarChart3, Sparkles } from 'lucide-react';
 import { List, ListImperativeAPI } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 
@@ -16,8 +16,11 @@ import { WeeklySummaryFooter } from './canvas/WeeklySummaryFooter';
 import { Day, Week } from '../types/training';
 import { useUserPreferences } from '../context/UserPreferencesContext';
 import { useEditorToast } from './feedback/ToastSystem';
+import { VariationGeneratorModal } from './modals/VariationGeneratorModal';
+import { generateProgramVariation } from '../logic/aiGenerator';
 import { ExcelView } from './views/ExcelView';
 import { TimelineView } from './views/TimelineView';
+import { ComparisonView } from './views/ComparisonView';
 
 const COLLAPSED_HEIGHT = 200;
 const COLLAPSED_HEIGHT_COMPACT = 150;
@@ -72,11 +75,14 @@ export const EditorCanvas: React.FC = () => {
   const listRef = useRef<ListImperativeAPI>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { weeks, daysData, updateDay, addWeek } = useProgramContext();
+  const { weeks, daysData, updateDay, addWeek, setProgramData } = useProgramContext();
   const { setAIProgramGeneratorOpen, setBatchTrainingOpen } = useUIContext();
   const { density } = useUserPreferences();
   const { addToast } = useEditorToast();
   const isCompact = density === 'compact';
+  
+  const [isVariationModalOpen, setVariationModalOpen] = useState(false);
+  const [isGeneratingVariation, setGeneratingVariation] = useState(false);
 
   const prevWeeksLength = useRef(weeks.length);
 
@@ -180,6 +186,33 @@ export const EditorCanvas: React.FC = () => {
               message: 'No se pudo copiar el programa al portapapeles.',
               duration: 3000
           });
+      }
+  };
+
+  const handleGenerateVariation = async (instruction: string) => {
+      setGeneratingVariation(true);
+      
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      try {
+          const newWeeks = generateProgramVariation(weeks, instruction);
+          setProgramData(newWeeks);
+          addToast({
+              type: 'success',
+              title: 'Variación Generada',
+              message: 'Se ha creado una nueva versión del programa basada en tus instrucciones.',
+              duration: 4000
+          });
+          setVariationModalOpen(false);
+      } catch (err) {
+          addToast({
+              type: 'error',
+              title: 'Error',
+              message: 'No se pudo generar la variación.',
+          });
+      } finally {
+          setGeneratingVariation(false);
       }
   };
 
@@ -295,29 +328,14 @@ export const EditorCanvas: React.FC = () => {
         </div>
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white p-4 shadow-lg z-50 flex justify-center gap-4 border-t border-gray-100 no-print">
-        <button 
-          onClick={addWeek}
-          className="bg-blue-800 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors flex items-center gap-2"
-        >
-          <Plus size={18} />
-          <span>Agregar Semana</span>
-        </button>
-        <button 
-          onClick={() => setBatchTrainingOpen(true)}
-          className="bg-white hover:bg-gray-50 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-md border border-gray-300 transition-colors flex items-center gap-2"
-        >
-          <Flame size={18} />
-          <span>BatchTraining</span>
-        </button>
-        <button 
-            onClick={handleCopyProgram}
-            className="bg-white hover:bg-gray-50 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-md border border-gray-300 transition-colors flex items-center gap-2"
-        >
-          <Package size={18} />
-          <span>Copiar Programa</span>
-        </button>
-      </div>
+      <div className="h-20 md:hidden"></div>
+      
+      <VariationGeneratorModal
+        isOpen={isVariationModalOpen}
+        onClose={() => setVariationModalOpen(false)}
+        onGenerate={handleGenerateVariation}
+        isGenerating={isGeneratingVariation}
+      />
     </div>
   );
 };

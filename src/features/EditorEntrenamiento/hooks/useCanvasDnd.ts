@@ -1,6 +1,7 @@
 import { DragEndEvent } from '@dnd-kit/core';
 import { Day, Block, Exercise, Set, Week } from '../types/training';
 import { LibraryExercise, LibraryBlock, MOCK_EXERCISES } from '../../../data/libraryMocks';
+import { generateAITemplateDays } from '../logic/aiGenerator';
 
 // Helper to generate unique IDs
 const generateId = () => crypto.randomUUID();
@@ -61,9 +62,57 @@ export const useCanvasDnd = (
 
     // Check if we are dropping a Library Item (Exercise or Block)
     const isLibraryItem = activeData.itemType === 'exercise' || activeData.itemType === 'block';
+    const isAITemplate = activeData.itemType === 'ai-template';
     
     // Check if the drop target is a DayCard
     const isDroppingOnDay = overData.type === 'day';
+
+    if (isAITemplate && isDroppingOnDay) {
+         const dayId = overData.dayId;
+         let weekIndex = -1;
+         let dayIndex = -1;
+
+         weeks.forEach((w, wIdx) => {
+             const dIdx = w.days.findIndex(d => d.id === dayId);
+             if (dIdx !== -1) {
+                 weekIndex = wIdx;
+                 dayIndex = dIdx;
+             }
+         });
+
+         if (weekIndex !== -1 && dayIndex !== -1) {
+             const generatedDays = generateAITemplateDays(activeData.goal, activeData.days);
+             const newWeeks = [...weeks];
+             
+             let currentWeekIndex = weekIndex;
+             let currentDayIndex = dayIndex;
+             
+             for (const genDay of generatedDays) {
+                 if (currentWeekIndex >= newWeeks.length) break;
+                 
+                 const targetWeek = { ...newWeeks[currentWeekIndex] };
+                 const targetDays = [...targetWeek.days];
+                 const originalDay = targetDays[currentDayIndex];
+                 
+                 targetDays[currentDayIndex] = {
+                     ...genDay,
+                     id: originalDay.id,
+                     date: originalDay.date,
+                 };
+                 
+                 targetWeek.days = targetDays;
+                 newWeeks[currentWeekIndex] = targetWeek;
+                 
+                 currentDayIndex++;
+                 if (currentDayIndex >= 7) {
+                     currentDayIndex = 0;
+                     currentWeekIndex++;
+                 }
+             }
+             setWeeks(newWeeks);
+         }
+         return;
+    }
 
     if (isLibraryItem && isDroppingOnDay) {
       const dayId = overData.dayId;

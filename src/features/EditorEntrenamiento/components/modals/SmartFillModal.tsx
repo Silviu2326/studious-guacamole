@@ -1,18 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '../../../../components/componentsreutilizables/Modal';
 import { Button } from '../../../../components/componentsreutilizables/Button';
 import { Restricciones } from '../../utils/SmartFill';
+import { SmartFillPreferencesService } from '../../services/SmartFillPreferencesService';
 
 interface SmartFillModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (restricciones: Restricciones) => void;
+  initialValues?: Restricciones;
 }
 
-export const SmartFillModal: React.FC<SmartFillModalProps> = ({ isOpen, onClose, onConfirm }) => {
+export const SmartFillModal: React.FC<SmartFillModalProps> = ({ isOpen, onClose, onConfirm, initialValues }) => {
   const [tiempo, setTiempo] = useState<number | ''>('');
   const [material, setMaterial] = useState<string[]>([]);
   const [molestias, setMolestias] = useState<string[]>([]);
+
+
+  // Initialize form with initial values when modal opens
+  useEffect(() => {
+    if (isOpen && initialValues) {
+      setTiempo(initialValues.tiempoDisponible || '');
+      setMaterial(initialValues.materialDisponible || []);
+      setMolestias(initialValues.molestias || []);
+    } else if (isOpen && !initialValues) {
+      // Reset to empty if no initial values
+      setTiempo('');
+      setMaterial([]);
+      setMolestias([]);
+    }
+  }, [isOpen, initialValues]);
 
   // Lists of options
   const materiales = ['Mancuernas', 'Barra', 'Máquinas', 'Bodyweight', 'Kettlebell', 'Bandas'];
@@ -31,6 +48,10 @@ export const SmartFillModal: React.FC<SmartFillModalProps> = ({ isOpen, onClose,
     if (tiempo) r.tiempoDisponible = Number(tiempo);
     if (material.length > 0) r.materialDisponible = material;
     if (molestias.length > 0) r.molestias = molestias;
+
+    // Save preferences for future use
+    SmartFillPreferencesService.savePreferences(r);
+
     onConfirm(r);
     onClose();
   };

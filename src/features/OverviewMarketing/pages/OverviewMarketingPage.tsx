@@ -7,29 +7,24 @@ import {
   AISuggestions,
   KPICards,
   SocialGrowth,
-  TopFunnels,
   UpcomingEvents,
-  StrategicProfileSetup,
-  QuarterlyObjectivesSelector,
   BuyerPersonaSelector,
   KPIAlerts,
   SalesAttributionComponent,
   WeeklyAIStrategyComponent,
   ContentRepowerSuggestions,
-  HotLeads,
-  ShareWeeklySummary,
   ForecastLeadsIngresos,
   AIRoadmapActivaciones,
   CalendarGapsAlerts,
   LearningInsightsComponent,
   ExperimentsTracker,
   MetricDropTips,
+  StrategicConfigModal,
 } from '../components';
 import { MarketingOverviewService } from '../services/marketingOverviewService';
 import {
   AISuggestion,
   CampaignPerformance,
-  FunnelPerformance,
   MarketingKPI,
   MarketingOverviewPeriod,
   SocialGrowthMetric,
@@ -41,9 +36,6 @@ import {
   SalesAttributionSnapshot,
   WeeklyAIStrategy,
   ContentRepowerSnapshot,
-  HotLeadsSnapshot,
-  HotLead,
-  TeamMember,
   ForecastSnapshot,
   AIRoadmapSnapshot,
   SuggestedActivation,
@@ -61,14 +53,13 @@ export default function OverviewMarketingPage() {
   const [loadingSnapshot, setLoadingSnapshot] = useState(true);
   const [kpis, setKpis] = useState<MarketingKPI[]>([]);
   const [campaigns, setCampaigns] = useState<CampaignPerformance[]>([]);
-  const [funnels, setFunnels] = useState<FunnelPerformance[]>([]);
   const [socialGrowth, setSocialGrowth] = useState<SocialGrowthMetric[]>([]);
   const [events, setEvents] = useState<UpcomingEvent[]>([]);
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
   const [strategicProfile, setStrategicProfile] = useState<StrategicProfile | null>(null);
   const [quarterlyObjectives, setQuarterlyObjectives] = useState<QuarterlyObjectives | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
-  const [showSetup, setShowSetup] = useState(false);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [selectedBuyerPersona, setSelectedBuyerPersona] = useState<DefaultBuyerPersonaType>('all');
   const [alerts, setAlerts] = useState<KPIAlert[]>([]);
   const [loadingAlerts, setLoadingAlerts] = useState(false);
@@ -78,8 +69,6 @@ export default function OverviewMarketingPage() {
   const [loadingStrategy, setLoadingStrategy] = useState(false);
   const [contentRepower, setContentRepower] = useState<ContentRepowerSnapshot | null>(null);
   const [loadingContentRepower, setLoadingContentRepower] = useState(false);
-  const [hotLeads, setHotLeads] = useState<HotLeadsSnapshot | null>(null);
-  const [loadingHotLeads, setLoadingHotLeads] = useState(false);
   const [forecast, setForecast] = useState<ForecastSnapshot | null>(null);
   const [loadingForecast, setLoadingForecast] = useState(false);
   const [roadmap, setRoadmap] = useState<AIRoadmapSnapshot | null>(null);
@@ -104,7 +93,6 @@ export default function OverviewMarketingPage() {
       );
       setKpis(snapshot.kpis);
       setCampaigns(snapshot.campaigns);
-      setFunnels(snapshot.funnels);
       setSocialGrowth(snapshot.socialGrowth);
       setEvents(snapshot.events);
       setSuggestions(snapshot.aiSuggestions);
@@ -134,17 +122,6 @@ export default function OverviewMarketingPage() {
         console.error('[OverviewMarketingPage] Error cargando contenido a repotenciar:', error);
       } finally {
         setLoadingContentRepower(false);
-      }
-
-      // Cargar leads calientes (User Story 1)
-      setLoadingHotLeads(true);
-      try {
-        const hotLeadsData = await MarketingOverviewService.getHotLeads();
-        setHotLeads(hotLeadsData);
-      } catch (error) {
-        console.error('[OverviewMarketingPage] Error cargando leads calientes:', error);
-      } finally {
-        setLoadingHotLeads(false);
       }
 
       // Cargar forecast de leads e ingresos (User Story 1)
@@ -195,10 +172,6 @@ export default function OverviewMarketingPage() {
       ]);
       setStrategicProfile(profile);
       setQuarterlyObjectives(objectives);
-      // Show setup if profile or objectives are not completed
-      if (!profile?.completed || !objectives?.completed) {
-        setShowSetup(true);
-      }
       
       // Load weekly AI strategy based on profile and objectives
       setLoadingStrategy(true);
@@ -265,17 +238,15 @@ export default function OverviewMarketingPage() {
   const handleSaveProfile = async (profile: StrategicProfile) => {
     await MarketingOverviewService.saveProfile(profile);
     setStrategicProfile(profile);
-    if (quarterlyObjectives?.completed) {
-      setShowSetup(false);
-    }
+    // Reload snapshot to apply profile changes
+    loadSnapshot();
   };
 
   const handleSaveObjectives = async (objectives: QuarterlyObjectives) => {
     await MarketingOverviewService.saveObjectives(objectives);
     setQuarterlyObjectives(objectives);
-    if (strategicProfile?.completed) {
-      setShowSetup(false);
-    }
+    // Reload snapshot to apply objectives changes
+    loadSnapshot();
   };
 
   // Filter and enhance KPIs with contextual narratives based on quarterly objectives
@@ -463,36 +434,6 @@ export default function OverviewMarketingPage() {
     }
   };
 
-  const handleStartConversation = (lead: HotLead) => {
-    const channel = lead.preferredChannel || 'whatsapp';
-    window.location.href = `/leads?leadId=${lead.id}&channel=${channel}`;
-  };
-
-  const handleShareWeeklySummary = async (recipients: TeamMember[], message?: string) => {
-    if (!weeklyStrategy) return;
-    
-    try {
-      const recipientIds = recipients.map((r) => r.id);
-      await MarketingOverviewService.shareWeeklySummaryWithTeam(
-        weeklyStrategy.id,
-        recipientIds,
-        message
-      );
-    } catch (error) {
-      console.error('[OverviewMarketingPage] Error compartiendo resumen:', error);
-      throw error;
-    }
-  };
-
-  const handleLoadTeamMembers = async (): Promise<TeamMember[]> => {
-    try {
-      return await MarketingOverviewService.getTeamMembers();
-    } catch (error) {
-      console.error('[OverviewMarketingPage] Error cargando miembros del equipo:', error);
-      return [];
-    }
-  };
-
   const handleScheduleActivation = async (activation: SuggestedActivation) => {
     // En producción, esto actualizaría el estado de la activación
     console.log('Programando activación:', activation);
@@ -592,6 +533,10 @@ export default function OverviewMarketingPage() {
                 <Badge variant="blue" size="md" className="shadow">
                   {user?.name ? `Hola, ${user.name.split(' ')[0]}` : 'Modo estratégico'}
                 </Badge>
+                <Button variant="secondary" onClick={() => setIsConfigModalOpen(true)} className="inline-flex items-center gap-2">
+                  <Settings className="w-4 h-4" />
+                  Configurar Perfil
+                </Button>
                 <Button variant="secondary" onClick={handleRefresh} className="inline-flex items-center gap-2">
                   <RefreshCw className={`w-4 h-4 ${loadingSnapshot ? 'animate-spin' : ''}`} />
                   Actualizar datos
@@ -608,32 +553,10 @@ export default function OverviewMarketingPage() {
             <Sparkles className="w-4 h-4" />
             <span>Datos simulados a partir de campañas y funnels activos.</span>
           </div>
-          <Button
-            variant="secondary"
-            onClick={() => setShowSetup(!showSetup)}
-            className="inline-flex items-center gap-2"
-          >
-            <Settings className="w-4 h-4" />
-            {showSetup ? 'Ocultar configuración' : 'Configurar perfil'}
-          </Button>
         </div>
 
-        {/* Setup Section */}
-        {showSetup && (
-          <div className="mb-8 space-y-6">
-            <StrategicProfileSetup
-              profile={strategicProfile || undefined}
-              onSave={handleSaveProfile}
-            />
-            <QuarterlyObjectivesSelector
-              objectives={quarterlyObjectives || undefined}
-              onSave={handleSaveObjectives}
-            />
-          </div>
-        )}
-
         {/* Profile Status Badge */}
-        {!showSetup && (strategicProfile?.completed || quarterlyObjectives?.completed) && (
+        {(strategicProfile?.completed || quarterlyObjectives?.completed) && (
           <div className="mb-6 flex items-center gap-3 p-4 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800">
             {strategicProfile?.completed && (
               <Badge variant="success" className="flex items-center gap-1">
@@ -684,15 +607,6 @@ export default function OverviewMarketingPage() {
           />
         </div>
 
-        {/* User Story 1: Hot Leads */}
-        <div className="mb-8">
-          <HotLeads
-            snapshot={hotLeads}
-            loading={loadingHotLeads}
-            onStartConversation={handleStartConversation}
-          />
-        </div>
-
         {/* User Story 1: Forecast de Leads e Ingresos */}
         <div className="mb-8">
           <ForecastLeadsIngresos
@@ -707,7 +621,6 @@ export default function OverviewMarketingPage() {
 
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
           <ActiveCampaigns campaigns={campaigns} loading={loadingSnapshot} className="xl:col-span-2" />
-          <TopFunnels funnels={funnels} loading={loadingSnapshot} className="xl:col-span-2" />
         </div>
 
         {/* User Story 1: Sales Attribution */}
@@ -739,17 +652,6 @@ export default function OverviewMarketingPage() {
             onExecute={handleExecuteStrategy}
           />
         </div>
-
-        {/* User Story 2: Share Weekly Summary */}
-        {weeklyStrategy && (
-          <div className="mt-6">
-            <ShareWeeklySummary
-              strategy={weeklyStrategy}
-              onShare={handleShareWeeklySummary}
-              onLoadTeamMembers={handleLoadTeamMembers}
-            />
-          </div>
-        )}
 
         {/* User Story 2: Roadmap IA de Activaciones */}
         <div className="mt-6">
@@ -817,6 +719,16 @@ export default function OverviewMarketingPage() {
           </Button>
         </div>
       </div>
+
+      {/* Strategic Config Modal */}
+      <StrategicConfigModal
+        open={isConfigModalOpen}
+        onClose={() => setIsConfigModalOpen(false)}
+        profile={strategicProfile || undefined}
+        objectives={quarterlyObjectives || undefined}
+        onSaveProfile={handleSaveProfile}
+        onSaveObjectives={handleSaveObjectives}
+      />
     </div>
   );
 }

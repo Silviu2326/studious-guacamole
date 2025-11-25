@@ -7,17 +7,18 @@ import {
   FileText,
   LayoutDashboard,
   Layers3,
+  Mail,
   Plus,
   RefreshCcw,
   Rocket,
   ShieldCheck,
+  Sparkles,
   Target,
   Upload,
   Workflow,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
-import { Badge, Button, Card, MetricCards } from '../../../components/componentsreutilizables';
-import type { MetricCardData } from '../../../components/componentsreutilizables';
+import { Badge, Button, Card, Modal } from '../../../components/componentsreutilizables';
 import { MarketingOverviewService } from '../../OverviewMarketing/services/marketingOverviewService';
 import type { StrategicProfile } from '../../OverviewMarketing/types';
 import {
@@ -33,6 +34,7 @@ import {
   MessageStatisticsDashboard as MessageStatisticsDashboardComponent,
   MessageTemplatesLibrary,
   MessagingAutomations,
+  MessagingAutomationDetail,
   MultiChannelCampaigns,
   NewsletterEditor,
   PaymentReminderAutomations,
@@ -124,15 +126,7 @@ import type {
   ChannelRecommendationsDashboard,
 } from '../types';
 
-type TabId =
-  | 'mission-overview'
-  | 'campaigns-broadcasts'
-  | 'journeys-automations'
-  | 'reminders-alerts'
-  | 'content-assets'
-  | 'audience-personalization'
-  | 'operations-insights'
-  | 'integrations-admin';
+type TabId = 'campanas' | 'automatizaciones';
 
 interface TabItem {
   id: TabId;
@@ -197,19 +191,17 @@ export default function CampanasAutomatizacionPage() {
   const [successfulCampaignsRecommenderDashboard, setSuccessfulCampaignsRecommenderDashboard] = useState<SuccessfulCampaignsRecommenderDashboard | undefined>(undefined);
   const [journeyGapDetectorDashboard, setJourneyGapDetectorDashboard] = useState<JourneyGapDetectorDashboard | undefined>(undefined);
   const [channelRecommendationsDashboard, setChannelRecommendationsDashboard] = useState<ChannelRecommendationsDashboard | undefined>(undefined);
-  const [activeTab, setActiveTab] = useState<TabId>('mission-overview');
+  const [activeTab, setActiveTab] = useState<TabId>('campanas');
   const [isCampaign360ModalOpen, setIsCampaign360ModalOpen] = useState(false);
+  const [selectedNewsletterProgram, setSelectedNewsletterProgram] = useState<EmailProgram | null>(null);
+  const [isNewsletterEditorOpen, setIsNewsletterEditorOpen] = useState(false);
+  const [selectedSequenceId, setSelectedSequenceId] = useState<string | null>(null);
+  const [selectedAutomationId, setSelectedAutomationId] = useState<string | null>(null);
 
   const tabItems: TabItem[] = useMemo(
     () => [
-      { id: 'mission-overview', label: 'Mission Overview', icon: LayoutDashboard },
-      { id: 'campaigns-broadcasts', label: 'Campaigns & Broadcasts', icon: Layers3 },
-      { id: 'journeys-automations', label: 'Journeys & Automations', icon: Workflow },
-      { id: 'reminders-alerts', label: 'Reminders & Alerts', icon: Clock },
-      { id: 'content-assets', label: 'Content & Assets', icon: FileText },
-      { id: 'audience-personalization', label: 'Audience & Personalization', icon: Target },
-      { id: 'operations-insights', label: 'Operations & Insights', icon: ShieldCheck },
-      { id: 'integrations-admin', label: 'Integrations & Admin', icon: Calendar },
+      { id: 'campanas', label: 'Campañas', icon: Layers3 },
+      { id: 'automatizaciones', label: 'Automatizaciones', icon: Workflow },
     ],
     [],
   );
@@ -297,44 +289,6 @@ export default function CampanasAutomatizacionPage() {
     [user],
   );
 
-  const metricCardsData = useMemo<MetricCardData[]>(() => {
-    const iconMapper: Record<string, ReactNode> = {
-      target: <Target className="w-5 h-5 text-white" />,
-      workflow: <Workflow className="w-5 h-5 text-white" />,
-      clock: <Clock className="w-5 h-5 text-white" />,
-      currency: <DollarSign className="w-5 h-5 text-white" />,
-    };
-
-    if (loading && summary.length === 0) {
-      return Array.from({ length: 4 }).map((_, index) => ({
-        id: `loading-${index}`,
-        title: 'Cargando',
-        value: '...',
-        loading: true,
-      }));
-    }
-
-    return summary.map((item) => ({
-      id: item.id,
-      title: item.label,
-      value:
-        item.id === 'client-response-rate'
-          ? `${item.value}%`
-          : item.id === 'messages-sent' || item.id === 'active-reminders' || item.id === 'pending-communication'
-          ? item.value.toString()
-          : item.value,
-      subtitle: item.description,
-      icon: iconMapper[item.icon] ?? iconMapper.target,
-      color: item.trend === 'down' ? 'error' : item.trend === 'up' ? 'success' : 'info',
-      trend: {
-        value: Math.abs(item.changePercentage),
-        direction: item.trend,
-        label: 'vs. periodo anterior',
-      },
-    }));
-  }, [loading, summary]);
-
-  const showMetricCards = metricCardsData.length > 0;
 
   const missionCta = (
     <section className="rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-500 text-white p-6 shadow-lg flex flex-wrap items-center justify-between gap-4">
@@ -355,812 +309,208 @@ export default function CampanasAutomatizacionPage() {
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'campaigns-broadcasts':
-        return (
-          <div className="space-y-6">
-            <CampaignObjectiveSelector
-              onSuggestionsGenerated={(suggestions) => {
-                console.log('Sugerencias generadas:', suggestions);
-              }}
-              className="w-full"
-            />
-            {mobileCampaignApprovalDashboard && (
-              <MobileCampaignApproval
-                dashboard={mobileCampaignApprovalDashboard}
-                loading={loading}
-                className="w-full"
-                onApprovalApprove={(approvalId, notes) => {
-                  console.log('Aprobar campaña:', approvalId, notes);
-                  setMobileCampaignApprovalDashboard((prev) => {
-                    if (!prev) return prev;
-                    return {
-                      ...prev,
-                      pendingApprovals: prev.pendingApprovals.map((approval) =>
-                        approval.id === approvalId
-                          ? { ...approval, status: 'approved' as const, reviewedAt: new Date().toISOString() }
-                          : approval
-                      ),
-                      totalPending: prev.pendingApprovals.filter((a) => a.id !== approvalId && a.status === 'pending').length,
-                    };
-                  });
-                }}
-                onApprovalReject={(approvalId, reason) => {
-                  console.log('Rechazar campaña:', approvalId, reason);
-                  setMobileCampaignApprovalDashboard((prev) => {
-                    if (!prev) return prev;
-                    return {
-                      ...prev,
-                      pendingApprovals: prev.pendingApprovals.map((approval) =>
-                        approval.id === approvalId
-                          ? { ...approval, status: 'rejected' as const, rejectionReason: reason, reviewedAt: new Date().toISOString() }
-                          : approval
-                      ),
-                      totalPending: prev.pendingApprovals.filter((a) => a.id !== approvalId && a.status === 'pending').length,
-                    };
-                  });
-                }}
-                onApprovalRequestChanges={(approvalId, changes) => {
-                  console.log('Solicitar cambios:', approvalId, changes);
-                  setMobileCampaignApprovalDashboard((prev) => {
-                    if (!prev) return prev;
-                    return {
-                      ...prev,
-                      pendingApprovals: prev.pendingApprovals.map((approval) =>
-                        approval.id === approvalId
-                          ? { ...approval, status: 'needs-changes' as const, requestedChanges: changes, reviewedAt: new Date().toISOString() }
-                          : approval
-                      ),
-                      totalPending: prev.pendingApprovals.filter((a) => a.id !== approvalId && a.status === 'pending').length,
-                    };
-                  });
-                }}
-                onApprovalView={(approval) => {
-                  console.log('Ver aprobación:', approval);
-                }}
-              />
-            )}
-            {successfulCampaignsRecommenderDashboard && (
-              <SuccessfulCampaignsRecommender
-                dashboard={successfulCampaignsRecommenderDashboard}
-                loading={loading}
-                className="w-full"
-                onRecommendationAccept={(recommendationId) => {
-                  console.log('Aceptar recomendación:', recommendationId);
-                  setSuccessfulCampaignsRecommenderDashboard((prev) => {
-                    if (!prev) return prev;
-                    return {
-                      ...prev,
-                      recommendations: prev.recommendations.map((rec) =>
-                        rec.id === recommendationId ? { ...rec, status: 'accepted' as const } : rec
-                      ),
-                      learningProgress: {
-                        ...prev.learningProgress,
-                        recommendationsAccepted: prev.learningProgress.recommendationsAccepted + 1,
-                      },
-                    };
-                  });
-                }}
-                onRecommendationReject={(recommendationId) => {
-                  console.log('Rechazar recomendación:', recommendationId);
-                  setSuccessfulCampaignsRecommenderDashboard((prev) => {
-                    if (!prev) return prev;
-                    return {
-                      ...prev,
-                      recommendations: prev.recommendations.map((rec) =>
-                        rec.id === recommendationId ? { ...rec, status: 'rejected' as const } : rec
-                      ),
-                    };
-                  });
-                }}
-                onRecommendationClone={(recommendationId) => {
-                  console.log('Clonar recomendación:', recommendationId);
-                }}
-                onRecommendationRepeat={(recommendationId) => {
-                  console.log('Repetir recomendación:', recommendationId);
-                  setSuccessfulCampaignsRecommenderDashboard((prev) => {
-                    if (!prev) return prev;
-                    return {
-                      ...prev,
-                      recommendations: prev.recommendations.map((rec) =>
-                        rec.id === recommendationId ? { ...rec, status: 'scheduled' as const } : rec
-                      ),
-                    };
-                  });
-                }}
-                onRecommendationAdapt={(recommendationId, changes) => {
-                  console.log('Adaptar recomendación:', recommendationId, changes);
-                }}
-                onRecommendationView={(recommendation) => {
-                  console.log('Ver recomendación:', recommendation);
-                }}
-                onViewCampaignDetails={(campaignId) => {
-                  console.log('Ver detalles de campaña:', campaignId);
-                }}
-              />
-            )}
-            <MultiChannelCampaigns campaigns={campaigns} loading={loading} className="w-full" />
-            {campaigns.length > 0 && (
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                {campaigns.slice(0, 2).map((campaign) => (
-                  <TeamTaskAssignment
-                    key={campaign.id}
-                    campaign={campaign}
-                    tasks={teamTasks.filter((task) => task.campaignId === campaign.id)}
-                    loading={loading}
-                    className="w-full"
-                    onTaskCreate={(task) => {
-                      console.log('Crear tarea:', task);
-                      // Aquí se integraría con el servicio para crear la tarea
-                      const newTask: TeamTask = {
-                        ...task,
-                        id: `task-${Date.now()}`,
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString(),
-                      };
-                      setTeamTasks((prev) => [...prev, newTask]);
-                    }}
-                    onTaskUpdate={(taskId, updates) => {
-                      console.log('Actualizar tarea:', taskId, updates);
-                      setTeamTasks((prev) =>
-                        prev.map((task) => (task.id === taskId ? { ...task, ...updates, updatedAt: new Date().toISOString() } : task))
-                      );
-                    }}
-                    onTaskDelete={(taskId) => {
-                      console.log('Eliminar tarea:', taskId);
-                      setTeamTasks((prev) => prev.filter((task) => task.id !== taskId));
-                    }}
-                    onTaskStatusChange={(taskId, status) => {
-                      console.log('Cambiar estado de tarea:', taskId, status);
-                      setTeamTasks((prev) =>
-                        prev.map((task) =>
-                          task.id === taskId ? { ...task, status, updatedAt: new Date().toISOString() } : task
-                        )
-                      );
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-            <AIPlaybookExporter
-              playbooks={aiPlaybooks}
-              campaigns={campaigns}
-              campaign360s={[]}
-              templates={specializedTemplates}
-              sequences={[...sequences, ...postLeadMagnetSequences]}
-              loading={loading}
-              className="w-full"
-              onPlaybookCreate={(playbook) => {
-                console.log('Crear playbook:', playbook);
-                // Aquí se integraría con el servicio para crear el playbook
-                const newPlaybook: AIPlaybook = {
-                  ...playbook,
-                  id: `playbook-${Date.now()}`,
-                  metadata: {
-                    ...playbook.metadata,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                  },
-                };
-                setAiPlaybooks((prev) => [...prev, newPlaybook]);
-              }}
-              onPlaybookExport={(playbookId, config) => {
-                console.log('Exportar playbook:', playbookId, config);
-                // Aquí se integraría con el servicio para exportar el playbook
-                const newExport: PlaybookExport = {
-                  id: `export-${Date.now()}`,
-                  playbookId,
-                  playbookName: aiPlaybooks.find((p) => p.id === playbookId)?.name || '',
-                  format: config.format,
-                  config,
-                  status: 'generating',
-                  exportedAt: new Date().toISOString(),
-                  exportedBy: 'current-user-id',
-                };
-                setPlaybookExports((prev) => [...prev, newExport]);
-                // Simular generación exitosa después de 2 segundos
-                setTimeout(() => {
-                  setPlaybookExports((prev) =>
-                    prev.map((exp) =>
-                      exp.id === newExport.id
-                        ? { ...exp, status: 'completed' as const, fileUrl: '/exports/playbook.pdf', fileSize: 1024000 }
-                        : exp
-                    )
-                  );
-                }, 2000);
-              }}
-              onPlaybookDownload={(exportId) => {
-                console.log('Descargar playbook:', exportId);
-                const exportItem = playbookExports.find((exp) => exp.id === exportId);
-                if (exportItem && exportItem.fileUrl) {
-                  window.open(exportItem.fileUrl, '_blank');
-                }
-              }}
-              onPlaybookShare={(playbookId, partnerId, accessLevel) => {
-                console.log('Compartir playbook:', playbookId, partnerId, accessLevel);
-                // Aquí se integraría con el servicio para compartir el playbook
-              }}
-            />
-            <PromotionalCampaigns
-              campaigns={promotionalCampaigns}
-              specializedTemplates={specializedTemplates}
-              loading={loading}
-              className="w-full"
-              onCampaignCreate={() => console.log('Crear campaña promocional')}
-              onCampaignEdit={(campaign) => console.log('Editar campaña promocional', campaign)}
-              onCampaignDelete={(campaignId) => console.log('Eliminar campaña promocional', campaignId)}
-              onCampaignSend={(campaignId) => console.log('Enviar campaña promocional', campaignId)}
-              onCampaignSchedule={(campaignId) => console.log('Programar campaña promocional', campaignId)}
-              onViewResults={(campaignId) => console.log('Ver resultados campaña promocional', campaignId)}
-              onTemplateUse={(template) => console.log('Usar plantilla especializada', template)}
-              onTemplatePreview={(template) => console.log('Vista previa plantilla', template)}
-            />
-            <ScheduledMessages
-              messages={scheduledMessages}
-              loading={loading}
-              className="w-full"
-              onMessageCreate={() => console.log('Crear mensaje programado')}
-              onMessageEdit={(message) => console.log('Editar mensaje', message)}
-              onMessageDelete={(messageId) => console.log('Eliminar mensaje', messageId)}
-              onMessageToggle={(messageId, isActive) => console.log('Toggle mensaje', messageId, isActive)}
-            />
-            {quickWhatsAppPromptsLibrary && (
-              <QuickWhatsAppPrompts
-                library={quickWhatsAppPromptsLibrary}
-                loading={loading}
-                className="w-full"
-                onPromptCreate={() => console.log('Crear prompt WhatsApp')}
-                onPromptEdit={(prompt) => console.log('Editar prompt WhatsApp', prompt)}
-                onPromptDelete={(promptId) => console.log('Eliminar prompt WhatsApp', promptId)}
-                onPromptUse={(prompt) => console.log('Usar prompt WhatsApp', prompt)}
-                onPromptCopy={(prompt) => console.log('Copiar prompt WhatsApp', prompt)}
-                onPromptToggleFavorite={(promptId, isFavorite) => console.log('Toggle favorito prompt', promptId, isFavorite)}
-                onVoiceNoteGenerate={(prompt) => console.log('Generar nota de voz', prompt)}
-                onSettingsEdit={() => console.log('Editar configuración prompts WhatsApp')}
-              />
-            )}
-            {missionCta}
-          </div>
-        );
-      case 'journeys-automations':
-        return (
-          <div className="space-y-6">
-            {journeyGapDetectorDashboard && (
-              <JourneyGapDetector
-                dashboard={journeyGapDetectorDashboard}
-                loading={loading}
-                className="w-full"
-                onGapAccept={(gapId) => {
-                  console.log('Aceptar gap', gapId);
-                  // Aquí se integraría con el servicio para aceptar el gap
-                }}
-                onGapReject={(gapId) => {
-                  console.log('Rechazar gap', gapId);
-                  // Aquí se integraría con el servicio para rechazar el gap
-                }}
-                onGapAutoFill={(gapId) => {
-                  console.log('Completar gap automáticamente', gapId);
-                  // Aquí se integraría con el servicio para completar el gap automáticamente
-                }}
-                onGapDismiss={(gapId) => {
-                  console.log('Descartar gap', gapId);
-                  // Aquí se integraría con el servicio para descartar el gap
-                }}
-                onViewGap={(gap) => {
-                  console.log('Ver gap', gap);
-                  // Aquí se mostrarían los detalles del gap
-                }}
-                onSettingsEdit={() => {
-                  console.log('Editar configuración de detección de gaps');
-                  // Aquí se abriría la configuración
-                }}
-              />
-            )}
-            <ClientActionTriggers
-              dashboard={clientActionTriggers}
-              loading={loading}
-              className="w-full"
-              onTriggerCreate={() => console.log('Crear trigger')}
-              onTriggerEdit={(trigger) => console.log('Editar trigger', trigger)}
-              onTriggerDelete={(triggerId) => console.log('Eliminar trigger', triggerId)}
-              onTriggerToggle={(triggerId, isActive) => console.log('Toggle trigger', triggerId, isActive)}
-              onViewEvent={(event) => console.log('Ver evento', event)}
-            />
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <WelcomeSequences sequences={welcomeSequences} loading={loading} className="w-full" />
-              <LifecycleSequences 
-                sequences={sequences} 
-                postLeadMagnetSequences={postLeadMagnetSequences}
-                leadMagnetFunnels={leadMagnetFunnels}
-                loading={loading} 
-                className="w-full"
-                onGeneratePostLeadMagnetSequence={(funnelId) => console.log('Generar secuencia post lead magnet', funnelId)}
-                onEditPostLeadMagnetSequence={(sequence) => console.log('Editar secuencia post lead magnet', sequence)}
-                onViewPostLeadMagnetSequence={(sequenceId) => console.log('Ver secuencia post lead magnet', sequenceId)}
-              />
-            </div>
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <MessagingAutomations automations={automations} loading={loading} className="w-full" />
-              <MultiStepSequenceBuilder
-                sequences={multiStepSequences}
-                loading={loading}
-                className="w-full"
-                onCreateNew={() => console.log('Crear nueva secuencia multi-paso')}
-                onEdit={(sequenceId) => console.log('Editar secuencia', sequenceId)}
-                onPause={(sequenceId) => console.log('Pausar secuencia', sequenceId)}
-                onResume={(sequenceId) => console.log('Reanudar secuencia', sequenceId)}
-              />
-            </div>
-            {channelRecommendationsDashboard && (
-              <ChannelRecommendations
-                dashboard={channelRecommendationsDashboard}
-                loading={loading}
-                className="w-full"
-                onRecommendationAccept={(recommendationId) => {
-                  console.log('Aceptar recomendación', recommendationId);
-                  // Aquí se integraría con el servicio para aceptar la recomendación
-                }}
-                onRecommendationReject={(recommendationId) => {
-                  console.log('Rechazar recomendación', recommendationId);
-                  // Aquí se integraría con el servicio para rechazar la recomendación
-                }}
-                onRecommendationDismiss={(recommendationId) => {
-                  console.log('Descartar recomendación', recommendationId);
-                  // Aquí se integraría con el servicio para descartar la recomendación
-                }}
-                onViewRecommendation={(recommendation) => {
-                  console.log('Ver recomendación', recommendation);
-                  // Aquí se mostrarían los detalles de la recomendación
-                }}
-                onStartImplementation={(recommendationId) => {
-                  console.log('Iniciar implementación', recommendationId);
-                  // Aquí se iniciaría el proceso de implementación
-                }}
-                onSettingsEdit={() => {
-                  console.log('Editar configuración de recomendaciones');
-                  // Aquí se abriría la configuración
-                }}
-              />
-            )}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              <InactivityAutomations automations={inactivityAutomations} loading={loading} className="w-full" />
-              <AbsenceAutomations automations={absenceAutomations} loading={loading} className="w-full" />
-              <AfterHoursAutoReplyComponent
-                autoReplies={afterHoursAutoReplies}
-                loading={loading}
-                className="w-full"
-                onAutoReplyCreate={() => console.log('Crear respuesta automática')}
-                onAutoReplyEdit={(autoReply) => console.log('Editar respuesta automática', autoReply)}
-                onAutoReplyDelete={(autoReplyId) => console.log('Eliminar respuesta automática', autoReplyId)}
-                onAutoReplyToggle={(autoReplyId, isActive) => console.log('Toggle respuesta automática', autoReplyId, isActive)}
-              />
-            </div>
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              <AutomationRoadmap items={roadmap} loading={loading} className="w-full" />
-              <ChannelHealth metrics={health} loading={loading} className="w-full" />
-              <ImportantDateAutomations automations={importantDateAutomations} loading={loading} className="w-full" />
-            </div>
-          </div>
-        );
-      case 'reminders-alerts':
-        return (
-          <div className="space-y-6">
-            <AIReminderAutomationComponent
-              dashboard={aiReminderAutomation}
-              loading={loading}
-              className="w-full"
-              onAutomationCreate={() => console.log('Crear automatización con IA')}
-              onAutomationEdit={(automation) => console.log('Editar automatización', automation)}
-              onAutomationDelete={(automationId) => console.log('Eliminar automatización', automationId)}
-              onAutomationToggle={(automationId, isActive) => console.log('Toggle automatización', automationId, isActive)}
-              onViewReminder={(reminder) => console.log('Ver recordatorio', reminder)}
-            />
-            <SessionReminders
-              templates={reminderTemplates}
-              clientSettings={clientReminderSettings}
-              upcomingReminders={upcomingReminders}
-              loading={loading}
-              className="w-full"
-              onTemplateCreate={() => console.log('Crear plantilla')}
-              onTemplateEdit={(template) => console.log('Editar plantilla', template)}
-              onTemplateDelete={(templateId) => console.log('Eliminar plantilla', templateId)}
-              onTemplateToggle={(templateId, isActive) => console.log('Toggle plantilla', templateId, isActive)}
-              onClientToggle={(clientId, templateId, isEnabled) => console.log('Toggle cliente', clientId, templateId, isEnabled)}
-            />
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <PaymentReminderAutomations automations={paymentReminderAutomations} loading={loading} className="w-full" />
-              {messageAlertsDashboard ? (
-                <MessageAlerts
-                  dashboard={messageAlertsDashboard}
-                  loading={loading}
-                  className="w-full"
-                  onAlertAcknowledge={(alertId) => console.log('Reconocer alerta', alertId)}
-                  onAlertResolve={(alertId) => console.log('Resolver alerta', alertId)}
-                  onAlertDismiss={(alertId) => console.log('Descartar alerta', alertId)}
-                  onAlertView={(alert) => console.log('Ver alerta', alert)}
-                  onSettingsEdit={() => console.log('Editar configuración de alertas')}
-                />
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-slate-500 dark:text-slate-400">No hay datos de alertas disponibles</p>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      case 'content-assets':
-        return (
-          <div className="space-y-6">
-            <EmailPrograms programs={emails} loading={loading} className="w-full" />
-            {weeklyHighlightsNewsletterGenerator && (
-              <WeeklyHighlightsNewsletterGenerator
-                generator={weeklyHighlightsNewsletterGenerator}
-                loading={loading}
-                className="w-full"
-                onGenerateNewsletter={(highlights) => console.log('Generar newsletter con highlights', highlights)}
-                onEditNewsletter={(newsletter) => console.log('Editar newsletter generado', newsletter)}
-                onDeleteNewsletter={(newsletterId) => console.log('Eliminar newsletter generado', newsletterId)}
-                onSendNewsletter={(newsletterId) => console.log('Enviar newsletter generado', newsletterId)}
-                onViewNewsletter={(newsletter) => console.log('Ver newsletter generado', newsletter)}
-                onSettingsEdit={() => console.log('Editar configuración newsletter generator')}
-              />
-            )}
-            <NewsletterEditor
-              newsletters={newsletters}
-              templates={newsletterTemplates}
-              loading={loading}
-              className="w-full"
-              onNewsletterCreate={() => console.log('Crear newsletter')}
-              onNewsletterEdit={(newsletter) => console.log('Editar newsletter', newsletter)}
-              onNewsletterDelete={(newsletterId) => console.log('Eliminar newsletter', newsletterId)}
-              onNewsletterSend={(newsletterId) => console.log('Enviar newsletter', newsletterId)}
-              onNewsletterSchedule={(newsletterId) => console.log('Programar newsletter', newsletterId)}
-              onNewsletterPause={(newsletterId) => console.log('Pausar newsletter', newsletterId)}
-              onNewsletterResume={(newsletterId) => console.log('Reanudar newsletter', newsletterId)}
-              onTemplateCreate={() => console.log('Crear plantilla newsletter')}
-              onTemplateEdit={(template) => console.log('Editar plantilla newsletter', template)}
-              onTemplateDelete={(templateId) => console.log('Eliminar plantilla newsletter', templateId)}
-              onViewTracking={(newsletterId) => console.log('Ver tracking newsletter', newsletterId)}
-            />
-            <MessageTemplatesLibrary
-              templates={messageTemplates}
-              loading={loading}
-              className="w-full"
-              onTemplateCreate={() => console.log('Crear plantilla')}
-              onTemplateEdit={(template) => console.log('Editar plantilla', template)}
-              onTemplateDelete={(templateId) => console.log('Eliminar plantilla', templateId)}
-              onTemplateUse={(template) => console.log('Usar plantilla', template)}
-              onTemplateSendBulk={(template) => console.log('Enviar en masa', template)}
-              onTemplateToggleFavorite={(templateId, isFavorite) => console.log('Toggle favorito', templateId, isFavorite)}
-            />
-            {aiMessageLibrary && (
-              <AIMessageLibrary
-                library={aiMessageLibrary}
-                loading={loading}
-                className="w-full"
-                onTemplateCreate={() => console.log('Crear plantilla IA')}
-                onTemplateEdit={(template) => console.log('Editar plantilla IA', template)}
-                onTemplateDelete={(templateId) => console.log('Eliminar plantilla IA', templateId)}
-                onTemplateUse={(template) => console.log('Usar plantilla IA', template)}
-                onTemplateSendBulk={(template) => console.log('Enviar en masa plantilla IA', template)}
-                onTemplateToggleFavorite={(templateId, isFavorite) => console.log('Toggle favorito IA', templateId, isFavorite)}
-                onGenerateWithAI={(objective) => console.log('Generar con IA', objective)}
-                onSyncWithProfile={() => console.log('Sincronizar con perfil estratégico')}
-                onSettingsEdit={() => console.log('Editar configuración biblioteca IA')}
-              />
-            )}
-            {quickWhatsAppPromptsLibrary && (
-              <QuickWhatsAppPrompts
-                library={quickWhatsAppPromptsLibrary}
-                loading={loading}
-                className="w-full"
-                onPromptCreate={() => console.log('Crear prompt WhatsApp')}
-                onPromptEdit={(prompt) => console.log('Editar prompt WhatsApp', prompt)}
-                onPromptDelete={(promptId) => console.log('Eliminar prompt WhatsApp', promptId)}
-                onPromptUse={(prompt) => console.log('Usar prompt WhatsApp', prompt)}
-                onPromptCopy={(prompt) => console.log('Copiar prompt WhatsApp', prompt)}
-                onPromptToggleFavorite={(promptId, isFavorite) => console.log('Toggle favorito prompt', promptId, isFavorite)}
-                onVoiceNoteGenerate={(prompt) => console.log('Generar nota de voz', prompt)}
-                onSettingsEdit={() => console.log('Editar configuración prompts WhatsApp')}
-              />
-            )}
-            {missionCta}
-          </div>
-        );
-      case 'audience-personalization':
-        return (
-          <div className="space-y-6">
-            <ClientSegmentation
-              segments={clientSegments}
-              bulkMessages={bulkMessages}
-              loading={loading}
-              className="w-full"
-              onSegmentCreate={() => console.log('Crear segmento')}
-              onSegmentEdit={(segment) => console.log('Editar segmento', segment)}
-              onSegmentDelete={(segmentId) => console.log('Eliminar segmento', segmentId)}
-              onSegmentRefresh={(segmentId) => console.log('Actualizar segmento', segmentId)}
-              onBulkMessageCreate={(segmentId) => console.log('Crear mensaje masivo', segmentId)}
-              onBulkMessageEdit={(message) => console.log('Editar mensaje masivo', message)}
-              onBulkMessageDelete={(messageId) => console.log('Eliminar mensaje masivo', messageId)}
-              onBulkMessageSend={(messageId) => console.log('Enviar mensaje masivo', messageId)}
-            />
-            {aiHeatMapSendingSchedules ? (
-              <AIHeatMapSendingSchedules
-                dashboard={aiHeatMapSendingSchedules}
-                loading={loading}
-                className="w-full"
-                onPeriodChange={(period) => console.log('Cambiar período', period)}
-                onApplyRecommendations={() => console.log('Aplicar recomendaciones')}
-              />
-            ) : null}
-            {preferredSendingSchedulesDashboard ? (
-              <PreferredSendingSchedules
-                dashboard={preferredSendingSchedulesDashboard}
-                loading={loading}
-                className="w-full"
-                onClientScheduleCreate={() => console.log('Crear horario de cliente')}
-                onClientScheduleEdit={(schedule) => console.log('Editar horario de cliente', schedule)}
-                onClientScheduleDelete={(scheduleId) => console.log('Eliminar horario de cliente', scheduleId)}
-                onGroupScheduleCreate={() => console.log('Crear horario de grupo')}
-                onGroupScheduleEdit={(schedule) => console.log('Editar horario de grupo', schedule)}
-                onGroupScheduleDelete={(scheduleId) => console.log('Eliminar horario de grupo', scheduleId)}
-                onRuleCreate={() => console.log('Crear regla de horario')}
-                onRuleEdit={(rule) => console.log('Editar regla', rule)}
-                onRuleDelete={(ruleId) => console.log('Eliminar regla', ruleId)}
-                onRuleToggle={(ruleId, isActive) => console.log('Toggle regla', ruleId, isActive)}
-              />
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-slate-500 dark:text-slate-400">No hay datos de horarios preferidos disponibles</p>
-              </div>
-            )}
-            <ImportantDateAutomations automations={importantDateAutomations} loading={loading} className="w-full" />
-          </div>
-        );
-      case 'operations-insights':
-        return (
-          <div className="space-y-6">
-            {weeklyAIInsights && (
-              <WeeklyAIInsights
-                dashboard={weeklyAIInsights}
-                loading={loading}
-                className="w-full"
-                onImprovementApply={(improvementId) => console.log('Aplicar mejora', improvementId)}
-                onImprovementDismiss={(improvementId) => console.log('Descartar mejora', improvementId)}
-                onImprovementView={(improvementId) => console.log('Ver mejora', improvementId)}
-                onGenerateInsights={() => console.log('Generar insights semanales')}
-              />
-            )}
-            {experimentsDashboard && (
-              <ExperimentsDashboard
-                dashboard={experimentsDashboard}
-                loading={loading}
-                className="w-full"
-                onExperimentCreate={() => console.log('Crear experimento')}
-                onExperimentEdit={(experiment) => console.log('Editar experimento', experiment)}
-                onExperimentView={(experimentId) => console.log('Ver experimento', experimentId)}
-                onExperimentToggle={(experimentId, status) => console.log('Toggle experimento', experimentId, status)}
-              />
-            )}
-            {actionableKPIs ? (
-              <ActionableKPIs
-                dashboard={actionableKPIs}
-                loading={loading}
-                className="w-full"
-                onPeriodChange={(period) => console.log('Cambiar período', period)}
-                onViewDetails={(messageId) => console.log('Ver detalles mensaje', messageId)}
-                onViewCampaign={(campaignId) => console.log('Ver detalles campaña', campaignId)}
-              />
-            ) : null}
-            <SummaryGrid summary={summary} loading={loading} />
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              <ChannelHealth metrics={health} loading={loading} className="w-full" />
-              <AutomationRoadmap items={roadmap} loading={loading} className="w-full" />
-              {messageStatisticsDashboard ? (
-                <MessageStatisticsDashboardComponent
-                  dashboard={messageStatisticsDashboard}
-                  loading={loading}
-                  className="w-full"
-                />
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-slate-500 dark:text-slate-400">No hay estadísticas disponibles</p>
-                </div>
-              )}
-            </div>
-            <AutomationsCentralPanel
-              panel={centralAutomationsPanel}
-              loading={loading}
-              className="w-full"
-              onAutomationPause={(automationId) => console.log('Pausar automatización', automationId)}
-              onAutomationResume={(automationId) => console.log('Reanudar automatización', automationId)}
-              onAutomationEdit={(automation) => console.log('Editar automatización', automation)}
-              onAutomationDelete={(automationId) => console.log('Eliminar automatización', automationId)}
-              onViewDetails={(automationId) => console.log('Ver detalles', automationId)}
-            />
-            {messageSaturationDashboard && (
-              <MessageSaturationDetector
-                dashboard={messageSaturationDashboard}
-                loading={loading}
-                className="w-full"
-                onApplyPause={(alertId) => console.log('Aplicar pausa automática', alertId)}
-                onDismissAlert={(alertId) => console.log('Descartar alerta', alertId)}
-                onSettingsEdit={() => console.log('Editar configuración de saturación')}
-              />
-            )}
-            <ReportExporter
-              reports={exportReports}
-              loading={loading}
-              className="w-full"
-              onGenerateReport={(config) => console.log('Generar reporte', config)}
-              onDownload={(reportId) => console.log('Descargar reporte', reportId)}
-            />
-          </div>
-        );
-      case 'integrations-admin':
-        return (
-          <div className="space-y-6">
-            <ReservationsIntegrationComponent
-              integration={reservationsIntegration}
-              loading={loading}
-              className="w-full"
-              onRuleCreate={() => console.log('Crear regla de integración')}
-              onRuleEdit={(rule) => console.log('Editar regla', rule)}
-              onRuleDelete={(ruleId) => console.log('Eliminar regla', ruleId)}
-              onRuleToggle={(ruleId, isActive) => console.log('Toggle regla', ruleId, isActive)}
-              onIntegrationToggle={(isEnabled) => console.log('Toggle integración', isEnabled)}
-              onSync={() => console.log('Sincronizar con reservas')}
-            />
-          </div>
-        );
-      case 'mission-overview':
-      default:
+      case 'campanas':
         return (
           <div className="space-y-8">
-            <CampaignObjectiveSelector
-              onSuggestionsGenerated={(suggestions) => {
-                console.log('Sugerencias generadas:', suggestions);
-              }}
-              className="w-full"
-            />
-            <SummaryGrid summary={summary} loading={loading} />
-            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-              <MultiChannelCampaigns campaigns={campaigns} loading={loading} className="xl:col-span-2" />
-              <EmailPrograms programs={emails} loading={loading} className="xl:col-span-2" />
-            </div>
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <WelcomeSequences sequences={welcomeSequences} loading={loading} className="w-full" />
-              <AbsenceAutomations automations={absenceAutomations} loading={loading} className="w-full" />
-            </div>
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <InactivityAutomations automations={inactivityAutomations} loading={loading} className="w-full" />
-              <ImportantDateAutomations automations={importantDateAutomations} loading={loading} className="w-full" />
-            </div>
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <PaymentReminderAutomations automations={paymentReminderAutomations} loading={loading} className="w-full" />
-              {messageStatisticsDashboard && (
-                <MessageStatisticsDashboardComponent
-                  dashboard={messageStatisticsDashboard}
+            {/* Bloque: Campañas & Broadcasts */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Layers3 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                  Campañas & Broadcasts
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 gap-6">
+                <MultiChannelCampaigns campaigns={campaigns} loading={loading} />
+                <PromotionalCampaigns
+                  campaigns={promotionalCampaigns}
+                  specializedTemplates={specializedTemplates}
                   loading={loading}
-                  className="w-full"
                 />
-              )}
+              </div>
             </div>
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <AfterHoursAutoReplyComponent
-                autoReplies={afterHoursAutoReplies}
-                loading={loading}
-                className="w-full"
-                onAutoReplyCreate={() => console.log('Crear respuesta automática')}
-                onAutoReplyEdit={(autoReply) => console.log('Editar respuesta automática', autoReply)}
-                onAutoReplyDelete={(autoReplyId) => console.log('Eliminar respuesta automática', autoReplyId)}
-                onAutoReplyToggle={(autoReplyId, isActive) => console.log('Toggle respuesta automática', autoReplyId, isActive)}
-              />
-              <PromotionalCampaigns
-                campaigns={promotionalCampaigns}
-                specializedTemplates={specializedTemplates}
-                loading={loading}
-                className="w-full"
-                onCampaignCreate={() => console.log('Crear campaña promocional')}
-                onCampaignEdit={(campaign) => console.log('Editar campaña promocional', campaign)}
-                onCampaignDelete={(campaignId) => console.log('Eliminar campaña promocional', campaignId)}
-                onCampaignSend={(campaignId) => console.log('Enviar campaña promocional', campaignId)}
-                onCampaignSchedule={(campaignId) => console.log('Programar campaña promocional', campaignId)}
-                onViewResults={(campaignId) => console.log('Ver resultados campaña promocional', campaignId)}
-                onTemplateUse={(template) => console.log('Usar plantilla especializada', template)}
-                onTemplatePreview={(template) => console.log('Vista previa plantilla', template)}
-              />
+
+            {/* Bloque: Programas de Email & Newsletters */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                  Programas de Email & Newsletters
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 gap-6">
+                <EmailPrograms
+                  programs={emails}
+                  loading={loading}
+                  onNewsletterEdit={(program) => {
+                    // Buscar el newsletter correspondiente
+                    const newsletter = newsletters.find((n) => n.id === program.id);
+                    if (newsletter) {
+                      setSelectedNewsletterProgram(program);
+                      setIsNewsletterEditorOpen(true);
+                    }
+                  }}
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <ClientSegmentation
-                segments={clientSegments}
-                bulkMessages={bulkMessages}
-                loading={loading}
-                className="w-full"
-                onSegmentCreate={() => console.log('Crear segmento')}
-                onSegmentEdit={(segment) => console.log('Editar segmento', segment)}
-                onSegmentDelete={(segmentId) => console.log('Eliminar segmento', segmentId)}
-                onSegmentRefresh={(segmentId) => console.log('Actualizar segmento', segmentId)}
-                onBulkMessageCreate={(segmentId) => console.log('Crear mensaje masivo', segmentId)}
-                onBulkMessageEdit={(message) => console.log('Editar mensaje masivo', message)}
-                onBulkMessageDelete={(messageId) => console.log('Eliminar mensaje masivo', messageId)}
-                onBulkMessageSend={(messageId) => console.log('Enviar mensaje masivo', messageId)}
-              />
-              <NewsletterEditor
-                newsletters={newsletters}
-                templates={newsletterTemplates}
-                loading={loading}
-                className="w-full"
-                onNewsletterCreate={() => console.log('Crear newsletter')}
-                onNewsletterEdit={(newsletter) => console.log('Editar newsletter', newsletter)}
-                onNewsletterDelete={(newsletterId) => console.log('Eliminar newsletter', newsletterId)}
-                onNewsletterSend={(newsletterId) => console.log('Enviar newsletter', newsletterId)}
-                onNewsletterSchedule={(newsletterId) => console.log('Programar newsletter', newsletterId)}
-                onNewsletterPause={(newsletterId) => console.log('Pausar newsletter', newsletterId)}
-                onNewsletterResume={(newsletterId) => console.log('Reanudar newsletter', newsletterId)}
-                onTemplateCreate={() => console.log('Crear plantilla newsletter')}
-                onTemplateEdit={(template) => console.log('Editar plantilla newsletter', template)}
-                onTemplateDelete={(templateId) => console.log('Eliminar plantilla newsletter', templateId)}
-                onViewTracking={(newsletterId) => console.log('Ver tracking newsletter', newsletterId)}
-              />
+
+            {/* Bloque: Mensajes Programados */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Clock className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                  Mensajes Programados
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 gap-6">
+                <ScheduledMessages messages={scheduledMessages} loading={loading} />
+              </div>
             </div>
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <MessageTemplatesLibrary
-                templates={messageTemplates}
-                loading={loading}
-                className="w-full"
-                onTemplateCreate={() => console.log('Crear plantilla')}
-                onTemplateEdit={(template) => console.log('Editar plantilla', template)}
-                onTemplateDelete={(templateId) => console.log('Eliminar plantilla', templateId)}
-                onTemplateUse={(template) => console.log('Usar plantilla', template)}
-                onTemplateSendBulk={(template) => console.log('Enviar en masa', template)}
-                onTemplateToggleFavorite={(templateId, isFavorite) => console.log('Toggle favorito', templateId, isFavorite)}
-              />
-              <ScheduledMessages
-                messages={scheduledMessages}
-                loading={loading}
-                className="w-full"
-                onMessageCreate={() => console.log('Crear mensaje programado')}
-                onMessageEdit={(message) => console.log('Editar mensaje', message)}
-                onMessageDelete={(messageId) => console.log('Eliminar mensaje', messageId)}
-                onMessageToggle={(messageId, isActive) => console.log('Toggle mensaje', messageId, isActive)}
-              />
+
+            {/* Bloque: Highlights Semanales */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                  Highlights Semanales
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 gap-6">
+                <WeeklyHighlightsNewsletterGenerator
+                  generator={weeklyHighlightsNewsletterGenerator}
+                  loading={loading}
+                />
+              </div>
             </div>
-            {aiMessageLibrary && (
-              <AIMessageLibrary
-                library={aiMessageLibrary}
-                loading={loading}
-                className="w-full"
-                onTemplateCreate={() => console.log('Crear plantilla IA')}
-                onTemplateEdit={(template) => console.log('Editar plantilla IA', template)}
-                onTemplateDelete={(templateId) => console.log('Eliminar plantilla IA', templateId)}
-                onTemplateUse={(template) => console.log('Usar plantilla IA', template)}
-                onTemplateSendBulk={(template) => console.log('Enviar en masa plantilla IA', template)}
-                onTemplateToggleFavorite={(templateId, isFavorite) => console.log('Toggle favorito IA', templateId, isFavorite)}
-                onGenerateWithAI={(objective) => console.log('Generar con IA', objective)}
-                onSyncWithProfile={() => console.log('Sincronizar con perfil estratégico')}
-                onSettingsEdit={() => console.log('Editar configuración biblioteca IA')}
-              />
-            )}
-            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-              <LifecycleSequences 
-                sequences={sequences} 
-                postLeadMagnetSequences={postLeadMagnetSequences}
-                leadMagnetFunnels={leadMagnetFunnels}
-                loading={loading} 
-                className="xl:col-span-2"
-                onGeneratePostLeadMagnetSequence={(funnelId) => console.log('Generar secuencia post lead magnet', funnelId)}
-                onEditPostLeadMagnetSequence={(sequence) => console.log('Editar secuencia post lead magnet', sequence)}
-                onViewPostLeadMagnetSequence={(sequenceId) => console.log('Ver secuencia post lead magnet', sequenceId)}
-              />
-              <MessagingAutomations automations={automations} loading={loading} className="xl:col-span-2" />
-            </div>
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              <ChannelHealth metrics={health} loading={loading} className="xl:col-span-2" />
-              <AutomationRoadmap items={roadmap} loading={loading} className="xl:col-span-1" />
-            </div>
-            {missionCta}
           </div>
         );
+      case 'automatizaciones':
+        return (
+          <div className="space-y-8">
+            {/* Bloque: Journeys & Sequences */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Workflow className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                  Journeys & Sequences
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 gap-6">
+                {selectedSequenceId ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                        Editando secuencia
+                      </h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedSequenceId(null)}
+                      >
+                        Volver a la lista
+                      </Button>
+                    </div>
+                    <MultiStepSequenceBuilder 
+                      sequences={multiStepSequences} 
+                      loading={loading}
+                      sequenceId={selectedSequenceId}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <LifecycleSequences
+                      sequences={sequences}
+                      postLeadMagnetSequences={postLeadMagnetSequences}
+                      leadMagnetFunnels={leadMagnetFunnels}
+                      loading={loading}
+                      onSelectSequence={setSelectedSequenceId}
+                    />
+                    <WelcomeSequences sequences={welcomeSequences} loading={loading} />
+                    <MultiStepSequenceBuilder sequences={multiStepSequences} loading={loading} />
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Bloque: Automatizaciones por Trigger */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                  Automatizaciones por Trigger
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 gap-6">
+                {selectedAutomationId ? (
+                  (() => {
+                    const selectedAutomation = automations.find(a => a.id === selectedAutomationId);
+                    return selectedAutomation ? (
+                      <MessagingAutomationDetail
+                        automation={selectedAutomation}
+                        onBack={() => setSelectedAutomationId(null)}
+                      />
+                    ) : (
+                      <div>
+                        <p>Automatización no encontrada</p>
+                        <Button onClick={() => setSelectedAutomationId(null)}>Volver</Button>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <>
+                    <MessagingAutomations 
+                      automations={automations} 
+                      loading={loading}
+                      onSelectAutomation={setSelectedAutomationId}
+                    />
+                    <AutomationsCentralPanel panel={centralAutomationsPanel} loading={loading} />
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Bloque: Recordatorios & Fechas */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                  Recordatorios & Fechas
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 gap-6">
+                <SessionReminders
+                  templates={reminderTemplates}
+                  clientSettings={clientReminderSettings}
+                  upcomingReminders={upcomingReminders}
+                  loading={loading}
+                />
+                <AIReminderAutomationComponent dashboard={aiReminderAutomation} loading={loading} />
+                <AbsenceAutomations automations={absenceAutomations} loading={loading} />
+                <InactivityAutomations automations={inactivityAutomations} loading={loading} />
+                <ImportantDateAutomations automations={importantDateAutomations} loading={loading} />
+                <PaymentReminderAutomations automations={paymentReminderAutomations} loading={loading} />
+              </div>
+            </div>
+
+            {/* Bloque: Gaps & After Hours */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 mb-4">
+                <ShieldCheck className="w-5 h-5 text-red-600 dark:text-red-400" />
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                  Gaps & After Hours
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 gap-6">
+                <AfterHoursAutoReplyComponent autoReplies={afterHoursAutoReplies} loading={loading} />
+                {journeyGapDetectorDashboard && (
+                  <JourneyGapDetector dashboard={journeyGapDetectorDashboard} loading={loading} />
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      default:
+        return null;
     }
   };
 
@@ -1222,7 +572,24 @@ export default function CampanasAutomatizacionPage() {
       </header>
 
       <main className="w-full px-4 sm:px-6 py-8 space-y-8">
-        {showMetricCards && <MetricCards data={metricCardsData} columns={4} />}
+        {actionableKPIs && (
+          <ActionableKPIs
+            dashboard={actionableKPIs}
+            loading={loading}
+            onPeriodChange={(period) => {
+              // TODO: Implementar cambio de período
+              console.log('Cambio de período:', period);
+            }}
+            onViewDetails={(messageId) => {
+              // TODO: Implementar vista de detalles
+              console.log('Ver detalles de mensaje:', messageId);
+            }}
+            onViewCampaign={(campaignId) => {
+              // TODO: Implementar vista de campaña
+              console.log('Ver campaña:', campaignId);
+            }}
+          />
+        )}
 
         <Card padding="none" className="bg-white/90 shadow-sm dark:bg-[#050b16]/80">
           <div className="px-4 py-3">
@@ -1270,6 +637,58 @@ export default function CampanasAutomatizacionPage() {
           setIsCampaign360ModalOpen(false);
         }}
       />
+
+      {/* Newsletter Editor Modal - Se abre cuando se edita un programa tipo newsletter */}
+      <Modal
+        isOpen={isNewsletterEditorOpen}
+        onClose={() => {
+          setIsNewsletterEditorOpen(false);
+          setSelectedNewsletterProgram(null);
+        }}
+        title={selectedNewsletterProgram ? `Editor de Newsletter: ${selectedNewsletterProgram.name}` : 'Editor de Newsletter'}
+        size="xl"
+      >
+        {selectedNewsletterProgram && (
+          <NewsletterEditor
+            newsletters={newsletters.filter((n) => n.id === selectedNewsletterProgram.id)}
+            templates={newsletterTemplates}
+            loading={loading}
+            onNewsletterCreate={() => {
+              // Lógica para crear nuevo newsletter
+            }}
+            onNewsletterEdit={(newsletter) => {
+              // Lógica para editar newsletter
+            }}
+            onNewsletterDelete={(id) => {
+              // Lógica para eliminar newsletter
+            }}
+            onNewsletterSend={(id) => {
+              // Lógica para enviar newsletter
+            }}
+            onNewsletterSchedule={(id) => {
+              // Lógica para programar newsletter
+            }}
+            onNewsletterPause={(id) => {
+              // Lógica para pausar newsletter
+            }}
+            onNewsletterResume={(id) => {
+              // Lógica para reanudar newsletter
+            }}
+            onTemplateCreate={() => {
+              // Lógica para crear plantilla
+            }}
+            onTemplateEdit={(template) => {
+              // Lógica para editar plantilla
+            }}
+            onTemplateDelete={(id) => {
+              // Lógica para eliminar plantilla
+            }}
+            onViewTracking={(id) => {
+              // Lógica para ver tracking
+            }}
+          />
+        )}
+      </Modal>
     </div>
   );
 }

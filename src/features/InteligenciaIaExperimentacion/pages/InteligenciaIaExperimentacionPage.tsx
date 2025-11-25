@@ -18,6 +18,7 @@ import {
   MarketTrendsAlertsSection,
   QuarterlyPlanSection,
   OwnershipTrackingSection,
+  SectorTrendsLink,
   // User Story 1: Aprobar experimentos/playbooks desde móvil con resumen IA
   MobileApprovalSection,
   // User Story 2: Sincronizar playbooks con otras sedes o entrenadores
@@ -39,7 +40,6 @@ import {
   FlaskConical,
   Radar,
   Wand2,
-  MessageSquareHeart,
   UserCog,
   BarChart3,
   Target,
@@ -68,9 +68,11 @@ type IntelligenceTabId =
   | 'personalization-impact'
   | 'integrated-ai-view'
   | 'experimentation'
+  | 'experiments-impact'
   | 'insights'
   | 'channel-insights'
   | 'market-trends'
+  | 'trend-analyzer'
   | 'ownership'
   | 'mobile-approval'
   | 'playbook-sync'
@@ -99,8 +101,8 @@ export const InteligenciaIaExperimentacionPage: React.FC = () => {
   const [overview, setOverview] = useState<IntelligenceOverviewResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [hasError, setHasError] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<IntelligenceTabId>('overview');
-  const [activeCategory, setActiveCategory] = useState<IntelligenceCategoryId>('overview-hub');
+  const [activeTab, setActiveTab] = useState<IntelligenceTabId>('trend-analyzer');
+  const [activeCategory, setActiveCategory] = useState<IntelligenceCategoryId>('insights-market');
   const [decisionStyle, setDecisionStyle] = useState<DecisionStyle | undefined>(undefined);
   const [aiOverviewPeriod, setAiOverviewPeriod] = useState<'7d' | '30d' | '90d'>('30d');
   const [aiPrioritizationPeriod, setAiPrioritizationPeriod] = useState<'7d' | '30d' | '90d'>('30d');
@@ -133,77 +135,20 @@ export const InteligenciaIaExperimentacionPage: React.FC = () => {
   const categories = useMemo<IntelligenceCategory[]>(
     () => [
       {
-        id: 'overview-hub',
-        label: 'Visión General',
-        icon: <LayoutDashboard size={16} />,
+        id: 'insights-market',
+        label: 'Trend Analyzer & Competencia',
+        icon: <Radar size={16} />,
         tabs: [
-          { id: 'overview', label: 'Overview Hub', icon: <LayoutDashboard size={16} /> },
-          { id: 'ai-overview', label: 'Overview IA', icon: <BarChart3 size={16} /> },
-          { id: 'integrated-ai-view', label: 'Vista Integrada IA', icon: <Layers size={16} /> },
-        ],
-      },
-      {
-        id: 'planning',
-        label: 'Planificación IA',
-        icon: <Target size={16} />,
-        tabs: [
-          { id: 'ai-prioritization', label: 'Priorización IA', icon: <Target size={16} /> },
-          { id: 'quarterly-plan', label: 'Plan Trimestral IA', icon: <Calendar size={16} /> },
-        ],
-      },
-      {
-        id: 'playbooks',
-        label: 'Playbooks IA',
-        icon: <BookOpen size={16} />,
-        tabs: [
-          { id: 'playbooks', label: 'Biblioteca', icon: <BookOpen size={16} /> },
-          { id: 'playbook-learning', label: 'Aprendizaje IA', icon: <Sparkles size={16} /> },
-          { id: 'playbook-sync', label: 'Sincronización', icon: <RefreshCw size={16} /> },
+          { id: 'trend-analyzer', label: 'Trend Analyzer & Competencia', icon: <Radar size={16} /> },
         ],
       },
       {
         id: 'experiments-impact',
-        label: 'Experimentación & Impacto',
+        label: 'A/B Tests & Impacto',
         icon: <FlaskConical size={16} />,
         tabs: [
-          { id: 'experimentation', label: 'Test de Estrategias', icon: <FlaskConical size={16} /> },
-          { id: 'initiative-impact', label: 'Evaluación Impacto', icon: <BarChart3 size={16} /> },
+          { id: 'experiments-impact', label: 'A/B Tests & Impacto', icon: <FlaskConical size={16} /> },
         ],
-      },
-      {
-        id: 'personalization-feedback',
-        label: 'Personalización & Feedback',
-        icon: <Sparkles size={16} />,
-        tabs: [
-          { id: 'personalization', label: 'Personalización IA', icon: <Sparkles size={16} /> },
-          { id: 'personalization-impact', label: 'Impacto Personalización', icon: <TrendingUp size={16} /> },
-          { id: 'feedback', label: 'Feedback Inteligente', icon: <MessageSquare size={16} /> },
-        ],
-      },
-      {
-        id: 'insights-market',
-        label: 'Insights & Mercado',
-        icon: <Radar size={16} />,
-        tabs: [
-          { id: 'insights', label: 'Insights & Mercado', icon: <Radar size={16} /> },
-          { id: 'channel-insights', label: 'Insights por Canal', icon: <BarChart size={16} /> },
-          { id: 'market-trends', label: 'Alertas Mercado', icon: <Bell size={16} /> },
-        ],
-      },
-      {
-        id: 'operations',
-        label: 'Operaciones & Ownership',
-        icon: <UserCheck size={16} />,
-        tabs: [
-          { id: 'mobile-approval', label: 'Aprobación Móvil', icon: <Smartphone size={16} /> },
-          { id: 'ownership', label: 'Seguimiento Ownership', icon: <UserCheck size={16} /> },
-        ],
-      },
-      {
-        id: 'profile',
-        label: 'Perfil Inteligente',
-        icon: <UserCog size={16} />,
-        tabs: [{ id: 'profile', label: 'Perfil de Inteligencia', icon: <UserCog size={16} /> }],
       },
     ],
     []
@@ -221,7 +166,7 @@ export const InteligenciaIaExperimentacionPage: React.FC = () => {
 
   const getCategoryForTab = (tabId: IntelligenceTabId): IntelligenceCategoryId => {
     const category = categories.find((cat) => cat.tabs.some((tab) => tab.id === tabId));
-    return category?.id ?? 'overview-hub';
+    return category?.id ?? 'insights-market';
   };
 
   const activateTab = (tabId: IntelligenceTabId) => {
@@ -250,7 +195,7 @@ export const InteligenciaIaExperimentacionPage: React.FC = () => {
   const subTabItems = activeCategoryConfig?.tabs ?? [];
 
   const handleCreatePlaybook = () => activateTab('playbooks');
-  const handleLaunchExperiment = () => activateTab('experimentation');
+  const handleLaunchExperiment = () => activateTab('experiments-impact');
   const handleViewFeedback = () => activateTab('feedback');
   const handleViewCampaignDetails = (campaignId: string) => {
     // Navigate to campaign details or show modal
@@ -263,7 +208,7 @@ export const InteligenciaIaExperimentacionPage: React.FC = () => {
     // TODO: Implement campaign duplication
   };
   const handleViewExperimentResults = () => {
-    activateTab('experimentation');
+    activateTab('experiments-impact');
     // TODO: Scroll to completed experiments or highlight them
   };
   const handlePauseSend = (sendId: string) => {
@@ -307,22 +252,7 @@ export const InteligenciaIaExperimentacionPage: React.FC = () => {
                 </div>
               </Card>
 
-              <Card className="p-6 bg-white border border-slate-200/80 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-emerald-100 text-emerald-600">
-                    <MessageSquareHeart size={18} />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-slate-900">Crea una encuesta inteligente</h3>
-                    <p className="text-sm text-slate-600 mt-2">
-                      Activa feedback loops que alimenten tus playbooks con señales de clientes reales.
-                    </p>
-                    <Button className="mt-4" variant="ghost" onClick={() => activateTab('feedback')}>
-                      Ir a feedback loop
-                    </Button>
-                  </div>
-                </div>
-              </Card>
+              {/* Nota: El entry point para crear encuestas inteligentes se encuentra ahora en la feature CommunityYEngagement (Comunidad & Fidelización) */}
 
               <Card className="p-6 bg-white border border-slate-200/80 shadow-sm">
                 <div className="flex items-start gap-3">
@@ -334,7 +264,7 @@ export const InteligenciaIaExperimentacionPage: React.FC = () => {
                     <p className="text-sm text-slate-600 mt-2">
                       Prioriza hipótesis y replica ganadores en todos los canales automáticamente.
                     </p>
-                    <Button className="mt-4" onClick={() => activateTab('experimentation')}>
+                    <Button className="mt-4" onClick={() => activateTab('experiments-impact')}>
                       Gestionar experimentos
                     </Button>
                   </div>
@@ -399,6 +329,7 @@ export const InteligenciaIaExperimentacionPage: React.FC = () => {
           <PlaybookLearningInsights trainerId={user?.id} />
         );
       case 'initiative-impact':
+        // Mantener compatibilidad con navegación directa al tab de evaluación de impacto
         return (
           <InitiativeImpactEvaluation trainerId={user?.id} />
         );
@@ -423,7 +354,28 @@ export const InteligenciaIaExperimentacionPage: React.FC = () => {
             trainerId={user?.id}
           />
         );
+      case 'experiments-impact':
+        if (!overview) return null;
+        return (
+          <div className="space-y-8">
+            {/* Parte superior: ExperimentationSection - Gestión de experimentos */}
+            <ExperimentationSection 
+              experiments={overview.experiments}
+              trainerId={user?.id}
+              onExperimentCreated={(experiment) => {
+                // Recargar datos cuando se crea un experimento
+                getIntelligenceOverview().then((data) => {
+                  setOverview(data);
+                });
+              }}
+            />
+
+            {/* Parte inferior: InitiativeImpactEvaluation - Evaluación automática de impacto */}
+            <InitiativeImpactEvaluation trainerId={user?.id} />
+          </div>
+        );
       case 'experimentation':
+        // Mantener compatibilidad con navegación directa al tab de experimentación
         if (!overview) return null;
         return (
           <ExperimentationSection 
@@ -466,6 +418,38 @@ export const InteligenciaIaExperimentacionPage: React.FC = () => {
             onPeriodChange={(period) => setMarketTrendsPeriod(period)}
             trainerId={user?.id}
           />
+        );
+      case 'trend-analyzer':
+        return (
+          <div className="space-y-8">
+            {/* Bloque 1: ChannelInsightsSection - Rendimiento e insights por canal */}
+            <ChannelInsightsSection
+              period={channelInsightsPeriod}
+              onPeriodChange={(period) => setChannelInsightsPeriod(period)}
+              trainerId={user?.id}
+            />
+
+            {/* Bloque 2: MarketTrendsAlertsSection - Tendencias y movimientos de mercado/competidores */}
+            <MarketTrendsAlertsSection
+              period={marketTrendsPeriod}
+              onPeriodChange={(period) => setMarketTrendsPeriod(period)}
+              trainerId={user?.id}
+            />
+
+            {/* Bloque 3: IntegratedAIPatternsSection - Patrones IA integrados para ver correlaciones globales */}
+            <IntegratedAIPatternsSection
+              period={integratedAIViewPeriod}
+              onPeriodChange={(period) => setIntegratedAIViewPeriod(period)}
+              trainerId={user?.id}
+            />
+
+            {/* Bloque auxiliar: SectorTrendsLink - Acceso a información más detallada del sector */}
+            {overview?.sectorTrends && (
+              <div className="flex justify-center">
+                <SectorTrendsLink sectorTrends={overview.sectorTrends} />
+              </div>
+            )}
+          </div>
         );
       case 'ownership':
         return (

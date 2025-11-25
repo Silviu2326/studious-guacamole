@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { Card, MetricCards, Button, Tabs } from '../../../components/componentsreutilizables';
 import { CommunityFeed } from '../components/CommunityFeed';
+import { LoyaltyQuickActions } from '../components/LoyaltyQuickActions';
+import { TestimonialsAndReferralsPanel } from '../components/TestimonialsAndReferralsPanel';
 import { getGroups, getCommunityAnalytics } from '../api/community';
 import { 
   Users, 
@@ -10,17 +13,21 @@ import {
   Clock,
   Target,
   BarChart3,
-  Users as UsersIcon
+  Users as UsersIcon,
+  Repeat,
+  UserCheck,
+  UserPlus
 } from 'lucide-react';
 
 /**
- * Página principal de Community & Engagement
+ * Página principal de Comunidad & Fidelización
  * 
- * Plataforma social privada donde los clientes comparten logros,
- * interactúan y construyen una comunidad de apoyo y motivación.
+ * Centro de mando para la comunidad, la retención de clientes y las acciones de fidelización
+ * (testimonios, referidos y engagement).
  */
 export const CommunityYEngagementPage: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [analytics, setAnalytics] = useState({
     dailyActiveUsers: 0,
     totalMembers: 0,
@@ -28,7 +35,10 @@ export const CommunityYEngagementPage: React.FC = () => {
     postsThisWeek: 0,
     avgCommentsPerPost: 0,
     avgResponseTime: 0,
-    growthRate: 0
+    growthRate: 0,
+    retentionRate: 0,
+    reactivatedMembers: 0,
+    referralLeads: 0
   });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('feed');
@@ -108,6 +118,27 @@ export const CommunityYEngagementPage: React.FC = () => {
       subtitle: 'Nuevos miembros',
       icon: <Target className="w-5 h-5" />,
       color: 'success' as const
+    },
+    {
+      id: 'retention-rate',
+      title: 'Tasa de Retención',
+      value: `${analytics.retentionRate}%`,
+      subtitle: 'Usuarios que vuelven semanalmente',
+      icon: <Repeat className="w-5 h-5" />,
+      color: 'primary' as const,
+      trend: {
+        value: 3.2,
+        direction: 'up' as const,
+        label: 'vs semana anterior'
+      }
+    },
+    {
+      id: 'reactivated-members',
+      title: 'Miembros Reactivados',
+      value: analytics.reactivatedMembers.toString(),
+      subtitle: 'Vuelven a participar',
+      icon: <UserCheck className="w-5 h-5" />,
+      color: 'success' as const
     }
   ];
 
@@ -124,7 +155,7 @@ export const CommunityYEngagementPage: React.FC = () => {
     },
     {
       id: 'analytics',
-      label: 'Analíticas',
+      label: 'Fidelización & Analíticas',
       icon: <BarChart3 className="w-4 h-4" />
     }
   ];
@@ -148,11 +179,24 @@ export const CommunityYEngagementPage: React.FC = () => {
         );
       case 'analytics':
         return (
-          <Card className="p-8 text-center bg-white shadow-sm">
-            <BarChart3 size={48} className="mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Analíticas Detalladas</h3>
-            <p className="text-gray-600">Vista de analíticas avanzadas de la comunidad</p>
-          </Card>
+          <div className="space-y-6">
+            {/* Panel de Quick Actions de Fidelización */}
+            <LoyaltyQuickActions
+              onRequestTestimonial={() => console.log('Solicitar testimonio')}
+              onLaunchReferralCampaign={() => console.log('Lanzar campaña de referidos')}
+              onCreateSmartSurvey={() => navigate('/dashboard/feedback/surveys')}
+            />
+            
+            {/* Panel de Testimonios y Referidos */}
+            <TestimonialsAndReferralsPanel />
+            
+            {/* Sección de Analíticas (placeholder para futuras implementaciones) */}
+            <Card className="p-8 text-center bg-white shadow-sm">
+              <BarChart3 size={48} className="mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Analíticas Detalladas</h3>
+              <p className="text-gray-600">Vista de analíticas avanzadas de la comunidad</p>
+            </Card>
+          </div>
         );
       default:
         return null;
@@ -175,10 +219,10 @@ export const CommunityYEngagementPage: React.FC = () => {
                 {/* Título y descripción */}
                 <div>
                   <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
-                    Community & Engagement
+                    Comunidad & Fidelización
                   </h1>
                   <p className="text-gray-600 mt-1">
-                    Comparte logros, conecta con otros miembros y construye una comunidad de apoyo
+                    Centro de mando para la comunidad, la retención de clientes y las acciones de fidelización (testimonios, referidos y engagement)
                   </p>
                 </div>
               </div>

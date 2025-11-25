@@ -15,9 +15,10 @@ interface MessagingAutomationsProps {
   automations: MessagingAutomation[];
   loading?: boolean;
   className?: string;
+  onSelectAutomation?: (automationId: string) => void;
 }
 
-export const MessagingAutomations: React.FC<MessagingAutomationsProps> = ({ automations, loading = false, className = '' }) => {
+export const MessagingAutomations: React.FC<MessagingAutomationsProps> = ({ automations, loading = false, className = '', onSelectAutomation }) => {
   if (loading && automations.length === 0) {
     return (
       <Card className={className}>
@@ -57,7 +58,10 @@ export const MessagingAutomations: React.FC<MessagingAutomationsProps> = ({ auto
           return (
             <div
               key={automation.id}
-              className="rounded-2xl border border-slate-100 dark:border-slate-800 p-4 bg-gradient-to-br from-white to-slate-50 dark:from-[#0f1a2d] dark:to-[#111f37]"
+              onClick={() => onSelectAutomation?.(automation.id)}
+              className={`rounded-2xl border border-slate-100 dark:border-slate-800 p-4 bg-gradient-to-br from-white to-slate-50 dark:from-[#0f1a2d] dark:to-[#111f37] ${
+                onSelectAutomation ? 'cursor-pointer hover:border-sky-300 dark:hover:border-sky-700 transition-colors' : ''
+              }`}
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -88,7 +92,8 @@ export const MessagingAutomations: React.FC<MessagingAutomationsProps> = ({ auto
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-4">
+              {/* Resumen de métricas principales */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
                 <div>
                   <p className={`${ds.typography.caption} ${ds.color.textMuted} ${ds.color.textMutedDark}`}>Variantes</p>
                   <p className={`${ds.typography.bodySmall} font-semibold ${ds.color.textPrimaryDark}`}>
@@ -119,17 +124,6 @@ export const MessagingAutomations: React.FC<MessagingAutomationsProps> = ({ auto
                   </p>
                 </div>
               </div>
-
-              {automation.recommendedImprovement && (
-                <div className="mt-4 rounded-xl bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-100 dark:border-cyan-800 p-3">
-                  <p className={`${ds.typography.caption} uppercase text-cyan-700 dark:text-cyan-300 tracking-[0.2em]`}>
-                    Mejora sugerida
-                  </p>
-                  <p className={`${ds.typography.bodySmall} ${ds.color.textPrimaryDark}`}>
-                    {automation.recommendedImprovement}
-                  </p>
-                </div>
-              )}
             </div>
           );
         })}

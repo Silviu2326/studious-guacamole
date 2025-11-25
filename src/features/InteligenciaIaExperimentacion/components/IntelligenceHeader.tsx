@@ -68,14 +68,14 @@ export const IntelligenceHeader: React.FC<IntelligenceHeaderProps> = ({
           <div className="flex-1">
             <Badge className="mb-3 inline-flex items-center gap-2 bg-indigo-50 text-indigo-700">
               <Sparkles size={16} />
-              Centro de Comunicación Inteligente
+              Inteligencia & Experimentos
             </Badge>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
-              Inteligencia, IA & Experimentación
+              Inteligencia & Experimentos
             </h1>
             <p className="mt-3 text-base text-slate-600 max-w-2xl">
-              Coordina un hub inteligente para decidir el siguiente mejor paso. Orquesta playbooks,
-              personalización avanzada y experimentos de alto impacto con una sola vista.
+              Centro de inteligencia para entender qué funciona, qué está cambiando en el mercado y qué experimentar a continuación. 
+              Análisis de tendencias y competencia, gestión de experimentos y A/B tests en un solo lugar.
             </p>
           </div>
         </div>

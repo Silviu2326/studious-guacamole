@@ -56,6 +56,7 @@ const expectedRangesByPersona: Record<string, Record<string, { min?: number; max
     'email-ctr': { min: 5, max: 12 },
     roas: { min: 3.5, max: 7 },
     'social-growth': { min: 3, max: 15 },
+    estimatedROI: { min: 150, max: 400 },
   },
   madres: {
     leads: { min: 250, max: 600 },
@@ -63,6 +64,7 @@ const expectedRangesByPersona: Record<string, Record<string, { min?: number; max
     'email-ctr': { min: 6, max: 15 },
     roas: { min: 3, max: 6 },
     'social-growth': { min: 5, max: 20 },
+    estimatedROI: { min: 120, max: 350 },
   },
   atletas: {
     leads: { min: 200, max: 500 },
@@ -70,6 +72,7 @@ const expectedRangesByPersona: Record<string, Record<string, { min?: number; max
     'email-ctr': { min: 4, max: 10 },
     roas: { min: 2.5, max: 5.5 },
     'social-growth': { min: 8, max: 25 },
+    estimatedROI: { min: 100, max: 300 },
   },
   all: {
     leads: { min: 300, max: 700 },
@@ -77,6 +80,7 @@ const expectedRangesByPersona: Record<string, Record<string, { min?: number; max
     'email-ctr': { min: 5, max: 12 },
     roas: { min: 3, max: 6 },
     'social-growth': { min: 4, max: 18 },
+    estimatedROI: { min: 120, max: 350 },
   },
 };
 
@@ -133,6 +137,16 @@ const baseKpis: MarketingKPI[] = [
     trendDirection: 'up',
     expectedRange: expectedRangesByPersona.all['social-growth'],
   },
+  {
+    id: 'estimatedROI',
+    label: 'ROI Estimado',
+    value: 0, // Se calculará dinámicamente basado en revenue y spend
+    changePercentage: 8.5,
+    period: '30d',
+    format: 'percentage',
+    trendDirection: 'up',
+    expectedRange: expectedRangesByPersona.all.estimatedROI,
+  },
 ];
 
 // Valores base por buyer persona (simulando datos diferentes)
@@ -143,6 +157,7 @@ const personaValueMultipliers: Record<DefaultBuyerPersonaType, Record<string, nu
     'email-ctr': 0.9, // Menor CTR (más ocupados)
     roas: 1.2, // Mejor ROAS
     'social-growth': 0.8, // Menor crecimiento en redes
+    estimatedROI: 1.3, // Mayor ROI por mayor revenue
   },
   madres: {
     leads: 1.0,
@@ -150,6 +165,7 @@ const personaValueMultipliers: Record<DefaultBuyerPersonaType, Record<string, nu
     'email-ctr': 1.2, // Mayor engagement
     roas: 1.0,
     'social-growth': 1.3, // Mayor crecimiento en redes
+    estimatedROI: 1.0,
   },
   atletas: {
     leads: 0.7, // Menos leads pero más cualificados
@@ -157,6 +173,7 @@ const personaValueMultipliers: Record<DefaultBuyerPersonaType, Record<string, nu
     'email-ctr': 0.85,
     roas: 0.9,
     'social-growth': 1.5, // Mayor crecimiento en redes
+    estimatedROI: 0.85, // ROI ligeramente menor
   },
   all: {
     leads: 1.0,
@@ -164,6 +181,7 @@ const personaValueMultipliers: Record<DefaultBuyerPersonaType, Record<string, nu
     'email-ctr': 1.0,
     roas: 1.0,
     'social-growth': 1.0,
+    estimatedROI: 1.0,
   },
 };
 
@@ -345,7 +363,41 @@ export async function fetchMarketingKPIs(
   const personaMultipliers = personaValueMultipliers[persona];
   const personaRanges = expectedRangesByPersona[persona];
 
+  // Calcular ROI estimado basado en revenue y gasto de marketing
+  let estimatedROIValue = 0;
+  if (baseKpis.some(kpi => kpi.id === 'estimatedROI')) {
+    // Obtener datos de campañas y funnels para calcular ROI
+    // Ajustar por período: los funnels ya se ajustan en fetchTopFunnels, pero las campañas son estáticas
+    const totalSpend = campaigns.reduce((sum, c) => sum + c.spend, 0) * multiplier;
+    // Los funnels ya están ajustados por período cuando se obtienen, pero aquí usamos los datos base
+    const totalFunnelRevenue = funnels.reduce((sum, f) => sum + f.revenue, 0) * multiplier;
+    const totalCampaignRevenue = campaigns.reduce((sum, c) => sum + (c.spend * c.roas), 0) * multiplier;
+    const totalRevenue = totalFunnelRevenue + totalCampaignRevenue;
+    
+    // Calcular ROI como porcentaje: ((revenue - spend) / spend) * 100
+    if (totalSpend > 0) {
+      estimatedROIValue = ((totalRevenue - totalSpend) / totalSpend) * 100;
+    } else {
+      // Si no hay gasto, usar un valor base razonable
+      estimatedROIValue = 180; // 180% ROI base
+    }
+  }
+
   const adjusted = baseKpis.map((kpi) => {
+    // Para estimatedROI, usar el valor calculado dinámicamente
+    if (kpi.id === 'estimatedROI') {
+      const personaMultiplier = personaMultipliers[kpi.id] || 1;
+      const value = Number((estimatedROIValue * personaMultiplier).toFixed(2));
+      
+      return {
+        ...kpi,
+        value,
+        period,
+        buyerPersonaId: persona !== 'all' ? persona : undefined,
+        expectedRange: personaRanges[kpi.id] || kpi.expectedRange,
+      };
+    }
+
     const baseValue = kpi.value;
     const personaMultiplier = personaMultipliers[kpi.id] || 1;
     let value: number;

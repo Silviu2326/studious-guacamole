@@ -310,9 +310,11 @@ export interface GeneratedPromotionalContent {
   createdAt: string;
 }
 
-export interface ContentSocialSnapshot {
-  metrics: ContentStudioMetric[];
-  modules: ModuleQuickAction[];
+/**
+ * Snapshot del pilar "Planner & Social"
+ * Incluye: calendario editorial, gaps, rendimiento social, campañas con creadores
+ */
+export interface PlannerAndSocialSnapshot {
   planner: {
     backlogCount: number;
     coverageDays: number;
@@ -321,23 +323,29 @@ export interface ContentSocialSnapshot {
     gapAlerts?: CalendarGapAlert[];
     gaps?: CalendarGap[];
   };
+  syndication: {
+    activeCampaigns: number;
+    creatorsNetwork: number;
+    pipeline: SyndicationCampaignSummary[];
+  };
+  socialPerformance?: {
+    totalPosts: number;
+    scheduledPosts: number;
+    engagementRate?: number;
+    reach?: number;
+  };
+}
+
+/**
+ * Snapshot del pilar "Creación & IA"
+ * Incluye: proyectos de vídeo, uso de plantillas IA, ideas generadas, transformaciones de clientes
+ */
+export interface CreationAndAISnapshot {
   video: {
     projects: VideoProjectSummary[];
     automationPlaybooks: number;
     readyToPublish: number;
     libraryAssets: number;
-  };
-  clipper: {
-    totalClips: number;
-    newThisWeek: number;
-    categories: ClipCategorySummary[];
-    featured: ContentClipSummary[];
-    trendingTags: string[];
-  };
-  syndication: {
-    activeCampaigns: number;
-    creatorsNetwork: number;
-    pipeline: SyndicationCampaignSummary[];
   };
   ai: {
     assistants: AIContentAssistant[];
@@ -371,8 +379,27 @@ export interface ContentSocialSnapshot {
     activeOffers: PromotionalOffer[];
     generatedContent: GeneratedPromotionalContent[];
   };
-  creativeVoiceConfig?: CreativeVoiceConfig;
+}
+
+/**
+ * Snapshot del pilar "Activos & Marca"
+ * Incluye: biblioteca de clips, reciclaje, formatos estrella, kits de marca, asignaciones, aprobaciones
+ */
+export interface AssetsAndBrandSnapshot {
+  clipper: {
+    totalClips: number;
+    newThisWeek: number;
+    categories: ClipCategorySummary[];
+    featured: ContentClipSummary[];
+    trendingTags: string[];
+  };
+  brandKits?: {
+    kits: BrandKit[];
+    recentGenerations: BrandKit[];
+  };
   starFormatsConfig?: StarFormatsConfig;
+  creativeVoiceConfig?: CreativeVoiceConfig;
+  visualStyleLearning?: VisualStyleLearningSnapshot;
   contentAssignments?: {
     assignments: ContentAssignment[];
     availableTeamMembers: TeamMember[];
@@ -384,13 +411,39 @@ export interface ContentSocialSnapshot {
     pendingCount: number;
     recentApprovals: ContentApproval[];
   };
-  brandKits?: {
-    kits: BrandKit[];
-    recentGenerations: BrandKit[];
-  };
-  visualStyleLearning?: VisualStyleLearningSnapshot;
   saturatedTopics?: SaturatedTopicsAnalysis;
   postCampaignInsights?: CampaignInsight[];
+}
+
+/**
+ * Tipo agregado para snapshot completo de Content & Social Studio.
+ * 
+ * ⚠️ NOTA: Este tipo está diseñado para dashboards globales y vistas agregadas.
+ * NO debe usarse como fuente de datos principal en páginas dedicadas.
+ * 
+ * El hub de Content & Social Studio se ha dividido en tres pilares principales:
+ * - Planner & Social: Calendario editorial, gaps, rendimiento social, campañas con creadores
+ * - Creación & IA: Proyectos de vídeo, plantillas IA, ideas generadas, transformaciones
+ * - Activos & Marca: Biblioteca, reciclaje, formatos estrella, kits de marca, asignaciones
+ * 
+ * Cada pilar tiene su propia página dedicada:
+ * - PlannerAndSocialPage: Usa APIs específicas de planner (getSocialPosts, etc.)
+ * - CreationAndAIPage: Usa APIs específicas de AI y video
+ * - AssetsAndBrandPage: Usa APIs específicas de activos y marca
+ * 
+ * Este snapshot es útil para:
+ * - Dashboards de resumen ejecutivo
+ * - Vistas agregadas bajo demanda
+ * - Análisis cross-módulo
+ * 
+ * Para páginas específicas, usar los tipos y APIs individuales de cada módulo.
+ */
+export interface ContentSocialSnapshot {
+  metrics: ContentStudioMetric[];
+  modules: ModuleQuickAction[];
+  plannerAndSocial: PlannerAndSocialSnapshot;
+  creationAndAI: CreationAndAISnapshot;
+  assetsAndBrand: AssetsAndBrandSnapshot;
 }
 
 // Creative Voice Config Types (US-CSS-011)

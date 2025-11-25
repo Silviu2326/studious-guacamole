@@ -91,6 +91,7 @@ const multiChannelCampaigns: MultiChannelCampaign[] = [
     name: 'Black Friday Omnicanal',
     objective: 'Reactivación y upsell de planes premium',
     status: 'running',
+    mode: 'manual',
     owner: 'Growth Squad',
     launchDate: '2025-11-01',
     channels: ['email', 'sms', 'whatsapp', 'push'],
@@ -108,6 +109,7 @@ const multiChannelCampaigns: MultiChannelCampaign[] = [
     name: 'Secuencia de activación leads Noviembre',
     objective: 'Conseguir primera compra en 7 días',
     status: 'running',
+    mode: 'automation',
     owner: 'Lifecycle Ops',
     launchDate: '2025-10-26',
     channels: ['email', 'whatsapp', 'in-app'],
@@ -125,6 +127,7 @@ const multiChannelCampaigns: MultiChannelCampaign[] = [
     name: 'Retención planes premium Q4',
     objective: 'Reducir churn voluntario',
     status: 'scheduled',
+    mode: 'manual',
     owner: 'Customer Marketing',
     launchDate: '2025-11-16',
     channels: ['email', 'sms'],
@@ -142,8 +145,9 @@ const multiChannelCampaigns: MultiChannelCampaign[] = [
 const emailPrograms: EmailProgram[] = [
   {
     id: 'email-newsletter-semanal',
-    name: 'Newsletter semanal “Mission Control”',
+    name: 'Newsletter semanal "Mission Control"',
     type: 'newsletter',
+    mode: 'manual',
     cadence: 'Semanal (jueves)',
     audienceSize: 18240,
     openRate: 41.2,
@@ -157,6 +161,7 @@ const emailPrograms: EmailProgram[] = [
     id: 'email-product-update',
     name: 'Lanzamiento automatizaciones condicionales',
     type: 'product-update',
+    mode: 'manual',
     cadence: 'Campaña puntual',
     audienceSize: 9200,
     openRate: 58.4,
@@ -169,6 +174,7 @@ const emailPrograms: EmailProgram[] = [
     id: 'email-onboarding-fast-track',
     name: 'Fast-track Onboarding (Day 0-14)',
     type: 'onboarding',
+    mode: 'automation',
     cadence: 'Automático',
     audienceSize: 4200,
     openRate: 72.6,
@@ -640,7 +646,166 @@ function simulateLatency<T>(data: T, delay = 240): Promise<T> {
 }
 
 export async function fetchMissionControlSummary(): Promise<MissionControlSummary[]> {
-  return simulateLatency(baseSummary);
+  // Obtener todos los datos necesarios para calcular métricas
+  const [
+    campaigns,
+    emailPrograms,
+    lifecycleSequences,
+    messagingAutomations,
+    bulkMessages,
+    promotionalCampaigns,
+  ] = await Promise.all([
+    fetchMultiChannelCampaigns(),
+    fetchEmailPrograms(),
+    fetchLifecycleSequences(),
+    fetchMessagingAutomations(),
+    fetchBulkMessages(),
+    fetchPromotionalCampaigns(),
+  ]);
+
+  // Calcular métricas manuales
+  let manualMessagesSent = 0;
+  let manualResponses = 0;
+  let manualTotalSent = 0;
+
+  // Campañas multicanal manuales
+  campaigns
+    .filter((c) => c.mode === 'manual')
+    .forEach((campaign) => {
+      // Estimación basada en revenue y conversion rate
+      const estimatedSent = campaign.revenue > 0 ? Math.round(campaign.revenue / (campaign.conversionRate / 100)) : 0;
+      manualMessagesSent += estimatedSent;
+      manualTotalSent += estimatedSent;
+    });
+
+  // Programas de email manuales
+  emailPrograms
+    .filter((ep) => ep.mode === 'manual')
+    .forEach((program) => {
+      const sent = program.audienceSize;
+      manualMessagesSent += sent;
+      manualTotalSent += sent;
+      manualResponses += Math.round((sent * program.openRate) / 100);
+    });
+
+  // Mensajes masivos (bulk messages) - siempre manuales
+  bulkMessages.forEach((bulk) => {
+    manualMessagesSent += bulk.sentCount;
+    manualTotalSent += bulk.sentCount;
+    manualResponses += bulk.repliedCount;
+  });
+
+  // Campañas promocionales - siempre manuales
+  promotionalCampaigns.forEach((promo) => {
+    if (promo.tracking) {
+      manualMessagesSent += promo.tracking.sentCount;
+      manualTotalSent += promo.tracking.sentCount;
+      manualResponses += promo.tracking.repliedCount;
+    }
+  });
+
+  const manualResponseRate =
+    manualTotalSent > 0 ? (manualResponses / manualTotalSent) * 100 : 0;
+
+  // Calcular métricas de automatizaciones
+  let automationMessagesSent = 0;
+  let automationResponses = 0;
+  let automationTotalSent = 0;
+  let automationConversions = 0;
+
+  // Secuencias de ciclo de vida - siempre automatizaciones
+  lifecycleSequences.forEach((sequence) => {
+    // Estimación basada en contactos activos y tasa de finalización
+    const estimatedSent = Math.round(
+      (sequence.activeContacts * sequence.completionRate) / 100
+    );
+    automationMessagesSent += estimatedSent;
+    automationTotalSent += estimatedSent;
+    automationConversions += Math.round(
+      (estimatedSent * sequence.completionRate) / 100
+    );
+  });
+
+  // Automatizaciones de mensajería - siempre automatizaciones
+  messagingAutomations.forEach((automation) => {
+    automationMessagesSent += automation.audienceSize;
+    automationTotalSent += automation.audienceSize;
+    automationResponses += Math.round(
+      (automation.audienceSize * automation.responseRate) / 100
+    );
+  });
+
+  // Campañas multicanal automatizadas
+  campaigns
+    .filter((c) => c.mode === 'automation')
+    .forEach((campaign) => {
+      const estimatedSent = campaign.revenue > 0
+        ? Math.round(campaign.revenue / (campaign.conversionRate / 100))
+        : 0;
+      automationMessagesSent += estimatedSent;
+      automationTotalSent += estimatedSent;
+      automationConversions += Math.round(
+        (estimatedSent * campaign.conversionRate) / 100
+      );
+    });
+
+  // Programas de email automatizados
+  emailPrograms
+    .filter((ep) => ep.mode === 'automation')
+    .forEach((program) => {
+      const sent = program.audienceSize;
+      automationMessagesSent += sent;
+      automationTotalSent += sent;
+      automationResponses += Math.round((sent * program.openRate) / 100);
+    });
+
+  const automationResponseRate =
+    automationTotalSent > 0 ? (automationResponses / automationTotalSent) * 100 : 0;
+  const automationConversionRate =
+    automationTotalSent > 0 ? (automationConversions / automationTotalSent) * 100 : 0;
+
+  // Actualizar el resumen base con métricas separadas
+  const summaryWithBreakdown: MissionControlSummary[] = baseSummary.map((item) => {
+    if (item.id === 'messages-sent') {
+      return {
+        ...item,
+        value: manualMessagesSent + automationMessagesSent,
+        manualMetrics: {
+          messagesSent: manualMessagesSent,
+          changePercentage: 12, // Ejemplo - en producción se calcularía vs período anterior
+          trend: 'up' as const,
+        },
+        automationMetrics: {
+          messagesSent: automationMessagesSent,
+          changePercentage: 18, // Ejemplo - en producción se calcularía vs período anterior
+          trend: 'up' as const,
+        },
+      };
+    }
+    if (item.id === 'client-response-rate') {
+      return {
+        ...item,
+        value: Math.round(
+          ((manualResponseRate + automationResponseRate) / 2) * 10
+        ) / 10,
+        manualMetrics: {
+          messagesSent: manualTotalSent,
+          responseRate: manualResponseRate,
+          changePercentage: 5, // Ejemplo
+          trend: 'up' as const,
+        },
+        automationMetrics: {
+          messagesSent: automationTotalSent,
+          responseRate: automationResponseRate,
+          changePercentage: 10, // Ejemplo
+          trend: 'up' as const,
+        },
+      };
+    }
+    return item;
+  });
+
+  return simulateLatency(summaryWithBreakdown);
 }
 
 export async function fetchMultiChannelCampaigns(): Promise<MultiChannelCampaign[]> {
@@ -648,7 +813,48 @@ export async function fetchMultiChannelCampaigns(): Promise<MultiChannelCampaign
 }
 
 export async function fetchEmailPrograms(): Promise<EmailProgram[]> {
-  return simulateLatency(emailPrograms);
+  // Obtener newsletters y convertirlos a EmailProgram
+  const newslettersData = await fetchNewsletters();
+  const newsletterPrograms: EmailProgram[] = newslettersData.map((newsletter) => ({
+    id: newsletter.id,
+    name: newsletter.name,
+    type: 'newsletter' as const,
+    mode: 'manual' as const,
+    cadence: newsletter.schedule
+      ? newsletter.schedule.frequency === 'weekly'
+        ? 'Semanal'
+        : newsletter.schedule.frequency === 'biweekly'
+        ? 'Quincenal'
+        : newsletter.schedule.frequency === 'monthly'
+        ? 'Mensual'
+        : 'Personalizado'
+      : 'Único',
+    audienceSize: newsletter.tracking?.totalRecipients || 0,
+    openRate: newsletter.tracking?.openRate || newsletter.averageOpenRate || 0,
+    clickRate: newsletter.tracking?.clickRate || newsletter.averageClickRate || 0,
+    revenueAttributed: 0, // Newsletters no tienen revenue atribuido directamente
+    bestSubject: newsletter.subject,
+    status:
+      newsletter.status === 'sent'
+        ? 'completed'
+        : newsletter.status === 'sending' || newsletter.status === 'scheduled'
+        ? 'running'
+        : newsletter.status === 'paused'
+        ? 'paused'
+        : 'draft',
+    aiRecommendation: undefined,
+  }));
+
+  // Combinar emailPrograms existentes con newsletters convertidos
+  // Filtrar newsletters que ya existen en emailPrograms (por ID)
+  const existingNewsletterIds = new Set(
+    emailPrograms.filter((p) => p.type === 'newsletter').map((p) => p.id)
+  );
+  const newNewsletterPrograms = newsletterPrograms.filter(
+    (np) => !existingNewsletterIds.has(np.id)
+  );
+  const allPrograms = [...emailPrograms, ...newNewsletterPrograms];
+  return simulateLatency(allPrograms);
 }
 
 export async function fetchLifecycleSequences(): Promise<LifecycleSequence[]> {
@@ -1555,6 +1761,7 @@ const bulkMessages: BulkMessage[] = [
     id: 'bulk-msg-reactivacion',
     name: 'Campaña de reactivación Q1',
     description: 'Mensaje motivacional para clientes inactivos',
+    mode: 'manual',
     segmentId: 'seg-inactivos-30d',
     segmentName: 'Clientes inactivos 30+ días',
     messageTemplate: 'Hola {nombre}, notamos que hace tiempo que no nos vemos. ¿Te gustaría reagendar tu próxima sesión?',
@@ -1577,6 +1784,7 @@ const bulkMessages: BulkMessage[] = [
     id: 'bulk-msg-nuevo-plan',
     name: 'Oferta plan trimestral',
     description: 'Promoción especial para clientes mensuales',
+    mode: 'manual',
     segmentId: 'seg-plan-mensual',
     segmentName: 'Clientes con plan mensual',
     messageTemplate: 'Hola {nombre}, tenemos una oferta especial para ti. Cambia a plan trimestral y ahorra 15%.',
@@ -1821,6 +2029,7 @@ const promotionalCampaigns: PromotionalCampaign[] = [
     id: 'promo-black-friday-2025',
     name: 'Black Friday 2025 - Descuento 30%',
     description: 'Campaña promocional de Black Friday con descuento del 30% en todos los planes',
+    mode: 'manual',
     messageTemplate: '¡Hola {nombre}! 🎉 Black Friday está aquí. Obtén un 30% de descuento en todos nuestros planes. Válido hasta el 30 de noviembre. ¡No te lo pierdas! Usa el código: BLACK30',
     channel: 'whatsapp',
     recipients: {
@@ -1855,6 +2064,7 @@ const promotionalCampaigns: PromotionalCampaign[] = [
     id: 'promo-verano-inactivos',
     name: 'Promoción Verano - Reactivación Clientes Inactivos',
     description: 'Oferta especial de verano para reactivar clientes inactivos con descuento del 25%',
+    mode: 'manual',
     messageTemplate: '¡Hola {nombre}! ☀️ El verano está aquí y queremos verte de vuelta. Oferta especial: 25% de descuento en tu próximo plan. Válido hasta el 15 de agosto. ¡Es momento de retomar tu rutina!',
     channel: 'email',
     recipients: {
@@ -1871,6 +2081,7 @@ const promotionalCampaigns: PromotionalCampaign[] = [
     id: 'promo-bono-trimestral',
     name: 'Promoción Bono Trimestral - Segmento Premium',
     description: 'Oferta de bono trimestral con sesión extra gratis para clientes premium',
+    mode: 'manual',
     messageTemplate: '¡Hola {nombre}! 💎 Como cliente Premium, tenemos una oferta especial para ti: Contrata un bono trimestral y recibe 1 sesión adicional GRATIS. Oferta válida hasta el {fechaVencimiento}. ¡Aprovecha ahora!',
     channel: 'whatsapp',
     recipients: {
@@ -1907,6 +2118,7 @@ const promotionalCampaigns: PromotionalCampaign[] = [
     id: 'promo-clase-grupal',
     name: 'Invitación Clase Grupal - Todos los Clientes',
     description: 'Invitación a clase grupal especial de fin de mes para todos los clientes',
+    mode: 'manual',
     messageTemplate: '¡Hola {nombre}! 👥 Te invitamos a nuestra clase grupal especial este sábado a las 10:00 AM. Es GRATIS para todos nuestros clientes. ¡Ven con un amigo y ambos recibirán un descuento del 15%! Confirma tu asistencia respondiendo a este mensaje.',
     channel: 'whatsapp',
     recipients: {
@@ -3637,6 +3849,62 @@ aiHeatMapSendingSchedulesData.channels.forEach((channel) => {
 });
 
 // Mock data para Actionable KPIs
+// Calcular KPIs específicos de campañas y automatizaciones
+const calculateCampaignAutomationKPIs = () => {
+  // Contar automatizaciones activas vs en borrador
+  const activeAutomations = messagingAutomations.filter(a => a.status === 'running').length;
+  const draftAutomations = messagingAutomations.filter(a => a.status === 'draft').length;
+  
+  // Contar todas las automatizaciones (incluyendo sequences, welcome sequences, etc.)
+  const allActiveAutomations = [
+    ...messagingAutomations.filter(a => a.status === 'running'),
+    ...lifecycleSequences.filter(s => s.status === 'running'),
+    ...welcomeSequences.filter(w => w.status === 'running'),
+    ...absenceAutomations.filter(a => a.isActive),
+    ...inactivityAutomations.filter(a => a.isActive),
+    ...importantDateAutomations.filter(a => a.isActive),
+    ...paymentReminderAutomations.filter(a => a.isActive),
+  ].length;
+  
+  const allDraftAutomations = [
+    ...messagingAutomations.filter(a => a.status === 'draft'),
+    ...lifecycleSequences.filter(s => s.status === 'draft'),
+    ...welcomeSequences.filter(w => w.status === 'draft'),
+  ].length;
+  
+  // Calcular revenue de campañas automatizadas
+  const automatedCampaignsRevenue = multiChannelCampaigns
+    .filter(c => c.mode === 'automation')
+    .reduce((sum, c) => sum + c.revenue, 0);
+  
+  const totalAutomatedCampaigns = multiChannelCampaigns.filter(c => c.mode === 'automation').length;
+  
+  // Calcular tasa de conversión de automatizaciones (promedio de las activas)
+  const activeAutomationConversionRates = [
+    ...messagingAutomations.filter(a => a.status === 'running').map(a => a.responseRate),
+    ...lifecycleSequences.filter(s => s.status === 'running').map(s => s.completionRate),
+  ];
+  const automationConversionRate = activeAutomationConversionRates.length > 0
+    ? activeAutomationConversionRates.reduce((sum, rate) => sum + rate, 0) / activeAutomationConversionRates.length
+    : 0;
+  
+  // Mensajes enviados esta semana (simulado - en producción vendría de datos reales)
+  const messagesSentThisWeek = 312; // Aproximadamente 25% del total mensual
+  const optimalMessagesPerWeek = 400; // Valor de referencia óptimo
+  
+  return {
+    automationConversionRate,
+    activeAutomations: allActiveAutomations,
+    draftAutomations: allDraftAutomations,
+    messagesSentThisWeek,
+    optimalMessagesPerWeek,
+    automatedCampaignsRevenue,
+    totalAutomatedCampaigns,
+  };
+};
+
+const campaignAutomationKPIs = calculateCampaignAutomationKPIs();
+
 const actionableKPIsData: ActionableKPIDashboard = {
   period: '30d',
   summary: {
@@ -3648,6 +3916,14 @@ const actionableKPIsData: ActionableKPIDashboard = {
     overallSaleConversionRate: 7.1,
     averageRevenuePerMessage: 9.98,
     roi: 245.8,
+    // KPIs específicos de campañas y automatizaciones
+    automationConversionRate: campaignAutomationKPIs.automationConversionRate,
+    activeAutomations: campaignAutomationKPIs.activeAutomations,
+    draftAutomations: campaignAutomationKPIs.draftAutomations,
+    messagesSentThisWeek: campaignAutomationKPIs.messagesSentThisWeek,
+    optimalMessagesPerWeek: campaignAutomationKPIs.optimalMessagesPerWeek,
+    automatedCampaignsRevenue: campaignAutomationKPIs.automatedCampaignsRevenue,
+    totalAutomatedCampaigns: campaignAutomationKPIs.totalAutomatedCampaigns,
   },
   byMessageType: [
     {

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Badge, Button, Card, Modal } from '../../../components/componentsreutilizables';
-import { Mail, Flame, Inbox, Wand2 } from 'lucide-react';
+import { Mail, Flame, Inbox, Wand2, Filter } from 'lucide-react';
 import { ds } from '../../adherencia/ui/ds';
 import { CampanasAutomatizacionService } from '../services/campanasAutomatizacionService';
 import { EmailProgram } from '../types';
@@ -13,27 +13,54 @@ const typeBadge: Record<EmailProgram['type'], { label: string; variant: React.Co
   retention: { label: 'Retención', variant: 'yellow' },
 };
 
+const typeOptions: Array<{ value: EmailProgram['type'] | 'all'; label: string }> = [
+  { value: 'all', label: 'Todos los tipos' },
+  { value: 'newsletter', label: 'Newsletter' },
+  { value: 'product-update', label: 'Lanzamiento' },
+  { value: 'promotion', label: 'Promoción' },
+  { value: 'onboarding', label: 'Onboarding' },
+  { value: 'retention', label: 'Retención' },
+];
+
 interface EmailProgramsProps {
   programs: EmailProgram[];
   loading?: boolean;
   className?: string;
+  onNewsletterEdit?: (program: EmailProgram) => void;
 }
 
-export const EmailPrograms: React.FC<EmailProgramsProps> = ({ programs, loading = false, className = '' }) => {
+export const EmailPrograms: React.FC<EmailProgramsProps> = ({ programs, loading = false, className = '', onNewsletterEdit }) => {
   const [isEmailMarketingModalOpen, setIsEmailMarketingModalOpen] = useState(false);
   const [isNewsletterModalOpen, setIsNewsletterModalOpen] = useState(false);
-  const newsletterPrograms = programs.filter((program) => program.type === 'newsletter');
-  const emailMarketingPrograms = programs.filter((program) => program.type !== 'newsletter');
+  const [typeFilter, setTypeFilter] = useState<EmailProgram['type'] | 'all'>('all');
 
-  const renderTable = (
-    title: string,
-    description: string,
-    items: EmailProgram[],
-    emptyState: string,
-    onCreate: () => void,
-    createLabel: string
-  ) => {
+  const filteredPrograms = useMemo(() => {
+    if (typeFilter === 'all') {
+      return programs;
+    }
+    return programs.filter((program) => program.type === typeFilter);
+  }, [programs, typeFilter]);
+
+  const handleProgramClick = (program: EmailProgram) => {
+    if (program.type === 'newsletter' && onNewsletterEdit) {
+      onNewsletterEdit(program);
+    }
+  };
+
+  if (loading && programs.length === 0) {
     return (
+      <Card className={className}>
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className={`${ds.shimmer} h-28`} />
+          ))}
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <div className={`space-y-6 ${className}`}>
       <Card>
         <div className="flex items-start justify-between mb-5">
           <div>
@@ -42,27 +69,55 @@ export const EmailPrograms: React.FC<EmailProgramsProps> = ({ programs, loading 
                 <Mail className="w-5 h-5 text-blue-600" />
               </span>
               <h2 className={`${ds.typography.h2} ${ds.color.textPrimary} ${ds.color.textPrimaryDark}`}>
-                {title}
+                Programas de Email & Newsletters
               </h2>
             </div>
             <p className={`${ds.typography.bodySmall} ${ds.color.textSecondary} ${ds.color.textSecondaryDark}`}>
-              {description}
+              Gestiona todos tus programas de email marketing, newsletters, promociones y más en un solo lugar.
             </p>
           </div>
           <div className="flex items-center gap-3">
             <Badge variant="blue" size="md">
-              {items.length} programas
+              {programs.length} programas
             </Badge>
-            <Button variant="primary" size="sm" onClick={onCreate}>
-              {createLabel}
+            <Button variant="primary" size="sm" onClick={() => setIsEmailMarketingModalOpen(true)}>
+              Nuevo programa
             </Button>
           </div>
         </div>
 
-        {items.length === 0 ? (
+        {/* Filtros */}
+        <div className="flex items-center gap-4 mb-6">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+            <span className={`${ds.typography.caption} ${ds.color.textSecondary} ${ds.color.textSecondaryDark}`}>
+              Filtrar por tipo:
+            </span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {typeOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setTypeFilter(option.value)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  typeFilter === option.value
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tabla de programas */}
+        {filteredPrograms.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 p-6 text-center">
             <p className={`${ds.typography.bodySmall} ${ds.color.textMuted} ${ds.color.textMutedDark}`}>
-              {emptyState}
+              {typeFilter === 'all'
+                ? 'No hay programas de email todavía.'
+                : `No hay programas de tipo "${typeOptions.find((o) => o.value === typeFilter)?.label}" todavía.`}
             </p>
           </div>
         ) : (
@@ -80,10 +135,16 @@ export const EmailPrograms: React.FC<EmailProgramsProps> = ({ programs, loading 
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {items.map((program) => {
+                {filteredPrograms.map((program) => {
                   const badge = typeBadge[program.type];
                   return (
-                    <tr key={program.id} className="bg-white/80 dark:bg-[#0f172a]/70">
+                    <tr
+                      key={program.id}
+                      className={`bg-white/80 dark:bg-[#0f172a]/70 ${
+                        program.type === 'newsletter' ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50' : ''
+                      }`}
+                      onClick={() => program.type === 'newsletter' && handleProgramClick(program)}
+                    >
                       <td className="px-4 py-4 align-top">
                         <div className="flex flex-col gap-1">
                           <div className="flex flex-wrap items-center gap-2">
@@ -97,6 +158,8 @@ export const EmailPrograms: React.FC<EmailProgramsProps> = ({ programs, loading 
                                   ? 'green'
                                   : program.status === 'completed'
                                   ? 'gray'
+                                  : program.status === 'paused'
+                                  ? 'orange'
                                   : 'yellow'
                               }
                             >
@@ -104,6 +167,8 @@ export const EmailPrograms: React.FC<EmailProgramsProps> = ({ programs, loading 
                                 ? 'Activo'
                                 : program.status === 'completed'
                                 ? 'Completado'
+                                : program.status === 'paused'
+                                ? 'Pausado'
                                 : 'Pendiente'}
                             </Badge>
                           </div>
@@ -140,7 +205,9 @@ export const EmailPrograms: React.FC<EmailProgramsProps> = ({ programs, loading 
                       </td>
                       <td className="px-4 py-4 align-top">
                         <div className={`${ds.typography.bodySmall} font-semibold ${ds.color.textPrimaryDark}`}>
-                          {CampanasAutomatizacionService.formatCurrency(program.revenueAttributed)}
+                          {program.revenueAttributed > 0
+                            ? CampanasAutomatizacionService.formatCurrency(program.revenueAttributed)
+                            : '-'}
                         </div>
                       </td>
                       <td className="px-4 py-4 align-top">
@@ -176,39 +243,6 @@ export const EmailPrograms: React.FC<EmailProgramsProps> = ({ programs, loading 
           </div>
         )}
       </Card>
-    );
-  };
-
-  if (loading && programs.length === 0) {
-    return (
-      <Card className={className}>
-        <div className="space-y-4">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className={`${ds.shimmer} h-28`} />
-          ))}
-        </div>
-      </Card>
-    );
-  }
-
-  return (
-    <div className={`space-y-8 ${className}`}>
-      {renderTable(
-        'Email marketing',
-        'Rendimiento de programas de nutring, activación y retención.',
-        emailMarketingPrograms,
-        'No hay programas de email marketing todavía.',
-        () => setIsEmailMarketingModalOpen(true),
-        'Nuevo programa'
-      )}
-      {renderTable(
-        'Newsletters',
-        'Monitoriza tus publicaciones periódicas y recomendaciones IA.',
-        newsletterPrograms,
-        'No hay newsletters activas todavía.',
-        () => setIsNewsletterModalOpen(true),
-        'Nueva edición'
-      )}
 
       <Modal
         isOpen={isEmailMarketingModalOpen}

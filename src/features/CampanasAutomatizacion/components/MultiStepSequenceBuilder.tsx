@@ -55,6 +55,7 @@ interface MultiStepSequenceBuilderProps {
   onEdit?: (sequenceId: string) => void;
   onPause?: (sequenceId: string) => void;
   onResume?: (sequenceId: string) => void;
+  sequenceId?: string | null; // ID de la secuencia específica a mostrar (modo detalle/edición)
 }
 
 export const MultiStepSequenceBuilder: React.FC<MultiStepSequenceBuilderProps> = ({ 
@@ -65,8 +66,14 @@ export const MultiStepSequenceBuilder: React.FC<MultiStepSequenceBuilderProps> =
   onEdit,
   onPause,
   onResume,
+  sequenceId,
 }) => {
-  if (loading && sequences.length === 0) {
+  // Filtrar secuencias si se proporciona un sequenceId (modo detalle/edición)
+  const displayedSequences = sequenceId 
+    ? sequences.filter(seq => seq.id === sequenceId)
+    : sequences;
+
+  if (loading && displayedSequences.length === 0) {
     return (
       <Card className={className}>
         <div className="space-y-3">
@@ -80,39 +87,41 @@ export const MultiStepSequenceBuilder: React.FC<MultiStepSequenceBuilderProps> =
 
   return (
     <Card className={className}>
-      <div className="flex items-start justify-between mb-5">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-purple-200 flex items-center justify-center">
-              <Workflow className="w-5 h-5 text-violet-600" />
-            </span>
-            <h2 className={`${ds.typography.h2} ${ds.color.textPrimary} ${ds.color.textPrimaryDark}`}>
-              Constructor de Secuencias Multi-Paso
-            </h2>
+      {!sequenceId && (
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-purple-200 flex items-center justify-center">
+                <Workflow className="w-5 h-5 text-violet-600" />
+              </span>
+              <h2 className={`${ds.typography.h2} ${ds.color.textPrimary} ${ds.color.textPrimaryDark}`}>
+                Constructor de Secuencias Multi-Paso
+              </h2>
+            </div>
+            <p className={`${ds.typography.bodySmall} ${ds.color.textSecondary} ${ds.color.textSecondaryDark}`}>
+              Constructor de secuencias de múltiples pasos con lógica condicional (si responde X, enviar Y), delays entre mensajes, y posibilidad de pausar si el cliente responde o toma acción
+            </p>
           </div>
-          <p className={`${ds.typography.bodySmall} ${ds.color.textSecondary} ${ds.color.textSecondaryDark}`}>
-            Constructor de secuencias de múltiples pasos con lógica condicional (si responde X, enviar Y), delays entre mensajes, y posibilidad de pausar si el cliente responde o toma acción
-          </p>
+          <div className="flex items-center gap-3">
+            <Badge variant="violet" size="md">
+              {sequences.length} secuencias
+            </Badge>
+            {onCreateNew && (
+              <Button
+                variant="primary"
+                size="sm"
+                leftIcon={<Plus className="w-4 h-4" />}
+                onClick={onCreateNew}
+              >
+                Nueva Secuencia
+              </Button>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Badge variant="violet" size="md">
-            {sequences.length} secuencias
-          </Badge>
-          {onCreateNew && (
-            <Button
-              variant="primary"
-              size="sm"
-              leftIcon={<Plus className="w-4 h-4" />}
-              onClick={onCreateNew}
-            >
-              Nueva Secuencia
-            </Button>
-          )}
-        </div>
-      </div>
+      )}
 
       <div className="space-y-4">
-        {sequences.map((sequence) => {
+        {displayedSequences.map((sequence) => {
           const status = statusLabel[sequence.status] || statusLabel.draft;
           return (
             <div
@@ -327,13 +336,13 @@ export const MultiStepSequenceBuilder: React.FC<MultiStepSequenceBuilderProps> =
         })}
       </div>
 
-      {sequences.length === 0 && !loading && (
+      {displayedSequences.length === 0 && !loading && (
         <div className="text-center py-12">
           <Workflow className="w-12 h-12 text-slate-400 mx-auto mb-4" />
           <p className={`${ds.typography.bodySmall} ${ds.color.textMuted} ${ds.color.textMutedDark} mb-4`}>
-            No hay secuencias configuradas aún
+            {sequenceId ? 'No se encontró la secuencia seleccionada' : 'No hay secuencias configuradas aún'}
           </p>
-          {onCreateNew && (
+          {onCreateNew && !sequenceId && (
             <Button
               variant="primary"
               leftIcon={<Plus className="w-4 h-4" />}

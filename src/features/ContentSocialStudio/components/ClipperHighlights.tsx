@@ -1,9 +1,9 @@
 import { Badge, Button, Card } from '../../../components/componentsreutilizables';
-import type { ContentSocialSnapshot } from '../types';
+import type { AssetsAndBrandSnapshot } from '../types';
 import { ICON_MAP } from './iconMap';
 
 interface ClipperHighlightsProps {
-  clipper: ContentSocialSnapshot['clipper'];
+  clipper: AssetsAndBrandSnapshot['clipper'];
   loading?: boolean;
 }
 

@@ -6,6 +6,7 @@ export { TopFunnels } from './TopFunnels';
 export { UpcomingEvents } from './UpcomingEvents';
 export { StrategicProfileSetup } from './StrategicProfileSetup';
 export { QuarterlyObjectivesSelector } from './QuarterlyObjectivesSelector';
+export { StrategicConfigModal } from './StrategicConfigModal';
 export { BuyerPersonaSelector } from './BuyerPersonaSelector';
 export { KPIAlerts } from './KPIAlerts';
 export { SalesAttributionComponent } from './SalesAttribution';

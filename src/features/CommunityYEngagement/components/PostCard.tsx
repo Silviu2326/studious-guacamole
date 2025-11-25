@@ -7,7 +7,9 @@ import {
   MoreVertical,
   Flag,
   Trash2,
-  Pin
+  Pin,
+  Quote,
+  UserPlus
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 
@@ -131,6 +133,24 @@ export const PostCard: React.FC<PostCardProps> = ({
         <div className="mb-2">
           <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-xl">
             Pregunta
+          </span>
+        </div>
+      )}
+      
+      {post.type === 'testimonial' && (
+        <div className="mb-2">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-xl">
+            <Quote size={14} />
+            Testimonio
+          </span>
+        </div>
+      )}
+      
+      {post.type === 'referral' && (
+        <div className="mb-2">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-xl">
+            <UserPlus size={14} />
+            Referido
           </span>
         </div>
       )}

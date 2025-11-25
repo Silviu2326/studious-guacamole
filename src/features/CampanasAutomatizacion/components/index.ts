@@ -3,6 +3,7 @@ export { MultiChannelCampaigns } from './MultiChannelCampaigns';
 export { EmailPrograms } from './EmailPrograms';
 export { LifecycleSequences } from './LifecycleSequences';
 export { MessagingAutomations } from './MessagingAutomations';
+export { MessagingAutomationDetail } from './MessagingAutomationDetail';
 export { ChannelHealth } from './ChannelHealth';
 export { AutomationRoadmap } from './AutomationRoadmap';
 export { SessionReminders } from './SessionReminders';

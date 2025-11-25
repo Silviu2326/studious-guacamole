@@ -8,7 +8,11 @@ export type {
   Badge,
   CommunityFilters,
   PaginationData,
-  PostsResponse
+  PostsResponse,
+  // Tipos de fidelización y métricas extendidas
+  CommunityAnalytics,
+  TestimonialSummary,
+  ReferralSummary
 } from '../api/community';
 
 

@@ -16,7 +16,7 @@ import { Button, Card } from '../../../components/componentsreutilizables';
 
 interface CommunityFeedProps {
   groupId?: string | null;
-  filterBy?: 'latest' | 'trending' | 'questions';
+  filterBy?: 'latest' | 'trending' | 'questions' | 'testimonial' | 'referral';
 }
 
 export const CommunityFeed: React.FC<CommunityFeedProps> = ({ 
@@ -29,7 +29,7 @@ export const CommunityFeed: React.FC<CommunityFeedProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [activeFilter, setActiveFilter] = useState<'latest' | 'trending' | 'questions'>(filterBy);
+  const [activeFilter, setActiveFilter] = useState<'latest' | 'trending' | 'questions' | 'testimonial' | 'referral'>(filterBy);
 
   useEffect(() => {
     loadGroups();
@@ -138,7 +138,9 @@ export const CommunityFeed: React.FC<CommunityFeedProps> = ({
                   {[
                     { label: 'Más Recientes', value: 'latest' as const },
                     { label: 'Tendencias', value: 'trending' as const },
-                    { label: 'Preguntas', value: 'questions' as const }
+                    { label: 'Preguntas', value: 'questions' as const },
+                    { label: 'Testimonios', value: 'testimonial' as const },
+                    { label: 'Referidos', value: 'referral' as const }
                   ].map(filter => (
                     <button
                       key={filter.value}

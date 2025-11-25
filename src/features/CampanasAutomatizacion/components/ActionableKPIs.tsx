@@ -15,6 +15,7 @@ import {
   BarChart3,
   Lightbulb,
   Clock,
+  Workflow,
 } from 'lucide-react';
 import { ds } from '../../adherencia/ui/ds';
 import {
@@ -73,52 +74,48 @@ export const ActionableKPIs: React.FC<ActionableKPIsProps> = ({
   onViewCampaign,
 }) => {
   const metricCardsData = useMemo<MetricCardData[]>(() => {
+    const messagesWeekPercentage = dashboard.summary.optimalMessagesPerWeek > 0
+      ? Math.round((dashboard.summary.messagesSentThisWeek / dashboard.summary.optimalMessagesPerWeek) * 100)
+      : 0;
+    const messagesWeekTrend = messagesWeekPercentage >= 100 ? 'up' : messagesWeekPercentage >= 75 ? 'neutral' : 'down';
+    
     return [
       {
-        id: 'total-messages',
-        title: 'Mensajes Enviados',
-        value: dashboard.summary.totalMessagesSent.toLocaleString('es-ES'),
-        icon: <MessageSquare className="w-5 h-5 text-white" />,
-        color: 'info',
-      },
-      {
-        id: 'bookings-generated',
-        title: 'Reservas Generadas',
-        value: dashboard.summary.totalBookingsGenerated.toLocaleString('es-ES'),
-        subtitle: `${formatPercentage(dashboard.summary.overallBookingConversionRate)} tasa de conversión`,
-        icon: <Calendar className="w-5 h-5 text-white" />,
-        color: 'success',
-        trend: {
-          value: Math.abs(dashboard.trends.changePercentage.bookings),
-          direction: dashboard.trends.bookingConversionTrend,
-          label: 'vs. período anterior',
-        },
-      },
-      {
-        id: 'sales-generated',
-        title: 'Ventas Generadas',
-        value: dashboard.summary.totalSalesGenerated.toLocaleString('es-ES'),
-        subtitle: `${formatPercentage(dashboard.summary.overallSaleConversionRate)} tasa de conversión`,
+        id: 'automation-conversion-rate',
+        title: 'Tasa de Conversión Automatizaciones',
+        value: formatPercentage(dashboard.summary.automationConversionRate),
+        subtitle: `${dashboard.summary.activeAutomations} automatizaciones activas`,
         icon: <Target className="w-5 h-5 text-white" />,
         color: 'success',
+      },
+      {
+        id: 'automations-status',
+        title: 'Automatizaciones Activas vs Borrador',
+        value: `${dashboard.summary.activeAutomations} / ${dashboard.summary.draftAutomations}`,
+        subtitle: `${dashboard.summary.activeAutomations} activas, ${dashboard.summary.draftAutomations} en borrador`,
+        icon: <Workflow className="w-5 h-5 text-white" />,
+        color: dashboard.summary.activeAutomations > dashboard.summary.draftAutomations ? 'success' : 'warning',
+      },
+      {
+        id: 'messages-week',
+        title: 'Mensajes Esta Semana vs Óptimos',
+        value: `${dashboard.summary.messagesSentThisWeek} / ${dashboard.summary.optimalMessagesPerWeek}`,
+        subtitle: `${messagesWeekPercentage}% del objetivo semanal`,
+        icon: <MessageSquare className="w-5 h-5 text-white" />,
+        color: messagesWeekTrend === 'up' ? 'success' : messagesWeekTrend === 'neutral' ? 'info' : 'warning',
         trend: {
-          value: Math.abs(dashboard.trends.changePercentage.sales),
-          direction: dashboard.trends.saleConversionTrend,
-          label: 'vs. período anterior',
+          value: Math.abs(100 - messagesWeekPercentage),
+          direction: messagesWeekTrend,
+          label: 'vs. objetivo semanal',
         },
       },
       {
-        id: 'total-revenue',
-        title: 'Ingresos Totales',
-        value: formatCurrency(dashboard.summary.totalRevenue),
-        subtitle: `${formatCurrency(dashboard.summary.averageRevenuePerMessage)} por mensaje`,
+        id: 'automated-revenue',
+        title: 'Revenue Campañas Automatizadas',
+        value: formatCurrency(dashboard.summary.automatedCampaignsRevenue),
+        subtitle: `${dashboard.summary.totalAutomatedCampaigns} campañas automatizadas`,
         icon: <DollarSign className="w-5 h-5 text-white" />,
         color: 'success',
-        trend: {
-          value: Math.abs(dashboard.trends.changePercentage.revenue),
-          direction: dashboard.trends.revenueTrend,
-          label: 'vs. período anterior',
-        },
       },
     ];
   }, [dashboard]);

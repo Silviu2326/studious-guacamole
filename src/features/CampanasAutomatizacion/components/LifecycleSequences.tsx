@@ -22,6 +22,7 @@ interface LifecycleSequencesProps {
   onGeneratePostLeadMagnetSequence?: (funnelId: string) => void;
   onEditPostLeadMagnetSequence?: (sequence: PostLeadMagnetSequence) => void;
   onViewPostLeadMagnetSequence?: (sequenceId: string) => void;
+  onSelectSequence?: (sequenceId: string) => void;
 }
 
 const funnelTypeLabels: Record<LeadMagnetFunnel['type'], { label: string; icon: React.ReactNode }> = {
@@ -43,6 +44,7 @@ export const LifecycleSequences: React.FC<LifecycleSequencesProps> = ({
   onGeneratePostLeadMagnetSequence,
   onEditPostLeadMagnetSequence,
   onViewPostLeadMagnetSequence,
+  onSelectSequence,
 }) => {
   const [showPostLeadMagnet, setShowPostLeadMagnet] = useState(true);
   const [selectedFunnel, setSelectedFunnel] = useState<string>('');
@@ -216,44 +218,11 @@ export const LifecycleSequences: React.FC<LifecycleSequencesProps> = ({
                           </div>
                         </div>
 
-                        {/* Pasos de la secuencia */}
+                        {/* Resumen de pasos */}
                         <div className="mb-4">
-                          <p className={`${ds.typography.caption} font-medium ${ds.color.textPrimary} ${ds.color.textPrimaryDark} mb-2`}>
-                            Pasos de la secuencia ({sequence.steps.length}):
+                          <p className={`${ds.typography.caption} ${ds.color.textMuted} ${ds.color.textMutedDark}`}>
+                            {sequence.steps.length} pasos configurados
                           </p>
-                          <div className="space-y-2">
-                            {sequence.steps.slice(0, 3).map((step) => (
-                              <div
-                                key={step.id}
-                                className="flex items-start gap-3 p-2 bg-slate-50 dark:bg-slate-900/50 rounded-lg"
-                              >
-                                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                                  {step.stepNumber}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                    <span className={`${ds.typography.caption} font-medium ${ds.color.textPrimary} ${ds.color.textPrimaryDark}`}>
-                                      {step.name}
-                                    </span>
-                                    <Badge variant="blue" size="sm">
-                                      {step.channel}
-                                    </Badge>
-                                    <span className={`${ds.typography.caption} ${ds.color.textMuted} ${ds.color.textMutedDark}`}>
-                                      +{formatDelay(step.delay)}
-                                    </span>
-                                  </div>
-                                  <p className={`${ds.typography.caption} ${ds.color.textMuted} ${ds.color.textMutedDark} line-clamp-2`}>
-                                    {step.messageTemplate.substring(0, 100)}...
-                                  </p>
-                                </div>
-                              </div>
-                            ))}
-                            {sequence.steps.length > 3 && (
-                              <p className={`${ds.typography.caption} ${ds.color.textMuted} ${ds.color.textMutedDark} text-center`}>
-                                +{sequence.steps.length - 3} pasos más
-                              </p>
-                            )}
-                          </div>
                         </div>
 
                         {/* Estadísticas */}
@@ -347,7 +316,10 @@ export const LifecycleSequences: React.FC<LifecycleSequencesProps> = ({
           return (
             <div
               key={sequence.id}
-              className="rounded-2xl border border-slate-100 dark:border-slate-800 p-4 bg-gradient-to-br from-white to-slate-50 dark:from-[#0f192c] dark:to-[#101b30]"
+              onClick={() => onSelectSequence?.(sequence.id)}
+              className={`rounded-2xl border border-slate-100 dark:border-slate-800 p-4 bg-gradient-to-br from-white to-slate-50 dark:from-[#0f192c] dark:to-[#101b30] ${
+                onSelectSequence ? 'cursor-pointer hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all' : ''
+              }`}
             >
               <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
                 <div>

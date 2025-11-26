@@ -1,0 +1,250 @@
+{
+  "user_stories": [
+    {
+      "feature": "src/features/gestión-de-clientes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero ofrecer a mis clientes un panel de hábitos con puntos y badges para motivarlos a completar rutinas semanales y celebrar hitos de constancia."
+    },
+    {
+      "feature": "src/features/gestión-de-clientes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero recibir sugerencias automáticas de la siguiente sesión ideal para cada cliente para ahorrar tiempo al planificar y mantener entrenamientos progresivos."
+    },
+    {
+      "feature": "src/features/gestión-de-clientes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero que el sistema envíe recordatorios de pago a clientes con cuotas por vencer para reducir la gestión manual y mantener flujo de caja estable."
+    },
+    {
+      "feature": "src/features/gestión-de-clientes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero sincronizar datos de Apple Health, Google Fit o Garmin con los perfiles de mis clientes para analizar métricas objetivas y ajustar planes automáticamente."
+    },
+    {
+      "feature": "src/features/gestión-de-clientes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero conversar con cada cliente desde la plataforma con historial y archivos adjuntos para centralizar la comunicación y evitar perder información en apps externas."
+    },
+    {
+      "feature": "src/features/gestión-de-clientes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero crear una línea de tiempo visual con fotos y mediciones físicas de mis clientes para mostrarles la evolución y reforzar su motivación."
+    },
+    {
+      "feature": "src/features/gestión-de-clientes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero generar enlaces de referido por cliente y otorgar beneficios automáticos para incentivar que traigan nuevos clientes sin gestionar manualmente cada caso."
+    },
+    {
+      "feature": "src/features/gestión-de-clientes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero compartir planes nutricionales con un nutricionista aliado dentro de la plataforma para ofrecer un servicio completo y coordinar ajustes en tiempo real."
+    },
+    {
+      "feature": "src/features/gestión-de-clientes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero que un asistente virtual me sugiera acciones concretas para retener a clientes en riesgo para priorizar esfuerzo y personalizar mis mensajes de intervención."
+    },
+    {
+      "feature": "src/features/gestión-de-clientes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero que mis clientes tengan un portal donde actualizar objetivos, reservas y feedback para delegar tareas administrativas y empoderar al cliente en su progreso."
+    },
+    {
+      "feature": "src/features/suscripciones-cuotas-recurrentes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero poder pausar la suscripción de un cliente por un período definido para mantener la relación sin cobrarle cuando no puede entrenar y reanudar automáticamente después."
+    },
+    {
+      "feature": "src/features/suscripciones-cuotas-recurrentes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero poder añadir o quitar sesiones de un paquete activo de un cliente para ofrecer flexibilidad cuando necesita más o menos sesiones sin cambiar su plan base."
+    },
+    {
+      "feature": "src/features/suscripciones-cuotas-recurrentes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver de forma visual cuántas sesiones ha usado cada cliente de su paquete mensual para identificar quién no está aprovechando sus sesiones y contactarles proactivamente."
+    },
+    {
+      "feature": "src/features/suscripciones-cuotas-recurrentes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero poder cambiar a un cliente de un plan a otro para adaptarme a los cambios en sus necesidades y disponibilidad."
+    },
+    {
+      "feature": "src/features/suscripciones-cuotas-recurrentes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero crear suscripciones de prueba con sesiones limitadas y precio reducido para permitir que nuevos clientes prueben mi servicio antes de comprometerse."
+    },
+    {
+      "feature": "src/features/suscripciones-cuotas-recurrentes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero poder añadir sesiones bonus gratuitas a la suscripción de un cliente para recompensar fidelidad o compensar inconvenientes."
+    },
+    {
+      "feature": "src/features/suscripciones-cuotas-recurrentes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero recibir alertas cuando un cliente tiene sesiones que están por caducar sin usar para contactarlo y evitar que pierda sesiones pagadas."
+    },
+    {
+      "feature": "src/features/suscripciones-cuotas-recurrentes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ser notificado cuando falla un pago automático y tener herramientas para gestionarlo para resolver rápidamente problemas de cobro sin perder clientes."
+    },
+    {
+      "feature": "src/features/suscripciones-cuotas-recurrentes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero que mis clientes reciban recordatorios automáticos antes de que se renueve su suscripción para mantenerlos informados y reducir cancelaciones por sorpresa."
+    },
+    {
+      "feature": "src/features/suscripciones-cuotas-recurrentes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero poder aplicar descuentos personalizados a suscripciones específicas para ofrecer precios especiales a clientes clave o promociones puntuales."
+    },
+    {
+      "feature": "src/features/suscripciones-cuotas-recurrentes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver el historial completo de cambios de una suscripción para tener claridad sobre modificaciones, fechas y motivos."
+    },
+    {
+      "feature": "src/features/suscripciones-cuotas-recurrentes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero que cuando un cliente cancele su suscripción pueda indicar el motivo para entender por qué se van y mejorar mi servicio."
+    },
+    {
+      "feature": "src/features/suscripciones-cuotas-recurrentes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver métricas de compromiso de mis clientes con sus suscripciones para identificar clientes en riesgo de cancelación y actuar preventivamente."
+    },
+    {
+      "feature": "src/features/suscripciones-cuotas-recurrentes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero poder crear suscripciones que agrupen a varios miembros de una familia o grupo para ofrecer descuentos por volumen y simplificar la gestión."
+    },
+    {
+      "feature": "src/features/suscripciones-cuotas-recurrentes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero poder ver cómo se muestra la información de suscripción desde la perspectiva del cliente para asegurarme de que es clara y profesional."
+    },
+    {
+      "feature": "src/features/suscripciones-cuotas-recurrentes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero poder proponer cambios de plan o precio cuando se acerca la renovación de un cliente para retenerlo ofreciendo alternativas antes de que cancele."
+    },
+    {
+      "feature": "src/features/suscripciones-cuotas-recurrentes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero permitir que las sesiones no usadas se transfieran al siguiente mes para dar más flexibilidad y evitar que los clientes sientan que pierden dinero."
+    },
+    {
+      "feature": "src/features/suscripciones-cuotas-recurrentes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero recibir un resumen periódico de la actividad de suscripciones para mantenerme informado sin revisar manualmente cada día."
+    },
+    {
+      "feature": "src/features/suscripciones-cuotas-recurrentes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver proyecciones de ingresos recurrentes y análisis de retención para entender la salud financiera de mi negocio y planificar a futuro."
+    },
+    {
+      "feature": "src/features/suscripciones-cuotas-recurrentes",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero poder exportar los datos de suscripciones y pagos para hacer análisis personalizados o compartir con mi asesor fiscal."
+    },
+    {
+      "feature": "src/features/tienda-online-checkout-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero tener un catálogo con categorías específicas de entrenamiento para que mis clientes encuentren rápidamente el servicio que necesitan sin confusiones."
+    },
+    {
+      "feature": "src/features/tienda-online-checkout-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero ofrecer bonos de múltiples sesiones con descuentos automáticos para incentivar la compra de paquetes grandes y asegurar ingresos recurrentes."
+    },
+    {
+      "feature": "src/features/tienda-online-checkout-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero un proceso de checkout que solo pida datos esenciales para agilizar la compra y no confundir a clientes con campos innecesarios."
+    },
+    {
+      "feature": "src/features/tienda-online-checkout-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero que al comprar una sesión o bono el cliente pueda reservar automáticamente su primera sesión para evitar que compren y no agenden."
+    },
+    {
+      "feature": "src/features/tienda-online-checkout-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero ver cuántas sesiones de un bono ha consumido cada cliente para controlar el uso y recordarles que tienen sesiones pendientes."
+    },
+    {
+      "feature": "src/features/tienda-online-checkout-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero establecer fechas de caducidad para bonos para evitar que los clientes acumulen sesiones indefinidamente y gestionar mejor mi planificación."
+    },
+    {
+      "feature": "src/features/tienda-online-checkout-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero ofrecer planes de suscripción mensual con cargo automático recurrente para tener ingresos predecibles y fidelizar clientes a largo plazo."
+    },
+    {
+      "feature": "src/features/tienda-online-checkout-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero que cada servicio tenga opciones personalizables como duración, modalidad y nivel para ofrecer flexibilidad y ajustar precios según características."
+    },
+    {
+      "feature": "src/features/tienda-online-checkout-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero que mis clientes recurrentes puedan comprar en un clic usando datos guardados para maximizar conversión y mejorar la experiencia."
+    },
+    {
+      "feature": "src/features/tienda-online-checkout-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero generar enlaces de pago directo para servicios específicos para cobrar rápidamente sin que el cliente navegue por toda la tienda."
+    },
+    {
+      "feature": "src/features/tienda-online-checkout-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero crear códigos promocionales con descuentos porcentuales o fijos para hacer campañas de marketing y atraer nuevos clientes."
+    },
+    {
+      "feature": "src/features/tienda-online-checkout-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero generar códigos QR para cada servicio para cobrar en persona de forma profesional sin efectivo ni datáfonos."
+    },
+    {
+      "feature": "src/features/tienda-online-checkout-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero ofrecer descuentos automáticos a clientes que ya compraron anteriormente para premiar la fidelidad y aumentar la retención."
+    },
+    {
+      "feature": "src/features/tienda-online-checkout-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero mostrar valoraciones y comentarios de clientes satisfechos en cada servicio para generar confianza y aumentar la conversión."
+    },
+    {
+      "feature": "src/features/tienda-online-checkout-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero ofrecer pago fraccionado en cuotas para servicios de alto valor para reducir la barrera económica y vender planes más caros."
+    },
+    {
+      "feature": "src/features/tienda-online-checkout-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero crear bonos regalo personalizados para empresas para acceder al mercado B2B y diversificar ingresos."
+    },
+    {
+      "feature": "src/features/tienda-online-checkout-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero enviar recordatorios automáticos a clientes con bonos activos sin usar para evitar caducidad de sesiones y mantenerlos activos."
+    },
+    {
+      "feature": "src/features/tienda-online-checkout-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero enviar ofertas especiales automáticamente a clientes que no compran hace más de dos meses para reactivarlos y recuperar ingresos."
+    },
+    {
+      "feature": "src/features/tienda-online-checkout-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador personal quiero implementar un programa de referidos con recompensas para que mis clientes me recomienden y recibir descuentos cuando sus referidos compren."
+    }
+  ]
+}
+

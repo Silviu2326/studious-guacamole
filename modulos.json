@@ -1,0 +1,70 @@
+{
+    "modulos": [
+    {
+    "modulo": "check-ins-de-entreno",
+    "archivo_md": "notion-subpages/check-ins-de-entreno-documentacin-completa.md",
+    "moduloespecificaciones": "Ten en cuenta que la pagina sera para Solo entrenador personal"
+    },
+    {
+    "modulo": "check-ins-nutricionales",
+    "archivo_md": "notion-subpages/check-ins-nutricionales-documentacin-completa.md",
+    "moduloespecificaciones": "Ten en cuenta que la pagina sera para Solo entrenador personal"
+    },
+    {
+    "modulo": "control-de-acceso-aforo-en-tiempo-real",
+    "archivo_md": "notion-subpages/control-de-acceso-aforo-en-tiempo-real.md",
+    "moduloespecificaciones": "Ten en cuenta que la pagina sera para Solo gimnasio"
+    },
+    {
+    "modulo": "dietas-asignadas",
+    "archivo_md": "notion-subpages/dietas-asignadas-documentacin-completa.md",
+    "moduloespecificaciones": "ten en cuenta que la página debe adaptarse (misma ruta, distinto contenido/UX/datos) dependiendo de los dos roles que hay"
+    },
+    {
+    "modulo": "recetario-comidas-guardadas",
+    "archivo_md": "notion-subpages/recetario-comidas-guardadas-documentacin-completa.md",
+    "moduloespecificaciones": "Ten en cuenta que la pagina sera practicamente igual tanto para entrenadores como para gimnasio"
+    },
+    {
+    "modulo": "recursos-salas-material",
+    "archivo_md": "notion-subpages/recursos-salas-material-documentacin-completa.md",
+    "moduloespecificaciones": "Ten en cuenta que la pagina sera para Solo gimnasio"
+    },
+    {
+    "modulo": "renovaciones-bajas",
+    "archivo_md": "notion-subpages/renovaciones-bajas.md",
+    "moduloespecificaciones": "ten en cuenta que la página debe adaptarse (misma ruta, distinto contenido/UX/datos) dependiendo de los dos roles que hay"
+    },
+    {
+    "modulo": "reservas-online",
+    "archivo_md": "notion-subpages/reservas-online-documentacin-completa.md",
+    "moduloespecificaciones": "ten en cuenta que la página debe adaptarse (misma ruta, distinto contenido/UX/datos) dependiendo de los dos roles que hay"
+    },
+    {
+    "modulo": "resumen-general",
+    "archivo_md": "notion-subpages/resumen-general-documentacin-completa.md",
+    "moduloespecificaciones": "ten en cuenta que la página debe adaptarse (misma ruta, distinto contenido/UX/datos) dependiendo de los dos roles que hay"
+    },
+    {
+    "modulo": "suscripciones-cuotas-recurrentes",
+    "archivo_md": "notion-subpages/suscripciones-cuotas-recurrentes-documentacin-completa.md",
+    "moduloespecificaciones": "ten en cuenta que la página debe adaptarse (misma ruta, distinto contenido/UX/datos) dependiendo de los dos roles que hay"
+    },
+    {
+    "modulo": "tareas-alertas",
+    "archivo_md": "notion-subpages/tareas-alertas-documentacin-completa.md",
+    "moduloespecificaciones": "ten en cuenta que la página debe adaptarse (misma ruta, distinto contenido/UX/datos) dependiendo de los dos roles que hay"
+    },
+    {
+    "modulo": "tienda-online-checkout-online",
+    "archivo_md": "notion-subpages/tienda-online-checkout-online.md",
+    "moduloespecificaciones": "ten en cuenta que la página debe adaptarse (misma ruta, distinto contenido/UX/datos) dependiendo de los dos roles que hay"
+    }
+    ],
+    "configuracion": {
+    "tiempo_espera": 30,
+    "modo": "secuencial",
+    "reintentos": 2
+    },
+    "descripcion": "Mapa de módulos generado desde features y Notion; especificaciones vacías para edición posterior."
+    }

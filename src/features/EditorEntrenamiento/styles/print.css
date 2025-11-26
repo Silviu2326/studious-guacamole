@@ -1,0 +1,65 @@
+@media print {
+  /* Hide everything by default unless explicitly allowed or part of the content */
+  /* However, it's safer to hide specific containers */
+
+  /* Generic Hiding */
+  .no-print,
+  button,
+  [role="button"],
+  .fixed,
+  .sticky,
+  header,
+  nav,
+  aside {
+    display: none !important;
+  }
+
+  /* Layout Resets */
+  body, 
+  html, 
+  #root {
+    height: auto !important;
+    overflow: visible !important;
+    background-color: white !important;
+  }
+
+  .h-screen {
+    height: auto !important;
+  }
+  
+  .overflow-hidden {
+    overflow: visible !important;
+  }
+
+  .overflow-y-auto {
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Editor specific resets */
+  /* Force grid to vertical stack */
+  .grid {
+    display: block !important;
+  }
+
+  /* Day Card Styling */
+  .day-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 20px !important;
+    border: 1px solid #ddd !important;
+    box-shadow: none !important;
+    width: 100% !important;
+  }
+
+  /* Force content expansion */
+  .expanded-content-wrapper {
+    display: block !important;
+  }
+  
+  /* Adjust spacing for A4 */
+  @page {
+    size: A4 portrait;
+    margin: 1.5cm;
+  }
+}

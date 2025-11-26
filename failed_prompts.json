@@ -1,0 +1,31 @@
+﻿[
+    {
+        "value":  [
+                      {
+                          "value":  [
+                                        {
+                                            "value":  " ",
+                                            "Count":  2
+                                        },
+                                        {
+                                            "reason":  "Execution Error (ExitCode: 1)",
+                                            "timestamp":  "2025-11-23 00:00:37",
+                                            "prompt":  "**15_Smart_Block_Library**: FEATURE/AI. **ÃMBITO: `src/features/EditorEntrenamiento/components/LibraryPanel.tsx`**. Crear Biblioteca de Bloques Inteligente Contextual.\n\n**Instrucciones:**\n1. En la pestaÃ±a \u0027Bloques\u0027 de `LibraryPanel.tsx`, aÃ±ade una secciÃ³n \u0027Bloques Sugeridos\u0027.\n2. Analiza el contexto del programa actual (ej. si hay muchos ejercicios de pierna, sugiere \u0027Bloque de Calentamiento para Pierna\u0027).\n3. Si Alex busca \u0027tendinopatÃ­a\u0027, muestra bloques especÃ­ficos para esa condiciÃ³n.\n4. Esto hace que la biblioteca sea proactiva y no solo reactiva.\n\n**Referencias:**\n- P2.5: Falta de Biblioteca de Bloques Inteligente."
+                                        }
+                                    ],
+                          "Count":  2
+                      },
+                      {
+                          "reason":  "Execution Error (ExitCode: 1)",
+                          "timestamp":  "2025-11-23 00:00:50",
+                          "prompt":  "**16_Client_Progress_Analysis**: FEATURE/ANALYTICS. **ÃMBITO: `src/features/EditorEntrenamiento/components/FitCoachPanel.tsx`**. AÃ±adir AnÃ¡lisis de Progreso del Cliente.\n\n**Instrucciones:**\n1. Crea una nueva pestaÃ±a en `FitCoachPanel.tsx` llamada \u0027Progreso\u0027.\n2. Esta pestaÃ±a debe mostrar grÃ¡ficos de evoluciÃ³n del cliente: 1RM en ejercicios clave, peso corporal, medidas.\n3. Incluye insights automÃ¡ticos: \u0027MarÃ­a ha aumentado su 1RM en Press Banca un 15% en 8 semanas\u0027.\n4. Esto permite a Alex demostrar resultados fÃ¡cilmente a sus clientes.\n\n**Referencias:**\n- P2.6: Falta de AnÃ¡lisis de Progreso del Cliente."
+                      }
+                  ],
+        "Count":  2
+    },
+    {
+        "reason":  "Execution Error (ExitCode: 1)",
+        "timestamp":  "2025-11-23 00:01:02",
+        "prompt":  "**17_Program_Comparison**: FEATURE/ANALYTICS. **ÃMBITO: `src/features/EditorEntrenamiento/components/views/`**. Implementar Vista de ComparaciÃ³n de Programas.\n\n**Instrucciones:**\n1. Crea un nuevo componente `ComparisonView.tsx` que muestre dos programas lado a lado.\n2. Permite a Alex seleccionar dos programas (ej. \u0027Programa A\u0027 vs \u0027Programa B\u0027).\n3. Resalta las diferencias: volumen total, distribuciÃ³n de patrones, intensidad promedio.\n4. Esto ayuda a Alex a evaluar quÃ© programa es mejor para un cliente especÃ­fico.\n\n**Referencias:**\n- P2.7: Falta de ComparaciÃ³n de Programas."
+    }
+]

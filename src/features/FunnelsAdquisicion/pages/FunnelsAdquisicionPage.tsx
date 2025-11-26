@@ -1,0 +1,922 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Layers, Rocket, Sparkles, Target, Users, Calendar } from 'lucide-react';
+import { useAuth } from '../../../context/AuthContext';
+import { Badge, Button, Card, MetricCards } from '../../../components/componentsreutilizables';
+import { FunnelsAdquisicionService } from '../services/funnelsAdquisicionService';
+import { AcquisitionFunnelPerformance, AcquisitionKPI, FunnelsAcquisitionPeriod, LeadRiskAlert, FirstSessionConversionMetric, SocialMediaMetrics, ReferralProgramMetrics, ProjectedRevenueByFunnelResponse, FunnelLeadGenerationAlertsResponse, RecommendedFunnel } from '../types';
+import { LeadRiskAlerts, FirstSessionConversionMetricComponent, SocialMediaMetricsComponent, ReferralProgramMetricsComponent, RecommendedFunnelsGenerator, FunnelExperiments, FunnelPerformance, FunnelToChallengeConverter, FunnelContentConnector, ProjectedRevenueByFunnelComponent, FunnelLeadGenerationAlerts, FunnelQualitativeNotes, ProposalLearning, FunnelCommunityInsightsUpdater, PostRegistrationFollowUpTemplates, FunnelLaunchCalendar, FunnelAISummary, FunnelRetrospectiveComponent } from '../components';
+
+type SectionTabId = 'builder' | 'lead-magnet';
+
+interface SectionTabItem {
+  id: SectionTabId;
+  label: string;
+  icon: React.ComponentType<{ size?: number | string; className?: string }>;
+}
+
+const sectionTabItems: SectionTabItem[] = [
+  { id: 'builder', label: 'Funnels & Landing Pages Builder', icon: Layers },
+  { id: 'lead-magnet', label: 'Lead Magnet Factory', icon: Sparkles },
+] as const;
+
+export default function FunnelsAdquisicionPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const period: FunnelsAcquisitionPeriod = '30d';
+  const [loadingSnapshot, setLoadingSnapshot] = useState(true);
+  const [activeSection, setActiveSection] = useState<SectionTabId>('builder');
+  const [kpis, setKpis] = useState<AcquisitionKPI[]>([]);
+  const [funnels, setFunnels] = useState<AcquisitionFunnelPerformance[]>([]);
+  const [leadRiskAlerts, setLeadRiskAlerts] = useState<LeadRiskAlert[]>([]);
+  const [firstSessionConversion, setFirstSessionConversion] = useState<FirstSessionConversionMetric | null>(null);
+  const [socialMediaMetrics, setSocialMediaMetrics] = useState<SocialMediaMetrics | null>(null);
+  const [referralProgramMetrics, setReferralProgramMetrics] = useState<ReferralProgramMetrics | null>(null);
+  const [projectedRevenue, setProjectedRevenue] = useState<ProjectedRevenueByFunnelResponse | null>(null);
+  const [leadGenerationAlerts, setLeadGenerationAlerts] = useState<FunnelLeadGenerationAlertsResponse | null>(null);
+  const [loadingAlerts, setLoadingAlerts] = useState(true);
+  const [loadingConversion, setLoadingConversion] = useState(true);
+  const [loadingSocialMedia, setLoadingSocialMedia] = useState(true);
+  const [loadingReferrals, setLoadingReferrals] = useState(true);
+  const [loadingProjectedRevenue, setLoadingProjectedRevenue] = useState(true);
+  const [loadingLeadGenerationAlerts, setLoadingLeadGenerationAlerts] = useState(true);
+  const [showRecommendedFunnels, setShowRecommendedFunnels] = useState(false);
+  const [showChallengeConverter, setShowChallengeConverter] = useState(false);
+  const [showContentConnector, setShowContentConnector] = useState(false);
+  const [showCommunityInsightsUpdater, setShowCommunityInsightsUpdater] = useState(false);
+  const [showFollowUpTemplates, setShowFollowUpTemplates] = useState(false);
+  const [selectedFunnelForConversion, setSelectedFunnelForConversion] = useState<AcquisitionFunnelPerformance | null>(null);
+  const [selectedFunnelForContent, setSelectedFunnelForContent] = useState<AcquisitionFunnelPerformance | null>(null);
+  const [selectedFunnelForSummary, setSelectedFunnelForSummary] = useState<AcquisitionFunnelPerformance | null>(null);
+  const [showAISummary, setShowAISummary] = useState(false);
+  const [selectedFunnelForInsights, setSelectedFunnelForInsights] = useState<AcquisitionFunnelPerformance | null>(null);
+  const [selectedFunnelForFollowUp, setSelectedFunnelForFollowUp] = useState<AcquisitionFunnelPerformance | null>(null);
+  const [selectedFunnelForRetrospective, setSelectedFunnelForRetrospective] = useState<AcquisitionFunnelPerformance | null>(null);
+  const [showRetrospective, setShowRetrospective] = useState(false);
+
+  const loadSnapshot = useCallback(async () => {
+    setLoadingSnapshot(true);
+    try {
+      const snapshot = await FunnelsAdquisicionService.getSnapshot(period);
+      setKpis(snapshot.kpis);
+      setFunnels(snapshot.funnels);
+    } catch (error) {
+      console.error('[FunnelsAdquisicionPage] Error cargando datos:', error);
+    } finally {
+      setLoadingSnapshot(false);
+    }
+  }, [period]);
+
+  const loadLeadRiskAlerts = useCallback(async () => {
+    setLoadingAlerts(true);
+    try {
+      const alerts = await FunnelsAdquisicionService.getLeadRiskAlerts();
+      setLeadRiskAlerts(alerts);
+    } catch (error) {
+      console.error('[FunnelsAdquisicionPage] Error cargando alertas:', error);
+    } finally {
+      setLoadingAlerts(false);
+    }
+  }, []);
+
+  const loadFirstSessionConversion = useCallback(async () => {
+    setLoadingConversion(true);
+    try {
+      const metric = await FunnelsAdquisicionService.getFirstSessionConversionMetric(period);
+      setFirstSessionConversion(metric);
+    } catch (error) {
+      console.error('[FunnelsAdquisicionPage] Error cargando métrica de conversión:', error);
+    } finally {
+      setLoadingConversion(false);
+    }
+  }, [period]);
+
+  const loadSocialMediaMetrics = useCallback(async () => {
+    setLoadingSocialMedia(true);
+    try {
+      const metrics = await FunnelsAdquisicionService.getSocialMediaMetrics(period);
+      setSocialMediaMetrics(metrics);
+    } catch (error) {
+      console.error('[FunnelsAdquisicionPage] Error cargando métricas de redes sociales:', error);
+    } finally {
+      setLoadingSocialMedia(false);
+    }
+  }, [period]);
+
+  const loadReferralProgramMetrics = useCallback(async () => {
+    setLoadingReferrals(true);
+    try {
+      const metrics = await FunnelsAdquisicionService.getReferralProgramMetrics(period);
+      setReferralProgramMetrics(metrics);
+    } catch (error) {
+      console.error('[FunnelsAdquisicionPage] Error cargando métricas de referidos:', error);
+    } finally {
+      setLoadingReferrals(false);
+    }
+  }, [period]);
+
+  const loadProjectedRevenue = useCallback(async () => {
+    setLoadingProjectedRevenue(true);
+    try {
+      const data = await FunnelsAdquisicionService.getProjectedRevenueByFunnel(period);
+      setProjectedRevenue(data);
+    } catch (error) {
+      console.error('[FunnelsAdquisicionPage] Error cargando revenue proyectado:', error);
+    } finally {
+      setLoadingProjectedRevenue(false);
+    }
+  }, [period]);
+
+  const loadLeadGenerationAlerts = useCallback(async () => {
+    setLoadingLeadGenerationAlerts(true);
+    try {
+      const alerts = await FunnelsAdquisicionService.getFunnelLeadGenerationAlerts();
+      setLeadGenerationAlerts(alerts);
+    } catch (error) {
+      console.error('[FunnelsAdquisicionPage] Error cargando alertas de generación de leads:', error);
+    } finally {
+      setLoadingLeadGenerationAlerts(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSnapshot();
+    loadLeadRiskAlerts();
+    loadFirstSessionConversion();
+    loadSocialMediaMetrics();
+    loadReferralProgramMetrics();
+    loadProjectedRevenue();
+    loadLeadGenerationAlerts();
+  }, [loadSnapshot, loadLeadRiskAlerts, loadFirstSessionConversion, loadSocialMediaMetrics, loadReferralProgramMetrics, loadProjectedRevenue, loadLeadGenerationAlerts]);
+
+  const currencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat('es-ES', {
+        style: 'currency',
+        currency: 'EUR',
+        maximumFractionDigits: 0,
+      }),
+    [],
+  );
+
+  const metricIcons = useMemo(() => [Rocket, Target, Layers, Sparkles], []);
+
+  const metricCardsSkeleton = useMemo(
+    () =>
+      Array.from({ length: 4 }).map((_, index) => ({
+        id: `loading-${index}`,
+        title: 'Cargando métricas',
+        value: '',
+        loading: true as const,
+      })),
+    [],
+  );
+
+  const metricCardsData = useMemo(() => {
+    if (kpis.length === 0) return [];
+
+    return kpis.map((kpi, index) => {
+      const Icon = metricIcons[index % metricIcons.length];
+      const formatTargetValue = () => {
+        if (typeof kpi.target === 'undefined') return undefined;
+        switch (kpi.format) {
+          case 'currency':
+            return currencyFormatter.format(kpi.target);
+          case 'percentage':
+            return `${kpi.target.toFixed(1)}%`;
+          case 'number':
+          default:
+            return kpi.target.toLocaleString('es-ES');
+        }
+      };
+
+      return {
+        id: kpi.id,
+        title: kpi.label,
+        value: FunnelsAdquisicionService.formatKpiValue(kpi),
+        subtitle: formatTargetValue() ? `Objetivo: ${formatTargetValue()}` : undefined,
+        trend: typeof kpi.changePercentage === 'number'
+          ? {
+              value: kpi.changePercentage,
+              direction: kpi.trendDirection,
+              label: 'vs período anterior',
+            }
+          : undefined,
+        color:
+          kpi.trendDirection === 'up'
+            ? ('success' as const)
+            : kpi.trendDirection === 'down'
+            ? ('error' as const)
+            : ('info' as const),
+        icon: <Icon className="w-5 h-5 text-white" />,
+      };
+    });
+  }, [kpis, currencyFormatter, metricIcons]);
+
+  const metricCardsToRender = useMemo(() => {
+    if (loadingSnapshot && metricCardsData.length === 0) {
+      return metricCardsSkeleton;
+    }
+    return metricCardsData;
+  }, [loadingSnapshot, metricCardsData, metricCardsSkeleton]);
+
+  const landingPages = useMemo(
+    () => [
+      {
+        id: 'lp-1',
+        name: 'Landing Evergreen 24/7',
+        objective: 'Captación de demos',
+        status: 'Activa',
+        updatedAt: 'Hace 2 días',
+      },
+      {
+        id: 'lp-2',
+        name: 'Landing Promoción Flash',
+        objective: 'Ventas directas',
+        status: 'En iteración',
+        updatedAt: 'Hace 6 horas',
+      },
+      {
+        id: 'lp-3',
+        name: 'Landing Webinar IA',
+        objective: 'Registro a evento',
+        status: 'Borrador',
+        updatedAt: 'Hace 4 días',
+      },
+    ],
+    [],
+  );
+
+  const leadMagnets = useMemo(
+    () => [
+      {
+        id: 'lm-1',
+        title: 'Toolkit de automatización 2025',
+        format: 'PDF interactivo',
+        funnel: 'Evergreen IA',
+        status: 'Listo para lanzar',
+      },
+      {
+        id: 'lm-2',
+        title: 'Checklist Paid Media',
+        format: 'Notion template',
+        funnel: 'Acquisition Sprint',
+        status: 'En revisión IA',
+      },
+      {
+        id: 'lm-3',
+        title: 'Mini-curso Email + Ads',
+        format: 'Email series',
+        funnel: 'Full Funnel',
+        status: 'Programado',
+      },
+    ],
+    [],
+  );
+
+  const handleRefresh = () => {
+    loadSnapshot();
+    loadLeadRiskAlerts();
+    loadFirstSessionConversion();
+    loadSocialMediaMetrics();
+    loadReferralProgramMetrics();
+    loadProjectedRevenue();
+    loadLeadGenerationAlerts();
+  };
+
+  const handleCreateFunnel = () => {
+    navigate('/dashboard/marketing/funnels-adquisicion/funnel-editor');
+  };
+
+  const handleSelectRecommendedFunnel = (funnel: RecommendedFunnel) => {
+    // Navegar al editor con el funnel recomendado
+    navigate('/dashboard/marketing/funnels-adquisicion/funnel-editor', {
+      state: { recommendedFunnel: funnel },
+    });
+  };
+
+  const handleCreateLandingPage = () => {
+    navigate('/dashboard/marketing/funnels-adquisicion/landing-page-editor');
+  };
+
+  const handleCreateLeadMagnet = () => {
+    navigate('/dashboard/marketing/funnels-adquisicion/lead-magnet-factory');
+  };
+
+  const handleEditFunnel = (funnelId: string) => {
+    navigate('/dashboard/marketing/funnels-adquisicion/funnel-editor', {
+      state: { funnelId },
+    });
+  };
+
+  const handleEditLandingPage = (landingPageId: string) => {
+    navigate('/dashboard/marketing/funnels-adquisicion/landing-page-editor', {
+      state: { landingPageId },
+    });
+  };
+
+  const handleEditLeadMagnet = (leadMagnetId: string) => {
+    navigate('/dashboard/marketing/funnels-adquisicion/lead-magnet-factory', {
+      state: { leadMagnetId },
+    });
+  };
+
+  const handleConvertToChallenge = (funnel: AcquisitionFunnelPerformance) => {
+    setSelectedFunnelForConversion(funnel);
+    setShowChallengeConverter(true);
+  };
+
+  const handleConnectContent = (funnel: AcquisitionFunnelPerformance) => {
+    setSelectedFunnelForContent(funnel);
+    setShowContentConnector(true);
+  };
+
+  const handleShareAISummary = (funnel: AcquisitionFunnelPerformance) => {
+    setSelectedFunnelForSummary(funnel);
+    setShowAISummary(true);
+  };
+
+  const handleUpdateCommunityInsights = (funnel: AcquisitionFunnelPerformance) => {
+    setSelectedFunnelForInsights(funnel);
+    setShowCommunityInsightsUpdater(true);
+  };
+
+  const handleCreateFollowUpTemplate = (funnel: AcquisitionFunnelPerformance) => {
+    setSelectedFunnelForFollowUp(funnel);
+    setShowFollowUpTemplates(true);
+  };
+
+  const handleOpenRetrospective = (funnel: AcquisitionFunnelPerformance) => {
+    setSelectedFunnelForRetrospective(funnel);
+    setShowRetrospective(true);
+  };
+
+  const renderSectionContent = () => {
+    if (activeSection === 'builder') {
+      return (
+        <div className="space-y-8">
+          <div className="rounded-2xl border border-gray-200/60 bg-white/90 p-6 shadow-sm backdrop-blur-sm dark:border-slate-800/60 dark:bg-slate-900/60">
+            <div className="flex flex-wrap items-start justify-between gap-3 pb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Funnels activos</h3>
+                <p className="text-sm text-gray-600 dark:text-slate-400">
+                  Visualiza performance y optimiza cada etapa antes de iterar.
+                </p>
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowRecommendedFunnels(true)}
+                className="inline-flex items-center gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                Funnels Recomendados
+              </Button>
+              <Button variant="primary" size="sm" onClick={handleCreateFunnel} className="inline-flex items-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                Crear funnel
+              </Button>
+            </div>
+            <div className="overflow-x-auto">
+              {funnels.length > 0 ? (
+                <table className="min-w-full text-sm">
+                  <thead className="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-slate-400">
+                    <tr>
+                      <th className="pb-3 pr-4 font-medium">Funnel</th>
+                      <th className="pb-3 px-4 font-medium text-right">Conversión</th>
+                      <th className="pb-3 px-4 font-medium text-right">Revenue</th>
+                      <th className="pb-3 px-4 font-medium text-right">Velocidad</th>
+                      <th className="pb-3 pl-4 font-medium text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200/60 dark:divide-slate-800/60">
+                    {funnels.slice(0, 6).map((funnel) => (
+                      <tr key={funnel.id} className="align-middle">
+                        <td className="py-3 pr-4">
+                          <p className="font-medium text-gray-900 dark:text-slate-100">{funnel.name}</p>
+                          <p className="text-xs text-gray-500 dark:text-slate-400">Etapa {funnel.stage}</p>
+                        </td>
+                        <td className="py-3 px-4 text-right font-semibold text-indigo-600 dark:text-indigo-300">
+                          {`${funnel.conversionRate.toFixed(1)}%`}
+                        </td>
+                        <td className="py-3 px-4 text-right text-gray-900 dark:text-slate-100">
+                          {currencyFormatter.format(funnel.revenue)}
+                        </td>
+                        <td className="py-3 px-4 text-right text-gray-900 dark:text-slate-100">
+                          {`${funnel.velocityDays} días`}
+                        </td>
+                        <td className="py-3 pl-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-green-600 hover:text-green-700 dark:text-green-300 dark:hover:text-green-200"
+                              onClick={() => handleUpdateCommunityInsights(funnel)}
+                              title="Actualizar con insights de comunidad (testimonios, NPS)"
+                            >
+                              <Users className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-blue-600 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200"
+                              onClick={() => handleCreateFollowUpTemplate(funnel)}
+                              title="Crear plantilla de follow-up post registro"
+                            >
+                              <Sparkles className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-300 dark:hover:text-indigo-200"
+                              onClick={() => handleConnectContent(funnel)}
+                              title="Conectar contenidos"
+                            >
+                              <Sparkles className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-purple-600 hover:text-purple-700 dark:text-purple-300 dark:hover:text-purple-200"
+                              onClick={() => handleConvertToChallenge(funnel)}
+                              title="Convertir a reto/comunidad"
+                            >
+                              <Target className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-green-600 hover:text-green-700 dark:text-green-300 dark:hover:text-green-200"
+                              onClick={() => handleShareAISummary(funnel)}
+                              title="Compartir resumen IA"
+                            >
+                              <Users className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-orange-600 hover:text-orange-700 dark:text-orange-300 dark:hover:text-orange-200"
+                              onClick={() => handleOpenRetrospective(funnel)}
+                              title="Actualizar con resultados reales y aprendizajes"
+                            >
+                              Retrospectiva
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-300 dark:hover:text-indigo-200"
+                              onClick={() => handleEditFunnel(funnel.id)}
+                            >
+                              Editar
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="rounded-xl border border-dashed border-gray-200/70 bg-gray-50/60 p-6 text-center text-sm text-gray-500 dark:border-slate-800/70 dark:bg-slate-900/50 dark:text-slate-400">
+                  Aún no hay funnels registrados en este período. Crea uno nuevo para comenzar a medirlo.
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-200/60 bg-white/90 p-6 shadow-sm backdrop-blur-sm dark:border-slate-800/60 dark:bg-slate-900/60">
+            <div className="flex flex-wrap items-start justify-between gap-3 pb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Landing pages</h3>
+                <p className="text-sm text-gray-600 dark:text-slate-400">
+                  Prioriza experiencias de conversión y lanza variaciones controladas.
+                </p>
+              </div>
+              <Button variant="secondary" size="sm" onClick={handleCreateLandingPage}>
+                Crear página
+              </Button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-slate-400">
+                  <tr>
+                    <th className="pb-3 pr-4 font-medium">Página</th>
+                    <th className="pb-3 px-4 font-medium">Objetivo</th>
+                    <th className="pb-3 px-4 font-medium text-center">Estado</th>
+                    <th className="pb-3 px-4 font-medium text-right">Actualización</th>
+                    <th className="pb-3 pl-4 font-medium text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200/60 dark:divide-slate-800/60">
+                  {landingPages.map((page) => (
+                    <tr key={page.id} className="align-middle">
+                      <td className="py-3 pr-4">
+                        <p className="font-medium text-gray-900 dark:text-slate-100">{page.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-slate-400">ID: {page.id}</p>
+                      </td>
+                      <td className="py-3 px-4 text-gray-700 dark:text-slate-200">{page.objective}</td>
+                      <td className="py-3 px-4 text-center">
+                        <span className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 dark:border-indigo-500/40 dark:bg-indigo-500/10 dark:text-indigo-200">
+                          {page.status}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-right text-gray-600 dark:text-slate-300">{page.updatedAt}</td>
+                      <td className="py-3 pl-4 text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-300 dark:hover:text-indigo-200"
+                          onClick={() => handleEditLandingPage(page.id)}
+                        >
+                          Editar
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white p-6 shadow-lg flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Sparkles className="w-6 h-6" />
+              <div>
+                <p className="text-sm font-medium uppercase tracking-[0.2em] opacity-80">Movimiento clave del día</p>
+                <h3 className="text-lg font-semibold">
+                  Lanza la variante B de tu funnel evergreen y conecta audiencias dinámicas en 15 minutos.
+                </h3>
+              </div>
+            </div>
+            <Button variant="ghost" className="bg-white/10 hover:bg-white/20 text-white" onClick={handleCreateFunnel}>
+              Abrir funnels → IA
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeSection === 'lead-magnet') {
+      return (
+        <div className="space-y-8">
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-slate-100">
+            Diseña imanes de leads irresistibles
+          </h2>
+
+          <div className="rounded-2xl border border-gray-200/60 bg-white/90 p-6 shadow-sm backdrop-blur-sm dark:border-slate-800/60 dark:bg-slate-900/60">
+            <div className="flex flex-wrap items-start justify-between gap-3 pb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Lead Magnet Factory</h3>
+                <p className="text-sm text-gray-600 dark:text-slate-400">
+                  Prototipea recursos de valor y asígnalos al funnel correcto con dos clics.
+                </p>
+              </div>
+              <Button variant="primary" size="sm" onClick={handleCreateLeadMagnet} className="inline-flex items-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                Crear lead magnet
+              </Button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-slate-400">
+                  <tr>
+                    <th className="pb-3 pr-4 font-medium">Lead magnet</th>
+                    <th className="pb-3 px-4 font-medium">Formato</th>
+                    <th className="pb-3 px-4 font-medium">Funnel</th>
+                    <th className="pb-3 px-4 font-medium text-center">Estado</th>
+                    <th className="pb-3 pl-4 font-medium text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200/60 dark:divide-slate-800/60">
+                  {leadMagnets.map((magnet) => (
+                    <tr key={magnet.id} className="align-middle">
+                      <td className="py-3 pr-4">
+                        <p className="font-medium text-gray-900 dark:text-slate-100">{magnet.title}</p>
+                        <p className="text-xs text-gray-500 dark:text-slate-400">ID: {magnet.id}</p>
+                      </td>
+                      <td className="py-3 px-4 text-gray-700 dark:text-slate-200">{magnet.format}</td>
+                      <td className="py-3 px-4 text-gray-700 dark:text-slate-200">{magnet.funnel}</td>
+                      <td className="py-3 px-4 text-center">
+                        <span className="inline-flex items-center rounded-full border border-purple-200 bg-purple-50 px-2.5 py-1 text-xs font-medium text-purple-700 dark:border-purple-500/40 dark:bg-purple-500/10 dark:text-purple-200">
+                          {magnet.status}
+                        </span>
+                      </td>
+                      <td className="py-3 pl-4 text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-300 dark:hover:text-indigo-200"
+                          onClick={() => handleEditLeadMagnet(magnet.id)}
+                        >
+                          Editar
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-dashed border-indigo-300 dark:border-indigo-800 bg-white/70 dark:bg-slate-900/40 p-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">
+                  Plantillas high-converting
+                </p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
+                  Combina formularios dinámicos + nurturing IA para nutrir al lead antes del primer contacto.
+                </h3>
+              </div>
+              <Button variant="primary" className="inline-flex items-center gap-2" onClick={handleCreateLeadMagnet}>
+                <Sparkles className="w-4 h-4" />
+                Generar lead magnet
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-[#0b1120] dark:via-[#0f172a] dark:to-[#020617]">
+      <div className="border-b border-gray-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:border-gray-800/60 dark:bg-[#0b1120]/80">
+        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6">
+          <div className="py-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-2 bg-gradient-to-br from-indigo-100 to-pink-200 dark:from-indigo-900/40 dark:to-pink-900/30 rounded-xl ring-1 ring-indigo-200/70">
+                  <Layers className="w-6 h-6 text-indigo-600 dark:text-indigo-300" />
+                </div>
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900 dark:text-slate-100">
+                    Funnels & Adquisición
+                  </h1>
+                  <p className="text-gray-600 dark:text-slate-400 max-w-2xl">
+                    Orquesta la captación y cualificación end-to-end: KPIs clave, funnels top, campañas activas,
+                    eventos estratégicos y acciones IA para lanzar hoy mismo.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <Badge variant="blue" size="md" className="shadow">
+                  {user?.name ? `Hola, ${user.name.split(' ')[0]}` : 'Modo growth'}
+                </Badge>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setShowRecommendedFunnels(true)}
+                  className="inline-flex items-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Funnels Recomendados
+                </Button>
+                <Button variant="primary" size="sm" onClick={handleCreateFunnel} className="inline-flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Crear funnel
+                </Button>
+                <Button variant="secondary" size="sm" onClick={handleCreateLandingPage}>
+                  Crear página
+                </Button>
+                <Button variant="ghost" size="sm" onClick={handleRefresh} className="inline-flex items-center gap-2">
+                  <Sparkles className={`w-4 h-4 ${loadingSnapshot ? 'animate-spin' : ''}`} />
+                  Actualizar datos
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
+        <div className="space-y-6">
+          <MetricCards data={metricCardsToRender} columns={4} />
+
+          <Card className="p-0 bg-white shadow-sm dark:bg-slate-900/60">
+            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2 overflow-x-auto">
+                {sectionTabItems.map(({ id, label, icon: Icon }) => {
+                  const isActive = activeSection === id;
+                  return (
+                    <button
+                      key={id}
+                      onClick={() => setActiveSection(id)}
+                      className={[
+                        'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all',
+                        isActive
+                          ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-100 dark:ring-indigo-500/40'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-slate-100 dark:hover:bg-slate-800/60',
+                      ].join(' ')}
+                    >
+                      <Icon size={18} className={isActive ? 'opacity-100' : 'opacity-70'} />
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="px-4 py-6 space-y-6">
+              {(activeSection === 'builder' || activeSection === 'lead-magnet') && (
+                <div className="flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-300">
+                  <Rocket className="w-4 h-4" />
+                  <span>Datos simulados con base en performance de captación y nurturing multicanal.</span>
+                </div>
+              )}
+
+              {renderSectionContent()}
+            </div>
+          </Card>
+
+          {/* US-FA-009: Métrica de conversión de primera sesión a cliente */}
+          {firstSessionConversion && (
+            <FirstSessionConversionMetricComponent
+              metric={firstSessionConversion}
+              loading={loadingConversion}
+            />
+          )}
+
+          {/* US-FA-008: Sistema de alertas y tareas automáticas para leads en riesgo */}
+          <LeadRiskAlerts alerts={leadRiskAlerts} loading={loadingAlerts} />
+
+          {/* US-FA-010: Integración con métricas de redes sociales */}
+          {socialMediaMetrics && (
+            <SocialMediaMetricsComponent
+              metrics={socialMediaMetrics}
+              loading={loadingSocialMedia}
+            />
+          )}
+
+          {/* US-FA-012: Sistema de tracking de referidos */}
+          {referralProgramMetrics && (
+            <ReferralProgramMetricsComponent
+              metrics={referralProgramMetrics}
+              loading={loadingReferrals}
+            />
+          )}
+
+          {/* US-FA-07: A/B tests guiados por IA (copy, oferta, formato) */}
+          {funnels.length > 0 && (
+            <FunnelExperiments funnelId={funnels[0]?.id} />
+          )}
+
+          {/* US-FA-08: Identificación de cuellos de botella por etapa */}
+          {funnels.length > 0 && (
+            <FunnelPerformance funnelId={funnels[0]?.id} period={period} />
+          )}
+
+          {/* US-FA-020: Revenue proyectado por funnel según capacidad y precios */}
+          <ProjectedRevenueByFunnelComponent
+            data={projectedRevenue}
+            loading={loadingProjectedRevenue}
+          />
+
+          {/* US-FA-021: Alertas si un funnel de captación no genera leads suficientes antes de una campaña */}
+          <FunnelLeadGenerationAlerts
+            data={leadGenerationAlerts}
+            loading={loadingLeadGenerationAlerts}
+          />
+
+          {/* US-FA-022: Registrar notas cualitativas de cada funnel (feedback de prospectos) */}
+          {funnels.length > 0 && (
+            <FunnelQualitativeNotes
+              funnel={funnels[0]}
+              onRefresh={handleRefresh}
+            />
+          )}
+
+          {/* US-FA-023: IA aprende qué tipos de propuestas cierro mejor para priorizar ideas similares */}
+          <ProposalLearning period={period} />
+
+          {/* US-FA-026: Calendario de lanzamientos y fases del funnel */}
+          <FunnelLaunchCalendar
+            funnelIds={funnels.map((f) => f.id)}
+            onEventClick={(event) => {
+              console.log('Evento seleccionado:', event);
+              // Aquí puedes abrir un modal o navegar a los detalles del evento
+            }}
+          />
+        </div>
+      </div>
+
+      {/* US-FA-014: Generar funnels recomendados según especialidad y objetivos */}
+      <RecommendedFunnelsGenerator
+        isOpen={showRecommendedFunnels}
+        onClose={() => setShowRecommendedFunnels(false)}
+        onSelectFunnel={handleSelectRecommendedFunnel}
+      />
+
+      {/* US-FA-018: Convertir rápidamente un funnel en reto/comunidad */}
+      {selectedFunnelForConversion && (
+        <FunnelToChallengeConverter
+          funnelId={selectedFunnelForConversion.id}
+          funnelName={selectedFunnelForConversion.name}
+          isOpen={showChallengeConverter}
+          onClose={() => {
+            setShowChallengeConverter(false);
+            setSelectedFunnelForConversion(null);
+          }}
+          onSuccess={(response) => {
+            console.log('Funnel convertido exitosamente:', response);
+            setShowChallengeConverter(false);
+            setSelectedFunnelForConversion(null);
+            // Opcional: mostrar notificación de éxito
+          }}
+        />
+      )}
+
+      {/* US-FA-019: Conectar funnels con contenidos existentes (reels top, testimonios) */}
+      {selectedFunnelForContent && (
+        <FunnelContentConnector
+          funnelId={selectedFunnelForContent.id}
+          isOpen={showContentConnector}
+          onClose={() => {
+            setShowContentConnector(false);
+            setSelectedFunnelForContent(null);
+          }}
+          onSuccess={(response) => {
+            console.log('Contenidos conectados exitosamente:', response);
+            setShowContentConnector(false);
+            setSelectedFunnelForContent(null);
+            // Opcional: mostrar notificación de éxito
+          }}
+        />
+      )}
+
+      {/* US-FA-024: Actualizar funnels con insights de Comunidad & Fidelización (testimonios, NPS) */}
+      {selectedFunnelForInsights && (
+        <FunnelCommunityInsightsUpdater
+          funnel={selectedFunnelForInsights}
+          isOpen={showCommunityInsightsUpdater}
+          onClose={() => {
+            setShowCommunityInsightsUpdater(false);
+            setSelectedFunnelForInsights(null);
+          }}
+          onSuccess={(response) => {
+            console.log('Insights actualizados exitosamente:', response);
+            setShowCommunityInsightsUpdater(false);
+            setSelectedFunnelForInsights(null);
+            handleRefresh();
+            // Opcional: mostrar notificación de éxito
+          }}
+        />
+      )}
+
+      {/* US-FA-025: Plantillas IA para follow-up post registro (WhatsApp + email) con tono del usuario */}
+      {selectedFunnelForFollowUp && (
+        <PostRegistrationFollowUpTemplates
+          funnel={selectedFunnelForFollowUp}
+          isOpen={showFollowUpTemplates}
+          onClose={() => {
+            setShowFollowUpTemplates(false);
+            setSelectedFunnelForFollowUp(null);
+          }}
+          onSuccess={(response) => {
+            console.log('Plantilla aplicada exitosamente:', response);
+            setShowFollowUpTemplates(false);
+            setSelectedFunnelForFollowUp(null);
+            // Opcional: mostrar notificación de éxito
+          }}
+        />
+      )}
+
+      {/* US-FA-027: Compartir resumen IA del funnel con community manager */}
+      {selectedFunnelForSummary && showAISummary && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="max-w-4xl w-full my-8">
+            <FunnelAISummary
+              funnel={selectedFunnelForSummary}
+              onClose={() => {
+                setShowAISummary(false);
+                setSelectedFunnelForSummary(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* US-FA-021: Actualizar un funnel una vez finalizado con resultados reales y aprendizajes */}
+      {selectedFunnelForRetrospective && (
+        <FunnelRetrospectiveComponent
+          funnel={selectedFunnelForRetrospective}
+          isOpen={showRetrospective}
+          onClose={() => {
+            setShowRetrospective(false);
+            setSelectedFunnelForRetrospective(null);
+          }}
+          onSuccess={(retrospective) => {
+            console.log('Retrospectiva guardada exitosamente:', retrospective);
+            setShowRetrospective(false);
+            setSelectedFunnelForRetrospective(null);
+            handleRefresh();
+            // Opcional: mostrar notificación de éxito
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+

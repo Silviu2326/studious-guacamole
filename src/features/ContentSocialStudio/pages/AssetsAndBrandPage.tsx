@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import {
   ClipperHighlights,
   ContentRecycler,
@@ -14,6 +16,7 @@ import {
   LaunchOrchestrator,
   EventChallengeContentKit,
 } from '../components';
+import { Button } from '../../../components/componentsreutilizables';
 import type { AssetsAndBrandSnapshot } from '../types';
 import { getClips, getCategories } from '../../ContentClipper/api/clips';
 import { subDays } from 'date-fns';
@@ -112,10 +115,24 @@ export default function AssetsAndBrandPage() {
     <div className="space-y-8 p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-900">Activos & Marca</h1>
-        <p className="text-slate-600 mt-2">
-          Gestiona tu biblioteca de contenido y configura tu identidad de marca
-        </p>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Activos & Marca</h1>
+            <p className="text-slate-600 mt-2">
+              Gestiona tu biblioteca de contenido y configura tu identidad de marca
+            </p>
+          </div>
+          <Link to="/dashboard/content/social-studio">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Volver
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Zona 1: Biblioteca de contenido */}

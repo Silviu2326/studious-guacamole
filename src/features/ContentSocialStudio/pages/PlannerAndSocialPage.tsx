@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Calendar, TrendingUp, AlertCircle, BarChart3 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Calendar, TrendingUp, AlertCircle, BarChart3, ArrowLeft } from 'lucide-react';
 import { Card, Select, Button } from '../../../components/componentsreutilizables';
 import type {
   ContentStudioPeriod,
@@ -39,11 +40,6 @@ export default function PlannerAndSocialPage() {
     coverageDays: 0,
     backlogCount: 0,
   });
-
-  // Cargar datos iniciales
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
 
   // Mapear SocialPost a PlannerUpcomingPost
   const mapPostsToUpcoming = useCallback((posts: SocialPost[]): PlannerUpcomingPost[] => {
@@ -115,6 +111,10 @@ export default function PlannerAndSocialPage() {
     }
   }, [period, mapPostsToUpcoming]);
 
+  // Cargar datos iniciales
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleGapFilled = useCallback((post: PlannerUpcomingPost) => {
     setUpcomingPosts((prev) => [...prev, post]);
@@ -182,6 +182,16 @@ export default function PlannerAndSocialPage() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              <Link to="/dashboard/content/social-studio">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Volver
+                </Button>
+              </Link>
               <Select
                 value={period}
                 onChange={(e) => setPeriod(e.target.value as ContentStudioPeriod)}

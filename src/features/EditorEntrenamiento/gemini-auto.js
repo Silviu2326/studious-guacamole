@@ -1,13 +1,33 @@
 #!/usr/bin/env node
 /**
- * Script Node.js para automatizar Gemini CLI usando node-pty
+ * Script Node.js para automatizar Gemini CLI usando node-pty o child_process
  * Detecta "Allow execution of:" y responde automáticamente
  */
 
-import { spawn } from 'node-pty';
+import { spawn as childSpawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync, readFileSync } from 'fs';
+
+// Variable para almacenar la función spawn de node-pty si está disponible
+let ptySpawn = null;
+
+// Función para inicializar node-pty de forma asíncrona
+async function initPty() {
+  if (ptySpawn !== null) {
+    return ptySpawn; // Ya inicializado
+  }
+  
+  try {
+    const pty = await import('node-pty');
+    ptySpawn = pty.spawn;
+    return ptySpawn;
+  } catch (error) {
+    console.error('[gemini-auto] node-pty no disponible, usando child_process como alternativa');
+    ptySpawn = false; // Marcamos como no disponible
+    return null;
+  }
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -19,7 +39,11 @@ const MAX_TIMEOUT = 600000; // 10 minutos en milisegundos
 /**
  * Ejecuta gemini CLI con un prompt y detecta/responde automáticamente a confirmaciones
  */
-function runGeminiWithAutoConfirm(prompt) {
+async function runGeminiWithAutoConfirm(prompt) {
+  // Intentar inicializar node-pty si aún no se ha hecho
+  const ptySpawnFn = await initPty();
+  const usePty = ptySpawnFn !== null && ptySpawnFn !== false;
+  
   return new Promise((resolve, reject) => {
     let output = '';
     let hasResponded = false;
@@ -28,7 +52,6 @@ function runGeminiWithAutoConfirm(prompt) {
 
     // Determinar el shell según el sistema operativo
     const isWindows = process.platform === 'win32';
-    const shell = isWindows ? 'powershell.exe' : process.env.SHELL || '/bin/bash';
     
     // Comando gemini
     const args = ['--yolo', prompt];
@@ -43,20 +66,32 @@ function runGeminiWithAutoConfirm(prompt) {
     console.error(`[gemini-auto] Ejecutando: ${command} ${args.join(' ')}`);
     console.error(`[gemini-auto] Auto-respuesta configurada: ${AUTO_RESPONSE === '1' ? 'Allow once' : 'Allow always'}`);
 
-    // Crear pseudo-terminal
-    const ptyProcess = spawn(command, args, {
-      name: 'xterm-color',
-      cols: 80,
-      rows: 24,
-      cwd: process.cwd(),
-      env: process.env,
-      shell: isWindows
-    });
+    let process;
+
+    if (usePty) {
+      // Usar node-pty si está disponible
+      process = ptySpawnFn(command, args, {
+        name: 'xterm-color',
+        cols: 80,
+        rows: 24,
+        cwd: process.cwd(),
+        env: process.env,
+        shell: isWindows
+      });
+    } else {
+      // Usar child_process como alternativa
+      process = childSpawn(command, args, {
+        cwd: process.cwd(),
+        env: process.env,
+        shell: isWindows,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+    }
 
     // Timeout global
     timeoutId = setTimeout(() => {
-      if (!hasResponded || ptyProcess) {
-        ptyProcess.kill();
+      if (!hasResponded || process) {
+        process.kill();
         reject(new Error('Timeout: El proceso excedió 10 minutos'));
       }
     }, MAX_TIMEOUT);
@@ -64,13 +99,14 @@ function runGeminiWithAutoConfirm(prompt) {
     // Buffer para acumular líneas y detectar el prompt
     let lineBuffer = '';
     
-    // Capturar salida
-    ptyProcess.onData((data) => {
-      output += data;
-      lineBuffer += data;
+    // Función para procesar datos
+    const processData = (data) => {
+      const dataStr = data.toString();
+      output += dataStr;
+      lineBuffer += dataStr;
       
       // Mostrar en tiempo real en stdout (para que se vea en la terminal)
-      process.stdout.write(data);
+      process.stdout.write(dataStr);
       
       // Detectar "Allow execution of:" en cualquier parte del buffer
       // También detectar variaciones del mensaje
@@ -90,7 +126,11 @@ function runGeminiWithAutoConfirm(prompt) {
         
         // Enviar respuesta automática después de un pequeño delay
         setTimeout(() => {
-          ptyProcess.write(AUTO_RESPONSE + '\r\n');
+          if (usePty) {
+            process.write(AUTO_RESPONSE + '\r\n');
+          } else {
+            process.stdin.write(AUTO_RESPONSE + '\n');
+          }
         }, 200); // Delay para asegurar que el prompt esté listo
       }
       
@@ -98,26 +138,53 @@ function runGeminiWithAutoConfirm(prompt) {
       if (lineBuffer.length > 10000) {
         lineBuffer = lineBuffer.slice(-5000); // Mantener solo los últimos 5000 caracteres
       }
-    });
+    };
+    
+    // Capturar salida según el método usado
+    if (usePty) {
+      // node-pty usa onData
+      process.onData(processData);
+    } else {
+      // child_process usa eventos estándar
+      process.stdout.on('data', processData);
+      process.stderr.on('data', processData);
+    }
 
     // Manejar fin del proceso
-    ptyProcess.onExit((exitInfo) => {
-      exitCode = exitInfo.exitCode;
-      
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
+    if (usePty) {
+      process.onExit((exitInfo) => {
+        exitCode = exitInfo.exitCode;
+        
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
 
-      // La salida ya se mostró en tiempo real, solo retornar el resultado
-      if (exitCode === 0 || exitCode === null) {
-        resolve({ output: output.trim(), exitCode: exitCode || 0 });
-      } else {
-        reject(new Error(`Gemini CLI falló con código: ${exitCode}`));
-      }
-    });
+        // La salida ya se mostró en tiempo real, solo retornar el resultado
+        if (exitCode === 0 || exitCode === null) {
+          resolve({ output: output.trim(), exitCode: exitCode || 0 });
+        } else {
+          reject(new Error(`Gemini CLI falló con código: ${exitCode}`));
+        }
+      });
+    } else {
+      process.on('close', (code) => {
+        exitCode = code;
+        
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+
+        // La salida ya se mostró en tiempo real, solo retornar el resultado
+        if (exitCode === 0 || exitCode === null) {
+          resolve({ output: output.trim(), exitCode: exitCode || 0 });
+        } else {
+          reject(new Error(`Gemini CLI falló con código: ${exitCode}`));
+        }
+      });
+    }
 
     // Manejar errores
-    ptyProcess.on('error', (error) => {
+    process.on('error', (error) => {
       if (timeoutId) {
         clearTimeout(timeoutId);
       }

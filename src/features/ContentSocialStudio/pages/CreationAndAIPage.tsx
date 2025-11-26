@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import {
   VideoStudioSpotlight,
   VideoScriptGenerator,
@@ -9,6 +11,7 @@ import {
   ClientTransformationPostGenerator,
   FAQContentGenerator,
 } from '../components';
+import { Button } from '../../../components/componentsreutilizables';
 import type { CreationAndAISnapshot } from '../types';
 
 /**
@@ -77,10 +80,24 @@ export default function CreationAndAIPage() {
     <div className="space-y-8 p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-900">Creación & IA</h1>
-        <p className="text-slate-600 mt-2">
-          Herramientas de producción de vídeo y contenido con IA creativa
-        </p>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Creación & IA</h1>
+            <p className="text-slate-600 mt-2">
+              Herramientas de producción de vídeo y contenido con IA creativa
+            </p>
+          </div>
+          <Link to="/dashboard/content/social-studio">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Volver
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Bloque: Video Studio */}

@@ -14,6 +14,9 @@ import CompetitiveAnalysisYMarketIntelligencePage from './features/CompetitiveAn
 import ConstructorDeFunnelsYLandingPagesPage from './features/ConstructorDeFunnelsYLandingPages/pages/ConstructorDeFunnelsYLandingPagesPage';
 import ContentClipperPage from './features/ContentClipper/pages/ContentClipperPage';
 import ContentSocialStudioPage from './features/ContentSocialStudio/pages/ContentSocialStudioPage';
+import PlannerAndSocialPage from './features/ContentSocialStudio/pages/PlannerAndSocialPage';
+import CreationAndAIPage from './features/ContentSocialStudio/pages/CreationAndAIPage';
+import AssetsAndBrandPage from './features/ContentSocialStudio/pages/AssetsAndBrandPage';
 import CreatorinfluencerContentSyndicationPage from './features/CreatorinfluencerContentSyndication/pages/CreatorinfluencerContentSyndicationPage';
 import DynamicPricingYOfertasInteligentesPage from './features/DynamicPricingYOfertasInteligentes/pages/DynamicPricingYOfertasInteligentesPage';
 import EmailDeliverabilityYComplianceHubPage from './features/EmailDeliverabilityYComplianceHub/pages/EmailDeliverabilityYComplianceHubPage';
@@ -279,6 +282,9 @@ function App() {
             <Route path="/market-intelligence" element={<CompetitiveAnalysisYMarketIntelligencePage />} />
             <Route path="/dashboard/marketing/funnels" element={<ConstructorDeFunnelsYLandingPagesPage />} />
             <Route path="/dashboard/content/social-studio" element={<ContentSocialStudioPage />} />
+            <Route path="/dashboard/content/planner-social" element={<PlannerAndSocialPage />} />
+            <Route path="/dashboard/content/creation-ai" element={<CreationAndAIPage />} />
+            <Route path="/dashboard/content/assets-brand" element={<AssetsAndBrandPage />} />
             <Route path="/dashboard/content/clipper" element={<ContentClipperPage />} />
             <Route path="/dashboard/content/video-studio" element={<VideoMarketingYAutomationPage />} />
             <Route path="/dashboard/marketing/influencers" element={<CreatorinfluencerContentSyndicationPage />} />

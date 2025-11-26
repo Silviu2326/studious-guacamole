@@ -20,10 +20,10 @@ import {
   Textarea,
   Tooltip,
 } from '../../../components/componentsreutilizables';
-import type { PlannerAndSocialSnapshot, PlannerAISuggestion } from '../types';
+import type { ContentSocialSnapshot, PlannerAISuggestion } from '../types';
 
-type PlannerPlatform = PlannerAndSocialSnapshot['planner']['upcoming'][number]['platform'];
-type PlannerItem = PlannerAndSocialSnapshot['planner']['upcoming'][number];
+type PlannerPlatform = ContentSocialSnapshot['planner']['upcoming'][number]['platform'];
+type PlannerItem = ContentSocialSnapshot['planner']['upcoming'][number];
 type PlannerStatus = PlannerItem['status'];
 
 interface CalendarDay {
@@ -97,7 +97,7 @@ const formatTime = (iso: string) =>
   });
 
 interface PlannerSchedulePreviewProps {
-  planner: PlannerAndSocialSnapshot['planner'];
+  planner: ContentSocialSnapshot['planner'];
   loading?: boolean;
 }
 

@@ -15,8 +15,11 @@ import ConstructorDeFunnelsYLandingPagesPage from './features/ConstructorDeFunne
 import ContentClipperPage from './features/ContentClipper/pages/ContentClipperPage';
 import ContentSocialStudioPage from './features/ContentSocialStudio/pages/ContentSocialStudioPage';
 import PlannerAndSocialPage from './features/ContentSocialStudio/pages/PlannerAndSocialPage';
-import CreationAndAIPage from './features/ContentSocialStudio/pages/CreationAndAIPage';
-import AssetsAndBrandPage from './features/ContentSocialStudio/pages/AssetsAndBrandPage';
+import CreationPage from './features/ContentSocialStudio/pages/CreationPage';
+import LibraryPage from './features/ContentSocialStudio/pages/LibraryPage';
+import BrandPage from './features/ContentSocialStudio/pages/BrandPage';
+import AnalyticsPage from './features/ContentSocialStudio/pages/AnalyticsPage';
+import AIAssistantsPage from './features/ContentSocialStudio/pages/AIAssistantsPage';
 import CreatorinfluencerContentSyndicationPage from './features/CreatorinfluencerContentSyndication/pages/CreatorinfluencerContentSyndicationPage';
 import DynamicPricingYOfertasInteligentesPage from './features/DynamicPricingYOfertasInteligentes/pages/DynamicPricingYOfertasInteligentesPage';
 import EmailDeliverabilityYComplianceHubPage from './features/EmailDeliverabilityYComplianceHub/pages/EmailDeliverabilityYComplianceHubPage';
@@ -163,7 +166,7 @@ import { OperacionesPage } from './features/Operaciones';
 import { EquipoRRHHPage } from './features/EquipoRRHH';
 import { MultisedeFranquiciasPage } from './features/MultisedeFranquicias';
 import { ConfiguracionCentroPage } from './features/ConfiguracionCentro';
-import OverviewMarketingPage from './features/OverviewMarketing/pages/OverviewMarketingPage';
+import OverviewMarketingPage from './features/OverviewMarketing/pages/MarketingOverviewPage';
 import FunnelsAdquisicionPage from './features/FunnelsAdquisicion/pages/FunnelsAdquisicionPage';
 import FunnelsEditorPage from './features/FunnelsAdquisicion/pages/FunnelsEditorPage';
 import LandingPageEditorPage from './features/FunnelsAdquisicion/pages/LandingPageEditorPage';
@@ -282,9 +285,12 @@ function App() {
             <Route path="/market-intelligence" element={<CompetitiveAnalysisYMarketIntelligencePage />} />
             <Route path="/dashboard/marketing/funnels" element={<ConstructorDeFunnelsYLandingPagesPage />} />
             <Route path="/dashboard/content/social-studio" element={<ContentSocialStudioPage />} />
-            <Route path="/dashboard/content/planner-social" element={<PlannerAndSocialPage />} />
-            <Route path="/dashboard/content/creation-ai" element={<CreationAndAIPage />} />
-            <Route path="/dashboard/content/assets-brand" element={<AssetsAndBrandPage />} />
+            <Route path="/dashboard/content/social-studio/creation" element={<CreationPage />} />
+            <Route path="/dashboard/content/social-studio/planning" element={<PlannerAndSocialPage />} />
+            <Route path="/dashboard/content/social-studio/library" element={<LibraryPage />} />
+            <Route path="/dashboard/content/social-studio/brand" element={<BrandPage />} />
+            <Route path="/dashboard/content/social-studio/analytics" element={<AnalyticsPage />} />
+            <Route path="/dashboard/content/social-studio/ai-assistants" element={<AIAssistantsPage />} />
             <Route path="/dashboard/content/clipper" element={<ContentClipperPage />} />
             <Route path="/dashboard/content/video-studio" element={<VideoMarketingYAutomationPage />} />
             <Route path="/dashboard/marketing/influencers" element={<CreatorinfluencerContentSyndicationPage />} />

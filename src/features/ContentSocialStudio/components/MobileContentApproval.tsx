@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
   CheckCircle2,
-  XCircle,
-  AlertCircle,
   Smartphone,
   Sparkles,
   Image as ImageIcon,
@@ -18,13 +16,10 @@ import {
 import { Badge, Button, Card, Modal, Textarea } from '../../../components/componentsreutilizables';
 import type {
   ContentApproval,
-  ApprovalStatus,
-  MobileContentApprovalRequest,
   AIPreviewResponse,
 } from '../types';
 import {
   getPendingApprovals,
-  getApprovalById,
   generateAIPreview,
   approveContent,
   getApprovalStats,
@@ -33,13 +28,6 @@ import {
 interface MobileContentApprovalProps {
   loading?: boolean;
 }
-
-const statusLabel: Record<ApprovalStatus, string> = {
-  pending: 'Pendiente',
-  approved: 'Aprobado',
-  rejected: 'Rechazado',
-  'needs-revision': 'Necesita revisión',
-};
 
 export function MobileContentApproval({ loading: externalLoading }: MobileContentApprovalProps) {
   const [approvals, setApprovals] = useState<ContentApproval[]>([]);
@@ -222,8 +210,7 @@ export function MobileContentApproval({ loading: externalLoading }: MobileConten
               {approvals.map((approval) => (
                 <Card
                   key={approval.id}
-                  className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => handleViewApproval(approval)}
+                  className="p-4 hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -261,10 +248,7 @@ export function MobileContentApproval({ loading: externalLoading }: MobileConten
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleViewApproval(approval);
-                      }}
+                      onClick={() => handleViewApproval(approval)}
                     >
                       <Eye className="w-4 h-4" />
                     </Button>
@@ -297,7 +281,7 @@ export function MobileContentApproval({ loading: externalLoading }: MobileConten
               Aprobar
             </Button>
             <Button
-              variant="danger"
+              variant="destructive"
               onClick={() => handleApproveAction('rejected')}
               className="flex-1 min-w-[120px]"
             >
@@ -305,9 +289,9 @@ export function MobileContentApproval({ loading: externalLoading }: MobileConten
               Rechazar
             </Button>
             <Button
-              variant="warning"
+              variant="secondary"
               onClick={() => handleApproveAction('needs-revision')}
-              className="flex-1 min-w-[120px]"
+              className="flex-1 min-w-[120px] bg-orange-500 hover:bg-orange-600 text-white"
             >
               <Edit className="w-4 h-4 mr-2" />
               Revisión
@@ -401,15 +385,14 @@ export function MobileContentApproval({ loading: externalLoading }: MobileConten
                     </div>
                     <div className="w-full bg-slate-200 rounded-full h-2">
                       <div
-                        className={`h-2 rounded-full ${
-                          preview.qualityScore >= 80
-                            ? 'bg-green-500'
-                            : preview.qualityScore >= 65
+                        className={`h-2 rounded-full ${preview.qualityScore >= 80
+                          ? 'bg-green-500'
+                          : preview.qualityScore >= 65
                             ? 'bg-blue-500'
                             : preview.qualityScore >= 50
-                            ? 'bg-yellow-500'
-                            : 'bg-red-500'
-                        }`}
+                              ? 'bg-yellow-500'
+                              : 'bg-red-500'
+                          }`}
                         style={{ width: `${preview.qualityScore}%` }}
                       />
                     </div>
@@ -429,13 +412,12 @@ export function MobileContentApproval({ loading: externalLoading }: MobileConten
                       {preview.suggestions.map((suggestion, index) => (
                         <div
                           key={index}
-                          className={`p-2 rounded ${
-                            suggestion.priority === 'high'
-                              ? 'bg-red-50 border border-red-200'
-                              : suggestion.priority === 'medium'
+                          className={`p-2 rounded ${suggestion.priority === 'high'
+                            ? 'bg-red-50 border border-red-200'
+                            : suggestion.priority === 'medium'
                               ? 'bg-yellow-50 border border-yellow-200'
                               : 'bg-blue-50 border border-blue-200'
-                          }`}
+                            }`}
                         >
                           <p className="text-sm text-slate-700">{suggestion.message}</p>
                         </div>
@@ -462,8 +444,8 @@ export function MobileContentApproval({ loading: externalLoading }: MobileConten
           approvalAction === 'approved'
             ? 'Aprobar Contenido'
             : approvalAction === 'rejected'
-            ? 'Rechazar Contenido'
-            : 'Solicitar Revisión'
+              ? 'Rechazar Contenido'
+              : 'Solicitar Revisión'
         }
         size="md"
         footer={
@@ -479,15 +461,16 @@ export function MobileContentApproval({ loading: externalLoading }: MobileConten
               Cancelar
             </Button>
             <Button
-              variant={approvalAction === 'approved' ? 'primary' : approvalAction === 'rejected' ? 'danger' : 'warning'}
+              variant={approvalAction === 'approved' ? 'primary' : approvalAction === 'rejected' ? 'destructive' : 'secondary'}
               onClick={handleConfirmApproval}
               disabled={!notes && (approvalAction === 'rejected' || approvalAction === 'needs-revision')}
+              className={approvalAction === 'needs-revision' ? 'bg-orange-500 hover:bg-orange-600 text-white' : ''}
             >
               {approvalAction === 'approved'
                 ? 'Aprobar'
                 : approvalAction === 'rejected'
-                ? 'Rechazar'
-                : 'Solicitar Revisión'}
+                  ? 'Rechazar'
+                  : 'Solicitar Revisión'}
             </Button>
           </div>
         }

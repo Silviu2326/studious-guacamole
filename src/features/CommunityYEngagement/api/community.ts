@@ -89,7 +89,7 @@ export const getPosts = async (
   filters?: CommunityFilters
 ): Promise<PostsResponse> => {
   await new Promise(resolve => setTimeout(resolve, 500));
-  
+
   // Datos de ejemplo
   const posts: Post[] = [
     {
@@ -297,15 +297,15 @@ export const getPosts = async (
       type: 'referral'
     }
   ];
-  
+
   // Aplicar filtros
   let filteredPosts = [...posts];
-  
+
   // Filtrar por grupo si se especifica
   if (filters?.groupId) {
     filteredPosts = filteredPosts.filter(post => post.groupId === filters.groupId);
   }
-  
+
   // Filtrar por tipo de post según filterBy
   if (filters?.filterBy) {
     switch (filters.filterBy) {
@@ -321,31 +321,31 @@ export const getPosts = async (
       case 'trending':
         // Para trending, ordenar por reacciones totales
         filteredPosts = filteredPosts.sort((a, b) => {
-          const aReactions = Object.values(a.reactions || {}).reduce((sum, val) => sum + (val || 0), 0);
-          const bReactions = Object.values(b.reactions || {}).reduce((sum, val) => sum + (val || 0), 0);
-          return bReactions - aReactions;
+          const aReactions = Object.values(a.reactions || {}).reduce((sum, val) => (sum || 0) + (val || 0), 0);
+          const bReactions = Object.values(b.reactions || {}).reduce((sum, val) => (sum || 0) + (val || 0), 0);
+          return (bReactions || 0) - (aReactions || 0);
         });
         break;
       case 'latest':
       default:
         // Para latest, ordenar por fecha de creación (más recientes primero)
-        filteredPosts = filteredPosts.sort((a, b) => 
+        filteredPosts = filteredPosts.sort((a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
         break;
     }
   } else {
     // Por defecto, ordenar por fecha (latest)
-    filteredPosts = filteredPosts.sort((a, b) => 
+    filteredPosts = filteredPosts.sort((a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   }
-  
+
   // Aplicar paginación
   const startIndex = (page - 1) * limit;
   const endIndex = startIndex + limit;
   const paginatedPosts = filteredPosts.slice(startIndex, endIndex);
-  
+
   return {
     data: paginatedPosts,
     pagination: {
@@ -362,7 +362,7 @@ export const createPost = async (
   groupId?: string
 ): Promise<Post> => {
   await new Promise(resolve => setTimeout(resolve, 500));
-  
+
   // En producción: POST /api/community/posts
   const newPost: Post = {
     id: `post_${Date.now()}`,
@@ -381,7 +381,7 @@ export const createPost = async (
     commentCount: 0,
     type: 'post'
   };
-  
+
   return newPost;
 };
 
@@ -390,7 +390,7 @@ export const addComment = async (
   content: string
 ): Promise<Comment> => {
   await new Promise(resolve => setTimeout(resolve, 300));
-  
+
   // En producción: POST /api/community/posts/{postId}/comments
   const newComment: Comment = {
     id: `comment_${Date.now()}`,
@@ -404,13 +404,13 @@ export const addComment = async (
     content,
     createdAt: new Date().toISOString()
   };
-  
+
   return newComment;
 };
 
 export const getComments = async (postId: string): Promise<Comment[]> => {
   await new Promise(resolve => setTimeout(resolve, 300));
-  
+
   return [
     {
       id: 'comment_789',
@@ -429,7 +429,7 @@ export const getComments = async (postId: string): Promise<Comment[]> => {
 
 export const deletePost = async (postId: string): Promise<void> => {
   await new Promise(resolve => setTimeout(resolve, 300));
-  
+  console.log('Deleting post', postId);
   // En producción: DELETE /api/community/posts/{postId}
 };
 
@@ -438,13 +438,13 @@ export const reactToPost = async (
   reactionType: string
 ): Promise<void> => {
   await new Promise(resolve => setTimeout(resolve, 300));
-  
+  console.log('Reacting to post', postId, reactionType);
   // En producción: POST /api/community/posts/{postId}/reactions
 };
 
 export const getGroups = async (): Promise<Group[]> => {
   await new Promise(resolve => setTimeout(resolve, 300));
-  
+
   return [
     {
       id: 'group_general',
@@ -493,7 +493,7 @@ export interface CommunityAnalytics {
 
 export const getCommunityAnalytics = async (): Promise<CommunityAnalytics> => {
   await new Promise(resolve => setTimeout(resolve, 400));
-  
+
   return {
     dailyActiveUsers: 45,
     totalMembers: 150,
@@ -510,7 +510,8 @@ export const getCommunityAnalytics = async (): Promise<CommunityAnalytics> => {
 
 export const getUserBadges = async (userId: string): Promise<Badge[]> => {
   await new Promise(resolve => setTimeout(resolve, 300));
-  
+  console.log('Getting badges for user', userId);
+
   return [
     {
       id: 'badge_1',
@@ -546,32 +547,32 @@ export interface ReferralSummary {
  */
 export const getTestimonialSummary = async (): Promise<TestimonialSummary> => {
   await new Promise(resolve => setTimeout(resolve, 300));
-  
+
   // Obtener todos los posts de tipo testimonial
   const response = await getPosts(1, 100, { filterBy: 'testimonial' });
   const testimonials = response.data;
-  
+
   const now = new Date();
   const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  
+
   // Filtrar por fecha
-  const lastWeek = testimonials.filter(post => 
+  const lastWeek = testimonials.filter(post =>
     new Date(post.createdAt) >= oneWeekAgo
   );
-  const last30Days = testimonials.filter(post => 
+  const last30Days = testimonials.filter(post =>
     new Date(post.createdAt) >= thirtyDaysAgo
   );
-  
+
   // Obtener testimonios destacados (ordenados por reacciones totales, máximo 5)
   const featured = testimonials
     .sort((a, b) => {
-      const aReactions = Object.values(a.reactions || {}).reduce((sum, val) => sum + (val || 0), 0);
-      const bReactions = Object.values(b.reactions || {}).reduce((sum, val) => sum + (val || 0), 0);
-      return bReactions - aReactions;
+      const aReactions = Object.values(a.reactions || {}).reduce((sum, val) => (sum || 0) + (val || 0), 0);
+      const bReactions = Object.values(b.reactions || {}).reduce((sum, val) => (sum || 0) + (val || 0), 0);
+      return (bReactions || 0) - (aReactions || 0);
     })
     .slice(0, 5);
-  
+
   return {
     totalLastWeek: lastWeek.length,
     totalLast30Days: last30Days.length,
@@ -585,30 +586,30 @@ export const getTestimonialSummary = async (): Promise<TestimonialSummary> => {
  */
 export const getReferralSummary = async (): Promise<ReferralSummary> => {
   await new Promise(resolve => setTimeout(resolve, 300));
-  
+
   // Obtener todos los posts de tipo referral
   const response = await getPosts(1, 100, { filterBy: 'referral' });
   const referrals = response.data;
-  
+
   const now = new Date();
   const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  
+
   // Filtrar por fecha
-  const lastWeek = referrals.filter(post => 
+  const lastWeek = referrals.filter(post =>
     new Date(post.createdAt) >= oneWeekAgo
   );
-  const last30Days = referrals.filter(post => 
+  const last30Days = referrals.filter(post =>
     new Date(post.createdAt) >= thirtyDaysAgo
   );
-  
+
   // Obtener referidos destacados (ordenados por fecha, más recientes primero, máximo 5)
   const featured = referrals
-    .sort((a, b) => 
+    .sort((a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )
     .slice(0, 5);
-  
+
   return {
     totalLastWeek: lastWeek.length,
     totalLast30Days: last30Days.length,
@@ -638,3 +639,220 @@ export const getReferralSummary = async (): Promise<ReferralSummary> => {
 
 
 
+
+// --- Nuevas Funciones API para el Dashboard (Simuladas) ---
+
+import {
+  Testimonial,
+  TestimonialFilters,
+  Survey,
+  CreateSurveyDto,
+  Interaction,
+  InteractionFilters,
+  EngagementMetrics
+} from '../types';
+
+// Testimonios
+export const getTestimonials = async (filters?: TestimonialFilters): Promise<Testimonial[]> => {
+  await new Promise(resolve => setTimeout(resolve, 600));
+
+  const testimonials: Testimonial[] = [
+    {
+      id: '1',
+      clientId: 'client_1',
+      clientName: 'Ana García',
+      content: '¡Increíble progreso en solo 3 meses! El plan de entrenamiento es super adaptado a mi estilo de vida.',
+      rating: 5,
+      date: 'Hace 2 días',
+      status: 'featured',
+      program: 'Pérdida de Peso'
+    },
+    {
+      id: '2',
+      clientId: 'client_2',
+      clientName: 'Carlos Ruiz',
+      content: 'La mejor decisión que he tomado. La atención personalizada marca la diferencia.',
+      rating: 5,
+      date: 'Hace 5 días',
+      status: 'approved',
+      program: 'Hipertrofia'
+    },
+    {
+      id: '3',
+      clientId: 'client_3',
+      clientName: 'Laura M.',
+      content: 'Me encanta la comunidad y cómo nos motivamos entre todos.',
+      rating: 4,
+      date: 'Hace 1 semana',
+      status: 'pending',
+      program: 'Yoga Flex'
+    },
+    {
+      id: '4',
+      clientId: 'client_4',
+      clientName: 'Pedro S.',
+      content: 'Muy buenos resultados, aunque me gustaría más variedad en los ejercicios de cardio.',
+      rating: 4,
+      date: 'Hace 2 semanas',
+      status: 'approved',
+      program: 'Funcional'
+    }
+  ];
+
+  if (filters?.status) {
+    return testimonials.filter(t => t.status === filters.status);
+  }
+
+  return testimonials;
+};
+
+export const requestTestimonial = async (clientId: string, template?: string): Promise<void> => {
+  await new Promise(resolve => setTimeout(resolve, 400));
+  console.log(`Solicitando testimonio a ${clientId} con plantilla ${template}`);
+};
+
+export const updateTestimonialStatus = async (
+  id: string,
+  status: Testimonial['status']
+): Promise<void> => {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  console.log(`Actualizando testimonio ${id} a estado ${status}`);
+};
+
+// Encuestas
+export const getSurveys = async (status?: Survey['status']): Promise<Survey[]> => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  const surveys: Survey[] = [
+    {
+      id: '1',
+      title: 'Satisfacción Mensual - Noviembre',
+      responses: 45,
+      totalRecipients: 60,
+      daysLeft: 2,
+      status: 'active',
+      startDate: '2023-11-01',
+      color: 'blue'
+    },
+    {
+      id: '2',
+      title: 'Feedback Nuevo Programa Hipertrofia',
+      responses: 12,
+      totalRecipients: 25,
+      daysLeft: 5,
+      status: 'active',
+      startDate: '2023-11-15',
+      color: 'indigo'
+    },
+    {
+      id: '3',
+      title: 'Intereses para Próximo Reto',
+      responses: 0,
+      totalRecipients: 100,
+      daysLeft: 0,
+      status: 'draft',
+      startDate: '',
+      color: 'slate'
+    }
+  ];
+
+  if (status) {
+    return surveys.filter(s => s.status === status);
+  }
+
+  return surveys;
+};
+
+export const createSurvey = async (survey: CreateSurveyDto): Promise<Survey> => {
+  await new Promise(resolve => setTimeout(resolve, 800));
+
+  return {
+    id: `survey_${Date.now()}`,
+    title: survey.title,
+    description: survey.description,
+    status: 'active',
+    totalRecipients: survey.recipients.length,
+    responses: 0,
+    startDate: new Date().toISOString(),
+    daysLeft: 7,
+    color: 'blue'
+  };
+};
+
+// Interacciones
+export const getInteractions = async (filters?: InteractionFilters): Promise<Interaction[]> => {
+  await new Promise(resolve => setTimeout(resolve, 400));
+  console.log('Getting interactions with filters', filters);
+
+  return [
+    {
+      id: '1',
+      type: 'comment',
+      clientId: 'client_5',
+      clientName: 'Miguel Ángel',
+      content: '¿Podrías revisar mi técnica en el video que subí?',
+      target: 'Post: Técnica de Sentadilla',
+      timestamp: new Date(Date.now() - 15 * 60000).toISOString(),
+      time: 'Hace 15 min',
+      isUnread: true
+    },
+    {
+      id: '2',
+      type: 'survey_response',
+      clientId: 'client_6',
+      clientName: 'Sofía L.',
+      content: 'Completó la encuesta de satisfacción',
+      target: 'Encuesta Mensual',
+      timestamp: new Date(Date.now() - 2 * 3600000).toISOString(),
+      time: 'Hace 2 horas',
+      isUnread: true
+    },
+    {
+      id: '3',
+      type: 'like',
+      clientId: 'client_7',
+      clientName: 'Juan Carlos',
+      target: 'Tu publicación sobre nutrición',
+      timestamp: new Date(Date.now() - 4 * 3600000).toISOString(),
+      time: 'Hace 4 horas'
+    },
+    {
+      id: '4',
+      type: 'check_in',
+      clientId: 'client_8',
+      clientName: 'María P.',
+      content: 'Completó sesión de entrenamiento',
+      target: 'Rutina Pierna A',
+      timestamp: new Date(Date.now() - 5 * 3600000).toISOString(),
+      time: 'Hace 5 horas'
+    },
+    {
+      id: '5',
+      type: 'comment',
+      clientId: 'client_9',
+      clientName: 'Roberto G.',
+      content: 'Gracias por los consejos, me sirvieron mucho hoy.',
+      target: 'Post: Hidratación',
+      timestamp: new Date(Date.now() - 24 * 3600000).toISOString(),
+      time: 'Ayer'
+    }
+  ];
+};
+
+export const getEngagementMetrics = async (): Promise<EngagementMetrics> => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  return {
+    testimonialsReceived: 24,
+    activeSurveys: 3,
+    responseRate: 68,
+    avgResponseTime: 2.4,
+    engagementScore: 8.5,
+    npsScore: 72,
+    trends: {
+      testimonials: { value: 12, isPositive: true },
+      responseRate: { value: 5, isPositive: true },
+      engagement: { value: 3, isPositive: true }
+    }
+  };
+};

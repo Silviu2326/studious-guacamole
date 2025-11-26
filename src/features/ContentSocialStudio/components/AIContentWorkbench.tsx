@@ -1,9 +1,9 @@
 import { Badge, Button, Card } from '../../../components/componentsreutilizables';
-import type { CreationAndAISnapshot } from '../types';
+import type { ContentSocialSnapshot } from '../types';
 import { ICON_MAP } from './iconMap';
 
 interface AIContentWorkbenchProps {
-  ai: CreationAndAISnapshot['ai'];
+  ai: ContentSocialSnapshot['ai'];
   loading?: boolean;
 }
 

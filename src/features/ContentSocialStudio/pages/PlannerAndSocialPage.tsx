@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, TrendingUp, AlertCircle, BarChart3, ArrowLeft } from 'lucide-react';
-import { Card, Select, Button } from '../../../components/componentsreutilizables';
+import { Calendar, AlertCircle, BarChart3, ArrowLeft } from 'lucide-react';
+import { Select, Button } from '../../../components/componentsreutilizables';
 import type {
   ContentStudioPeriod,
   PlannerUpcomingPost,
@@ -14,6 +14,8 @@ import {
   WeeklyAICalendarComponent,
   CalendarGapAlerts,
   ContentLeadAnalytics,
+  ScrollAnchorTabs,
+  BackToTopButton,
 } from '../components';
 import { getSocialPosts } from '../../PlannerDeRedesSociales/api/social';
 import type { SocialPost } from '../../PlannerDeRedesSociales/api/social';
@@ -22,12 +24,12 @@ import { detectCalendarGaps, generateGapAlerts } from '../api/calendarGaps';
 export default function PlannerAndSocialPage() {
   const [period, setPeriod] = useState<ContentStudioPeriod>('30d');
   const [loading, setLoading] = useState(true);
-  
+
   // Estado del calendario
   const [upcomingPosts, setUpcomingPosts] = useState<PlannerUpcomingPost[]>([]);
   const [calendarGaps, setCalendarGaps] = useState<CalendarGap[]>([]);
   const [gapAlerts, setGapAlerts] = useState<CalendarGapAlert[]>([]);
-  
+
   // Estado para PlannerSchedulePreview
   const [plannerData, setPlannerData] = useState<{
     upcoming: PlannerUpcomingPost[];
@@ -69,24 +71,24 @@ export default function PlannerAndSocialPage() {
       const startDate = new Date();
       const days = period === '7d' ? 7 : period === '30d' ? 30 : 90;
       startDate.setDate(startDate.getDate() - days);
-      
+
       // Cargar posts programados desde la API específica
       const socialPosts = await getSocialPosts(
         startDate.toISOString(),
         endDate.toISOString()
       );
-      
+
       // Mapear a PlannerUpcomingPost
       const upcoming = mapPostsToUpcoming(socialPosts);
-      
+
       // Detectar gaps en el calendario
       const gaps = await detectCalendarGaps(upcoming);
       const alerts = await generateGapAlerts(gaps, upcoming);
-      
+
       setCalendarGaps(gaps);
       setGapAlerts(alerts);
       setUpcomingPosts(upcoming);
-      
+
       // Calcular días de cobertura
       const coverageDays = (() => {
         if (upcoming.length === 0) return 0;
@@ -96,7 +98,7 @@ export default function PlannerAndSocialPage() {
           Math.ceil((new Date(last.scheduledAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
         );
       })();
-      
+
       // Preparar datos para PlannerSchedulePreview
       setPlannerData({
         upcoming,
@@ -166,20 +168,23 @@ export default function PlannerAndSocialPage() {
     { value: '90d', label: 'Últimos 90 días' },
   ];
 
+  const tabs = [
+    { id: 'calendar', label: 'Estado del calendario' },
+    { id: 'ai-calendar', label: 'Calendario IA semanal' },
+    { id: 'performance', label: 'Rendimiento social & leads' },
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200">
-        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-6">
+      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50">
+        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                <Calendar className="w-6 h-6 text-indigo-500" />
+              <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-indigo-500" />
                 Planner & Social
               </h1>
-              <p className="text-sm text-slate-500 mt-1">
-                Planificación de contenido, calendario IA y análisis de rendimiento social
-              </p>
             </div>
             <div className="flex items-center gap-3">
               <Link to="/dashboard/content/social-studio">
@@ -211,65 +216,66 @@ export default function PlannerAndSocialPage() {
         </div>
       </div>
 
+      <ScrollAnchorTabs tabs={tabs} />
+
       {/* Contenedor Principal */}
-      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
-        <div className="space-y-6">
-          {/* Sección 1: Estado del calendario */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-amber-500" />
-              <h2 className="text-xl font-semibold text-slate-900">
-                Estado del calendario
-              </h2>
-            </div>
-            
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              {/* PlannerSchedulePreview - Ocupa 2 columnas */}
-              <div className="xl:col-span-2">
-                <PlannerSchedulePreview
-                  planner={plannerData}
-                  loading={loading}
-                />
-              </div>
-              
-              {/* CalendarGapAlerts - Ocupa 1 columna */}
-              <div>
-                <CalendarGapAlerts
-                  posts={upcomingPosts}
-                  loading={loading}
-                  onGapFilled={handleGapFilled}
-                  onGapsFilled={handleGapsFilled}
-                />
-              </div>
-            </div>
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8 space-y-12">
+        {/* Sección 1: Estado del calendario */}
+        <section id="calendar" className="scroll-mt-32">
+          <div className="flex items-center gap-2 mb-6">
+            <AlertCircle className="w-5 h-5 text-amber-500" />
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              Estado del calendario
+            </h2>
           </div>
 
-          {/* Sección 2: Calendario IA semanal */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-indigo-500" />
-              <h2 className="text-xl font-semibold text-slate-900">
-                Calendario IA semanal
-              </h2>
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            {/* PlannerSchedulePreview - Ocupa 2 columnas */}
+            <div className="xl:col-span-2">
+              <PlannerSchedulePreview
+                planner={plannerData}
+                loading={loading}
+              />
             </div>
-            
-            <WeeklyAICalendarComponent loading={loading} />
+
+            {/* CalendarGapAlerts - Ocupa 1 columna */}
+            <div>
+              <CalendarGapAlerts
+                posts={upcomingPosts}
+                loading={loading}
+                onGapFilled={handleGapFilled}
+                onGapsFilled={handleGapsFilled}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Sección 2: Calendario IA semanal */}
+        <section id="ai-calendar" className="scroll-mt-32">
+          <div className="flex items-center gap-2 mb-6">
+            <Calendar className="w-5 h-5 text-indigo-500" />
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              Calendario IA semanal
+            </h2>
           </div>
 
-          {/* Sección 3: Rendimiento social & leads */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-emerald-500" />
-              <h2 className="text-xl font-semibold text-slate-900">
-                Rendimiento social & leads
-              </h2>
-            </div>
-            
-            <ContentLeadAnalytics loading={loading} period={period} />
+          <WeeklyAICalendarComponent loading={loading} />
+        </section>
+
+        {/* Sección 3: Rendimiento social & leads */}
+        <section id="performance" className="scroll-mt-32">
+          <div className="flex items-center gap-2 mb-6">
+            <BarChart3 className="w-5 h-5 text-emerald-500" />
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              Rendimiento social & leads
+            </h2>
           </div>
-        </div>
+
+          <ContentLeadAnalytics loading={loading} period={period} />
+        </section>
       </div>
+
+      <BackToTopButton />
     </div>
   );
 }
-

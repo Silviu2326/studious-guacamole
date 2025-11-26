@@ -12,10 +12,10 @@ import {
   Copy,
   Send,
   Search,
+  Filter,
   Users,
-  Eye,
 } from 'lucide-react';
-import { Card, Button, Badge, Modal } from '../../../components/componentsreutilizables';
+import { Card, Button, Badge } from '../../../components/componentsreutilizables';
 import { ds } from '../../adherencia/ui/ds';
 import { MessageTemplate, MessageTemplateCategory } from '../types';
 
@@ -71,7 +71,6 @@ export const MessageTemplatesLibrary: React.FC<MessageTemplatesLibraryProps> = (
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<MessageTemplateCategory | 'all'>('all');
   const [selectedChannel, setSelectedChannel] = useState<string>('all');
-  const [selectedTemplate, setSelectedTemplate] = useState<MessageTemplate | null>(null);
 
   if (loading) {
     return (
@@ -217,8 +216,7 @@ export const MessageTemplatesLibrary: React.FC<MessageTemplatesLibraryProps> = (
             filteredTemplates.map((template) => (
               <div
                 key={template.id}
-                className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => setSelectedTemplate(template)}
+                className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
@@ -240,25 +238,30 @@ export const MessageTemplatesLibrary: React.FC<MessageTemplatesLibraryProps> = (
                     <p className={`${ds.typography.bodySmall} ${ds.color.textSecondary} ${ds.color.textSecondaryDark} mb-3`}>
                       {template.description}
                     </p>
-                    <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400 mb-2">
+                    <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 mb-3">
+                      <p className={`${ds.typography.bodySmall} ${ds.color.textPrimary} ${ds.color.textPrimaryDark} whitespace-pre-wrap`}>
+                        {template.messageTemplate}
+                      </p>
+                    </div>
+                    {template.variables.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-2 mb-3">
+                        <span className={`${ds.typography.caption} ${ds.color.textSecondary} ${ds.color.textSecondaryDark}`}>
+                          Variables:
+                        </span>
+                        {template.variables.map((variable) => (
+                          <Badge key={variable} variant="outline" size="sm">
+                            {variable}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
                       <span>Usada {template.usageCount} veces</span>
                       {template.lastUsed && <span>Última vez: {new Date(template.lastUsed).toLocaleDateString('es-ES')}</span>}
-                      {template.variables.length > 0 && (
-                        <span className="text-slate-500 dark:text-slate-400">
-                          {template.variables.length} variable{template.variables.length > 1 ? 's' : ''}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-indigo-600 dark:text-indigo-400">
-                      <Eye className="w-3 h-3" />
-                      <span>Haz clic para ver el contenido completo</span>
                     </div>
                   </div>
                 </div>
-                <div 
-                  className="flex items-center gap-2 pt-3 border-t border-slate-200 dark:border-slate-700"
-                  onClick={(e) => e.stopPropagation()}
-                >
+                <div className="flex items-center gap-2 pt-3 border-t border-slate-200 dark:border-slate-700">
                   <Button
                     size="sm"
                     variant="ghost"
@@ -307,153 +310,6 @@ export const MessageTemplatesLibrary: React.FC<MessageTemplatesLibraryProps> = (
           )}
         </div>
       </div>
-
-      {/* Modal de detalle de plantilla */}
-      <Modal
-        isOpen={selectedTemplate !== null}
-        onClose={() => setSelectedTemplate(null)}
-        title={selectedTemplate ? selectedTemplate.name : ''}
-        size="lg"
-        footer={
-          selectedTemplate ? (
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  leftIcon={<Copy size={14} />}
-                  onClick={() => {
-                    onTemplateUse?.(selectedTemplate);
-                    setSelectedTemplate(null);
-                  }}
-                >
-                  Usar en conversación
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  leftIcon={<Users size={14} />}
-                  onClick={() => {
-                    onTemplateSendBulk?.(selectedTemplate);
-                    setSelectedTemplate(null);
-                  }}
-                >
-                  Enviar en masa
-                </Button>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => setSelectedTemplate(null)}
-                >
-                  Cerrar
-                </Button>
-                <Button
-                  size="sm"
-                  leftIcon={<Edit size={14} />}
-                  onClick={() => {
-                    onTemplateEdit?.(selectedTemplate);
-                    setSelectedTemplate(null);
-                  }}
-                >
-                  Editar
-                </Button>
-              </div>
-            </div>
-          ) : null
-        }
-      >
-        {selectedTemplate && (
-          <div className="space-y-6">
-            {/* Información básica */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <Badge className={channelColors[selectedTemplate.channel]}>
-                <span className="flex items-center gap-1">
-                  {channelIcons[selectedTemplate.channel]}
-                  {selectedTemplate.channel.toUpperCase()}
-                </span>
-              </Badge>
-              <Badge variant="secondary">{categoryLabels[selectedTemplate.category]}</Badge>
-              {selectedTemplate.isFavorite && (
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                  <span className="text-sm text-slate-600 dark:text-slate-400">Favorita</span>
-                </div>
-              )}
-            </div>
-
-            {/* Descripción */}
-            {selectedTemplate.description && (
-              <div>
-                <h4 className={`${ds.typography.bodySmall} ${ds.color.textSecondary} ${ds.color.textSecondaryDark} mb-2 font-semibold`}>
-                  Descripción
-                </h4>
-                <p className={`${ds.typography.body} ${ds.color.textPrimary} ${ds.color.textPrimaryDark}`}>
-                  {selectedTemplate.description}
-                </p>
-              </div>
-            )}
-
-            {/* Contenido completo del mensaje */}
-            <div>
-              <h4 className={`${ds.typography.bodySmall} ${ds.color.textSecondary} ${ds.color.textSecondaryDark} mb-2 font-semibold`}>
-                Contenido del mensaje
-              </h4>
-              <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
-                <p className={`${ds.typography.body} ${ds.color.textPrimary} ${ds.color.textPrimaryDark} whitespace-pre-wrap`}>
-                  {selectedTemplate.messageTemplate}
-                </p>
-              </div>
-            </div>
-
-            {/* Variables disponibles */}
-            {selectedTemplate.variables.length > 0 && (
-              <div>
-                <h4 className={`${ds.typography.bodySmall} ${ds.color.textSecondary} ${ds.color.textSecondaryDark} mb-2 font-semibold`}>
-                  Variables disponibles
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedTemplate.variables.map((variable) => (
-                    <Badge key={variable} variant="outline" size="sm" className="font-mono">
-                      {variable}
-                    </Badge>
-                  ))}
-                </div>
-                <p className={`${ds.typography.caption} ${ds.color.textSecondary} ${ds.color.textSecondaryDark} mt-2`}>
-                  Puedes usar estas variables en el mensaje y se reemplazarán automáticamente con los valores correspondientes.
-                </p>
-              </div>
-            )}
-
-            {/* Estadísticas de uso */}
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-              <div>
-                <span className={`${ds.typography.caption} ${ds.color.textSecondary} ${ds.color.textSecondaryDark}`}>
-                  Veces usada
-                </span>
-                <p className={`${ds.typography.h3} ${ds.color.textPrimary} ${ds.color.textPrimaryDark}`}>
-                  {selectedTemplate.usageCount}
-                </p>
-              </div>
-              {selectedTemplate.lastUsed && (
-                <div>
-                  <span className={`${ds.typography.caption} ${ds.color.textSecondary} ${ds.color.textSecondaryDark}`}>
-                    Última vez usada
-                  </span>
-                  <p className={`${ds.typography.body} ${ds.color.textPrimary} ${ds.color.textPrimaryDark}`}>
-                    {new Date(selectedTemplate.lastUsed).toLocaleDateString('es-ES', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </Modal>
     </Card>
   );
 };

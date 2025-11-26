@@ -22,13 +22,12 @@ export { LearningInsightsComponent } from './LearningInsights';
 export { ExperimentsTracker } from './ExperimentsTracker';
 export { MetricDropTips } from './MetricDropTips';
 
-
-
-
-
-
-
-
-
-
-
+// Nuevos componentes exportados
+export { AutomationRadar } from './AutomationRadar';
+export { ChannelHealthWidget } from './ChannelHealthWidget';
+export { SatisfactionPulse } from './SatisfactionPulse';
+export { RecentWinsWidget } from './RecentWinsWidget';
+export { CustomerAttentionWidget } from './CustomerAttentionWidget';
+export { ContentCalendarWidget } from './ContentCalendarWidget';
+export { TopContentWidget } from './TopContentWidget';
+export { PlaybooksProgressWidget } from './PlaybooksProgressWidget';

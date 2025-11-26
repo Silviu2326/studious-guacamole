@@ -22,10 +22,8 @@ const automationClasses: Record<
   automated: { label: 'Automatizado', className: 'bg-emerald-100 text-emerald-700' },
 };
 
-import type { CreationAndAISnapshot } from '../types';
-
 interface VideoStudioSpotlightProps {
-  video: CreationAndAISnapshot['video'];
+  video: ContentSocialSnapshot['video'];
   loading?: boolean;
 }
 

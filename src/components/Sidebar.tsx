@@ -47,7 +47,7 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     if (path.includes('tareas-alertas')) return 'tareas-alertas';
     if (path.includes('objetivos-rendimiento')) return 'objetivos-rendimiento';
     if (path.includes('overview-marketing')) return 'overview-marketing';
-  if (path.includes('funnels-adquisicion')) return 'funnels-adquisicion';
+    if (path.includes('funnels-adquisicion')) return 'funnels-adquisicion';
     if (path.includes('leads')) return 'leads';
     if (path.includes('gestión-de-clientes') || path.includes('clientes')) return 'gestión-de-clientes';
     if (path.includes('portal-del-cliente-autoservicio')) return 'portal-del-cliente-autoservicio';
@@ -230,21 +230,21 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     { id: 'funnels-adquisicion', label: 'Funnels & Adquisición', icon: Layers, path: '/dashboard/marketing/funnels-adquisicion' },
     { id: 'campanas-automatizacion', label: 'Campañas & Automatización', icon: Workflow, path: '/dashboard/marketing/campanas-automatizacion' },
     { id: 'content-social-studio', label: 'Content & Social Studio', icon: SparklesIcon, path: '/dashboard/content/social-studio' },
-    { id: 'comunidad-fidelizacion', label: 'Comunidad & Fidelización', icon: HeartHandshake, path: '/comunidad-fidelizacion' },
+    { id: 'community-engagement', label: 'Comunidad & Fidelización', icon: HeartHandshake, path: '/comunidad' },
     { id: 'inteligencia-ia-experimentacion', label: 'IA & Experimentación', icon: Brain, path: '/dashboard/intelligence/ia-experimentacion' },
   ];
 
-const marketingGimnasioItems: NavItem[] = [
+  const marketingGimnasioItems: NavItem[] = [
     { id: 'overview-marketing', label: 'Overview Marketing', icon: BarChart3, path: '/overview-marketing' },
     { id: 'funnels-adquisicion', label: 'Funnels & Adquisición', icon: Layers, path: '/dashboard/marketing/funnels-adquisicion' },
     { id: 'campanas-promociones', label: 'Campañas & Promociones', icon: Megaphone, path: '/dashboard/marketing/campanas-promociones' },
     { id: 'campanas-automatizacion', label: 'Campañas & Automatización', icon: Workflow, path: '/dashboard/marketing/campanas-automatizacion' },
     { id: 'landing-pages-simples', label: 'Landing Pages Simples', icon: Globe, path: '/dashboard/marketing/landing-pages-simples' },
-    { id: 'comunidad-fidelizacion', label: 'Comunidad & Fidelización', icon: HeartHandshake, path: '/comunidad-fidelizacion' },
+    { id: 'community-engagement', label: 'Comunidad & Fidelización', icon: HeartHandshake, path: '/comunidad' },
     { id: 'campanas-retencion-riesgo', label: 'Campañas Retención & Riesgo de Baja', icon: AlertCircle, path: '/dashboard/marketing/retencion-riesgo' },
     { id: 'planner-redes-sociales-simple', label: 'Redes Sociales (Planner simple)', icon: Calendar, path: '/dashboard/marketing/social-planner-simple' },
     { id: 'analitica-captacion', label: 'Analítica de Captación', icon: LineChart, path: '/dashboard/analytics/captacion' },
-  { id: 'inteligencia-ia-experimentacion', label: 'IA & Experimentación', icon: SparklesIcon, path: '/dashboard/intelligence/ia-experimentacion' },
+    { id: 'inteligencia-ia-experimentacion', label: 'IA & Experimentación', icon: SparklesIcon, path: '/dashboard/intelligence/ia-experimentacion' },
   ];
 
   const marketingFullItems: NavItem[] = [
@@ -276,7 +276,7 @@ const marketingGimnasioItems: NavItem[] = [
     { id: 'video-studio', label: 'Video Marketing & Automation', icon: Video, path: '/dashboard/content/video-studio' },
     { id: 'hub-contenidos-ugc', label: 'Hub de Contenidos & UGC', icon: Image, path: '/dashboard/contenido/ugc-hub' },
     // Confianza & Social Proof
-    { id: 'comunidad-fidelizacion', label: 'Comunidad & Fidelización', icon: HeartHandshake, path: '/comunidad-fidelizacion' },
+    { id: 'community-engagement', label: 'Comunidad & Fidelización', icon: HeartHandshake, path: '/comunidad' },
     { id: 'feedback-encuestas', label: 'Feedback Loop & Encuestas Inteligentes', icon: MessageSquare, path: '/dashboard/feedback/surveys' },
     // Publicidad & Retargeting
     { id: 'gestor-de-anuncios', label: 'Gestor de Anuncios', icon: Megaphone, path: '/dashboard/marketing/anuncios' },
@@ -290,10 +290,10 @@ const marketingGimnasioItems: NavItem[] = [
     // Experiencias & Eventos
     { id: 'webinars-virtual-events', label: 'Webinars & Virtual Events Manager', icon: Video, path: '/dashboard/experiences/virtual-events' },
     { id: 'eventos-retos', label: 'Eventos & Retos', icon: Trophy, path: '/dashboard/experiencias/eventos' },
-    { id: 'community-engagement', label: 'Community & Engagement', icon: Users, path: '/comunidad' },
+
     // Análisis & Inteligencia
     { id: 'libreria-campanas-playbooks', label: 'Librería de Campañas (Playbooks)', icon: BookOpen, path: '/dashboard/intelligence/playbooks' },
-  { id: 'inteligencia-ia-experimentacion', label: 'Inteligencia, IA & Experimentación', icon: Brain, path: '/dashboard/intelligence/ia-experimentacion' },
+    { id: 'inteligencia-ia-experimentacion', label: 'Inteligencia, IA & Experimentación', icon: Brain, path: '/dashboard/intelligence/ia-experimentacion' },
     { id: 'trend-analizer', label: 'Trend Analizer', icon: TrendingUp, path: '/dashboard/intelligence/trend-analyzer' },
     { id: 'analitica-de-adquisicion', label: 'Analítica de Adquisición', icon: LineChart, path: '/analytics/acquisition' },
     // Integraciones & Partnerships
@@ -314,8 +314,8 @@ const marketingGimnasioItems: NavItem[] = [
     ? marketingLiteItems
     : isCreador
       ? marketingFullItems.map(item =>
-          item.gimnasioOnly ? { ...item, gimnasioOnly: undefined } : item
-        )
+        item.gimnasioOnly ? { ...item, gimnasioOnly: undefined } : item
+      )
       : isGimnasio
         ? marketingGimnasioItems
         : marketingFullItems;
@@ -343,12 +343,12 @@ const marketingGimnasioItems: NavItem[] = [
 
   const agendaItems: NavItem[] = isGimnasio
     ? agendaBaseItems.filter(
-        item =>
-          item.id !== 'agenda' &&
-          item.id !== 'reservas-online' &&
-          item.id !== 'eventos-retos' &&
-          item.id !== 'lista-de-espera-ausencias'
-      )
+      item =>
+        item.id !== 'agenda' &&
+        item.id !== 'reservas-online' &&
+        item.id !== 'eventos-retos' &&
+        item.id !== 'lista-de-espera-ausencias'
+    )
     : agendaBaseItems;
 
   const membresiasBaseItems: NavItem[] = [
@@ -363,21 +363,21 @@ const marketingGimnasioItems: NavItem[] = [
 
   const finanzasItems: NavItem[] = isGimnasio
     ? [
-        { id: 'panel-financiero-overview', label: 'Finanzas', icon: PieChart, path: '/panel-financiero-overview' },
-        membresiasItems.find(item => item.id === 'membresias-planes')!,
-      ].filter(Boolean) as NavItem[]
+      { id: 'panel-financiero-overview', label: 'Finanzas', icon: PieChart, path: '/panel-financiero-overview' },
+      membresiasItems.find(item => item.id === 'membresias-planes')!,
+    ].filter(Boolean) as NavItem[]
     : [
-        { id: 'panel-financiero-overview', label: isPersonalRole ? 'Panel Financiero' : 'Panel Financiero / Overview', icon: PieChart, path: '/panel-financiero-overview' },
-        { id: 'facturacin-cobros', label: 'Facturación & Cobros', icon: Receipt, path: '/facturacin-cobros' },
-        { id: 'pagos-pendientes-morosidad', label: 'Pagos Pendientes / Morosidad', icon: DollarSign, path: '/pagos-pendientes-morosidad' },
-        { id: 'suscripciones-cuotas-recurrentes', label: isPersonalRole ? 'Suscripciones PT' : 'Suscripciones & Cuotas', icon: RefreshCw, path: '/suscripciones-cuotas-recurrentes' },
-        { id: 'gastos-proveedores', label: 'Gastos & Proveedores', icon: Wallet, path: '/gastos-proveedores', gimnasioOnly: true },
-        { id: 'caja-bancos', label: 'Caja & Bancos', icon: Banknote, path: '/caja-bancos', gimnasioOnly: true },
-        { id: 'presupuestos-forecast', label: 'Presupuestos & Forecast', icon: FileBarChart, path: '/finanzas/presupuestos', gimnasioOnly: true },
-        { id: 'impuestos-y-exportacion', label: 'Impuestos & Export', icon: FileSpreadsheet, path: '/finanzas/impuestos-y-exportacion' },
-        { id: 'informes-financieros-avanzados', label: 'Informes Avanzados', icon: FileBarChart, path: '/finanzas/informes-avanzados', gimnasioOnly: true },
-        ...membresiasItems,
-      ];
+      { id: 'panel-financiero-overview', label: isPersonalRole ? 'Panel Financiero' : 'Panel Financiero / Overview', icon: PieChart, path: '/panel-financiero-overview' },
+      { id: 'facturacin-cobros', label: 'Facturación & Cobros', icon: Receipt, path: '/facturacin-cobros' },
+      { id: 'pagos-pendientes-morosidad', label: 'Pagos Pendientes / Morosidad', icon: DollarSign, path: '/pagos-pendientes-morosidad' },
+      { id: 'suscripciones-cuotas-recurrentes', label: isPersonalRole ? 'Suscripciones PT' : 'Suscripciones & Cuotas', icon: RefreshCw, path: '/suscripciones-cuotas-recurrentes' },
+      { id: 'gastos-proveedores', label: 'Gastos & Proveedores', icon: Wallet, path: '/gastos-proveedores', gimnasioOnly: true },
+      { id: 'caja-bancos', label: 'Caja & Bancos', icon: Banknote, path: '/caja-bancos', gimnasioOnly: true },
+      { id: 'presupuestos-forecast', label: 'Presupuestos & Forecast', icon: FileBarChart, path: '/finanzas/presupuestos', gimnasioOnly: true },
+      { id: 'impuestos-y-exportacion', label: 'Impuestos & Export', icon: FileSpreadsheet, path: '/finanzas/impuestos-y-exportacion' },
+      { id: 'informes-financieros-avanzados', label: 'Informes Avanzados', icon: FileBarChart, path: '/finanzas/informes-avanzados', gimnasioOnly: true },
+      ...membresiasItems,
+    ];
 
   const sections: NavSection[] = [
     {
@@ -523,13 +523,12 @@ const marketingGimnasioItems: NavItem[] = [
             onViewChange?.(item.id);
             navigate(item.path);
           }}
-          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-2.5 rounded-lg transition-all ${
-            isActive
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-2.5 rounded-lg transition-all ${isActive
             ? isPersonalRole
-                ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm'
-                : 'bg-purple-50 text-purple-700 border border-purple-200 shadow-sm'
-              : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-          } font-medium text-sm`}
+              ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm'
+              : 'bg-purple-50 text-purple-700 border border-purple-200 shadow-sm'
+            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+            } font-medium text-sm`}
           title={isCollapsed ? item.label : ''}
         >
           <Icon className="w-5 h-5 flex-shrink-0" />
@@ -556,13 +555,12 @@ const marketingGimnasioItems: NavItem[] = [
           <>
             <button
               onClick={() => toggleSection(section.id)}
-              className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-all ${
-                isExpanded
-                  ? isPersonalRole
-                    ? 'bg-blue-50 text-blue-900'
-                    : 'bg-purple-50 text-purple-900'
-                  : 'text-gray-600 hover:bg-gray-50'
-              } font-semibold text-xs uppercase tracking-wider mb-1`}
+              className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-all ${isExpanded
+                ? isPersonalRole
+                  ? 'bg-blue-50 text-blue-900'
+                  : 'bg-purple-50 text-purple-900'
+                : 'text-gray-600 hover:bg-gray-50'
+                } font-semibold text-xs uppercase tracking-wider mb-1`}
             >
               <div className="flex items-center gap-2">
                 <SectionIcon className="w-4 h-4" />
@@ -579,9 +577,8 @@ const marketingGimnasioItems: NavItem[] = [
         ) : (
           <div className="px-2 py-1">
             <div
-              className={`flex items-center justify-center p-2 rounded-lg ${
-                isPersonalRole ? 'bg-blue-50' : 'bg-purple-50'
-              }`}
+              className={`flex items-center justify-center p-2 rounded-lg ${isPersonalRole ? 'bg-blue-50' : 'bg-purple-50'
+                }`}
             >
               <SectionIcon className={`w-4 h-4 ${isPersonalRole ? 'text-blue-600' : 'text-purple-600'}`} />
             </div>

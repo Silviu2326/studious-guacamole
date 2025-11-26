@@ -68,14 +68,14 @@ export const IntelligenceHeader: React.FC<IntelligenceHeaderProps> = ({
           <div className="flex-1">
             <Badge className="mb-3 inline-flex items-center gap-2 bg-indigo-50 text-indigo-700">
               <Sparkles size={16} />
-              Inteligencia & Experimentos
+              Centro de Comunicación Inteligente
             </Badge>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
-              Inteligencia & Experimentos
+              Inteligencia, IA & Experimentación
             </h1>
             <p className="mt-3 text-base text-slate-600 max-w-2xl">
-              Centro de inteligencia para entender qué funciona, qué está cambiando en el mercado y qué experimentar a continuación. 
-              Análisis de tendencias y competencia, gestión de experimentos y A/B tests en un solo lugar.
+              Coordina un hub inteligente para decidir el siguiente mejor paso. Orquesta playbooks,
+              personalización avanzada y experimentos de alto impacto con una sola vista.
             </p>
           </div>
         </div>
@@ -99,7 +99,7 @@ export const IntelligenceHeader: React.FC<IntelligenceHeaderProps> = ({
               console.log('View experiment:', experimentId);
             }}
           />
-          
+
           {/* Header Actions Row */}
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
             {overview?.topCampaigns && overview.topCampaigns.length > 0 && (

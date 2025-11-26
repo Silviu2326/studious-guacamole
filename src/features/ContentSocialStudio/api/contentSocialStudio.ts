@@ -316,7 +316,7 @@ const buildMetrics = (
     {
       id: 'video-pipeline',
       title: 'Videos listos',
-      value: `${snapshot.creationAndAI.video.readyToPublish}`,
+      value: `${snapshot.video.readyToPublish}`,
       subtitle: 'Listos para publicación',
       icon: 'film',
       color: 'info',
@@ -324,15 +324,15 @@ const buildMetrics = (
     {
       id: 'clip-library',
       title: 'Activos en biblioteca',
-      value: `${snapshot.assetsAndBrand.clipper.totalClips}`,
-      subtitle: `${snapshot.assetsAndBrand.clipper.newThisWeek} nuevos esta semana`,
+      value: `${snapshot.clipper.totalClips}`,
+      subtitle: `${snapshot.clipper.newThisWeek} nuevos esta semana`,
       icon: 'library',
       color: 'success',
     },
     {
       id: 'ai-ideas',
       title: 'Ideas guardadas',
-      value: `${snapshot.creationAndAI.ai.quickIdeas.length}`,
+      value: `${snapshot.ai.quickIdeas.length}`,
       subtitle: draftsCount ? `+${draftsCount} borradores` : 'Listas para programar',
       icon: 'sparkles',
       color: 'warning',
@@ -340,41 +340,6 @@ const buildMetrics = (
   ];
 };
 
-/**
- * API agregadora opcional para obtener un snapshot completo de Content & Social Studio.
- * 
- * ⚠️ IMPORTANTE: Esta función NO debe ser llamada automáticamente al montar páginas.
- * 
- * Esta función realiza múltiples llamadas a APIs en paralelo para agregar datos de todos
- * los módulos (Planner, Video, Clipper, Syndication, AI, etc.). Es una operación costosa
- * que carga una gran cantidad de datos.
- * 
- * Uso recomendado:
- * - Dashboards globales o páginas de resumen que necesiten una vista agregada
- * - Llamadas bajo demanda cuando el usuario explícitamente solicita un resumen completo
- * - NO usar en páginas dedicadas (PlannerAndSocialPage, CreationAndAIPage, AssetsAndBrandPage)
- * 
- * Para páginas específicas, usar las APIs individuales de cada módulo:
- * - Planner: getSocialPosts(), getContentSuggestions(), getSocialAnalytics()
- * - Video: APIs específicas del módulo de video
- * - Clipper: getClips(), getCategories()
- * - AI: getContentTemplates(), getSavedIdeas(), getBrandProfile()
- * 
- * @param period - Período de tiempo para el análisis (por defecto '30d')
- * @returns Promise con el snapshot completo agregado
- * 
- * @example
- * // ✅ Uso correcto: Dashboard global bajo demanda
- * const handleLoadGlobalDashboard = async () => {
- *   const snapshot = await getContentSocialStudioSnapshot('30d');
- *   // Mostrar resumen agregado
- * };
- * 
- * // ❌ Uso incorrecto: Carga automática al montar página
- * useEffect(() => {
- *   getContentSocialStudioSnapshot(); // NO HACER ESTO
- * }, []);
- */
 export const getContentSocialStudioSnapshot = async (
   period: ContentStudioPeriod = '30d'
 ): Promise<ContentSocialSnapshot> => {
@@ -530,66 +495,51 @@ export const getContentSocialStudioSnapshot = async (
         : undefined,
   };
 
-  // Construir snapshot con la nueva estructura de tres pilares
   const snapshot: ContentSocialSnapshot = {
     metrics: [], // placeholder, will assign below
     modules: modulesDefinition,
-    plannerAndSocial: {
-      planner,
-      syndication: {
-        activeCampaigns: campaigns.filter((campaign) => campaign.status === 'active').length,
-        creatorsNetwork: influencers.length,
-        pipeline: syndicationPipeline,
-      },
-      socialPerformance: {
-        totalPosts: posts.length,
-        scheduledPosts: posts.filter((post) => post.status === 'scheduled').length,
-      },
+    planner,
+    video: videoSummary,
+    clipper: clipperSummary,
+    syndication: {
+      activeCampaigns: campaigns.filter((campaign) => campaign.status === 'active').length,
+      creatorsNetwork: influencers.length,
+      pipeline: syndicationPipeline,
     },
-    creationAndAI: {
-      video: videoSummary,
-      ai,
-      clientTransformations: {
-        availableClients: clientsWithProgress,
-        generatedPosts: [],
-        templates: TRANSFORMATION_TEMPLATES,
-      },
-      faqContent: {
-        topQuestions: faqQuestions,
-        contentIdeas: faqContentIdeas,
-      },
-      promotionalContent: {
-        templates: promotionalTemplates,
-        availablePlans: servicePlans,
-        activeOffers: activeOffers,
-        generatedContent: [],
-      },
+    ai,
+    clientTransformations: {
+      availableClients: clientsWithProgress,
+      generatedPosts: [],
+      templates: TRANSFORMATION_TEMPLATES,
     },
-    assetsAndBrand: {
-      clipper: clipperSummary,
-      brandKits: brandKits.length > 0
-        ? {
-            kits: brandKits,
-            recentGenerations: brandKits.slice(0, 3),
-          }
-        : undefined,
-      creativeVoiceConfig: undefined, // Se carga desde APIs específicas si es necesario
-      starFormatsConfig: undefined, // Se carga desde APIs específicas si es necesario
-      visualStyleLearning: visualStyleLearning || undefined,
-      contentAssignments: {
-        assignments: contentAssignments,
-        availableTeamMembers: teamMembers,
-        pendingAssignments: assignmentStats.pendingAssignments,
-        inProgressAssignments: assignmentStats.inProgressAssignments,
-      },
-      contentApprovals: {
-        pendingApprovals: pendingApprovals,
-        pendingCount: approvalStats.pendingCount,
-        recentApprovals: recentApprovals,
-      },
-      saturatedTopics: undefined, // Se carga desde APIs específicas si es necesario
-      postCampaignInsights: undefined, // Se carga desde APIs específicas si es necesario
+    faqContent: {
+      topQuestions: faqQuestions,
+      contentIdeas: faqContentIdeas,
     },
+    promotionalContent: {
+      templates: promotionalTemplates,
+      availablePlans: servicePlans,
+      activeOffers: activeOffers,
+      generatedContent: [],
+    },
+    contentAssignments: {
+      assignments: contentAssignments,
+      availableTeamMembers: teamMembers,
+      pendingAssignments: assignmentStats.pendingAssignments,
+      inProgressAssignments: assignmentStats.inProgressAssignments,
+    },
+    contentApprovals: {
+      pendingApprovals: pendingApprovals,
+      pendingCount: approvalStats.pendingCount,
+      recentApprovals: recentApprovals,
+    },
+    brandKits: brandKits.length > 0
+      ? {
+          kits: brandKits,
+          recentGenerations: brandKits.slice(0, 3),
+        }
+      : undefined,
+    visualStyleLearning: visualStyleLearning || undefined,
   };
 
   snapshot.metrics = buildMetrics(posts, snapshot);

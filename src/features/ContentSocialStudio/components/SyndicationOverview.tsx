@@ -1,9 +1,9 @@
 import { Badge, Button, Card } from '../../../components/componentsreutilizables';
-import type { PlannerAndSocialSnapshot, DistributionChannel } from '../types';
+import type { ContentSocialSnapshot, DistributionChannel } from '../types';
 import { ICON_MAP } from './iconMap';
 
 const statusStyles: Record<
-  PlannerAndSocialSnapshot['syndication']['pipeline'][number]['status'],
+  ContentSocialSnapshot['syndication']['pipeline'][number]['status'],
   { label: string; className: string }
 > = {
   briefing: { label: 'Briefing', className: 'bg-slate-100 text-slate-600' },
@@ -23,7 +23,7 @@ const channelLabel: Record<DistributionChannel, string> = {
 };
 
 interface SyndicationOverviewProps {
-  syndication: PlannerAndSocialSnapshot['syndication'];
+  syndication: ContentSocialSnapshot['syndication'];
   loading?: boolean;
 }
 

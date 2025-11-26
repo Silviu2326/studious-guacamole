@@ -2,8 +2,6 @@ export type MessagingChannel = 'email' | 'sms' | 'whatsapp' | 'push' | 'in-app';
 
 export type CampaignStatus = 'draft' | 'scheduled' | 'running' | 'paused' | 'completed';
 
-export type CommunicationMode = 'manual' | 'automation';
-
 export interface MissionControlSummary {
   id: string;
   label: string;
@@ -13,21 +11,6 @@ export interface MissionControlSummary {
   trend: 'up' | 'down' | 'neutral';
   icon: string;
   channelFocus?: MessagingChannel | 'multi';
-  // Métricas separadas para comunicaciones manuales y automatizaciones
-  manualMetrics?: {
-    messagesSent: number;
-    responseRate?: number;
-    conversionRate?: number;
-    changePercentage?: number;
-    trend?: 'up' | 'down' | 'neutral';
-  };
-  automationMetrics?: {
-    messagesSent: number;
-    responseRate?: number;
-    conversionRate?: number;
-    changePercentage?: number;
-    trend?: 'up' | 'down' | 'neutral';
-  };
 }
 
 export interface MultiChannelCampaign {
@@ -35,7 +18,6 @@ export interface MultiChannelCampaign {
   name: string;
   objective: string;
   status: CampaignStatus;
-  mode: CommunicationMode; // 'manual' - campaña sin lógica de flujo
   owner: string;
   launchDate: string;
   channels: MessagingChannel[];
@@ -53,7 +35,6 @@ export interface EmailProgram {
   id: string;
   name: string;
   type: 'newsletter' | 'product-update' | 'promotion' | 'onboarding' | 'retention';
-  mode: CommunicationMode; // 'manual' - newsletters y programas de email
   cadence: string;
   audienceSize: number;
   openRate: number;
@@ -68,7 +49,6 @@ export interface LifecycleSequence {
   id: string;
   name: string;
   goal: 'activation' | 'retention' | 'upsell' | 'winback' | 'churn-prevention';
-  mode: CommunicationMode; // 'automation' - secuencia de ciclo de vida
   steps: number;
   activeContacts: number;
   completionRate: number;
@@ -83,7 +63,6 @@ export interface MessagingAutomation {
   id: string;
   name: string;
   trigger: string;
-  mode: CommunicationMode; // 'automation' - automatización por trigger
   channel: Extract<MessagingChannel, 'sms' | 'whatsapp' | 'push'>;
   variantCount: number;
   audienceSize: number;
@@ -177,7 +156,6 @@ export interface WelcomeSequence {
   name: string;
   description: string;
   trigger: 'new-client' | 'first-session-booked' | 'manual';
-  mode: CommunicationMode; // 'automation' - secuencia de bienvenida
   messages: WelcomeSequenceMessage[];
   activeClients: number; // Clientes actualmente en la secuencia
   completionRate: number; // Porcentaje de clientes que completan la secuencia
@@ -203,7 +181,6 @@ export interface AbsenceAutomation {
   id: string;
   name: string;
   description: string;
-  mode: CommunicationMode; // 'automation' - automatización de ausencias
   isActive: boolean;
   messages: AbsenceMessage[]; // Mensajes ordenados por frecuencia de ausencias
   activeCases: number; // Casos activos actualmente
@@ -294,7 +271,6 @@ export interface InactivityAutomation {
   id: string;
   name: string;
   description: string;
-  mode: CommunicationMode; // 'automation' - automatización de inactividad
   inactivityThresholdDays: number; // X días sin sesiones para activar la automatización
   messages: InactivityMessage[]; // Secuencia progresiva de mensajes
   activeClients: number; // Clientes actualmente en la secuencia
@@ -338,7 +314,6 @@ export interface ImportantDateAutomation {
   id: string;
   name: string;
   description: string;
-  mode: CommunicationMode; // 'automation' - automatización de fechas importantes
   messages: ImportantDateMessage[]; // Mensajes por tipo de fecha
   activeDates: number; // Fechas importantes activas configuradas
   upcomingDates: number; // Próximas fechas importantes en los próximos 30 días
@@ -367,7 +342,6 @@ export interface PaymentReminderAutomation {
   id: string;
   name: string;
   description: string;
-  mode: CommunicationMode; // 'automation' - automatización de recordatorios de pago
   messages: PaymentReminderMessage[]; // Mensajes ordenados por días de retraso
   activeReminders: number; // Recordatorios activos actualmente
   sentThisMonth: number; // Recordatorios enviados este mes
@@ -506,7 +480,6 @@ export interface BulkMessage {
   id: string;
   name: string;
   description: string;
-  mode: CommunicationMode; // 'manual' - envío masivo
   segmentId: string;
   segmentName: string;
   messageTemplate: string;
@@ -675,7 +648,6 @@ export interface PromotionalCampaign {
   id: string;
   name: string;
   description: string;
-  mode: CommunicationMode; // 'manual' - campaña promocional
   messageTemplate: string; // Mensaje personalizado de la campaña
   channel: MessagingChannel;
   recipients: PromotionalCampaignRecipient;
@@ -1916,14 +1888,6 @@ export interface ActionableKPIDashboard {
     overallSaleConversionRate: number;
     averageRevenuePerMessage: number;
     roi: number;
-    // KPIs específicos de campañas y automatizaciones
-    automationConversionRate: number; // Tasa de conversión de automatizaciones
-    activeAutomations: number; // Nº de automatizaciones activas
-    draftAutomations: number; // Nº de automatizaciones en borrador
-    messagesSentThisWeek: number; // Mensajes enviados esta semana
-    optimalMessagesPerWeek: number; // Mensajes óptimos por semana
-    automatedCampaignsRevenue: number; // Revenue atribuido a campañas automatizadas
-    totalAutomatedCampaigns: number; // Total de campañas automatizadas
   };
   byMessageType: Array<{
     messageType: MessageType;

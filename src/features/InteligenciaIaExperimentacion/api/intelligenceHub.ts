@@ -432,6 +432,14 @@ export const fetchIntelligenceOverview = async (): Promise<IntelligenceOverviewR
         unit: 'leads',
       },
     ],
+    campaignPerformanceMetric: {
+      type: 'roi',
+      value: 3.8,
+      previousMonthValue: 3.2,
+      percentageChange: 18.75,
+      label: 'ROI Estimado',
+      unit: 'x',
+    },
     sectorTrends: {
       successfulStrategies: [
         {

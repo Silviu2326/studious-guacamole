@@ -1,7 +1,120 @@
-import { Venta } from '../types';
+import { Venta, OfertaEspecial, Producto } from '../types';
 import { getVentas } from './ventas';
 import { getClients } from '../../gestión-de-clientes/api/clients';
-import { Producto } from '../types';
+
+// ============================================================================
+// GESTIÓN DE OFERTAS ESPECIALES (OfertaEspecial)
+// ============================================================================
+
+// Mock storage (en producción sería una base de datos)
+let ofertasEspeciales: OfertaEspecial[] = [];
+
+/**
+ * Obtiene todas las ofertas especiales
+ */
+export async function getOfertasEspeciales(): Promise<OfertaEspecial[]> {
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  return [...ofertasEspeciales];
+}
+
+/**
+ * Crea una nueva oferta especial
+ */
+export async function crearOfertaEspecial(
+  data: Omit<OfertaEspecial, 'id'>
+): Promise<OfertaEspecial> {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  // Validar fechas
+  if (data.fechaFin <= data.fechaInicio) {
+    throw new Error('La fecha de fin debe ser posterior a la fecha de inicio');
+  }
+
+  // Validar que haya al menos un producto
+  if (!data.productosIds || data.productosIds.length === 0) {
+    throw new Error('Debe especificar al menos un producto para la oferta');
+  }
+
+  const nuevaOferta: OfertaEspecial = {
+    id: `OFE-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    ...data,
+  };
+
+  ofertasEspeciales.push(nuevaOferta);
+  return nuevaOferta;
+}
+
+/**
+ * Actualiza una oferta especial existente
+ */
+export async function updateOfertaEspecial(
+  id: string,
+  data: Partial<OfertaEspecial>
+): Promise<OfertaEspecial> {
+  await new Promise((resolve) => setTimeout(resolve, 200));
+
+  const indice = ofertasEspeciales.findIndex((o) => o.id === id);
+  if (indice === -1) {
+    throw new Error('Oferta especial no encontrada');
+  }
+
+  // Validar fechas si están presentes
+  const ofertaActual = ofertasEspeciales[indice];
+  const fechaInicio = data.fechaInicio ?? ofertaActual.fechaInicio;
+  const fechaFin = data.fechaFin ?? ofertaActual.fechaFin;
+
+  if (fechaFin <= fechaInicio) {
+    throw new Error('La fecha de fin debe ser posterior a la fecha de inicio');
+  }
+
+  // Validar productos si se está cambiando
+  if (data.productosIds !== undefined) {
+    if (!data.productosIds || data.productosIds.length === 0) {
+      throw new Error('Debe especificar al menos un producto para la oferta');
+    }
+  }
+
+  ofertasEspeciales[indice] = {
+    ...ofertasEspeciales[indice],
+    ...data,
+  };
+
+  return ofertasEspeciales[indice];
+}
+
+/**
+ * Obtiene las ofertas especiales activas para los productos especificados
+ */
+export async function getOfertasActivasParaProductos(
+  productosIds: string[]
+): Promise<OfertaEspecial[]> {
+  await new Promise((resolve) => setTimeout(resolve, 200));
+
+  const ahora = new Date();
+
+  return ofertasEspeciales.filter((oferta) => {
+    // Debe estar activa
+    if (!oferta.activa) {
+      return false;
+    }
+
+    // Debe estar dentro del rango de fechas
+    if (ahora < oferta.fechaInicio || ahora > oferta.fechaFin) {
+      return false;
+    }
+
+    // Debe aplicar a al menos uno de los productos solicitados
+    const tieneProductoAplicable = oferta.productosIds.some((id) =>
+      productosIds.includes(id)
+    );
+
+    return tieneProductoAplicable;
+  });
+}
+
+// ============================================================================
+// GESTIÓN DE OFERTAS ESPECIALES AUTOMÁTICAS (Cliente Reactivation)
+// ============================================================================
 
 /**
  * Tipo de canal de comunicación para ofertas

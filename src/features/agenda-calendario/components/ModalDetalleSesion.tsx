@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Clock, User, FileText, Calendar, History, ExternalLink, UserCircle, Plus, Search, Edit2 } from 'lucide-react';
+import { X, Clock, User, FileText, Calendar, History, ExternalLink, UserCircle, Plus, Search, Edit2, Send, CalendarX, RotateCcw } from 'lucide-react';
 import { Modal, Button, Input } from '../../../components/componentsreutilizables';
 import { Cita, NotaSesion } from '../types';
 import { getClientById } from '../../gestión-de-clientes/api/clients';
@@ -8,11 +8,18 @@ import { getHistorialSesionesCliente, SesionHistorial } from '../api/sesiones';
 import { getNotaSesionPorCita, getNotasSesionCliente, buscarNotasSesion } from '../api/notasSesion';
 import { ModalAgregarNotaSesion } from './ModalAgregarNotaSesion';
 import { ModalCambiarEstadoSesion } from './ModalCambiarEstadoSesion';
+import { enviarRecordatorio, getConfiguracionRecordatorios } from '../api/recordatorios';
+import { useAuth } from '../../../context/AuthContext';
+import { RecordatorioConfiguracion } from '../types';
+
 interface ModalDetalleSesionProps {
   isOpen: boolean;
   onClose: () => void;
   cita: Cita | null;
   onVerPerfilCliente?: (clienteId: string) => void;
+  onEditarSesion?: (cita: Cita) => void;
+  onCancelarSesion?: (cita: Cita) => void;
+  onReprogramarSesion?: (cita: Cita) => void;
 }
 
 export const ModalDetalleSesion: React.FC<ModalDetalleSesionProps> = ({
@@ -20,13 +27,18 @@ export const ModalDetalleSesion: React.FC<ModalDetalleSesionProps> = ({
   onClose,
   cita,
   onVerPerfilCliente,
+  onEditarSesion,
+  onCancelarSesion,
+  onReprogramarSesion,
 }) => {
+  const { user } = useAuth();
   const [cliente, setCliente] = useState<Client360Profile | null>(null);
   const [historialSesiones, setHistorialSesiones] = useState<SesionHistorial[]>([]);
   const [notaActual, setNotaActual] = useState<NotaSesion | null>(null);
   const [notasCliente, setNotasCliente] = useState<NotaSesion[]>([]);
   const [busquedaNotas, setBusquedaNotas] = useState('');
   const [loading, setLoading] = useState(false);
+  const [enviandoRecordatorio, setEnviandoRecordatorio] = useState(false);
   const [mostrarModalNota, setMostrarModalNota] = useState(false);
   const [mostrarModalEstado, setMostrarModalEstado] = useState(false);
 
@@ -162,6 +174,66 @@ export const ModalDetalleSesion: React.FC<ModalDetalleSesionProps> = ({
     }
   };
 
+  const handleEditar = () => {
+    if (cita && onEditarSesion) {
+      onEditarSesion(cita);
+      onClose();
+    }
+  };
+
+  const handleCancelar = () => {
+    if (cita && onCancelarSesion) {
+      onCancelarSesion(cita);
+      onClose();
+    }
+  };
+
+  const handleReprogramar = () => {
+    if (cita && onReprogramarSesion) {
+      onReprogramarSesion(cita);
+      onClose();
+    }
+  };
+
+  const handleEnviarRecordatorio = async () => {
+    if (!cita) return;
+
+    setEnviandoRecordatorio(true);
+    try {
+      const configuracion = await getConfiguracionRecordatorios(user?.id);
+      let recordatorioConfig: RecordatorioConfiguracion;
+      
+      if (configuracion && configuracion.recordatorios.length > 0) {
+        // Usar la primera configuración activa o la primera disponible
+        const configActiva = configuracion.recordatorios.find(r => r.activo) || configuracion.recordatorios[0];
+        recordatorioConfig = {
+          id: configActiva.id,
+          tiempoAnticipacionHoras: configActiva.tiempoAnticipacionHoras,
+          activo: true,
+          canales: configActiva.canales.length > 0 ? configActiva.canales : [configuracion.canalPorDefecto || 'whatsapp'],
+          orden: configActiva.orden,
+        };
+      } else {
+        // Usar configuración por defecto
+        recordatorioConfig = {
+          id: `rec-${Date.now()}`,
+          tiempoAnticipacionHoras: 24,
+          activo: true,
+          canales: ['whatsapp'],
+          orden: 1,
+        };
+      }
+      
+      await enviarRecordatorio(cita, recordatorioConfig);
+      alert('Recordatorio enviado exitosamente');
+    } catch (error) {
+      console.error('Error enviando recordatorio:', error);
+      alert('Error al enviar el recordatorio. Por favor, intenta de nuevo.');
+    } finally {
+      setEnviandoRecordatorio(false);
+    }
+  };
+
   const getAvatarUrl = () => {
     if (cliente?.name) {
       // Generar iniciales como fallback
@@ -189,19 +261,67 @@ export const ModalDetalleSesion: React.FC<ModalDetalleSesionProps> = ({
       title="Detalle de Sesión"
       size="lg"
       footer={
-        <div className="flex justify-between items-center w-full">
-          <Button
-            variant="secondary"
-            onClick={handleVerPerfilCliente}
-            className="flex items-center gap-2"
-          >
-            <UserCircle className="w-4 h-4" />
-            Ver Perfil del Cliente
-          </Button>
-          <div className="flex gap-2">
+        <div className="flex flex-col gap-3 w-full">
+          {/* Acciones rápidas principales */}
+          <div className="flex flex-wrap gap-2 justify-between items-center">
+            <Button
+              variant="secondary"
+              onClick={handleVerPerfilCliente}
+              className="flex items-center gap-2"
+            >
+              <UserCircle className="w-4 h-4" />
+              Ver Perfil del Cliente
+            </Button>
+            <div className="flex gap-2">
+              {onEditarSesion && (
+                <Button
+                  variant="secondary"
+                  onClick={handleEditar}
+                  className="flex items-center gap-2"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  Editar
+                </Button>
+              )}
+              {onReprogramarSesion && cita.estado !== 'cancelada' && cita.estado !== 'completada' && (
+                <Button
+                  variant="secondary"
+                  onClick={handleReprogramar}
+                  className="flex items-center gap-2"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Reprogramar
+                </Button>
+              )}
+              {onCancelarSesion && cita.estado !== 'cancelada' && (
+                <Button
+                  variant="secondary"
+                  onClick={handleCancelar}
+                  className="flex items-center gap-2 text-red-600 hover:text-red-700"
+                >
+                  <CalendarX className="w-4 h-4" />
+                  Cancelar
+                </Button>
+              )}
+              {cita.estado !== 'cancelada' && cita.estado !== 'completada' && (
+                <Button
+                  variant="secondary"
+                  onClick={handleEnviarRecordatorio}
+                  disabled={enviandoRecordatorio}
+                  className="flex items-center gap-2"
+                >
+                  <Send className="w-4 h-4" />
+                  {enviandoRecordatorio ? 'Enviando...' : 'Enviar Recordatorio'}
+                </Button>
+              )}
+            </div>
+          </div>
+          
+          {/* Acciones secundarias */}
+          <div className="flex gap-2 justify-end border-t pt-3">
             {(cita.estado === 'completada' || cita.estado === 'no-show') && (
               <Button
-                variant="secondary"
+                variant="ghost"
                 onClick={() => setMostrarModalNota(true)}
                 className="flex items-center gap-2"
               >
@@ -219,7 +339,7 @@ export const ModalDetalleSesion: React.FC<ModalDetalleSesionProps> = ({
               </Button>
             )}
             <Button
-              variant="secondary"
+              variant="ghost"
               onClick={() => setMostrarModalEstado(true)}
               className="flex items-center gap-2"
             >

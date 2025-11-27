@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, Button } from '../../../components/componentsreutilizables';
 import { ds } from '../../adherencia/ui/ds';
 import { PhaseColumn as PhaseColumnType, Sale, PipelinePhase, BusinessType } from '../types';
@@ -8,25 +8,41 @@ import { FollowUpAlertModal } from './FollowUpAlertModal';
 import { FollowUpService } from '../services/followUpService';
 import { Loader2, Bell, AlertCircle } from 'lucide-react';
 
+// Tipo para filtros globales
+export interface GlobalFilters {
+  dateRange?: {
+    preset?: string;
+    startDate: Date;
+    endDate: Date;
+  };
+  source?: string;
+  status?: string;
+}
+
 interface PipelineKanbanProps {
   businessType: BusinessType;
   userId?: string;
   onSaleUpdate?: (saleId: string, updates: Partial<Sale>) => void;
+  globalFilters?: GlobalFilters;
+  selectedLeadId?: string | null;
 }
 
 export const PipelineKanban: React.FC<PipelineKanbanProps> = ({
   businessType,
   userId,
   onSaleUpdate,
+  globalFilters,
+  selectedLeadId,
 }) => {
   const [columns, setColumns] = useState<PhaseColumnType[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFollowUpAlerts, setShowFollowUpAlerts] = useState(false);
   const [followUpAlerts, setFollowUpAlerts] = useState<any[]>([]);
+  const selectedSaleRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     loadPipeline();
-  }, [businessType, userId]);
+  }, [businessType, userId, globalFilters]);
 
   useEffect(() => {
     // US-15: Verificar leads que necesitan seguimiento
@@ -36,6 +52,19 @@ export const PipelineKanban: React.FC<PipelineKanbanProps> = ({
       setFollowUpAlerts(alerts);
     }
   }, [columns]);
+
+  // Scroll to selected lead when selectedLeadId changes
+  useEffect(() => {
+    if (selectedLeadId && selectedSaleRef.current) {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        selectedSaleRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      }, 100);
+    }
+  }, [selectedLeadId, columns]);
 
   const loadPipeline = async () => {
     setLoading(true);
@@ -161,6 +190,8 @@ export const PipelineKanban: React.FC<PipelineKanbanProps> = ({
               column={column}
               onSaleUpdate={handleSaleUpdate}
               onSalePhaseChange={handleSalePhaseChange}
+              selectedLeadId={selectedLeadId}
+              selectedSaleRef={selectedSaleRef}
             />
           ))}
         </div>

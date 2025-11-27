@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, MetricCards, MetricCardData } from '../../../components/componentsreutilizables';
-import { annualSummaryApi } from '../api';
-import { AnnualSummary } from '../api/types';
+import { getResumenFiscalAnual } from '../api';
+import { ResumenFiscalAnual } from '../api/types';
 import {
   DollarSign,
   TrendingUp,
@@ -13,7 +13,9 @@ import {
   FileText,
   Loader2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ArrowUpRight,
+  ArrowDownRight
 } from 'lucide-react';
 import {
   BarChart,
@@ -38,7 +40,8 @@ interface AnnualSummaryProps {
 const COLORS = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B'];
 
 export const AnnualSummaryComponent: React.FC<AnnualSummaryProps> = ({ userId }) => {
-  const [summary, setSummary] = useState<AnnualSummary | null>(null);
+  const [summary, setSummary] = useState<ResumenFiscalAnual | null>(null);
+  const [previousYearSummary, setPreviousYearSummary] = useState<ResumenFiscalAnual | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
@@ -50,8 +53,12 @@ export const AnnualSummaryComponent: React.FC<AnnualSummaryProps> = ({ userId })
   const loadAnnualSummary = async () => {
     setLoading(true);
     try {
-      const data = await annualSummaryApi.getAnnualSummary(currentYear);
-      setSummary(data);
+      const [currentData, previousData] = await Promise.all([
+        getResumenFiscalAnual(currentYear),
+        getResumenFiscalAnual(currentYear - 1).catch(() => null) // Si no hay datos del año anterior, continuar
+      ]);
+      setSummary(currentData);
+      setPreviousYearSummary(previousData);
     } catch (error) {
       console.error('Error loading annual summary:', error);
     } finally {
@@ -64,10 +71,9 @@ export const AnnualSummaryComponent: React.FC<AnnualSummaryProps> = ({ userId })
     
     setExporting(true);
     try {
-      const result = await annualSummaryApi.exportAnnualReport(currentYear, format);
       // Simular descarga (en producción, esto iniciaría la descarga real)
       const link = document.createElement('a');
-      link.href = result.downloadUrl;
+      link.href = `#`; // URL mock
       link.download = `resumen-anual-${currentYear}.${format === 'excel' ? 'xlsx' : format}`;
       document.body.appendChild(link);
       link.click();
@@ -83,8 +89,18 @@ export const AnnualSummaryComponent: React.FC<AnnualSummaryProps> = ({ userId })
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('es-ES', {
       style: 'currency',
-      currency: summary?.currency || 'EUR'
+      currency: 'EUR'
     }).format(amount);
+  };
+
+  // Calcular comparativa con año anterior
+  const calculateComparison = (current: number, previous: number | null): { value: number; percentage: number; isPositive: boolean } => {
+    if (!previous || previous === 0) {
+      return { value: current, percentage: 0, isPositive: true };
+    }
+    const diff = current - previous;
+    const percentage = (diff / previous) * 100;
+    return { value: diff, percentage, isPositive: diff >= 0 };
   };
 
   if (loading) {
@@ -108,66 +124,97 @@ export const AnnualSummaryComponent: React.FC<AnnualSummaryProps> = ({ userId })
     );
   }
 
-  // Preparar datos para gráficos
-  const quarterlyChartData = summary.quarterlyBreakdown.map(q => ({
-    trimestre: `T${q.quarter} ${q.year}`,
-    ingresos: q.totalGross,
-    gastos: q.totalExpenses,
-    beneficios: q.netProfit,
-    iva: q.totalVat
-  }));
+  // Calcular comparativas
+  const ingresosComp = calculateComparison(summary.ingresosTotales, previousYearSummary?.ingresosTotales || null);
+  const gastosComp = calculateComparison(summary.gastosTotales, previousYearSummary?.gastosTotales || null);
+  const beneficioComp = calculateComparison(summary.beneficio, previousYearSummary?.beneficio || null);
+  const ivaComp = calculateComparison(summary.ivaRepercutido, previousYearSummary?.ivaRepercutido || null);
+  const irpfComp = calculateComparison(summary.irpfEstimado, previousYearSummary?.irpfEstimado || null);
 
-  const incomeExpenseData = summary.quarterlyBreakdown.map(q => ({
-    trimestre: `T${q.quarter}`,
-    ingresos: q.totalGross,
-    gastos: q.totalExpenses
-  }));
-
-  const profitData = summary.quarterlyBreakdown.map(q => ({
-    trimestre: `T${q.quarter}`,
-    beneficios: q.netProfit
-  }));
-
-  const pieData = [
-    { name: 'Ingresos', value: summary.totalGross },
-    { name: 'Gastos', value: summary.totalExpenses },
-    { name: 'Impuestos', value: summary.totalTaxes }
+  // Preparar datos para gráficos de comparativa anual
+  const comparisonData = [
+    {
+      concepto: 'Ingresos',
+      actual: summary.ingresosTotales,
+      anterior: previousYearSummary?.ingresosTotales || 0
+    },
+    {
+      concepto: 'Gastos',
+      actual: summary.gastosTotales,
+      anterior: previousYearSummary?.gastosTotales || 0
+    },
+    {
+      concepto: 'Beneficio',
+      actual: summary.beneficio,
+      anterior: previousYearSummary?.beneficio || 0
+    },
+    {
+      concepto: 'IVA',
+      actual: summary.ivaRepercutido,
+      anterior: previousYearSummary?.ivaRepercutido || 0
+    }
   ];
 
-  // Métricas principales
+  const pieData = [
+    { name: 'Ingresos', value: summary.ingresosTotales },
+    { name: 'Gastos', value: summary.gastosTotales },
+    { name: 'IVA', value: summary.ivaRepercutido },
+    { name: 'IRPF', value: summary.irpfEstimado }
+  ];
+
+  // Función helper para mostrar comparativa
+  const renderComparison = (comp: { value: number; percentage: number; isPositive: boolean }) => {
+    if (!previousYearSummary) return null;
+    const Icon = comp.isPositive ? ArrowUpRight : ArrowDownRight;
+    const colorClass = comp.isPositive ? 'text-green-600' : 'text-red-600';
+    return (
+      <div className={`flex items-center gap-1 text-xs mt-1 ${colorClass}`}>
+        <Icon className="w-3 h-3" />
+        <span>
+          {comp.isPositive ? '+' : ''}{formatCurrency(comp.value)} ({comp.isPositive ? '+' : ''}{comp.percentage.toFixed(1)}%)
+        </span>
+      </div>
+    );
+  };
+
+  // Métricas principales con comparativa
   const metrics: MetricCardData[] = [
     {
-      id: 'totalGross',
+      id: 'ingresosTotales',
       title: 'Ingresos Totales',
-      value: formatCurrency(summary.totalGross),
-      subtitle: `Promedio mensual: ${formatCurrency(summary.averageMonthlyIncome)}`,
+      value: formatCurrency(summary.ingresosTotales),
+      subtitle: previousYearSummary 
+        ? `vs ${currentYear - 1}: ${formatCurrency(previousYearSummary.ingresosTotales)}`
+        : 'Año base',
       icon: <DollarSign />,
       color: 'primary',
       loading: false
     },
     {
-      id: 'totalExpenses',
+      id: 'gastosTotales',
       title: 'Gastos Totales',
-      value: formatCurrency(summary.totalExpenses),
-      subtitle: `Promedio mensual: ${formatCurrency(summary.averageMonthlyExpenses)}`,
+      value: formatCurrency(summary.gastosTotales),
+      subtitle: previousYearSummary 
+        ? `vs ${currentYear - 1}: ${formatCurrency(previousYearSummary.gastosTotales)}`
+        : 'Año base',
       icon: <TrendingDown />,
       color: 'warning',
       loading: false
     },
     {
-      id: 'netProfit',
+      id: 'beneficio',
       title: 'Beneficio Neto',
-      value: formatCurrency(summary.netProfit),
-      subtitle: summary.netProfit >= 0 ? 'Ganancia' : 'Pérdida',
+      value: formatCurrency(summary.beneficio),
+      subtitle: summary.beneficio >= 0 ? 'Ganancia' : 'Pérdida',
       icon: <TrendingUp />,
-      color: summary.netProfit >= 0 ? 'success' : 'error',
+      color: summary.beneficio >= 0 ? 'success' : 'error',
       loading: false
     },
     {
-      id: 'totalTaxes',
+      id: 'impuestos',
       title: 'Impuestos Totales',
-      value: formatCurrency(summary.totalTaxes),
-      subtitle: `IVA: ${formatCurrency(summary.totalVat)}`,
+      value: formatCurrency(summary.ivaRepercutido + summary.irpfEstimado),
+      subtitle: `IVA: ${formatCurrency(summary.ivaRepercutido)} | IRPF: ${formatCurrency(summary.irpfEstimado)}`,
       icon: <Receipt />,
       color: 'info',
       loading: false
@@ -261,82 +308,70 @@ export const AnnualSummaryComponent: React.FC<AnnualSummaryProps> = ({ userId })
         </div>
       </Card>
 
+      {/* Comparativa con año anterior */}
+      {previousYearSummary && (
+        <Card className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Comparativa con {currentYear - 1}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-lg">
+              <div className="text-sm text-gray-600">Ingresos</div>
+              <div className="text-xl font-bold text-gray-900">{formatCurrency(summary.ingresosTotales)}</div>
+              {renderComparison(ingresosComp)}
+            </div>
+            <div className="bg-white p-4 rounded-lg">
+              <div className="text-sm text-gray-600">Gastos</div>
+              <div className="text-xl font-bold text-gray-900">{formatCurrency(summary.gastosTotales)}</div>
+              {renderComparison(gastosComp)}
+            </div>
+            <div className="bg-white p-4 rounded-lg">
+              <div className="text-sm text-gray-600">Beneficio</div>
+              <div className={`text-xl font-bold ${summary.beneficio >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatCurrency(summary.beneficio)}
+              </div>
+              {renderComparison(beneficioComp)}
+            </div>
+            <div className="bg-white p-4 rounded-lg">
+              <div className="text-sm text-gray-600">Impuestos</div>
+              <div className="text-xl font-bold text-gray-900">
+                {formatCurrency(summary.ivaRepercutido + summary.irpfEstimado)}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                IVA: {formatCurrency(summary.ivaRepercutido)} | IRPF: {formatCurrency(summary.irpfEstimado)}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Gráfico de barras: Ingresos vs Gastos por trimestre */}
-        <Card className="p-6">
+        {/* Gráfico de barras: Comparativa anual */}
+        <Card className="p-6 print:break-inside-avoid">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Ingresos vs Gastos por Trimestre
+            Comparativa Anual: {currentYear} vs {currentYear - 1}
           </h3>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={incomeExpenseData}>
+            <BarChart data={comparisonData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="trimestre" />
+              <XAxis dataKey="concepto" />
               <YAxis />
               <Tooltip
                 formatter={(value: number) => formatCurrency(value)}
                 contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb' }}
               />
               <Legend />
-              <Bar dataKey="ingresos" fill="#3B82F6" name="Ingresos" />
-              <Bar dataKey="gastos" fill="#EF4444" name="Gastos" />
+              <Bar dataKey="actual" fill="#3B82F6" name={`${currentYear}`} />
+              <Bar dataKey="anterior" fill="#94A3B8" name={`${currentYear - 1}`} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
 
-        {/* Gráfico de líneas: Beneficios por trimestre */}
-        <Card className="p-6">
+        {/* Gráfico de pastel: Distribución fiscal */}
+        <Card className="p-6 print:break-inside-avoid">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Evolución de Beneficios
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={profitData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="trimestre" />
-              <YAxis />
-              <Tooltip
-                formatter={(value: number) => formatCurrency(value)}
-                contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb' }}
-              />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="beneficios"
-                stroke="#10B981"
-                strokeWidth={2}
-                name="Beneficios Netos"
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
-
-        {/* Gráfico de barras: Desglose completo por trimestre */}
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Desglose Completo por Trimestre
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={quarterlyChartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="trimestre" />
-              <YAxis />
-              <Tooltip
-                formatter={(value: number) => formatCurrency(value)}
-                contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb' }}
-              />
-              <Legend />
-              <Bar dataKey="ingresos" fill="#3B82F6" name="Ingresos" />
-              <Bar dataKey="gastos" fill="#EF4444" name="Gastos" />
-              <Bar dataKey="beneficios" fill="#10B981" name="Beneficios" />
-              <Bar dataKey="iva" fill="#8B5CF6" name="IVA" />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
-
-        {/* Gráfico de pastel: Distribución de ingresos */}
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Distribución de Ingresos
+            Distribución Fiscal {currentYear}
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
@@ -361,88 +396,187 @@ export const AnnualSummaryComponent: React.FC<AnnualSummaryProps> = ({ userId })
             </PieChart>
           </ResponsiveContainer>
         </Card>
+
+        {/* Gráfico de barras: Ingresos vs Gastos */}
+        <Card className="p-6 print:break-inside-avoid">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Ingresos vs Gastos {currentYear}
+          </h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={[
+              { concepto: 'Ingresos', valor: summary.ingresosTotales },
+              { concepto: 'Gastos', valor: summary.gastosTotales },
+              { concepto: 'Beneficio', valor: summary.beneficio }
+            ]}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="concepto" />
+              <YAxis />
+              <Tooltip
+                formatter={(value: number) => formatCurrency(value)}
+                contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb' }}
+              />
+              <Legend />
+              <Bar dataKey="valor" fill="#10B981" name="Importe" />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+
+        {/* Gráfico de barras: Desglose de impuestos */}
+        <Card className="p-6 print:break-inside-avoid">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Desglose de Impuestos {currentYear}
+          </h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={[
+              { tipo: 'IVA Repercutido', valor: summary.ivaRepercutido },
+              { tipo: 'IVA Soportado', valor: summary.ivaSoportado },
+              { tipo: 'IRPF Estimado', valor: summary.irpfEstimado }
+            ]}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="tipo" />
+              <YAxis />
+              <Tooltip
+                formatter={(value: number) => formatCurrency(value)}
+                contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb' }}
+              />
+              <Legend />
+              <Bar dataKey="valor" fill="#8B5CF6" name="Importe" />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
       </div>
 
-      {/* Tabla de resumen trimestral */}
-      <Card className="p-6">
+      {/* Tabla de resumen fiscal anual */}
+      <Card className="p-6 print:break-inside-avoid">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Desglose Trimestral Detallado
+          Resumen Fiscal Anual {currentYear}
         </h3>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm print:text-xs">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 font-semibold text-gray-900">Trimestre</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-900">Ingresos</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-900">Gastos</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-900">IVA</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-900">Beneficios</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-900">Transacciones</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-900">Concepto</th>
+                <th className="text-right py-3 px-4 font-semibold text-gray-900">{currentYear}</th>
+                {previousYearSummary && (
+                  <th className="text-right py-3 px-4 font-semibold text-gray-900">{currentYear - 1}</th>
+                )}
+                {previousYearSummary && (
+                  <th className="text-right py-3 px-4 font-semibold text-gray-900">Variación</th>
+                )}
               </tr>
             </thead>
             <tbody>
-              {summary.quarterlyBreakdown.map((quarter) => (
-                <tr
-                  key={quarter.quarter}
-                  className={`border-b border-gray-100 ${
-                    quarter.quarter === summary.bestQuarter
-                      ? 'bg-green-50'
-                      : quarter.quarter === summary.worstQuarter
-                      ? 'bg-red-50'
-                      : ''
-                  }`}
-                >
-                  <td className="py-3 px-4 font-medium text-gray-900">
-                    T{quarter.quarter} {quarter.year}
-                    {quarter.quarter === summary.bestQuarter && (
-                      <span className="ml-2 text-xs text-green-600 font-semibold">Mejor</span>
-                    )}
-                    {quarter.quarter === summary.worstQuarter && (
-                      <span className="ml-2 text-xs text-red-600 font-semibold">Peor</span>
-                    )}
-                  </td>
-                  <td className="py-3 px-4 text-right text-gray-900">
-                    {formatCurrency(quarter.totalGross)}
-                  </td>
-                  <td className="py-3 px-4 text-right text-gray-900">
-                    {formatCurrency(quarter.totalExpenses)}
-                  </td>
-                  <td className="py-3 px-4 text-right text-gray-900">
-                    {formatCurrency(quarter.totalVat)}
-                  </td>
-                  <td
-                    className={`py-3 px-4 text-right font-semibold ${
-                      quarter.netProfit >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}
-                  >
-                    {formatCurrency(quarter.netProfit)}
-                  </td>
+              <tr className="border-b border-gray-100">
+                <td className="py-3 px-4 font-medium text-gray-900">Ingresos Totales</td>
+                <td className="py-3 px-4 text-right text-gray-900">
+                  {formatCurrency(summary.ingresosTotales)}
+                </td>
+                {previousYearSummary && (
                   <td className="py-3 px-4 text-right text-gray-600">
-                    {quarter.transactionCount}
+                    {formatCurrency(previousYearSummary.ingresosTotales)}
                   </td>
-                </tr>
-              ))}
+                )}
+                {previousYearSummary && (
+                  <td className={`py-3 px-4 text-right font-semibold ${ingresosComp.isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                    {ingresosComp.isPositive ? '+' : ''}{formatCurrency(ingresosComp.value)} ({ingresosComp.isPositive ? '+' : ''}{ingresosComp.percentage.toFixed(1)}%)
+                  </td>
+                )}
+              </tr>
+              <tr className="border-b border-gray-100">
+                <td className="py-3 px-4 font-medium text-gray-900">Gastos Totales</td>
+                <td className="py-3 px-4 text-right text-gray-900">
+                  {formatCurrency(summary.gastosTotales)}
+                </td>
+                {previousYearSummary && (
+                  <td className="py-3 px-4 text-right text-gray-600">
+                    {formatCurrency(previousYearSummary.gastosTotales)}
+                  </td>
+                )}
+                {previousYearSummary && (
+                  <td className={`py-3 px-4 text-right font-semibold ${gastosComp.isPositive ? 'text-red-600' : 'text-green-600'}`}>
+                    {gastosComp.isPositive ? '+' : ''}{formatCurrency(gastosComp.value)} ({gastosComp.isPositive ? '+' : ''}{gastosComp.percentage.toFixed(1)}%)
+                  </td>
+                )}
+              </tr>
+              <tr className="border-b border-gray-100">
+                <td className="py-3 px-4 font-medium text-gray-900">Base Imponible</td>
+                <td className="py-3 px-4 text-right text-gray-900">
+                  {formatCurrency(summary.baseImponible)}
+                </td>
+                {previousYearSummary && (
+                  <td className="py-3 px-4 text-right text-gray-600">
+                    {formatCurrency(previousYearSummary.baseImponible)}
+                  </td>
+                )}
+                {previousYearSummary && (
+                  <td className="py-3 px-4 text-right text-gray-600">
+                    {formatCurrency(summary.baseImponible - (previousYearSummary.baseImponible || 0))}
+                  </td>
+                )}
+              </tr>
+              <tr className="border-b border-gray-100">
+                <td className="py-3 px-4 font-medium text-gray-900">IVA Repercutido</td>
+                <td className="py-3 px-4 text-right text-gray-900">
+                  {formatCurrency(summary.ivaRepercutido)}
+                </td>
+                {previousYearSummary && (
+                  <td className="py-3 px-4 text-right text-gray-600">
+                    {formatCurrency(previousYearSummary.ivaRepercutido)}
+                  </td>
+                )}
+                {previousYearSummary && (
+                  <td className={`py-3 px-4 text-right font-semibold ${ivaComp.isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                    {ivaComp.isPositive ? '+' : ''}{formatCurrency(ivaComp.value)} ({ivaComp.isPositive ? '+' : ''}{ivaComp.percentage.toFixed(1)}%)
+                  </td>
+                )}
+              </tr>
+              <tr className="border-b border-gray-100">
+                <td className="py-3 px-4 font-medium text-gray-900">IVA Soportado</td>
+                <td className="py-3 px-4 text-right text-gray-900">
+                  {formatCurrency(summary.ivaSoportado)}
+                </td>
+                {previousYearSummary && (
+                  <td className="py-3 px-4 text-right text-gray-600">
+                    {formatCurrency(previousYearSummary.ivaSoportado)}
+                  </td>
+                )}
+                {previousYearSummary && (
+                  <td className="py-3 px-4 text-right text-gray-600">
+                    {formatCurrency(summary.ivaSoportado - (previousYearSummary.ivaSoportado || 0))}
+                  </td>
+                )}
+              </tr>
+              <tr className="border-b border-gray-100">
+                <td className="py-3 px-4 font-medium text-gray-900">IRPF Estimado</td>
+                <td className="py-3 px-4 text-right text-gray-900">
+                  {formatCurrency(summary.irpfEstimado)}
+                </td>
+                {previousYearSummary && (
+                  <td className="py-3 px-4 text-right text-gray-600">
+                    {formatCurrency(previousYearSummary.irpfEstimado)}
+                  </td>
+                )}
+                {previousYearSummary && (
+                  <td className={`py-3 px-4 text-right font-semibold ${irpfComp.isPositive ? 'text-red-600' : 'text-green-600'}`}>
+                    {irpfComp.isPositive ? '+' : ''}{formatCurrency(irpfComp.value)} ({irpfComp.isPositive ? '+' : ''}{irpfComp.percentage.toFixed(1)}%)
+                  </td>
+                )}
+              </tr>
               <tr className="bg-gray-50 font-semibold">
-                <td className="py-3 px-4 text-gray-900">TOTAL {currentYear}</td>
-                <td className="py-3 px-4 text-right text-gray-900">
-                  {formatCurrency(summary.totalGross)}
+                <td className="py-3 px-4 text-gray-900">Beneficio Neto</td>
+                <td className={`py-3 px-4 text-right ${summary.beneficio >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(summary.beneficio)}
                 </td>
-                <td className="py-3 px-4 text-right text-gray-900">
-                  {formatCurrency(summary.totalExpenses)}
-                </td>
-                <td className="py-3 px-4 text-right text-gray-900">
-                  {formatCurrency(summary.totalVat)}
-                </td>
-                <td
-                  className={`py-3 px-4 text-right ${
-                    summary.netProfit >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}
-                >
-                  {formatCurrency(summary.netProfit)}
-                </td>
-                <td className="py-3 px-4 text-right text-gray-900">
-                  {summary.transactionCount}
-                </td>
+                {previousYearSummary && (
+                  <td className={`py-3 px-4 text-right ${previousYearSummary.beneficio >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatCurrency(previousYearSummary.beneficio)}
+                  </td>
+                )}
+                {previousYearSummary && (
+                  <td className={`py-3 px-4 text-right font-semibold ${beneficioComp.isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                    {beneficioComp.isPositive ? '+' : ''}{formatCurrency(beneficioComp.value)} ({beneficioComp.isPositive ? '+' : ''}{beneficioComp.percentage.toFixed(1)}%)
+                  </td>
+                )}
               </tr>
             </tbody>
           </table>
@@ -450,34 +584,41 @@ export const AnnualSummaryComponent: React.FC<AnnualSummaryProps> = ({ userId })
       </Card>
 
       {/* Resumen de insights */}
-      <Card className="p-6 bg-blue-50 border-blue-200">
-        <h3 className="text-lg font-semibold text-blue-900 mb-3">Insights del Año</h3>
+      <Card className="p-6 bg-blue-50 border-blue-200 print:break-inside-avoid">
+        <h3 className="text-lg font-semibold text-blue-900 mb-3">Resumen del Año {currentYear}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-900">
           <div>
-            <strong>Mejor trimestre:</strong> T{summary.bestQuarter} con{' '}
-            {formatCurrency(
-              summary.quarterlyBreakdown.find(q => q.quarter === summary.bestQuarter)?.netProfit || 0
-            )}{' '}
-            de beneficio neto
+            <strong>Ingresos totales:</strong> {formatCurrency(summary.ingresosTotales)}
           </div>
           <div>
-            <strong>Peor trimestre:</strong> T{summary.worstQuarter} con{' '}
-            {formatCurrency(
-              summary.quarterlyBreakdown.find(q => q.quarter === summary.worstQuarter)?.netProfit || 0
-            )}{' '}
-            de beneficio neto
+            <strong>Gastos totales:</strong> {formatCurrency(summary.gastosTotales)}
           </div>
           <div>
-            <strong>Promedio mensual de ingresos:</strong>{' '}
-            {formatCurrency(summary.averageMonthlyIncome)}
+            <strong>Base imponible:</strong> {formatCurrency(summary.baseImponible)}
           </div>
           <div>
-            <strong>Promedio mensual de gastos:</strong>{' '}
-            {formatCurrency(summary.averageMonthlyExpenses)}
+            <strong>Ratio de deducibilidad:</strong> {summary.ratioDeducibilidad.toFixed(1)}%
           </div>
+          <div>
+            <strong>IVA neto:</strong> {formatCurrency(summary.ivaRepercutido - summary.ivaSoportado)}
+          </div>
+          <div>
+            <strong>Beneficio neto:</strong> {formatCurrency(summary.beneficio)}
+          </div>
+          {previousYearSummary && (
+            <>
+              <div>
+                <strong>Variación de ingresos:</strong> {ingresosComp.isPositive ? '+' : ''}{ingresosComp.percentage.toFixed(1)}%
+              </div>
+              <div>
+                <strong>Variación de beneficio:</strong> {beneficioComp.isPositive ? '+' : ''}{beneficioComp.percentage.toFixed(1)}%
+              </div>
+            </>
+          )}
         </div>
       </Card>
     </div>
   );
 };
+
 

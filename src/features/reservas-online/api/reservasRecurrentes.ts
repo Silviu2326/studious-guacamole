@@ -3,47 +3,427 @@ import { crearReserva } from './reservas';
 import { verificarDisponibilidad } from './disponibilidad';
 
 /**
- * Crea una configuración de reserva recurrente
+ * Filtros para obtener reservas recurrentes
  */
-export const crearReservaRecurrente = async (
-  reservaRecurrente: Omit<ReservaRecurrente, 'id' | 'createdAt' | 'updatedAt' | 'reservasCreadas'>
+export interface FiltrosReservasRecurrentes {
+  entrenadorId?: string;
+  clienteId?: string;
+  activo?: boolean;
+  estado?: 'activa' | 'pausada' | 'cancelada' | 'completada';
+  frecuencia?: 'diaria' | 'semanal' | 'quincenal' | 'mensual';
+  tipo?: 'sesion-1-1' | 'fisio' | 'nutricion' | 'masaje';
+}
+
+/**
+ * Almacenamiento mock de reservas recurrentes (solo para desarrollo)
+ * En producción, esto se gestionaría mediante una base de datos
+ */
+let mockReservasRecurrentes: ReservaRecurrente[] = [];
+
+/**
+ * Inicializa los datos mock (solo para desarrollo)
+ */
+const inicializarDatosMock = (entrenadorId?: string): ReservaRecurrente[] => {
+  const hoy = new Date();
+  const addDays = (days: number) => new Date(hoy.getTime() + days * 86400000);
+  
+  const datosMock: ReservaRecurrente[] = [
+    {
+      id: '1',
+      entrenadorId: entrenadorId || 'entrenador1',
+      clienteId: 'cliente1',
+      clienteNombre: 'Juan Pérez',
+      fechaInicio: addDays(1),
+      horaInicio: '10:00',
+      horaFin: '11:00',
+      tipo: 'sesion-1-1',
+      tipoSesion: 'presencial',
+      frecuencia: 'semanal',
+      diaSemana: 1, // Lunes
+      numeroRepeticiones: 12,
+      precio: 50,
+      duracionMinutos: 60,
+      activo: true,
+      estado: 'activa',
+      reservasCreadas: 3,
+      createdAt: addDays(-14),
+      updatedAt: addDays(-1),
+    },
+    {
+      id: '2',
+      entrenadorId: entrenadorId || 'entrenador1',
+      clienteId: 'cliente2',
+      clienteNombre: 'María García',
+      fechaInicio: addDays(2),
+      horaInicio: '12:00',
+      horaFin: '12:45',
+      tipo: 'sesion-1-1',
+      tipoSesion: 'videollamada',
+      frecuencia: 'semanal',
+      diaSemana: 2, // Martes
+      fechaFin: addDays(60),
+      precio: 45,
+      duracionMinutos: 45,
+      activo: true,
+      estado: 'activa',
+      reservasCreadas: 2,
+      createdAt: addDays(-10),
+      updatedAt: addDays(-3),
+    },
+    {
+      id: '3',
+      entrenadorId: entrenadorId || 'entrenador1',
+      clienteId: 'cliente3',
+      clienteNombre: 'Carlos Ruiz',
+      fechaInicio: addDays(0),
+      horaInicio: '09:00',
+      horaFin: '10:00',
+      tipo: 'fisio',
+      tipoSesion: 'presencial',
+      frecuencia: 'quincenal',
+      numeroRepeticiones: 8,
+      precio: 60,
+      duracionMinutos: 60,
+      activo: false,
+      estado: 'pausada',
+      reservasCreadas: 1,
+      createdAt: addDays(-7),
+      updatedAt: addDays(-7),
+    },
+  ];
+  
+  return datosMock;
+};
+
+/**
+ * Obtiene las reservas recurrentes con filtros opcionales
+ * 
+ * @param filtros - Filtros para buscar reservas recurrentes
+ * @returns Lista de reservas recurrentes que cumplen con los filtros
+ * 
+ * @example
+ * ```typescript
+ * // Obtener todas las reservas recurrentes de un entrenador
+ * const recurrentes = await getReservasRecurrentes({ entrenadorId: 'entrenador1' });
+ * 
+ * // Obtener solo las activas de un cliente
+ * const recurrentes = await getReservasRecurrentes({ 
+ *   clienteId: 'cliente1', 
+ *   activo: true 
+ * });
+ * ```
+ */
+export const getReservasRecurrentes = async (
+  filtros: FiltrosReservasRecurrentes = {}
+): Promise<ReservaRecurrente[]> => {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  // Inicializar datos mock si está vacío
+  if (mockReservasRecurrentes.length === 0) {
+    mockReservasRecurrentes = inicializarDatosMock(filtros.entrenadorId);
+  }
+  
+  let reservasFiltradas = [...mockReservasRecurrentes];
+  
+  // Filtrar por entrenador
+  if (filtros.entrenadorId) {
+    reservasFiltradas = reservasFiltradas.filter(
+      r => r.entrenadorId === filtros.entrenadorId
+    );
+  }
+  
+  // Filtrar por cliente
+  if (filtros.clienteId) {
+    reservasFiltradas = reservasFiltradas.filter(
+      r => r.clienteId === filtros.clienteId
+    );
+  }
+  
+  // Filtrar por estado activo
+  if (filtros.activo !== undefined) {
+    reservasFiltradas = reservasFiltradas.filter(
+      r => (r.activo ?? true) === filtros.activo
+    );
+  }
+  
+  // Filtrar por estado
+  if (filtros.estado) {
+    reservasFiltradas = reservasFiltradas.filter(
+      r => (r.estado || 'activa') === filtros.estado
+    );
+  }
+  
+  // Filtrar por frecuencia
+  if (filtros.frecuencia) {
+    reservasFiltradas = reservasFiltradas.filter(
+      r => r.frecuencia === filtros.frecuencia
+    );
+  }
+  
+  // Filtrar por tipo
+  if (filtros.tipo) {
+    reservasFiltradas = reservasFiltradas.filter(
+      r => r.tipo === filtros.tipo
+    );
+  }
+  
+  return reservasFiltradas;
+};
+
+/**
+ * Crea una nueva reserva recurrente
+ * 
+ * @param data - Datos de la reserva recurrente a crear (sin id, createdAt, updatedAt, reservasCreadas)
+ * @returns La reserva recurrente creada con todos sus campos
+ * 
+ * @example
+ * ```typescript
+ * const nuevaRecurrente = await createReservaRecurrente({
+ *   entrenadorId: 'entrenador1',
+ *   clienteId: 'cliente1',
+ *   clienteNombre: 'Juan Pérez',
+ *   fechaInicio: new Date('2024-01-15'),
+ *   horaInicio: '10:00',
+ *   horaFin: '11:00',
+ *   tipo: 'sesion-1-1',
+ *   tipoSesion: 'presencial',
+ *   frecuencia: 'semanal',
+ *   diaSemana: 1,
+ *   numeroRepeticiones: 12,
+ *   precio: 50,
+ *   duracionMinutos: 60
+ * });
+ * ```
+ * 
+ * @remarks
+ * Esta función crea la configuración de reserva recurrente pero NO genera
+ * las reservas individuales. Para generar las reservas, usa `expandirReservaRecurrente`.
+ * 
+ * En producción, esta función se conectaría con un backend REST/GraphQL:
+ * - REST: POST /api/reservas-recurrentes { body: data }
+ * - GraphQL: mutation { createReservaRecurrente(input: {...}) { id, ... } }
+ */
+export const createReservaRecurrente = async (
+  data: Omit<ReservaRecurrente, 'id' | 'createdAt' | 'updatedAt' | 'reservasCreadas'>
 ): Promise<ReservaRecurrente> => {
   await new Promise(resolve => setTimeout(resolve, 500));
   
   const nuevaReservaRecurrente: ReservaRecurrente = {
-    ...reservaRecurrente,
+    ...data,
     id: Date.now().toString(),
     reservasCreadas: 0,
+    estado: data.estado || 'activa',
+    activo: data.activo ?? true,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
   
+  // Agregar al almacenamiento mock
+  if (mockReservasRecurrentes.length === 0) {
+    mockReservasRecurrentes = inicializarDatosMock(data.entrenadorId);
+  }
+  mockReservasRecurrentes.push(nuevaReservaRecurrente);
+  
   // Simular guardado en base de datos
   console.log('[ReservasRecurrentes] Creando reserva recurrente:', nuevaReservaRecurrente);
-  
-  // No crear las reservas aquí - se crearán cuando se llame a generarReservasDesdePatron explícitamente
-  // Esto permite más control sobre cuándo se generan las reservas
   
   return nuevaReservaRecurrente;
 };
 
 /**
- * Genera las reservas basadas en un patrón de recurrencia
+ * @deprecated Usar createReservaRecurrente en su lugar
  */
-export const generarReservasDesdePatron = async (
+export const crearReservaRecurrente = createReservaRecurrente;
+
+/**
+ * Actualiza una reserva recurrente existente
+ * 
+ * @param id - ID de la reserva recurrente a actualizar
+ * @param changes - Campos a actualizar (parcial)
+ * @returns La reserva recurrente actualizada
+ * 
+ * @throws Error si la reserva recurrente no existe
+ * 
+ * @example
+ * ```typescript
+ * const actualizada = await updateReservaRecurrente('1', {
+ *   precio: 60,
+ *   horaInicio: '11:00'
+ * });
+ * ```
+ * 
+ * @remarks
+ * En producción, esta función se conectaría con un backend REST/GraphQL:
+ * - REST: PATCH /api/reservas-recurrentes/:id { body: changes }
+ * - GraphQL: mutation { updateReservaRecurrente(id: "...", input: {...}) { id, ... } }
+ */
+export const updateReservaRecurrente = async (
+  id: string,
+  changes: Partial<ReservaRecurrente>
+): Promise<ReservaRecurrente> => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  // Buscar la reserva recurrente
+  const index = mockReservasRecurrentes.findIndex(r => r.id === id);
+  
+  if (index === -1) {
+    // Si no está en mock, buscar en datos iniciales
+    if (mockReservasRecurrentes.length === 0) {
+      mockReservasRecurrentes = inicializarDatosMock();
+    }
+    
+    const reservaExistente = mockReservasRecurrentes.find(r => r.id === id);
+    if (!reservaExistente) {
+      throw new Error('Reserva recurrente no encontrada');
+    }
+    
+    index = mockReservasRecurrentes.indexOf(reservaExistente);
+  }
+  
+  // Actualizar la reserva recurrente
+  const reservaActualizada: ReservaRecurrente = {
+    ...mockReservasRecurrentes[index],
+    ...changes,
+    id, // Asegurar que el ID no cambie
+    updatedAt: new Date(),
+  };
+  
+  mockReservasRecurrentes[index] = reservaActualizada;
+  
+  console.log('[ReservasRecurrentes] Actualizando reserva recurrente:', {
+    id,
+    cambios: changes,
+    reservaActualizada,
+  });
+  
+  return reservaActualizada;
+};
+
+/**
+ * @deprecated Usar updateReservaRecurrente en su lugar
+ */
+export const actualizarReservaRecurrente = updateReservaRecurrente;
+
+/**
+ * Cancela una reserva recurrente
+ * 
+ * Esto marca la reserva recurrente como cancelada y opcionalmente puede
+ * cancelar todas las reservas futuras generadas desde esta recurrencia.
+ * 
+ * @param id - ID de la reserva recurrente a cancelar
+ * @param cancelarReservasFuturas - Si es true, cancela también todas las reservas futuras generadas (por defecto: true)
+ * @param motivo - Motivo de la cancelación (opcional)
+ * @returns La reserva recurrente cancelada
+ * 
+ * @throws Error si la reserva recurrente no existe
+ * 
+ * @example
+ * ```typescript
+ * // Cancelar solo la recurrencia (las reservas futuras se pueden cancelar después)
+ * const cancelada = await cancelarReservaRecurrente('1', false);
+ * 
+ * // Cancelar la recurrencia y todas las reservas futuras
+ * const cancelada = await cancelarReservaRecurrente('1', true, 'Cliente solicitó cancelación');
+ * ```
+ * 
+ * @remarks
+ * En producción, esta función se conectaría con un backend REST/GraphQL:
+ * - REST: POST /api/reservas-recurrentes/:id/cancelar { body: { motivo, cancelarReservasFuturas } }
+ * - GraphQL: mutation { cancelarReservaRecurrente(id: "...", motivo: "...") { id, estado, ... } }
+ */
+export const cancelarReservaRecurrente = async (
+  id: string,
+  cancelarReservasFuturas: boolean = true,
+  motivo?: string
+): Promise<ReservaRecurrente> => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  // Buscar y actualizar la reserva recurrente
+  const reservaActualizada = await updateReservaRecurrente(id, {
+    estado: 'cancelada',
+    activo: false,
+    observaciones: motivo 
+      ? `[${new Date().toLocaleString('es-ES')}] Cancelada: ${motivo}`
+      : `[${new Date().toLocaleString('es-ES')}] Cancelada`,
+  });
+  
+  // Si se solicitó cancelar reservas futuras, hacerlo
+  if (cancelarReservasFuturas && reservaActualizada.entrenadorId) {
+    try {
+      await cancelarReservasRecurrentes(
+        id,
+        reservaActualizada.entrenadorId,
+        motivo,
+        true
+      );
+    } catch (error) {
+      console.error('[ReservasRecurrentes] Error cancelando reservas futuras:', error);
+      // No fallar la cancelación si hay error en las reservas futuras
+    }
+  }
+  
+  console.log('[ReservasRecurrentes] Reserva recurrente cancelada:', {
+    id,
+    motivo,
+    cancelarReservasFuturas,
+  });
+  
+  return reservaActualizada;
+};
+
+/**
+ * @deprecated Usar cancelarReservaRecurrente en su lugar
+ */
+export const desactivarReservaRecurrente = cancelarReservaRecurrente;
+
+/**
+ * Helper: Expande una reserva recurrente en reservas individuales
+ * 
+ * Esta función genera las reservas individuales basándose en el patrón de recurrencia,
+ * usando la misma lógica de validación que `reservas.ts` (validación de disponibilidad,
+ * tiempo mínimo de anticipación, etc.).
+ * 
+ * Cada reserva generada incluye el campo `reservaRecurrenteId` para asociarla con
+ * la reserva recurrente que la originó.
+ * 
+ * @param reservaRecurrente - La reserva recurrente a expandir
+ * @returns Array de reservas individuales generadas
+ * 
+ * @example
+ * ```typescript
+ * const reservaRecurrente = await getReservaRecurrentePorId('entrenador1', '1');
+ * const reservasGeneradas = await expandirReservaRecurrente(reservaRecurrente);
+ * // Cada reserva en reservasGeneradas tendrá reservaRecurrenteId: '1'
+ * ```
+ * 
+ * @remarks
+ * Esta función:
+ * 1. Calcula las fechas basándose en el patrón de recurrencia
+ * 2. Para cada fecha, valida la disponibilidad (usando verificarDisponibilidad)
+ * 3. Crea la reserva usando crearReserva (que aplica todas las validaciones de reservas.ts)
+ * 4. Asocia cada reserva con la reserva recurrente mediante reservaRecurrenteId
+ * 5. Solo crea reservas futuras (no crea reservas en el pasado)
+ * 
+ * Relación entre ReservaRecurrente y Reserva:
+ * - Campo de asociación: `Reserva.reservaRecurrenteId` -> `ReservaRecurrente.id`
+ * - Permite rastrear qué reservas fueron generadas automáticamente
+ * - Facilita la cancelación/modificación masiva de reservas futuras
+ * - Útil para reportes y análisis de reservas recurrentes
+ */
+export const expandirReservaRecurrente = async (
   reservaRecurrente: ReservaRecurrente
 ): Promise<Reserva[]> => {
   const reservas: Reserva[] = [];
   const fechaInicio = new Date(reservaRecurrente.fechaInicio);
   const fechaActual = new Date();
   
-  // Calcular las fechas de las reservas
+  // Calcular las fechas de las reservas basándose en el patrón
   const fechasReservas = calcularFechasReservas(
     fechaInicio,
-    reservaRecurrente.frecuencia,
+    reservaRecurrente.frecuencia || 'semanal',
     reservaRecurrente.diaSemana,
     reservaRecurrente.numeroRepeticiones,
-    reservaRecurrente.fechaFin
+    reservaRecurrente.fechaFin || reservaRecurrente.fechaFinOpcional
   );
   
   // Crear reservas para cada fecha (solo las futuras)
@@ -53,55 +433,90 @@ export const generarReservasDesdePatron = async (
       continue;
     }
     
-    // Verificar disponibilidad antes de crear
+    // Verificar disponibilidad antes de crear (usando la misma lógica de reservas.ts)
     try {
-      const disponible = await verificarDisponibilidad(
-        fecha,
-        reservaRecurrente.horaInicio,
-        reservaRecurrente.tipo,
-        undefined,
-        reservaRecurrente.entrenadorId,
-        reservaRecurrente.horaFin
-      );
-      
-      if (!disponible) {
-        console.warn(`[ReservasRecurrentes] Horario no disponible para ${fecha.toISOString()} ${reservaRecurrente.horaInicio}`);
-        continue;
+      if (reservaRecurrente.entrenadorId && reservaRecurrente.horaInicio) {
+        const disponible = await verificarDisponibilidad(
+          fecha,
+          reservaRecurrente.horaInicio,
+          reservaRecurrente.tipo || 'sesion-1-1',
+          undefined,
+          reservaRecurrente.entrenadorId,
+          reservaRecurrente.horaFin
+        );
+        
+        if (!disponible) {
+          console.warn(`[ReservasRecurrentes] Horario no disponible para ${fecha.toISOString()} ${reservaRecurrente.horaInicio}`);
+          continue;
+        }
       }
       
-      // Crear la reserva
+      // Preparar fecha/hora de inicio y fin
+      const [horaInicio, minutoInicio] = (reservaRecurrente.horaInicio || '10:00').split(':').map(Number);
+      const fechaInicioCompleta = new Date(fecha);
+      fechaInicioCompleta.setHours(horaInicio, minutoInicio, 0, 0);
+      
+      const duracionMinutos = reservaRecurrente.duracionMinutos || 60;
+      const fechaFinCompleta = new Date(fechaInicioCompleta.getTime() + duracionMinutos * 60 * 1000);
+      
+      // Crear la reserva usando crearReserva (que aplica todas las validaciones de reservas.ts)
       const reserva = await crearReserva({
-        clienteId: reservaRecurrente.clienteId,
+        clienteId: reservaRecurrente.clienteId || '',
         clienteNombre: reservaRecurrente.clienteNombre,
-        fecha,
-        horaInicio: reservaRecurrente.horaInicio,
-        horaFin: reservaRecurrente.horaFin,
-        tipo: reservaRecurrente.tipo,
-        tipoSesion: reservaRecurrente.tipoSesion,
+        fechaInicio: fechaInicioCompleta,
+        fechaFin: fechaFinCompleta,
+        fecha: fechaInicioCompleta, // Compatibilidad
+        horaInicio: reservaRecurrente.horaInicio || '10:00',
+        horaFin: reservaRecurrente.horaFin || '11:00',
+        tipo: reservaRecurrente.tipo || 'sesion-1-1',
+        tipoSesion: reservaRecurrente.tipoSesion || 'presencial',
         estado: 'confirmada', // Las reservas recurrentes se crean confirmadas por defecto
+        origen: 'appCliente',
+        esOnline: reservaRecurrente.tipoSesion === 'videollamada',
         precio: reservaRecurrente.precio,
         pagado: false, // El pago se gestiona individualmente
         duracionMinutos: reservaRecurrente.duracionMinutos,
         bonoId: reservaRecurrente.bonoId,
         observaciones: reservaRecurrente.observaciones 
-          ? `${reservaRecurrente.observaciones}\n[Reserva recurrente creada automáticamente]`
-          : '[Reserva recurrente creada automáticamente]',
+          ? `${reservaRecurrente.observaciones}\n[Reserva recurrente creada automáticamente - ID: ${reservaRecurrente.id}]`
+          : `[Reserva recurrente creada automáticamente - ID: ${reservaRecurrente.id}]`,
+        // IMPORTANTE: Asociar la reserva con la reserva recurrente
+        reservaRecurrenteId: reservaRecurrente.id,
       }, reservaRecurrente.entrenadorId);
       
       reservas.push(reserva);
     } catch (error) {
       console.error(`[ReservasRecurrentes] Error creando reserva para ${fecha.toISOString()}:`, error);
+      // Continuar con la siguiente fecha si hay error en una reserva
     }
   }
   
-  // Actualizar contador de reservas creadas
-  console.log(`[ReservasRecurrentes] Creadas ${reservas.length} reservas desde patrón recurrente`);
+  // Actualizar contador de reservas creadas en la reserva recurrente
+  if (reservas.length > 0) {
+    await updateReservaRecurrente(reservaRecurrente.id, {
+      reservasCreadas: (reservaRecurrente.reservasCreadas || 0) + reservas.length,
+    });
+  }
+  
+  console.log(`[ReservasRecurrentes] Expandidas ${reservas.length} reservas desde patrón recurrente ${reservaRecurrente.id}`);
   
   return reservas;
 };
 
 /**
+ * @deprecated Usar expandirReservaRecurrente en su lugar
+ */
+export const generarReservasDesdePatron = expandirReservaRecurrente;
+
+/**
  * Calcula las fechas de las reservas basadas en el patrón de recurrencia
+ * 
+ * @param fechaInicio - Fecha de inicio de la recurrencia
+ * @param frecuencia - Frecuencia de repetición
+ * @param diaSemana - Día de la semana (0-6, Domingo-Sábado) para frecuencia semanal
+ * @param numeroRepeticiones - Número total de repeticiones
+ * @param fechaFin - Fecha límite para crear reservas
+ * @returns Array de fechas calculadas
  */
 export const calcularFechasReservas = (
   fechaInicio: Date,
@@ -173,82 +588,11 @@ const getDiasFrecuencia = (frecuencia: 'diaria' | 'semanal' | 'quincenal' | 'men
 };
 
 /**
- * Obtiene todas las reservas recurrentes de un entrenador
- */
-export const getReservasRecurrentes = async (
-  entrenadorId: string
-): Promise<ReservaRecurrente[]> => {
-  await new Promise(resolve => setTimeout(resolve, 300));
-  
-  // Datos de ejemplo para desarrollo
-  const hoy = new Date();
-  const addDays = (days: number) => new Date(hoy.getTime() + days * 86400000);
-  
-  return [
-    {
-      id: '1',
-      entrenadorId,
-      clienteId: 'cliente1',
-      clienteNombre: 'Juan Pérez',
-      fechaInicio: addDays(1),
-      horaInicio: '10:00',
-      horaFin: '11:00',
-      tipo: 'sesion-1-1',
-      tipoSesion: 'presencial',
-      frecuencia: 'semanal',
-      diaSemana: 1, // Lunes
-      numeroRepeticiones: 12,
-      precio: 50,
-      duracionMinutos: 60,
-      activo: true,
-      reservasCreadas: 3,
-      createdAt: addDays(-14),
-      updatedAt: addDays(-1),
-    },
-    {
-      id: '2',
-      entrenadorId,
-      clienteId: 'cliente2',
-      clienteNombre: 'María García',
-      fechaInicio: addDays(2),
-      horaInicio: '12:00',
-      horaFin: '12:45',
-      tipo: 'sesion-1-1',
-      tipoSesion: 'videollamada',
-      frecuencia: 'semanal',
-      diaSemana: 2, // Martes
-      fechaFin: addDays(60),
-      precio: 45,
-      duracionMinutos: 45,
-      activo: true,
-      reservasCreadas: 2,
-      createdAt: addDays(-10),
-      updatedAt: addDays(-3),
-    },
-    {
-      id: '3',
-      entrenadorId,
-      clienteId: 'cliente3',
-      clienteNombre: 'Carlos Ruiz',
-      fechaInicio: addDays(0),
-      horaInicio: '09:00',
-      horaFin: '10:00',
-      tipo: 'fisio',
-      tipoSesion: 'presencial',
-      frecuencia: 'quincenal',
-      numeroRepeticiones: 8,
-      precio: 60,
-      duracionMinutos: 60,
-      activo: true,
-      reservasCreadas: 1,
-      createdAt: addDays(-7),
-      updatedAt: addDays(-7),
-    },
-  ];
-};
-
-/**
  * Obtiene una reserva recurrente por ID
+ * 
+ * @param entrenadorId - ID del entrenador (opcional, para validación)
+ * @param reservaRecurrenteId - ID de la reserva recurrente
+ * @returns La reserva recurrente encontrada o null
  */
 export const getReservaRecurrentePorId = async (
   entrenadorId: string,
@@ -257,37 +601,20 @@ export const getReservaRecurrentePorId = async (
   await new Promise(resolve => setTimeout(resolve, 300));
   
   // Buscar en las reservas recurrentes
-  const reservasRecurrentes = await getReservasRecurrentes(entrenadorId);
+  const reservasRecurrentes = await getReservasRecurrentes({ entrenadorId });
   return reservasRecurrentes.find(r => r.id === reservaRecurrenteId) || null;
 };
 
 /**
- * Actualiza una reserva recurrente
- */
-export const actualizarReservaRecurrente = async (
-  reservaRecurrenteId: string,
-  actualizaciones: Partial<ReservaRecurrente>
-): Promise<ReservaRecurrente> => {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  // En producción, esto actualizaría la reserva recurrente en la base de datos
-  throw new Error('No implementado');
-};
-
-/**
- * Desactiva una reserva recurrente
- */
-export const desactivarReservaRecurrente = async (
-  reservaRecurrenteId: string
-): Promise<void> => {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  // En producción, esto desactivaría la reserva recurrente
-  console.log('[ReservasRecurrentes] Desactivando reserva recurrente:', reservaRecurrenteId);
-};
-
-/**
  * Obtiene todas las reservas futuras asociadas a una reserva recurrente
+ * 
+ * @param reservaRecurrenteId - ID de la reserva recurrente
+ * @param entrenadorId - ID del entrenador
+ * @returns Array de reservas futuras asociadas
+ * 
+ * @remarks
+ * Esta función busca todas las reservas con `reservaRecurrenteId` igual al ID proporcionado
+ * y que sean futuras (fecha >= fecha actual).
  */
 export const getReservasFuturasDeRecurrente = async (
   reservaRecurrenteId: string,
@@ -295,13 +622,38 @@ export const getReservasFuturasDeRecurrente = async (
 ): Promise<Reserva[]> => {
   await new Promise(resolve => setTimeout(resolve, 300));
   
-  // En producción, esto buscaría todas las reservas futuras creadas desde esta recurrencia
-  // Por ahora, devolvemos un array vacío
-  return [];
+  // Importar getReservas para buscar las reservas
+  const { getReservas } = await import('./reservas');
+  
+  // Obtener todas las reservas del entrenador en un rango amplio
+  const fechaActual = new Date();
+  const fechaFin = new Date();
+  fechaFin.setMonth(fechaFin.getMonth() + 6); // Buscar en los próximos 6 meses
+  
+  const reservas = await getReservas(
+    { 
+      fechaInicio: fechaActual, 
+      fechaFin,
+      entrenadorId 
+    }, 
+    'entrenador'
+  );
+  
+  // Filtrar por reservaRecurrenteId y solo futuras
+  return reservas.filter(reserva => {
+    const fechaReserva = reserva.fecha || reserva.fechaInicio;
+    return reserva.reservaRecurrenteId === reservaRecurrenteId && fechaReserva >= fechaActual;
+  });
 };
 
 /**
  * Cancela todas las reservas futuras de una serie recurrente
+ * 
+ * @param reservaRecurrenteId - ID de la reserva recurrente
+ * @param entrenadorId - ID del entrenador
+ * @param motivo - Motivo de la cancelación (opcional)
+ * @param soloFuturas - Si es true, solo cancela reservas futuras (por defecto: true)
+ * @returns Objeto con el número de reservas canceladas y errores
  */
 export const cancelarReservasRecurrentes = async (
   reservaRecurrenteId: string,
@@ -311,47 +663,47 @@ export const cancelarReservasRecurrentes = async (
 ): Promise<{ canceladas: number; errores: number }> => {
   await new Promise(resolve => setTimeout(resolve, 500));
   
-  // En producción, esto:
-  // 1. Buscaría la reserva recurrente
-  // 2. Buscaría todas las reservas futuras asociadas
-  // 3. Cancelaría cada una de ellas
-  // 4. Opcionalmente desactivaría la recurrencia
+  // Obtener las reservas futuras asociadas
+  const reservas = soloFuturas
+    ? await getReservasFuturasDeRecurrente(reservaRecurrenteId, entrenadorId)
+    : await getReservasFuturasDeRecurrente(reservaRecurrenteId, entrenadorId); // Por ahora solo futuras
   
-  console.log('[ReservasRecurrentes] Cancelando reservas recurrentes:', {
+  let canceladas = 0;
+  let errores = 0;
+  
+  // Cancelar cada reserva
+  const { cancelarReserva } = await import('./reservas');
+  
+  for (const reserva of reservas) {
+    try {
+      await cancelarReserva(reserva.id, motivo, entrenadorId);
+      canceladas++;
+    } catch (error) {
+      console.error(`[ReservasRecurrentes] Error cancelando reserva ${reserva.id}:`, error);
+      errores++;
+    }
+  }
+  
+  console.log('[ReservasRecurrentes] Canceladas reservas recurrentes:', {
     reservaRecurrenteId,
     entrenadorId,
     motivo,
-    soloFuturas
+    soloFuturas,
+    canceladas,
+    errores,
   });
   
-  // Simular cancelación de reservas
-  const reservaRecurrente = await getReservaRecurrentePorId(entrenadorId, reservaRecurrenteId);
-  if (!reservaRecurrente) {
-    throw new Error('Reserva recurrente no encontrada');
-  }
-  
-  // Calcular cuántas reservas futuras se cancelarían
-  const fechaActual = new Date();
-  const fechasReservas = calcularFechasReservas(
-    reservaRecurrente.fechaInicio,
-    reservaRecurrente.frecuencia,
-    reservaRecurrente.diaSemana,
-    reservaRecurrente.numeroRepeticiones,
-    reservaRecurrente.fechaFin
-  );
-  
-  const reservasFuturas = fechasReservas.filter(fecha => fecha >= fechaActual);
-  
-  // En producción, aquí se cancelarían las reservas reales
-  // Por ahora, solo retornamos el número simulado
-  return {
-    canceladas: reservasFuturas.length,
-    errores: 0
-  };
+  return { canceladas, errores };
 };
 
 /**
  * Modifica todas las reservas futuras de una serie recurrente
+ * 
+ * @param reservaRecurrenteId - ID de la reserva recurrente
+ * @param entrenadorId - ID del entrenador
+ * @param modificaciones - Campos a modificar en las reservas futuras
+ * @param soloFuturas - Si es true, solo modifica reservas futuras (por defecto: true)
+ * @returns Objeto con el número de reservas modificadas y errores
  */
 export const modificarReservasRecurrentes = async (
   reservaRecurrenteId: string,
@@ -368,42 +720,33 @@ export const modificarReservasRecurrentes = async (
 ): Promise<{ modificadas: number; errores: number }> => {
   await new Promise(resolve => setTimeout(resolve, 500));
   
-  // En producción, esto:
-  // 1. Buscaría la reserva recurrente
-  // 2. Actualizaría la configuración de la recurrencia
-  // 3. Buscaría todas las reservas futuras asociadas
-  // 4. Modificaría cada una de ellas según las nuevas configuraciones
+  // Obtener las reservas futuras asociadas
+  const reservas = await getReservasFuturasDeRecurrente(reservaRecurrenteId, entrenadorId);
   
-  console.log('[ReservasRecurrentes] Modificando reservas recurrentes:', {
+  let modificadas = 0;
+  let errores = 0;
+  
+  // Actualizar cada reserva
+  const { updateReserva } = await import('./reservas');
+  
+  for (const reserva of reservas) {
+    try {
+      await updateReserva(reserva.id, modificaciones, entrenadorId);
+      modificadas++;
+    } catch (error) {
+      console.error(`[ReservasRecurrentes] Error modificando reserva ${reserva.id}:`, error);
+      errores++;
+    }
+  }
+  
+  console.log('[ReservasRecurrentes] Modificadas reservas recurrentes:', {
     reservaRecurrenteId,
     entrenadorId,
     modificaciones,
-    soloFuturas
+    soloFuturas,
+    modificadas,
+    errores,
   });
   
-  // Simular modificación de reservas
-  const reservaRecurrente = await getReservaRecurrentePorId(entrenadorId, reservaRecurrenteId);
-  if (!reservaRecurrente) {
-    throw new Error('Reserva recurrente no encontrada');
-  }
-  
-  // Calcular cuántas reservas futuras se modificarían
-  const fechaActual = new Date();
-  const fechasReservas = calcularFechasReservas(
-    reservaRecurrente.fechaInicio,
-    reservaRecurrente.frecuencia,
-    reservaRecurrente.diaSemana,
-    reservaRecurrente.numeroRepeticiones,
-    reservaRecurrente.fechaFin
-  );
-  
-  const reservasFuturas = fechasReservas.filter(fecha => fecha >= fechaActual);
-  
-  // En producción, aquí se modificarían las reservas reales
-  // Por ahora, solo retornamos el número simulado
-  return {
-    modificadas: reservasFuturas.length,
-    errores: 0
-  };
+  return { modificadas, errores };
 };
-

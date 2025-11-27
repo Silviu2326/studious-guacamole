@@ -1,189 +1,402 @@
-import React, { useState } from 'react';
-import { Card, Button, Select, TableWithActions } from '../../../components/componentsreutilizables';
-import { Bono, Cliente, Plan } from '../types';
-import { PlanForm } from './PlanForm';
-import { Plus, Clock, Users, TrendingUp, AlertTriangle } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Card, Button, Input, Select, Textarea, Modal, TableWithActions, Badge, Switch, Checkbox } from '../../../components/componentsreutilizables';
+import { Bono, EstadoPlan } from '../types';
+import { bonosMock } from '../data/mockData';
+import { Plus, Edit2, Trash2, Search, Filter, X, Copy, Archive, Power, PowerOff, Calendar, DollarSign, Users, Clock } from 'lucide-react';
 
-interface GestorBonosProps {
-  bonos: Bono[];
-  clientes: Cliente[];
-  planes: Plan[];
-  onCreateBono: (bono: Partial<Bono>) => void;
-  onUpdateBono: (id: string, bono: Partial<Bono>) => void;
-  onDeleteBono: (id: string) => void;
+interface BonoFormData {
+  nombre: string;
+  descripcion: string;
+  numeroSesiones: number;
+  precio: number;
+  tiposSesiones: string[];
+  fechaCaducidadOpcional?: Date;
+  transferible: boolean;
+  restriccionesUso?: string;
+  estado: EstadoPlan;
 }
 
-export const GestorBonos: React.FC<GestorBonosProps> = ({
-  bonos,
-  clientes,
-  planes,
-  onCreateBono,
-  onUpdateBono,
-  onDeleteBono
-}) => {
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [selectedCliente, setSelectedCliente] = useState<string>('');
-  const [selectedPlan, setSelectedPlan] = useState<string>('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'activo' | 'vencido' | 'agotado'>('all');
+const TIPOS_SESIONES_OPTIONS = [
+  { value: 'pt', label: 'Entrenamiento Personal (PT)' },
+  { value: 'grupal', label: 'Clase Grupal' },
+  { value: 'online', label: 'Online' },
+];
 
-  const filteredBonos = bonos.filter(bono => {
-    if (filterStatus === 'all') return true;
-    return bono.estado === filterStatus;
+const ESTADO_OPTIONS: { value: EstadoPlan; label: string }[] = [
+  { value: 'activo', label: 'Activo' },
+  { value: 'inactivo', label: 'Inactivo' },
+  { value: 'archivado', label: 'Archivado' },
+  { value: 'borrador', label: 'Borrador' },
+];
+
+export const GestorBonos: React.FC = () => {
+  const [bonos, setBonos] = useState<Bono[]>(bonosMock);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingBono, setEditingBono] = useState<Bono | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  
+  // Filtros
+  const [filterEstado, setFilterEstado] = useState<EstadoPlan | 'all'>('all');
+  const [filterPrecioMin, setFilterPrecioMin] = useState<string>('');
+  const [filterPrecioMax, setFilterPrecioMax] = useState<string>('');
+  const [filterCaducidadDesde, setFilterCaducidadDesde] = useState<string>('');
+  const [filterCaducidadHasta, setFilterCaducidadHasta] = useState<string>('');
+
+  // Formulario
+  const [formData, setFormData] = useState<BonoFormData>({
+    nombre: '',
+    descripcion: '',
+    numeroSesiones: 0,
+    precio: 0,
+    tiposSesiones: [],
+    fechaCaducidadOpcional: undefined,
+    transferible: false,
+    restriccionesUso: '',
+    estado: 'activo',
   });
 
-  const bonosActivos = bonos.filter(b => b.estado === 'activo').length;
-  const bonosVencidos = bonos.filter(b => b.estado === 'vencido').length;
-  const bonosAgotados = bonos.filter(b => b.estado === 'agotado').length;
-  const ingresosTotales = bonos.reduce((acc, b) => acc + b.precio, 0);
+  const [formErrors, setFormErrors] = useState<Partial<Record<keyof BonoFormData, string>>>({});
 
-  const handleCreateBono = () => {
-    if (!selectedCliente || !selectedPlan) return;
+  // Filtrar bonos
+  const filteredBonos = useMemo(() => {
+    let filtered = [...bonos];
 
-    const plan = planes.find(p => p.id === selectedPlan);
-    if (!plan) return;
+    // Búsqueda por nombre
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(bono =>
+        bono.nombre.toLowerCase().includes(query) ||
+        bono.descripcion.toLowerCase().includes(query)
+      );
+    }
 
-    const nuevoBono: Partial<Bono> = {
-      planId: selectedPlan,
-      clienteId: selectedCliente,
-      sesionesTotal: plan.sesiones || 0,
-      sesionesUsadas: 0,
-      sesionesRestantes: plan.sesiones || 0,
-      fechaCompra: new Date(),
-      fechaVencimiento: new Date(Date.now() + (plan.validezMeses || 1) * 30 * 24 * 60 * 60 * 1000),
+    // Filtro por estado
+    if (filterEstado !== 'all') {
+      filtered = filtered.filter(bono => bono.estado === filterEstado);
+    }
+
+    // Filtro por precio
+    if (filterPrecioMin) {
+      const min = parseFloat(filterPrecioMin);
+      if (!isNaN(min)) {
+        filtered = filtered.filter(bono => bono.precio >= min);
+      }
+    }
+    if (filterPrecioMax) {
+      const max = parseFloat(filterPrecioMax);
+      if (!isNaN(max)) {
+        filtered = filtered.filter(bono => bono.precio <= max);
+      }
+    }
+
+    // Filtro por caducidad
+    if (filterCaducidadDesde) {
+      const desde = new Date(filterCaducidadDesde);
+      filtered = filtered.filter(bono => {
+        if (!bono.fechaCaducidadOpcional) return false;
+        return new Date(bono.fechaCaducidadOpcional) >= desde;
+      });
+    }
+    if (filterCaducidadHasta) {
+      const hasta = new Date(filterCaducidadHasta);
+      hasta.setHours(23, 59, 59, 999); // Incluir todo el día
+      filtered = filtered.filter(bono => {
+        if (!bono.fechaCaducidadOpcional) return false;
+        return new Date(bono.fechaCaducidadOpcional) <= hasta;
+      });
+    }
+
+    return filtered;
+  }, [bonos, searchQuery, filterEstado, filterPrecioMin, filterPrecioMax, filterCaducidadDesde, filterCaducidadHasta]);
+
+  const handleOpenCreate = () => {
+    setEditingBono(null);
+    setFormData({
+      nombre: '',
+      descripcion: '',
+      numeroSesiones: 0,
+      precio: 0,
+      tiposSesiones: [],
+      fechaCaducidadOpcional: undefined,
+      transferible: false,
+      restriccionesUso: '',
       estado: 'activo',
-      precio: plan.precio.base * (1 - plan.precio.descuento / 100)
+    });
+    setFormErrors({});
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (bono: Bono) => {
+    setEditingBono(bono);
+    setFormData({
+      nombre: bono.nombre,
+      descripcion: bono.descripcion,
+      numeroSesiones: bono.numeroSesiones,
+      precio: bono.precio,
+      tiposSesiones: [...bono.tiposSesiones],
+      fechaCaducidadOpcional: bono.fechaCaducidadOpcional,
+      transferible: bono.transferible,
+      restriccionesUso: bono.restriccionesUso || '',
+      estado: bono.estado,
+    });
+    setFormErrors({});
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingBono(null);
+    setFormErrors({});
+  };
+
+  const validateForm = (): boolean => {
+    const errors: Partial<Record<keyof BonoFormData, string>> = {};
+
+    if (!formData.nombre.trim()) {
+      errors.nombre = 'El nombre es requerido';
+    }
+    if (!formData.descripcion.trim()) {
+      errors.descripcion = 'La descripción es requerida';
+    }
+    if (formData.numeroSesiones <= 0) {
+      errors.numeroSesiones = 'El número de sesiones debe ser mayor a 0';
+    }
+    if (formData.precio <= 0) {
+      errors.precio = 'El precio debe ser mayor a 0';
+    }
+    if (formData.tiposSesiones.length === 0) {
+      errors.tiposSesiones = 'Debe seleccionar al menos un tipo de sesión';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSave = () => {
+    if (!validateForm()) return;
+
+    if (editingBono) {
+      // Editar bono existente
+      setBonos(bonos.map(bono =>
+        bono.id === editingBono.id
+          ? {
+              ...bono,
+              ...formData,
+              fechaCaducidadOpcional: formData.fechaCaducidadOpcional,
+            }
+          : bono
+      ));
+    } else {
+      // Crear nuevo bono
+      const nuevoBono: Bono = {
+        id: `bono-${Date.now()}`,
+        ...formData,
+        fechaCaducidadOpcional: formData.fechaCaducidadOpcional,
+      };
+      setBonos([...bonos, nuevoBono]);
+    }
+
+    handleCloseModal();
+  };
+
+  const handleDelete = (bono: Bono) => {
+    if (window.confirm(`¿Estás seguro de eliminar el bono "${bono.nombre}"?`)) {
+      setBonos(bonos.filter(b => b.id !== bono.id));
+    }
+  };
+
+  const handleToggleEstado = (bono: Bono) => {
+    const nuevoEstado: EstadoPlan = bono.estado === 'activo' ? 'inactivo' : 'activo';
+    setBonos(bonos.map(b =>
+      b.id === bono.id ? { ...b, estado: nuevoEstado } : b
+    ));
+  };
+
+  const handleArchive = (bono: Bono) => {
+    if (window.confirm(`¿Estás seguro de archivar el bono "${bono.nombre}"?`)) {
+      setBonos(bonos.map(b =>
+        b.id === bono.id ? { ...b, estado: 'archivado' } : b
+      ));
+    }
+  };
+
+  const handleDuplicate = (bono: Bono) => {
+    const nuevoBono: Bono = {
+      ...bono,
+      id: `bono-${Date.now()}`,
+      nombre: `${bono.nombre} (Copia)`,
+      estado: 'borrador',
     };
-
-    onCreateBono(nuevoBono);
-    setSelectedCliente('');
-    setSelectedPlan('');
-    setShowCreateForm(false);
+    setBonos([...bonos, nuevoBono]);
   };
 
-  const getEstadoBadge = (estado: string) => {
-    const badges = {
-      activo: 'bg-green-100 text-green-800',
-      vencido: 'bg-red-100 text-red-800',
-      agotado: 'bg-yellow-100 text-yellow-800',
-      suspendido: 'bg-gray-100 text-gray-800'
+  const handleTipoSesionChange = (tipo: string, checked: boolean) => {
+    if (checked) {
+      setFormData({
+        ...formData,
+        tiposSesiones: [...formData.tiposSesiones, tipo],
+      });
+    } else {
+      setFormData({
+        ...formData,
+        tiposSesiones: formData.tiposSesiones.filter(t => t !== tipo),
+      });
+    }
+  };
+
+  const getEstadoBadge = (estado: EstadoPlan) => {
+    const config = {
+      activo: { label: 'Activo', variant: 'green' as const },
+      inactivo: { label: 'Inactivo', variant: 'gray' as const },
+      archivado: { label: 'Archivado', variant: 'gray' as const },
+      borrador: { label: 'Borrador', variant: 'blue' as const },
     };
-    return badges[estado as keyof typeof badges] || badges.suspendido;
-  };
-
-  const getClienteName = (clienteId: string) => {
-    const cliente = clientes.find(c => c.id === clienteId);
-    return cliente?.nombre || 'Cliente no encontrado';
-  };
-
-  const getPlanName = (planId: string) => {
-    const plan = planes.find(p => p.id === planId);
-    return plan?.nombre || 'Plan no encontrado';
+    const conf = config[estado] || config.activo;
+    return <Badge variant={conf.variant}>{conf.label}</Badge>;
   };
 
   const columns = [
     {
-      key: 'cliente',
-      label: 'Cliente',
-      render: (bono: Bono) => (
+      key: 'nombre',
+      label: 'Nombre',
+      render: (_: any, bono: Bono) => (
         <div>
-          <div className="font-medium text-gray-900">{getClienteName(bono.clienteId)}</div>
-          <div className="text-sm text-gray-500">{getPlanName(bono.planId)}</div>
+          <div className="font-medium text-gray-900">{bono.nombre}</div>
+          <div className="text-sm text-gray-500 line-clamp-1">{bono.descripcion}</div>
         </div>
-      )
+      ),
     },
     {
-      key: 'sesiones',
+      key: 'numeroSesiones',
       label: 'Sesiones',
-      render: (bono: Bono) => (
+      align: 'center' as const,
+      render: (_: any, bono: Bono) => (
         <div className="text-center">
-          <div className="text-sm font-medium">
-            {bono.sesionesRestantes} / {bono.sesionesTotal}
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-            <div
-              className="bg-indigo-600 h-2 rounded-full"
-              style={{
-                width: `${((bono.sesionesTotal - bono.sesionesRestantes) / bono.sesionesTotal) * 100}%`
-              }}
-            />
+          <div className="flex items-center justify-center gap-1">
+            <Users className="h-4 w-4 text-gray-400" />
+            <span className="font-medium">{bono.numeroSesiones}</span>
           </div>
         </div>
-      )
-    },
-    {
-      key: 'fechaVencimiento',
-      label: 'Vencimiento',
-      render: (bono: Bono) => {
-        const diasRestantes = Math.ceil((new Date(bono.fechaVencimiento).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-        const isProximoVencer = diasRestantes <= 30 && diasRestantes > 0;
-        const isVencido = diasRestantes <= 0;
-        
-        return (
-          <div className="text-sm">
-            <div className={`font-medium ${isVencido ? 'text-red-600' : isProximoVencer ? 'text-yellow-600' : 'text-gray-900'}`}>
-              {new Date(bono.fechaVencimiento).toLocaleDateString()}
-            </div>
-            <div className={`text-xs ${isVencido ? 'text-red-500' : isProximoVencer ? 'text-yellow-500' : 'text-gray-500'}`}>
-              {isVencido ? 'Vencido' : `${diasRestantes} días`}
-            </div>
-          </div>
-        );
-      }
-    },
-    {
-      key: 'estado',
-      label: 'Estado',
-      render: (bono: Bono) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getEstadoBadge(bono.estado)}`}>
-          {bono.estado.charAt(0).toUpperCase() + bono.estado.slice(1)}
-        </span>
-      )
+      ),
     },
     {
       key: 'precio',
       label: 'Precio',
-      render: (bono: Bono) => (
-        <div className="text-right font-medium text-gray-900">
-          {bono.precio.toFixed(2)}€
+      align: 'right' as const,
+      render: (_: any, bono: Bono) => (
+        <div className="text-right">
+          <div className="flex items-center justify-end gap-1">
+            <DollarSign className="h-4 w-4 text-gray-400" />
+            <span className="font-medium">{bono.precio.toFixed(2)}€</span>
+          </div>
         </div>
-      )
-    }
-  ];
-
-  const actions = [
-    {
-      label: 'Editar',
-      onClick: (bono: Bono) => {
-        // Implementar edición
-        console.log('Editar bono:', bono);
-      },
-      variant: 'secondary' as const
+      ),
     },
     {
-      label: 'Eliminar',
-      onClick: (bono: Bono) => onDeleteBono(bono.id),
-      variant: 'destructive' as const
+      key: 'fechaCaducidadOpcional',
+      label: 'Caducidad',
+      render: (_: any, bono: Bono) => {
+        if (!bono.fechaCaducidadOpcional) {
+          return <span className="text-gray-400">Sin caducidad</span>;
+        }
+        const fecha = new Date(bono.fechaCaducidadOpcional);
+        const hoy = new Date();
+        const diasRestantes = Math.ceil((fecha.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+        const isVencido = diasRestantes < 0;
+        const isProximo = diasRestantes >= 0 && diasRestantes <= 30;
+
+        return (
+          <div className="flex items-center gap-1">
+            <Calendar className="h-4 w-4 text-gray-400" />
+            <div>
+              <div className={`text-sm ${isVencido ? 'text-red-600' : isProximo ? 'text-yellow-600' : 'text-gray-900'}`}>
+                {fecha.toLocaleDateString('es-ES')}
+              </div>
+              {!isVencido && (
+                <div className="text-xs text-gray-500">{diasRestantes} días</div>
+              )}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'tiposSesiones',
+      label: 'Tipos de Sesión',
+      render: (_: any, bono: Bono) => (
+        <div className="flex flex-wrap gap-1">
+          {bono.tiposSesiones.map(tipo => (
+            <Badge key={tipo} variant="blue" className="text-xs">
+              {TIPOS_SESIONES_OPTIONS.find(opt => opt.value === tipo)?.label || tipo}
+            </Badge>
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: 'estado',
+      label: 'Estado',
+      render: (_: any, bono: Bono) => getEstadoBadge(bono.estado),
+    },
+  ];
+
+  const getActions = (bono: Bono) => {
+    const baseActions = [
+      {
+        label: 'Editar',
+        icon: <Edit2 className="h-4 w-4" />,
+        variant: 'secondary' as const,
+        onClick: () => handleOpenEdit(bono),
+      },
+      {
+        label: 'Duplicar',
+        icon: <Copy className="h-4 w-4" />,
+        variant: 'ghost' as const,
+        onClick: () => handleDuplicate(bono),
+      },
+    ];
+
+    if (bono.estado !== 'archivado') {
+      baseActions.push(
+        {
+          label: bono.estado === 'activo' ? 'Desactivar' : 'Activar',
+          icon: bono.estado === 'activo' ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />,
+          variant: 'ghost' as const,
+          onClick: () => handleToggleEstado(bono),
+        },
+        {
+          label: 'Archivar',
+          icon: <Archive className="h-4 w-4" />,
+          variant: 'ghost' as const,
+          onClick: () => handleArchive(bono),
+        }
+      );
     }
-  ];
 
-  const clienteOptions = clientes.map(cliente => ({
-    value: cliente.id,
-    label: cliente.nombre
-  }));
+    baseActions.push({
+      label: 'Eliminar',
+      icon: <Trash2 className="h-4 w-4" />,
+      variant: 'destructive' as const,
+      onClick: () => handleDelete(bono),
+    });
 
-  const planOptions = planes
-    .filter(plan => plan.tipo === 'bono_pt' && plan.activo)
-    .map(plan => ({
-      value: plan.id,
-      label: `${plan.nombre} - ${plan.sesiones} sesiones - ${(plan.precio.base * (1 - plan.precio.descuento / 100)).toFixed(2)}€`
-    }));
+    return baseActions;
+  };
 
-  const statusOptions = [
-    { value: 'all', label: 'Todos los estados' },
-    { value: 'activo', label: 'Activos' },
-    { value: 'vencido', label: 'Vencidos' },
-    { value: 'agotado', label: 'Agotados' }
-  ];
+  const activeFiltersCount = [
+    filterEstado !== 'all',
+    !!filterPrecioMin || !!filterPrecioMax,
+    !!filterCaducidadDesde || !!filterCaducidadHasta,
+  ].filter(Boolean).length;
+
+  const clearFilters = () => {
+    setFilterEstado('all');
+    setFilterPrecioMin('');
+    setFilterPrecioMax('');
+    setFilterCaducidadDesde('');
+    setFilterCaducidadHasta('');
+  };
 
   return (
     <div className="space-y-6">
@@ -192,135 +405,260 @@ export const GestorBonos: React.FC<GestorBonosProps> = ({
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Gestión de Bonos</h2>
           <p className="text-gray-600 mt-1">
-            Administra los bonos de entrenamiento de tus clientes
+            Administra los bonos y paquetes de sesiones disponibles
           </p>
         </div>
-        
-        <Button
-          variant="primary"
-          onClick={() => setShowCreateForm(true)}
-          className="flex items-center space-x-2"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Asignar Nuevo Bono</span>
+        <Button variant="primary" onClick={handleOpenCreate}>
+          <Plus className="h-4 w-4 mr-2" />
+          Crear Bono
         </Button>
       </div>
 
-      {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card padding="md">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <Users className="h-8 w-8 text-indigo-600" />
+      {/* Búsqueda y Filtros */}
+      <Card padding="md">
+        <div className="space-y-4">
+          {/* Búsqueda */}
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <Input
+                placeholder="Buscar por nombre o descripción..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                leftIcon={<Search className="h-4 w-4" />}
+              />
             </div>
-            <div className="ml-4">
-              <div className="text-2xl font-bold text-gray-900">{bonosActivos}</div>
-              <div className="text-sm text-gray-600">Bonos activos</div>
-            </div>
+            <Button
+              variant="secondary"
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2"
+            >
+              <Filter className="h-4 w-4" />
+              Filtros
+              {activeFiltersCount > 0 && (
+                <Badge variant="blue">{activeFiltersCount}</Badge>
+              )}
+            </Button>
+            {activeFiltersCount > 0 && (
+              <Button variant="ghost" onClick={clearFilters} size="sm">
+                <X className="h-4 w-4 mr-1" />
+                Limpiar
+              </Button>
+            )}
           </div>
-        </Card>
-        
-        <Card padding="md">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <Clock className="h-8 w-8 text-yellow-600" />
-            </div>
-            <div className="ml-4">
-              <div className="text-2xl font-bold text-gray-900">{bonosVencidos}</div>
-              <div className="text-sm text-gray-600">Vencidos</div>
-            </div>
-          </div>
-        </Card>
-        
-        <Card padding="md">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <AlertTriangle className="h-8 w-8 text-red-600" />
-            </div>
-            <div className="ml-4">
-              <div className="text-2xl font-bold text-gray-900">{bonosAgotados}</div>
-              <div className="text-sm text-gray-600">Agotados</div>
-            </div>
-          </div>
-        </Card>
-        
-        <Card padding="md">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <TrendingUp className="h-8 w-8 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <div className="text-2xl font-bold text-gray-900">{ingresosTotales.toFixed(0)}€</div>
-              <div className="text-sm text-gray-600">Ingresos totales</div>
-            </div>
-          </div>
-        </Card>
-      </div>
 
-      {/* Filtros */}
-      <Card>
-        <div className="flex items-center space-x-4">
-          <Select
-            options={statusOptions}
-            value={filterStatus}
-            onChange={(value) => setFilterStatus(value as any)}
-            placeholder="Filtrar por estado"
-          />
+          {/* Panel de Filtros */}
+          {showFilters && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+              {/* Filtro por Estado */}
+              <div>
+                <Select
+                  label="Estado"
+                  options={[
+                    { value: 'all', label: 'Todos los estados' },
+                    ...ESTADO_OPTIONS,
+                  ]}
+                  value={filterEstado}
+                  onChange={(value) => setFilterEstado(value as EstadoPlan | 'all')}
+                />
+              </div>
+
+              {/* Filtro por Precio */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Rango de Precio (€)
+                </label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    placeholder="Mín"
+                    value={filterPrecioMin}
+                    onChange={(e) => setFilterPrecioMin(e.target.value)}
+                    className="flex-1"
+                  />
+                  <span className="text-gray-500">-</span>
+                  <Input
+                    type="number"
+                    placeholder="Máx"
+                    value={filterPrecioMax}
+                    onChange={(e) => setFilterPrecioMax(e.target.value)}
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+
+              {/* Filtro por Caducidad */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Rango de Caducidad
+                </label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="date"
+                    value={filterCaducidadDesde}
+                    onChange={(e) => setFilterCaducidadDesde(e.target.value)}
+                    className="flex-1"
+                  />
+                  <span className="text-gray-500">-</span>
+                  <Input
+                    type="date"
+                    value={filterCaducidadHasta}
+                    onChange={(e) => setFilterCaducidadHasta(e.target.value)}
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </Card>
 
-      {/* Formulario de creación rápida */}
-      {showCreateForm && (
-        <Card>
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Asignar Nuevo Bono</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Select
-                label="Cliente"
-                options={clienteOptions}
-                value={selectedCliente}
-                onChange={setSelectedCliente}
-                placeholder="Seleccionar cliente"
-              />
-              
-              <Select
-                label="Plan de bono"
-                options={planOptions}
-                value={selectedPlan}
-                onChange={setSelectedPlan}
-                placeholder="Seleccionar plan"
-              />
-            </div>
-            
-            <div className="flex justify-end space-x-3">
-              <Button
-                variant="ghost"
-                onClick={() => setShowCreateForm(false)}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleCreateBono}
-                disabled={!selectedCliente || !selectedPlan}
-              >
-                Asignar Bono
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Tabla de bonos */}
+      {/* Tabla de Bonos */}
       <Card>
         <TableWithActions
           data={filteredBonos}
           columns={columns}
-          actions={actions}
-          emptyMessage="No hay bonos registrados"
+          actions={(bono) => getActions(bono)}
+          emptyMessage="No hay bonos disponibles"
         />
       </Card>
+
+      {/* Modal de Crear/Editar */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        title={editingBono ? 'Editar Bono' : 'Crear Nuevo Bono'}
+        size="xl"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={handleCloseModal}>
+              Cancelar
+            </Button>
+            <Button variant="primary" onClick={handleSave}>
+              {editingBono ? 'Guardar Cambios' : 'Crear Bono'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-6">
+          {/* Nombre */}
+          <div>
+            <Input
+              label="Nombre del Bono"
+              placeholder="Ej: Bono 10 Sesiones"
+              value={formData.nombre}
+              onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+              error={formErrors.nombre}
+              required
+            />
+          </div>
+
+          {/* Descripción */}
+          <div>
+            <Textarea
+              label="Descripción"
+              placeholder="Describe el bono y sus beneficios..."
+              value={formData.descripcion}
+              onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+              error={formErrors.descripcion}
+              rows={3}
+              required
+            />
+          </div>
+
+          {/* Número de Sesiones y Precio */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Input
+                label="Número de Sesiones"
+                type="number"
+                min="1"
+                value={formData.numeroSesiones.toString()}
+                onChange={(e) => setFormData({ ...formData, numeroSesiones: parseInt(e.target.value) || 0 })}
+                error={formErrors.numeroSesiones}
+                required
+              />
+            </div>
+            <div>
+              <Input
+                label="Precio (€)"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.precio.toString()}
+                onChange={(e) => setFormData({ ...formData, precio: parseFloat(e.target.value) || 0 })}
+                error={formErrors.precio}
+                required
+              />
+            </div>
+          </div>
+
+          {/* Tipos de Sesiones */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tipos de Sesiones Válidas <span className="text-red-500">*</span>
+            </label>
+            <div className="space-y-2">
+              {TIPOS_SESIONES_OPTIONS.map(option => (
+                <Checkbox
+                  key={option.value}
+                  label={option.label}
+                  checked={formData.tiposSesiones.includes(option.value)}
+                  onChange={(checked) => handleTipoSesionChange(option.value, checked)}
+                />
+              ))}
+            </div>
+            {formErrors.tiposSesiones && (
+              <p className="text-sm text-red-600 mt-1">{formErrors.tiposSesiones}</p>
+            )}
+          </div>
+
+          {/* Fecha de Caducidad */}
+          <div>
+            <Input
+              label="Fecha de Caducidad (Opcional)"
+              type="date"
+              value={formData.fechaCaducidadOpcional ? new Date(formData.fechaCaducidadOpcional).toISOString().split('T')[0] : ''}
+              onChange={(e) => {
+                const fecha = e.target.value ? new Date(e.target.value) : undefined;
+                setFormData({ ...formData, fechaCaducidadOpcional: fecha });
+              }}
+            />
+          </div>
+
+          {/* Transferible */}
+          <div>
+            <Switch
+              label="Bono Transferible"
+              checked={formData.transferible}
+              onChange={(checked) => setFormData({ ...formData, transferible: checked })}
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              Si está activado, el bono puede ser transferido a otro cliente
+            </p>
+          </div>
+
+          {/* Restricciones de Uso */}
+          <div>
+            <Textarea
+              label="Restricciones de Uso (Opcional)"
+              placeholder="Ej: Válido solo de lunes a viernes en horario de 9:00 a 20:00"
+              value={formData.restriccionesUso || ''}
+              onChange={(e) => setFormData({ ...formData, restriccionesUso: e.target.value })}
+              rows={2}
+            />
+          </div>
+
+          {/* Estado */}
+          <div>
+            <Select
+              label="Estado"
+              options={ESTADO_OPTIONS}
+              value={formData.estado}
+              onChange={(value) => setFormData({ ...formData, estado: value as EstadoPlan })}
+            />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

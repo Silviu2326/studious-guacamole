@@ -1,4 +1,4 @@
-import { Alert, AlertFilters, AlertType } from '../types';
+import { Alert, AlertFilters, AlertType, UserRole } from '../types';
 
 // Mock data para desarrollo
 const mockAlerts: Alert[] = [
@@ -14,6 +14,8 @@ const mockAlerts: Alert[] = [
     relatedEntityId: 'cliente1',
     relatedEntityType: 'cliente',
     role: 'entrenador',
+    contactPhone: '+34612345678',
+    contactEmail: 'juan.perez@example.com',
   },
   {
     id: '2',
@@ -27,6 +29,8 @@ const mockAlerts: Alert[] = [
     relatedEntityId: 'lead1',
     relatedEntityType: 'lead',
     role: 'entrenador',
+    contactPhone: '+34623456789',
+    contactEmail: 'maria.gonzalez@example.com',
   },
   {
     id: '3',
@@ -40,6 +44,8 @@ const mockAlerts: Alert[] = [
     relatedEntityId: 'pago1',
     relatedEntityType: 'pago',
     role: 'entrenador',
+    contactPhone: '+34634567890',
+    contactEmail: 'ana.garcia@example.com',
   },
   {
     id: '4',
@@ -155,6 +161,25 @@ export const markAlertAsRead = async (id: string): Promise<Alert> => {
   return alertsData[alertIndex];
 };
 
+export const markAlertsAsRead = async (ids: string[]): Promise<Alert[]> => {
+  await new Promise(resolve => setTimeout(resolve, 300));
+
+  const updatedAlerts: Alert[] = [];
+  
+  ids.forEach(id => {
+    const alertIndex = alertsData.findIndex(alert => alert.id === id);
+    if (alertIndex !== -1) {
+      alertsData[alertIndex] = {
+        ...alertsData[alertIndex],
+        isRead: true,
+      };
+      updatedAlerts.push(alertsData[alertIndex]);
+    }
+  });
+
+  return updatedAlerts;
+};
+
 export const markAllAlertsAsRead = async (filters?: AlertFilters): Promise<void> => {
   await new Promise(resolve => setTimeout(resolve, 300));
 
@@ -198,5 +223,108 @@ export const getAlertsHistory = async (limit?: number): Promise<Alert[]> => {
 export const getUnreadAlertsCount = async (filters?: AlertFilters): Promise<number> => {
   const alerts = await getAlerts({ ...filters, isRead: false });
   return alerts.length;
+};
+
+/**
+ * Obtiene las alertas críticas del día (3-5 alertas con prioridad alta para hoy)
+ */
+export const getTodayCriticalAlerts = async (role: UserRole, limit: number = 5): Promise<Alert[]> => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const filters: AlertFilters = {
+    role,
+    priority: ['alta'],
+    isRead: false,
+  };
+
+  const allAlerts = await getAlerts(filters);
+  
+  // Filtrar alertas de hoy
+  const todayAlerts = allAlerts.filter(alert => {
+    const alertDate = new Date(alert.createdAt);
+    return alertDate >= today && alertDate < tomorrow;
+  });
+
+  // Ordenar por prioridad y fecha (más recientes primero)
+  todayAlerts.sort((a, b) => {
+    const priorityOrder = { alta: 3, media: 2, baja: 1 };
+    const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
+    if (priorityDiff !== 0) return priorityDiff;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
+  return todayAlerts.slice(0, limit);
+};
+
+/**
+ * Marca una alerta como resuelta
+ */
+export const resolveAlert = async (alertId: string): Promise<Alert> => {
+  await new Promise(resolve => setTimeout(resolve, 200));
+
+  const alertIndex = alertsData.findIndex(alert => alert.id === alertId);
+  if (alertIndex === -1) {
+    throw new Error('Alerta no encontrada');
+  }
+
+  alertsData[alertIndex] = {
+    ...alertsData[alertIndex],
+    isResolved: true,
+    resolvedAt: new Date().toISOString(),
+    isRead: true, // También marcamos como leída al resolver
+  };
+
+  return alertsData[alertIndex];
+};
+
+/**
+ * Envía un recordatorio de pago para alertas de tipo pago
+ */
+export const sendPaymentReminder = async (alertId: string): Promise<Alert> => {
+  await new Promise(resolve => setTimeout(resolve, 300));
+
+  const alert = alertsData.find(a => a.id === alertId);
+  if (!alert) {
+    throw new Error('Alerta no encontrada');
+  }
+
+  if (alert.type !== 'pago-pendiente' && alert.type !== 'factura-vencida') {
+    throw new Error('Esta acción solo está disponible para alertas de pago');
+  }
+
+  // En una implementación real, aquí se enviaría el recordatorio
+  // Por ahora, solo simulamos la acción y actualizamos la alerta
+  const alertIndex = alertsData.findIndex(a => a.id === alertId);
+  if (alertIndex !== -1) {
+    // Podríamos actualizar algún campo para indicar que se envió el recordatorio
+    alertsData[alertIndex] = {
+      ...alertsData[alertIndex],
+      // Mantener los datos originales
+    };
+  }
+
+  return alert;
+};
+
+/**
+ * Pospone una alerta hasta una fecha/hora específica
+ */
+export const snoozeAlert = async (alertId: string, until: Date): Promise<Alert> => {
+  await new Promise(resolve => setTimeout(resolve, 200));
+
+  const alertIndex = alertsData.findIndex(alert => alert.id === alertId);
+  if (alertIndex === -1) {
+    throw new Error('Alerta no encontrada');
+  }
+
+  alertsData[alertIndex] = {
+    ...alertsData[alertIndex],
+    snoozedUntil: until.toISOString(),
+  };
+
+  return alertsData[alertIndex];
 };
 

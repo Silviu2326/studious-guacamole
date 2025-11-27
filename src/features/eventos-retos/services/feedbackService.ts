@@ -414,4 +414,259 @@ export const iniciarVerificacionEncuestasAutomaticas = (): NodeJS.Timeout => {
   }, 60 * 60 * 1000); // Cada hora
 };
 
+// ============================================================================
+// NUEVAS FUNCIONES PARA SERVICIO MOCK
+// ============================================================================
+
+/**
+ * Configura una encuesta post-evento para un evento específico
+ * 
+ * Consumido desde:
+ * - Modal de configuración de encuestas en eventos-retosPage.tsx
+ * - Componente de gestión de feedback en FeedbackResultsModal.tsx
+ * 
+ * @param eventId ID del evento
+ * @param preguntas Array de preguntas para la encuesta
+ * @returns Encuesta configurada
+ */
+export const configurarEncuestaPostEvento = (
+  eventId: string,
+  preguntas: PreguntaEncuesta[]
+): EncuestaPostEvento => {
+  // Cargar evento para obtener nombre
+  const eventosStorage = localStorage.getItem('eventos');
+  let eventoNombre = 'Evento';
+  
+  if (eventosStorage) {
+    try {
+      const eventos: Evento[] = JSON.parse(eventosStorage).map((e: any) => ({
+        ...e,
+        fechaInicio: new Date(e.fechaInicio),
+        fechaFin: e.fechaFin ? new Date(e.fechaFin) : undefined,
+      }));
+      const evento = eventos.find(e => e.id === eventId);
+      if (evento) {
+        eventoNombre = evento.nombre;
+      }
+    } catch (error) {
+      console.error('Error cargando evento:', error);
+    }
+  }
+
+  // Verificar si ya existe una encuesta
+  const encuestas = obtenerTodasLasEncuestas();
+  const encuestaExistente = encuestas.find(e => e.eventoId === eventId);
+
+  const encuesta: EncuestaPostEvento = encuestaExistente
+    ? {
+        ...encuestaExistente,
+        preguntas,
+      }
+    : {
+        id: `encuesta_${eventId}_${Date.now()}`,
+        eventoId,
+        eventoNombre,
+        preguntas,
+        fechaCreacion: new Date(),
+        estado: 'pendiente',
+        respuestas: [],
+        participantesNotificados: [],
+        enviarAutomaticamente: false,
+        horasDespuesEvento: 24,
+      };
+
+  guardarEncuesta(encuesta);
+  return encuesta;
+};
+
+/**
+ * Obtiene la encuesta post-evento configurada para un evento
+ * 
+ * Consumido desde:
+ * - FeedbackResultsModal.tsx para mostrar encuesta y resultados
+ * - eventos-retosPage.tsx para verificar si existe encuesta
+ * 
+ * @param eventId ID del evento
+ * @returns Encuesta o null si no existe
+ */
+export const obtenerEncuestaPostEvento = (eventId: string): EncuestaPostEvento | null => {
+  return obtenerEncuestaPorEvento(eventId);
+};
+
+/**
+ * Registra las respuestas de feedback de un cliente para un evento
+ * 
+ * Consumido desde:
+ * - Página pública de registro de eventos (PublicEventRegistrationPage.tsx)
+ * - Modal de feedback para participantes
+ * 
+ * @param eventId ID del evento
+ * @param clienteId ID del cliente/participante
+ * @param respuestas Array de respuestas a las preguntas
+ */
+export const registrarRespuestasFeedback = (
+  eventId: string,
+  clienteId: string,
+  respuestas: Array<{ preguntaId: string; respuesta: string | number | boolean }>
+): void => {
+  const encuesta = obtenerEncuestaPorEvento(eventId);
+  
+  if (!encuesta) {
+    throw new Error(`No existe encuesta configurada para el evento ${eventId}`);
+  }
+
+  // Obtener información del participante
+  const eventosStorage = localStorage.getItem('eventos');
+  let participanteNombre = 'Participante';
+  let participanteEmail: string | undefined;
+
+  if (eventosStorage) {
+    try {
+      const eventos: Evento[] = JSON.parse(eventosStorage).map((e: any) => ({
+        ...e,
+        fechaInicio: new Date(e.fechaInicio),
+        fechaFin: e.fechaFin ? new Date(e.fechaFin) : undefined,
+      }));
+      const evento = eventos.find(e => e.id === eventId);
+      if (evento && evento.participantesDetalle) {
+        const participante = evento.participantesDetalle.find(p => p.id === clienteId);
+        if (participante) {
+          participanteNombre = participante.nombre;
+          participanteEmail = participante.email;
+        }
+      }
+    } catch (error) {
+      console.error('Error cargando participante:', error);
+    }
+  }
+
+  // Procesar respuestas
+  procesarRespuestaEncuesta(
+    encuesta,
+    clienteId,
+    participanteNombre,
+    participanteEmail,
+    respuestas
+  );
+};
+
+/**
+ * Obtiene los resultados agregados de feedback para un evento
+ * 
+ * Consumido desde:
+ * - FeedbackResultsModal.tsx para mostrar estadísticas y resultados
+ * - DashboardMetricasGenerales.tsx para métricas de satisfacción
+ * - EventAnalyticsModal.tsx para análisis de satisfacción
+ * 
+ * @param eventId ID del evento
+ * @returns Datos agregados con puntuaciones medias por pregunta
+ */
+export const obtenerResultadosFeedback = (eventId: string): {
+  estadisticas: EstadisticasFeedback;
+  resultadosPorPregunta: Array<{
+    preguntaId: string;
+    preguntaTexto: string;
+    tipo: string;
+    promedio: number;
+    totalRespuestas: number;
+    distribucion?: Record<number | string, number>;
+    respuestasTexto?: Array<{
+      participanteNombre: string;
+      respuesta: string;
+      fecha: Date;
+    }>;
+  }>;
+} => {
+  const encuesta = obtenerEncuestaPorEvento(eventId);
+  
+  if (!encuesta) {
+    return {
+      estadisticas: {
+        totalParticipantes: 0,
+        totalRespuestas: 0,
+        tasaRespuesta: 0,
+        satisfaccionPromedio: 0,
+        distribucionRatings: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+        comentariosDestacados: [],
+        comentariosNegativos: [],
+        preguntasConMejoresRespuestas: [],
+        preguntasConPeoresRespuestas: [],
+      },
+      resultadosPorPregunta: [],
+    };
+  }
+
+  const estadisticas = calcularEstadisticasFeedback(encuesta);
+
+  // Calcular resultados detallados por pregunta
+  const resultadosPorPregunta = encuesta.preguntas.map(pregunta => {
+    const respuestasPregunta = encuesta.respuestas.filter(r => r.preguntaId === pregunta.id);
+    
+    if (pregunta.tipo === 'rating') {
+      const ratings = respuestasPregunta
+        .filter(r => typeof r.respuesta === 'number')
+        .map(r => r.respuesta as number);
+      
+      const promedio = ratings.length > 0
+        ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length
+        : 0;
+
+      // Distribución de ratings
+      const distribucion: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      ratings.forEach(rating => {
+        if (rating >= 1 && rating <= 5) {
+          distribucion[Math.round(rating)]++;
+        }
+      });
+
+      return {
+        preguntaId: pregunta.id,
+        preguntaTexto: pregunta.texto,
+        tipo: pregunta.tipo,
+        promedio: Math.round(promedio * 100) / 100,
+        totalRespuestas: ratings.length,
+        distribucion,
+      };
+    } else if (pregunta.tipo === 'texto') {
+      const respuestasTexto = respuestasPregunta
+        .filter(r => typeof r.respuesta === 'string' && r.respuesta.trim())
+        .map(r => ({
+          participanteNombre: r.participanteNombre,
+          respuesta: r.respuesta as string,
+          fecha: r.fechaRespuesta,
+        }));
+
+      return {
+        preguntaId: pregunta.id,
+        preguntaTexto: pregunta.texto,
+        tipo: pregunta.tipo,
+        promedio: 0,
+        totalRespuestas: respuestasTexto.length,
+        respuestasTexto,
+      };
+    } else {
+      // Para otros tipos (opcion, siNo, etc.)
+      const distribucion: Record<string, number> = {};
+      respuestasPregunta.forEach(r => {
+        const key = String(r.respuesta);
+        distribucion[key] = (distribucion[key] || 0) + 1;
+      });
+
+      return {
+        preguntaId: pregunta.id,
+        preguntaTexto: pregunta.texto,
+        tipo: pregunta.tipo,
+        promedio: 0,
+        totalRespuestas: respuestasPregunta.length,
+        distribucion,
+      };
+    }
+  });
+
+  return {
+    estadisticas,
+    resultadosPorPregunta,
+  };
+};
+
 

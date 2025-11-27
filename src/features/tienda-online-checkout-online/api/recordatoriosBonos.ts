@@ -1,6 +1,7 @@
 import { Bono } from '../../catalogo-planes/types';
 import { getBonosByClientes } from './bonos';
 import { getClients } from '../../gestión-de-clientes/api/clients';
+import { Bono as BonoCheckout } from '../types';
 
 /**
  * Tipo de canal de comunicación para recordatorios
@@ -353,5 +354,61 @@ export async function obtenerHistorialRecordatorios(
   });
   
   return [];
+}
+
+// ============================================================================
+// API MOCK DE RECORDATORIOS DE BONOS (CHECKOUT)
+// ============================================================================
+
+/**
+ * Obtiene bonos próximos a caducar dentro de un número de días
+ */
+export async function getBonosProximosACaducar(dias: number): Promise<BonoCheckout[]> {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  // Obtener todos los bonos del mock
+  const { getAllBonosCheckout } = await import('./bonos');
+  const todosLosBonos = await getAllBonosCheckout();
+  
+  const ahora = new Date();
+
+  return todosLosBonos
+    .filter((bono) => {
+      if (!bono.fechaCaducidadOpcional) return false;
+      if (bono.saldoRestante <= 0) return false; // Solo bonos con saldo
+      
+      const fechaCaducidad = new Date(bono.fechaCaducidadOpcional);
+      const diasRestantes = Math.ceil((fechaCaducidad.getTime() - ahora.getTime()) / (1000 * 60 * 60 * 24));
+      
+      return diasRestantes > 0 && diasRestantes <= dias;
+    })
+    .map(({ clienteIdOpcional, empresaOpcional, fechaCreacion, ...bono }) => bono);
+}
+
+/**
+ * Obtiene bonos sin usar desde hace un número de días
+ */
+export async function getBonosSinUsar(desdeDias: number): Promise<BonoCheckout[]> {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  // Obtener todos los bonos del mock
+  const { getAllBonosCheckout } = await import('./bonos');
+  const todosLosBonos = await getAllBonosCheckout();
+  
+  const ahora = new Date();
+
+  return todosLosBonos
+    .filter((bono) => {
+      // Solo bonos que no se han usado (saldo completo)
+      if (bono.saldoRestante !== bono.saldoInicial) return false;
+      
+      // Verificar que tenga fecha de creación
+      if (!bono.fechaCreacion) return false;
+      
+      // Calcular días desde la creación
+      const diasDesdeCreacion = Math.floor((ahora.getTime() - bono.fechaCreacion.getTime()) / (1000 * 60 * 60 * 24));
+      return diasDesdeCreacion >= desdeDias;
+    })
+    .map(({ clienteIdOpcional, empresaOpcional, fechaCreacion, ...bono }) => bono);
 }
 

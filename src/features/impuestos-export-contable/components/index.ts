@@ -1,21 +1,36 @@
-export { FiscalProfileForm } from './FiscalProfileForm';
-export { TaxSummaryReport } from './TaxSummaryReport';
-export { MonthlyExpenseComparisonTable } from './MonthlyExpenseComparisonTable';
-export { ExpenseFileUpload } from './ExpenseFileUpload';
+// Core Dashboard and Financial Components
+export { FinancialDashboard } from './FinancialDashboard';
 export { GestorGastosDeducibles } from './GestorGastosDeducibles';
+export { TaxCalculator } from './TaxCalculator';
+
+// Import and Export Components
+export { BankCSVImport } from './BankCSVImport';
 export { ExportControlsContainer } from './ExportControlsContainer';
 export { ExportHistory } from './ExportHistory';
-export { DateRangePicker } from './DateRangePicker';
-export { TaxCalculator } from './TaxCalculator';
-export { FiscalCalendarComponent } from './FiscalCalendar';
-export { AnnualSummaryComponent } from './AnnualSummary';
-export { TaxReminderBanner } from './TaxReminderBanner';
+
+// Report Components
+export { TaxSummaryReport } from './TaxSummaryReport';
+export { TaxPDFReportGenerator } from './TaxPDFReportGenerator';
+export { AnnualSummaryComponent as AnnualSummary } from './AnnualSummary';
+
+// Chart Components
 export { IncomeExpensesChart } from './IncomeExpensesChart';
 export { IncomeBySourceChart } from './IncomeBySourceChart';
-export { FinancialDashboard } from './FinancialDashboard';
-export { MobileExpenseForm } from './MobileExpenseForm';
+export { MonthlyExpenseComparisonTable } from './MonthlyExpenseComparisonTable';
+
+// Calendar and Date Components
+export { FiscalCalendarComponent as FiscalCalendar } from './FiscalCalendar';
+export { DateRangePicker } from './DateRangePicker';
+
+// Form Components
+export { FiscalProfileForm } from './FiscalProfileForm';
+
+// Education and Alert Components
 export { ExpenseEducationSection } from './ExpenseEducationSection';
 export { ExpenseAlertModal } from './ExpenseAlertModal';
-export { BankCSVImport } from './BankCSVImport';
-export { TaxPDFReportGenerator } from './TaxPDFReportGenerator';
+export { TaxReminderBanner } from './TaxReminderBanner';
+
+// Additional Components (kept for backward compatibility)
+export { ExpenseFileUpload } from './ExpenseFileUpload';
+export { MobileExpenseForm } from './MobileExpenseForm';
 

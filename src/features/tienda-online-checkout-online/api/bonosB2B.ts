@@ -1,6 +1,7 @@
-import { BonoRegaloB2B, CrearBonoRegaloB2BRequest, Producto } from '../types';
+import { BonoRegaloB2B, CrearBonoRegaloB2BRequest, Producto, Bono } from '../types';
 import { getProductos } from './productos';
 import { createBonoFromCheckout } from './bonos';
+import { crearBono } from './bonos';
 
 // Mock data para bonos B2B
 const BONOS_B2B_MOCK: BonoRegaloB2B[] = [];
@@ -107,5 +108,93 @@ export async function actualizarEstadoBonoB2B(
 
   bono.estado = estado;
   return bono;
+}
+
+// ============================================================================
+// API MOCK DE BONOS B2B CORPORATIVOS (CHECKOUT)
+// ============================================================================
+
+/**
+ * Crea un lote de bonos B2B para una empresa
+ */
+export async function crearLoteBonosB2B(
+  payload: { empresa: string; cantidad: number; valorPorBono: number }
+): Promise<Bono[]> {
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  const bonosCreados: Bono[] = [];
+  const fechaCaducidad = new Date();
+  fechaCaducidad.setFullYear(fechaCaducidad.getFullYear() + 1); // Caducidad en 1 año por defecto
+
+  // Obtener referencia a los bonos mock para actualizarlos
+  const { getAllBonosCheckout } = await import('./bonos');
+
+  for (let i = 0; i < payload.cantidad; i++) {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 9).toUpperCase();
+    const codigo = `B2B-${payload.empresa.toUpperCase().replace(/\s+/g, '-')}-${timestamp}-${random}`;
+
+    try {
+      const bono = await crearBono({
+        codigo,
+        tipo: 'regalo',
+        saldoInicial: payload.valorPorBono,
+        saldoRestante: payload.valorPorBono,
+        fechaCaducidadOpcional: fechaCaducidad,
+        esB2BOpcional: true,
+      });
+
+      // Agregar información de empresa al bono en el mock
+      const todosLosBonos = await getAllBonosCheckout();
+      const bonoEnMock = todosLosBonos.find((b) => b.id === bono.id);
+      if (bonoEnMock) {
+        (bonoEnMock as any).empresaOpcional = payload.empresa;
+      }
+
+      bonosCreados.push(bono);
+    } catch (error) {
+      console.error(`Error creando bono ${i + 1} del lote:`, error);
+    }
+  }
+
+  return bonosCreados;
+}
+
+// Función auxiliar para obtener todos los bonos B2B
+async function getAllBonosB2BCheckout(): Promise<Array<Bono & { empresaOpcional?: string }>> {
+  const { getAllBonosCheckout } = await import('./bonos');
+  const todosLosBonos = await getAllBonosCheckout();
+  return todosLosBonos
+    .filter((b) => b.esB2BOpcional)
+    .map((b) => ({ ...b, empresaOpcional: (b as any).empresaOpcional }));
+}
+
+/**
+ * Obtiene todos los bonos B2B de una empresa específica
+ */
+export async function getBonosB2BPorEmpresa(nombreEmpresa: string): Promise<Bono[]> {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  const nombreEmpresaNormalizado = nombreEmpresa.toUpperCase().replace(/\s+/g, '-');
+  
+  // Obtener todos los bonos B2B
+  const todosLosBonosB2B = await getAllBonosB2BCheckout();
+  
+  // Filtrar bonos B2B que pertenezcan a la empresa
+  // Los bonos B2B tienen el nombre de la empresa en el código o en metadata
+  return todosLosBonosB2B
+    .filter((bono) => {
+      // Buscar por nombre de empresa en el código
+      const codigoNormalizado = bono.codigo.toUpperCase();
+      const coincideEnCodigo = codigoNormalizado.includes(nombreEmpresaNormalizado) || 
+                              codigoNormalizado.includes(nombreEmpresa.toUpperCase().replace(/\s+/g, '-'));
+      
+      // Buscar por metadata empresaOpcional
+      const coincideEnMetadata = bono.empresaOpcional && 
+                                  bono.empresaOpcional.toLowerCase() === nombreEmpresa.toLowerCase();
+      
+      return coincideEnCodigo || coincideEnMetadata;
+    })
+    .map(({ empresaOpcional, ...bono }) => bono);
 }
 

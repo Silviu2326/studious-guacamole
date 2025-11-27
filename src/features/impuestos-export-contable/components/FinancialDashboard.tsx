@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button } from '../../../components/componentsreutilizables';
-import { financialDashboardApi } from '../api/api';
-import type { FinancialDashboard as FinancialDashboardData, FinancialAlert } from '../api/types';
+import { Card, Button, Badge } from '../../../components/componentsreutilizables';
+import { financialDashboardApi, fiscalCalendarApi, accountingExportApi, resumenFiscalApi } from '../api/api';
+import type { FinancialDashboard as FinancialDashboardData, FinancialAlert, TaxDeadline, AccountingExport } from '../api/types';
+import { IncomeExpensesChart } from './IncomeExpensesChart';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -12,9 +13,14 @@ import {
   X,
   RefreshCw,
   ArrowRight,
-  Percent
+  Percent,
+  Calendar,
+  FileDown,
+  Download,
+  Clock
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+import { format } from 'date-fns';
 
 interface FinancialDashboardProps {
   onNavigate?: (tab: string) => void;
@@ -27,9 +33,15 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({
   const [dashboard, setDashboard] = useState<FinancialDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
+  const [upcomingDeadlines, setUpcomingDeadlines] = useState<TaxDeadline[]>([]);
+  const [lastExport, setLastExport] = useState<AccountingExport | null>(null);
+  const [fiscalSummary, setFiscalSummary] = useState<any>(null);
 
   useEffect(() => {
     loadDashboard();
+    loadUpcomingDeadlines();
+    loadLastExport();
+    loadFiscalSummary();
   }, []);
 
   const loadDashboard = async () => {
@@ -44,6 +56,49 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({
     }
   };
 
+  const loadUpcomingDeadlines = async () => {
+    try {
+      const currentYear = new Date().getFullYear();
+      const calendar = await fiscalCalendarApi.getCalendar(currentYear);
+      const today = new Date();
+      
+      // Obtener próximas obligaciones (pendientes y próximas 60 días)
+      const upcoming = calendar.deadlines
+        .filter(deadline => {
+          const deadlineDate = new Date(deadline.deadline);
+          const daysUntil = Math.ceil((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          return deadline.status === 'pending' && daysUntil >= 0 && daysUntil <= 60;
+        })
+        .sort((a, b) => a.deadline.getTime() - b.deadline.getTime())
+        .slice(0, 3); // Solo las 3 próximas
+      
+      setUpcomingDeadlines(upcoming);
+    } catch (error) {
+      console.error('Error loading upcoming deadlines:', error);
+    }
+  };
+
+  const loadLastExport = async () => {
+    try {
+      const response = await accountingExportApi.getHistory(1, 1);
+      if (response.data && response.data.length > 0) {
+        setLastExport(response.data[0]);
+      }
+    } catch (error) {
+      console.error('Error loading last export:', error);
+    }
+  };
+
+  const loadFiscalSummary = async () => {
+    try {
+      const currentYear = new Date().getFullYear();
+      const summary = await resumenFiscalApi.getResumenFiscalAnual(currentYear);
+      setFiscalSummary(summary);
+    } catch (error) {
+      console.error('Error loading fiscal summary:', error);
+    }
+  };
+
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('es-ES', {
       style: 'currency',
@@ -55,6 +110,18 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({
 
   const formatPercentage = (value: number): string => {
     return `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
+  };
+
+  const formatDate = (date: Date): string => {
+    return format(date, 'dd/MM/yyyy');
+  };
+
+  const getDaysUntilDeadline = (deadline: Date): number => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const deadlineDate = new Date(deadline);
+    deadlineDate.setHours(0, 0, 0, 0);
+    return Math.ceil((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   };
 
   const getAlertIcon = (type: FinancialAlert['type']) => {
@@ -94,6 +161,12 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({
     }
   };
 
+  const handleNavigateToExport = () => {
+    if (onNavigate) {
+      onNavigate('exportar');
+    }
+  };
+
   const visibleAlerts = dashboard?.alerts.filter(
     alert => !dismissedAlerts.has(alert.id)
   ) || [];
@@ -114,17 +187,22 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({
     );
   }
 
+  // Calcular IVA neto y IRPF estimado
+  const vatNet = dashboard.taxCalculation?.vatNet || 0;
+  const irpfEstimated = dashboard.taxCalculation?.irpfAmount || 0;
+  const estimatedProfit = dashboard.grossProfit;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <Card className="p-6 bg-white shadow-sm">
-        <div className="flex items-center justify-between mb-4">
+      <Card className="p-4 md:p-6 bg-white shadow-sm">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-100 rounded-xl ring-1 ring-blue-200/70">
               <TrendingUp size={24} className="text-blue-600" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900">
                 Dashboard Financiero
               </h2>
               <p className="text-sm text-gray-600 mt-1">
@@ -135,7 +213,7 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({
           <Button
             variant="ghost"
             onClick={loadDashboard}
-            className="text-sm"
+            className="text-sm w-full sm:w-auto"
           >
             <RefreshCw size={16} className="mr-2" />
             Actualizar
@@ -149,9 +227,290 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({
         </div>
       </Card>
 
+      {/* Tarjetas de Resumen - Ingresos, Gastos, Beneficio, IVA Neto, IRPF Estimado */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {/* Ingresos del Período */}
+        <Card className="p-4 md:p-6 bg-gradient-to-br from-green-50 to-green-100 border border-green-200 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-green-200 rounded-lg">
+              <TrendingUp className="w-5 h-5 text-green-700" />
+            </div>
+          </div>
+          <div className="mb-1">
+            <p className="text-xs md:text-sm text-gray-600">Ingresos del Período</p>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <p className="text-2xl md:text-3xl font-bold text-green-700">
+              {formatCurrency(dashboard.monthlyIncome)}
+            </p>
+          </div>
+        </Card>
+
+        {/* Gastos del Período */}
+        <Card className="p-4 md:p-6 bg-gradient-to-br from-red-50 to-red-100 border border-red-200 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-red-200 rounded-lg">
+              <TrendingDown className="w-5 h-5 text-red-700" />
+            </div>
+          </div>
+          <div className="mb-1">
+            <p className="text-xs md:text-sm text-gray-600">Gastos del Período</p>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <p className="text-2xl md:text-3xl font-bold text-red-700">
+              {formatCurrency(dashboard.monthlyExpenses)}
+            </p>
+          </div>
+        </Card>
+
+        {/* Beneficio Estimado */}
+        <Card className="p-4 md:p-6 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-blue-200 rounded-lg">
+              <DollarSign className="w-5 h-5 text-blue-700" />
+            </div>
+            <span className={`text-xs font-medium px-2 py-1 rounded ${
+              estimatedProfit >= 0 
+                ? 'bg-green-200 text-green-800' 
+                : 'bg-red-200 text-red-800'
+            }`}>
+              {estimatedProfit >= 0 ? 'Positivo' : 'Negativo'}
+            </span>
+          </div>
+          <div className="mb-1">
+            <p className="text-xs md:text-sm text-gray-600">Beneficio Estimado</p>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <p className={`text-2xl md:text-3xl font-bold ${
+              estimatedProfit >= 0 ? 'text-blue-700' : 'text-red-700'
+            }`}>
+              {formatCurrency(estimatedProfit)}
+            </p>
+          </div>
+        </Card>
+
+        {/* IVA Neto */}
+        <Card className="p-4 md:p-6 bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-orange-200 rounded-lg">
+              <Percent className="w-5 h-5 text-orange-700" />
+            </div>
+          </div>
+          <div className="mb-1">
+            <p className="text-xs md:text-sm text-gray-600">IVA Neto</p>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <p className={`text-2xl md:text-3xl font-bold ${
+              vatNet >= 0 ? 'text-orange-700' : 'text-green-700'
+            }`}>
+              {vatNet >= 0 ? '+' : ''}{formatCurrency(Math.abs(vatNet))}
+            </p>
+          </div>
+          <p className="text-xs text-gray-600 mt-1">
+            {vatNet >= 0 ? 'A pagar' : 'A devolver'}
+          </p>
+        </Card>
+
+        {/* IRPF Estimado */}
+        <Card className="p-4 md:p-6 bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-purple-200 rounded-lg">
+              <Percent className="w-5 h-5 text-purple-700" />
+            </div>
+          </div>
+          <div className="mb-1">
+            <p className="text-xs md:text-sm text-gray-600">IRPF Estimado</p>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <p className="text-2xl md:text-3xl font-bold text-purple-700">
+              {formatCurrency(irpfEstimated)}
+            </p>
+          </div>
+          <p className="text-xs text-gray-600 mt-1">
+            Estimación mensual
+          </p>
+        </Card>
+      </div>
+
+      {/* Gráfico de Ingresos vs Gastos */}
+      <Card className="p-4 md:p-6 bg-white shadow-sm">
+        <div className="mb-4">
+          <h3 className="text-lg md:text-xl font-semibold text-gray-900">
+            Evolución: Ingresos vs Gastos
+          </h3>
+          <p className="text-sm text-gray-600 mt-1">
+            Comparativa mensual del período
+          </p>
+        </div>
+        <div className="w-full">
+          <IncomeExpensesChart userId={user?.id} />
+        </div>
+      </Card>
+
+      {/* Próximas Obligaciones Fiscales y Estado de Exportaciones */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+        {/* Próximas Obligaciones Fiscales */}
+        <Card className="p-4 md:p-6 bg-white shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Calendar className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Próximas Obligaciones Fiscales
+              </h3>
+              <p className="text-sm text-gray-600">
+                Fechas de vencimiento próximas
+              </p>
+            </div>
+          </div>
+          
+          {upcomingDeadlines.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <CheckCircle className="w-12 h-12 mx-auto mb-2 text-green-500" />
+              <p className="text-sm">No hay obligaciones próximas</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {upcomingDeadlines.map((deadline) => {
+                const daysUntil = getDaysUntilDeadline(deadline.deadline);
+                const isUrgent = daysUntil <= 7;
+                
+                return (
+                  <div
+                    key={deadline.id}
+                    className={`p-3 rounded-lg border ${
+                      isUrgent 
+                        ? 'bg-red-50 border-red-200' 
+                        : 'bg-gray-50 border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-xs font-medium px-2 py-1 rounded ${
+                            deadline.model === '130' 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : 'bg-purple-100 text-purple-800'
+                          }`}>
+                            {deadline.modelName}
+                          </span>
+                          {isUrgent && (
+                            <Badge variant="error" className="text-xs">
+                              Urgente
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm font-medium text-gray-900 mb-1">
+                          {deadline.description}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                          <Clock className="w-3 h-3" />
+                          <span>
+                            {formatDate(deadline.deadline)} 
+                            {daysUntil >= 0 && ` (${daysUntil} ${daysUntil === 1 ? 'día' : 'días'})`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          
+          {upcomingDeadlines.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full mt-4"
+              onClick={() => onNavigate?.('calendario')}
+            >
+              Ver calendario completo
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          )}
+        </Card>
+
+        {/* Estado de Exportaciones */}
+        <Card className="p-4 md:p-6 bg-white shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <FileDown className="w-5 h-5 text-green-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Estado de Exportaciones
+              </h3>
+              <p className="text-sm text-gray-600">
+                Última exportación realizada
+              </p>
+            </div>
+          </div>
+          
+          {!lastExport ? (
+            <div className="text-center py-8 text-gray-500">
+              <FileDown className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+              <p className="text-sm mb-3">No hay exportaciones realizadas</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNavigateToExport}
+              >
+                Crear primera exportación
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Badge 
+                      variant={lastExport.status === 'completed' ? 'success' : 'warning'}
+                      className="text-xs"
+                    >
+                      {lastExport.status === 'completed' ? 'Completada' : 'Pendiente'}
+                    </Badge>
+                    <span className="text-xs font-medium text-gray-600 uppercase">
+                      {lastExport.format}
+                    </span>
+                  </div>
+                  {lastExport.downloadUrl && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => window.open(lastExport.downloadUrl, '_blank')}
+                    >
+                      <Download className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+                <p className="text-sm font-medium text-gray-900 mb-1">
+                  {lastExport.dateRange}
+                </p>
+                <p className="text-xs text-gray-600">
+                  {format(new Date(lastExport.createdAt), "dd/MM/yyyy 'a las' HH:mm")}
+                </p>
+              </div>
+              
+              <Button
+                variant="default"
+                className="w-full"
+                onClick={handleNavigateToExport}
+              >
+                <FileDown className="w-4 h-4 mr-2" />
+                Ir a Exportar
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          )}
+        </Card>
+      </div>
+
       {/* Alertas */}
       {visibleAlerts.length > 0 && (
-        <Card className="p-6 bg-white shadow-sm">
+        <Card className="p-4 md:p-6 bg-white shadow-sm">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Alertas y Notificaciones
           </h3>
@@ -191,218 +550,6 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({
                 </div>
               </div>
             ))}
-          </div>
-        </Card>
-      )}
-
-      {/* KPIs principales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Beneficio Neto Mensual */}
-        <Card className="p-6 bg-gradient-to-br from-green-50 to-green-100 border border-green-200 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
-            <div className="p-2 bg-green-200 rounded-lg">
-              <TrendingUp className="w-5 h-5 text-green-700" />
-            </div>
-            <span className={`text-xs font-medium px-2 py-1 rounded ${
-              dashboard.monthlyNetProfit >= 0 
-                ? 'bg-green-200 text-green-800' 
-                : 'bg-red-200 text-red-800'
-            }`}>
-              {dashboard.monthlyNetProfit >= 0 ? 'Positivo' : 'Negativo'}
-            </span>
-          </div>
-          <div className="mb-1">
-            <p className="text-sm text-gray-600">Beneficio Neto Mensual</p>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <p className={`text-3xl font-bold ${
-              dashboard.monthlyNetProfit >= 0 ? 'text-green-700' : 'text-red-700'
-            }`}>
-              {formatCurrency(dashboard.monthlyNetProfit)}
-            </p>
-          </div>
-          <p className="text-xs text-gray-600 mt-2">
-            Después de impuestos
-          </p>
-        </Card>
-
-        {/* Margen de Beneficio */}
-        <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
-            <div className="p-2 bg-blue-200 rounded-lg">
-              <Percent className="w-5 h-5 text-blue-700" />
-            </div>
-            <span className={`text-xs font-medium px-2 py-1 rounded ${
-              dashboard.profitMargin >= 20 
-                ? 'bg-green-200 text-green-800' 
-                : dashboard.profitMargin >= 10
-                ? 'bg-yellow-200 text-yellow-800'
-                : 'bg-red-200 text-red-800'
-            }`}>
-              {dashboard.profitMargin >= 20 ? 'Bueno' : dashboard.profitMargin >= 10 ? 'Regular' : 'Bajo'}
-            </span>
-          </div>
-          <div className="mb-1">
-            <p className="text-sm text-gray-600">Margen de Beneficio</p>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <p className="text-3xl font-bold text-blue-700">
-              {dashboard.profitMargin.toFixed(1)}%
-            </p>
-          </div>
-          <p className="text-xs text-gray-600 mt-2">
-            {formatCurrency(dashboard.grossProfit)} de {formatCurrency(dashboard.monthlyIncome)}
-          </p>
-        </Card>
-
-        {/* Impuestos Pendientes */}
-        <Card className="p-6 bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
-            <div className="p-2 bg-orange-200 rounded-lg">
-              <DollarSign className="w-5 h-5 text-orange-700" />
-            </div>
-          </div>
-          <div className="mb-1">
-            <p className="text-sm text-gray-600">Impuestos Pendientes</p>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <p className="text-3xl font-bold text-orange-700">
-              {formatCurrency(dashboard.estimatedPendingTaxes)}
-            </p>
-          </div>
-          <p className="text-xs text-gray-600 mt-2">
-            Estimado para este mes
-          </p>
-        </Card>
-
-        {/* Dinero Disponible */}
-        <Card className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
-            <div className="p-2 bg-purple-200 rounded-lg">
-              <CheckCircle className="w-5 h-5 text-purple-700" />
-            </div>
-          </div>
-          <div className="mb-1">
-            <p className="text-sm text-gray-600">Disponible después de Impuestos</p>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <p className={`text-3xl font-bold ${
-              dashboard.availableAfterTaxes >= 0 ? 'text-purple-700' : 'text-red-700'
-            }`}>
-              {formatCurrency(dashboard.availableAfterTaxes)}
-            </p>
-          </div>
-          <p className="text-xs text-gray-600 mt-2">
-            Listo para usar
-          </p>
-        </Card>
-      </div>
-
-      {/* Resumen de Ingresos y Gastos */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="p-6 bg-white shadow-sm">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <TrendingUp className="w-5 h-5 text-green-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900">Ingresos</h3>
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Ingresos brutos:</span>
-              <span className="text-lg font-semibold text-gray-900">
-                {formatCurrency(dashboard.monthlyIncome)}
-              </span>
-            </div>
-            {dashboard.taxCalculation && (
-              <>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600">IVA a pagar:</span>
-                  <span className="text-red-600">
-                    -{formatCurrency(dashboard.taxCalculation.vatNet)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600">IRPF estimado:</span>
-                  <span className="text-red-600">
-                    -{formatCurrency(dashboard.taxCalculation.irpfAmount)}
-                  </span>
-                </div>
-                <div className="border-t border-gray-200 pt-2 flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">Total impuestos:</span>
-                  <span className="text-lg font-bold text-red-600">
-                    -{formatCurrency(dashboard.taxCalculation.totalTaxes)}
-                  </span>
-                </div>
-              </>
-            )}
-          </div>
-        </Card>
-
-        <Card className="p-6 bg-white shadow-sm">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <TrendingDown className="w-5 h-5 text-red-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900">Gastos</h3>
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Gastos del mes:</span>
-              <span className="text-lg font-semibold text-red-600">
-                {formatCurrency(dashboard.monthlyExpenses)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-600">Beneficio bruto:</span>
-              <span className={`font-medium ${
-                dashboard.grossProfit >= 0 ? 'text-green-600' : 'text-red-600'
-              }`}>
-                {formatCurrency(dashboard.grossProfit)}
-              </span>
-            </div>
-            <div className="border-t border-gray-200 pt-2 flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-700">Margen:</span>
-              <span className={`text-lg font-bold ${
-                dashboard.profitMargin >= 20 ? 'text-green-600' : 
-                dashboard.profitMargin >= 10 ? 'text-yellow-600' : 'text-red-600'
-              }`}>
-                {dashboard.profitMargin.toFixed(1)}%
-              </span>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Información adicional */}
-      {dashboard.taxCalculation && (
-        <Card className="p-6 bg-gray-50 border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Detalles Fiscales
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div>
-              <p className="text-gray-600 mb-1">Régimen Fiscal:</p>
-              <p className="font-medium text-gray-900">
-                {dashboard.taxCalculation.settings.taxRegime}
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-600 mb-1">IVA ({dashboard.taxCalculation.settings.vatRate}%):</p>
-              <p className="font-medium text-gray-900">
-                {dashboard.taxCalculation.settings.vatEnabled 
-                  ? formatCurrency(dashboard.taxCalculation.vatNet) 
-                  : 'No aplicable'}
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-600 mb-1">IRPF ({dashboard.taxCalculation.settings.irpfRate}%):</p>
-              <p className="font-medium text-gray-900">
-                {dashboard.taxCalculation.settings.irpfEnabled 
-                  ? formatCurrency(dashboard.taxCalculation.irpfAmount) 
-                  : 'No aplicable'}
-              </p>
-            </div>
           </div>
         </Card>
       )}

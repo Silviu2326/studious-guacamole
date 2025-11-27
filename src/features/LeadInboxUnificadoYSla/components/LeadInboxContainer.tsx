@@ -14,7 +14,30 @@ import { ConversationService } from '../services/conversationService';
 import { NotificationService } from '../services/notificationService';
 import { useAuth } from '../../../context/AuthContext';
 
-export const LeadInboxContainer: React.FC = () => {
+// Tipo para filtros globales
+export interface GlobalFilters {
+  dateRange?: {
+    preset?: string;
+    startDate: Date;
+    endDate: Date;
+  };
+  source?: string;
+  status?: string;
+}
+
+interface LeadInboxContainerProps {
+  globalFilters?: GlobalFilters;
+  onOpenLead?: (leadId: string) => void;
+  selectedLeadId?: string | null;
+  onViewLeadInLeadsTab?: (leadId: string) => void;
+}
+
+export const LeadInboxContainer: React.FC<LeadInboxContainerProps> = ({ 
+  globalFilters,
+  onOpenLead,
+  selectedLeadId,
+  onViewLeadInLeadsTab,
+}) => {
   const { user } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,7 +54,7 @@ export const LeadInboxContainer: React.FC = () => {
 
   useEffect(() => {
     loadLeads();
-  }, []);
+  }, [globalFilters]);
 
   const loadLeads = async () => {
     setIsLoading(true);
@@ -93,16 +116,30 @@ export const LeadInboxContainer: React.FC = () => {
       lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       lead.lastMessageSnippet.toLowerCase().includes(searchQuery.toLowerCase());
     
-    // Filtro por estado
-    const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
+    // Filtro por estado (local y global)
+    const matchesStatus = (statusFilter === 'all' || lead.status === statusFilter) &&
+      (!globalFilters?.status || lead.status === globalFilters.status);
     
     // Filtro por canal
     const matchesChannel = channelFilter === 'all' || lead.sourceChannel === channelFilter;
     
+    // Filtro por fuente (global)
+    const matchesSource = !globalFilters?.source || 
+      lead.sourceChannel === globalFilters.source ||
+      (globalFilters.source === 'referido' && lead.sourceChannel === 'referral') ||
+      (globalFilters.source === 'landing_page' && lead.sourceChannel === 'web');
+    
+    // Filtro por rango de fechas (global)
+    const matchesDateRange = !globalFilters?.dateRange || (() => {
+      const leadDate = new Date(lead.createdAt || lead.updatedAt);
+      return leadDate >= globalFilters.dateRange.startDate && 
+             leadDate <= globalFilters.dateRange.endDate;
+    })();
+    
     // Filtro por SLA
     const matchesSLA = slaFilter === 'all' || lead.slaStatus === slaFilter;
     
-    return matchesSearch && matchesStatus && matchesChannel && matchesSLA;
+    return matchesSearch && matchesStatus && matchesChannel && matchesSource && matchesDateRange && matchesSLA;
   }).sort((a, b) => {
     // US-03: Sort by urgency - leads without response for 24+ hours first
     const hoursA = leadsWithHours.get(a.id) || 0;
@@ -124,6 +161,10 @@ export const LeadInboxContainer: React.FC = () => {
     if (lead) {
       setSelectedLead(lead);
       setSelectedChannel(channel);
+      // Notificar al componente padre
+      if (onOpenLead) {
+        onOpenLead(leadId);
+      }
     }
   };
 
@@ -229,6 +270,7 @@ export const LeadInboxContainer: React.FC = () => {
                 lead={lead}
                 onSelect={handleLeadSelect}
                 hoursWithoutResponse={leadsWithHours.get(lead.id) || 0}
+                isSelected={selectedLeadId === lead.id}
               />
             ))}
           </div>
@@ -242,6 +284,7 @@ export const LeadInboxContainer: React.FC = () => {
           leadName={selectedLead.name}
           channel={selectedChannel}
           onClose={handleCloseConversation}
+          onViewLead={onViewLeadInLeadsTab ? () => onViewLeadInLeadsTab(selectedLead.id) : undefined}
         />
       )}
 

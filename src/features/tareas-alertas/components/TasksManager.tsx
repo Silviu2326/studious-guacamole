@@ -2,19 +2,54 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { Card, Button, Table, Badge, MetricCards } from '../../../components/componentsreutilizables';
 import { Task, TaskFilters, TaskPriority, TaskStatus, CreateTaskData } from '../types';
-import { getTasks, createTask, updateTask, deleteTask, completeTask, getTasksByPriority, sortTasksByPriority } from '../api';
-import { getPriorityColor, getPriorityLabel } from '../api/priority';
+import { 
+  getTasks, 
+  createTask, 
+  updateTask, 
+  deleteTask, 
+  completeTask, 
+  getTasksByPriority, 
+  sortTasksByPriority,
+  getPriorityColor, 
+  getPriorityLabel 
+} from '../api';
 import { TaskCreator } from './TaskCreator';
-import { Plus, Search, Filter, CheckCircle2, Clock, AlertCircle, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Plus, Search, Filter, CheckCircle2, Clock, AlertCircle, ChevronDown, ChevronUp, X, Trash2 } from 'lucide-react';
 
 interface TasksManagerProps {
   role: 'entrenador' | 'gimnasio';
+  /**
+   * Lista de tareas filtradas. Si se proporciona, el componente usará estas tareas
+   * en lugar de cargarlas internamente. Esto permite compartir la misma fuente de datos
+   * con PriorityQueue.
+   */
+  tasks?: Task[];
+  /**
+   * Callback cuando las tareas se actualizan (crear, editar, eliminar, completar).
+   * Permite sincronizar cambios con PriorityQueue.
+   */
+  onTasksChange?: (tasks: Task[]) => void;
+  /**
+   * Si es true, el componente cargará sus propias tareas (modo legacy).
+   * Si es false y tasks está proporcionado, usará las tareas recibidas.
+   */
+  loadOwnTasks?: boolean;
+  /**
+   * Estado de carga externo. Si se proporciona, se usa en lugar del estado interno.
+   */
+  loading?: boolean;
 }
 
-export const TasksManager: React.FC<TasksManagerProps> = ({ role }) => {
+export const TasksManager: React.FC<TasksManagerProps> = ({ 
+  role,
+  tasks: externalTasks,
+  onTasksChange,
+  loadOwnTasks = false,
+  loading: externalLoading
+}) => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [internalLoading, setInternalLoading] = useState(true);
   const [filters, setFilters] = useState<TaskFilters>({
     role,
     ...(role === 'entrenador' && user?.id ? { assignedTo: [user.id] } : {}),
@@ -25,12 +60,25 @@ export const TasksManager: React.FC<TasksManagerProps> = ({ role }) => {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [selectedPriority, setSelectedPriority] = useState<TaskPriority | ''>('');
 
+  // Determinar si debemos cargar tareas o usar las proporcionadas
+  const shouldLoadTasks = loadOwnTasks || !externalTasks;
+
+  // Sincronizar tareas externas cuando cambian
   useEffect(() => {
-    loadTasks();
-  }, [filters, role, user?.id]);
+    if (!shouldLoadTasks && externalTasks) {
+      setTasks(sortTasksByPriority(externalTasks));
+      setInternalLoading(false);
+    }
+  }, [externalTasks, shouldLoadTasks]);
+
+  useEffect(() => {
+    if (shouldLoadTasks) {
+      loadTasks();
+    }
+  }, [filters, role, user?.id, selectedStatus, searchTerm, selectedPriority, shouldLoadTasks]);
 
   const loadTasks = async () => {
-    setLoading(true);
+    setInternalLoading(true);
     try {
       const taskFilters: TaskFilters = {
         ...filters,
@@ -41,21 +89,37 @@ export const TasksManager: React.FC<TasksManagerProps> = ({ role }) => {
         ...(selectedPriority ? { priority: selectedPriority as TaskPriority } : {}),
       };
       const data = await getTasks(taskFilters);
-      setTasks(sortTasksByPriority(data));
+      const sortedTasks = sortTasksByPriority(data);
+      setTasks(sortedTasks);
+      
+      // Notificar cambios si hay callback
+      if (onTasksChange) {
+        onTasksChange(sortedTasks);
+      }
     } catch (error) {
       console.error('Error cargando tareas:', error);
     } finally {
-      setLoading(false);
+      setInternalLoading(false);
     }
   };
 
   const handleCreateTask = async (data: CreateTaskData) => {
     try {
-      await createTask({
+      const newTask = await createTask({
         ...data,
       });
       setShowCreateModal(false);
-      loadTasks();
+      
+      if (shouldLoadTasks) {
+        await loadTasks();
+      } else {
+        // Si estamos usando tareas externas, actualizar la lista local y notificar
+        const updatedTasks = sortTasksByPriority([...tasks, newTask]);
+        setTasks(updatedTasks);
+        if (onTasksChange) {
+          onTasksChange(updatedTasks);
+        }
+      }
     } catch (error) {
       console.error('Error creando tarea:', error);
     }
@@ -64,7 +128,20 @@ export const TasksManager: React.FC<TasksManagerProps> = ({ role }) => {
   const handleCompleteTask = async (id: string) => {
     try {
       await completeTask(id);
-      loadTasks();
+      
+      if (shouldLoadTasks) {
+        await loadTasks();
+      } else {
+        // Si estamos usando tareas externas, actualizar la lista local y notificar
+        const updatedTasks = tasks.map(t => 
+          t.id === id ? { ...t, status: 'completada' as TaskStatus } : t
+        );
+        const sortedTasks = sortTasksByPriority(updatedTasks);
+        setTasks(sortedTasks);
+        if (onTasksChange) {
+          onTasksChange(sortedTasks);
+        }
+      }
     } catch (error) {
       console.error('Error completando tarea:', error);
     }
@@ -73,7 +150,20 @@ export const TasksManager: React.FC<TasksManagerProps> = ({ role }) => {
   const handleUpdateTask = async (id: string, updates: Partial<Task>) => {
     try {
       await updateTask(id, updates);
-      loadTasks();
+      
+      if (shouldLoadTasks) {
+        await loadTasks();
+      } else {
+        // Si estamos usando tareas externas, actualizar la lista local y notificar
+        const updatedTasks = tasks.map(t => 
+          t.id === id ? { ...t, ...updates } : t
+        );
+        const sortedTasks = sortTasksByPriority(updatedTasks);
+        setTasks(sortedTasks);
+        if (onTasksChange) {
+          onTasksChange(sortedTasks);
+        }
+      }
     } catch (error) {
       console.error('Error actualizando tarea:', error);
     }
@@ -83,7 +173,18 @@ export const TasksManager: React.FC<TasksManagerProps> = ({ role }) => {
     if (window.confirm('¿Estás seguro de eliminar esta tarea?')) {
       try {
         await deleteTask(id);
-        loadTasks();
+        
+        if (shouldLoadTasks) {
+          await loadTasks();
+        } else {
+          // Si estamos usando tareas externas, actualizar la lista local y notificar
+          const updatedTasks = tasks.filter(t => t.id !== id);
+          const sortedTasks = sortTasksByPriority(updatedTasks);
+          setTasks(sortedTasks);
+          if (onTasksChange) {
+            onTasksChange(sortedTasks);
+          }
+        }
       } catch (error) {
         console.error('Error eliminando tarea:', error);
       }
@@ -178,17 +279,20 @@ export const TasksManager: React.FC<TasksManagerProps> = ({ role }) => {
               variant="primary"
               size="sm"
               onClick={() => handleCompleteTask(row.id)}
+              className="min-h-[44px] px-3 md:min-h-0 md:px-2"
             >
-              <CheckCircle2 className="w-4 h-4 mr-1" />
-              Completar
+              <CheckCircle2 className="w-5 h-5 md:w-4 md:h-4 mr-1" />
+              <span className="hidden sm:inline">Completar</span>
             </Button>
           )}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => handleDeleteTask(row.id)}
+            className="min-h-[44px] px-3 md:min-h-0 md:px-2"
           >
-            Eliminar
+            <span className="hidden sm:inline">Eliminar</span>
+            <Trash2 className="w-5 h-5 md:w-4 md:h-4 sm:hidden" />
           </Button>
         </div>
       ),
@@ -209,14 +313,30 @@ export const TasksManager: React.FC<TasksManagerProps> = ({ role }) => {
 
   return (
     <div className="space-y-6">
+      {/* Texto Explicativo */}
+      <Card className="bg-blue-50 border-blue-200 shadow-sm">
+        <div className="flex items-start gap-3 p-4">
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <AlertCircle className="w-5 h-5 text-blue-600" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm text-blue-900 font-medium">
+              Las tareas que crees aquí aparecerán en el tab Prioridades según su prioridad.
+            </p>
+          </div>
+        </div>
+      </Card>
+
       {/* Toolbar Superior */}
       <div className="flex items-center justify-end">
         <Button
           variant="primary"
           onClick={() => setShowCreateModal(true)}
+          className="min-h-[44px] px-4 md:min-h-0"
         >
           <Plus size={20} className="mr-2" />
-          Nueva Tarea
+          <span className="hidden sm:inline">Nueva Tarea</span>
+          <span className="sm:hidden">Nueva</span>
         </Button>
       </div>
 
@@ -265,9 +385,10 @@ export const TasksManager: React.FC<TasksManagerProps> = ({ role }) => {
                 variant="secondary"
                 size="sm"
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className="min-h-[44px] px-3 md:min-h-0"
               >
                 <Filter size={18} className="mr-2" />
-                Filtros
+                <span className="hidden sm:inline">Filtros</span>
                 {activeFiltersCount > 0 && (
                   <Badge className="ml-2 bg-blue-600 text-white">
                     {activeFiltersCount}
@@ -284,9 +405,10 @@ export const TasksManager: React.FC<TasksManagerProps> = ({ role }) => {
                   variant="ghost"
                   size="sm"
                   onClick={clearFilters}
+                  className="min-h-[44px] px-3 md:min-h-0"
                 >
                   <X size={18} className="mr-2" />
-                  Limpiar
+                  <span className="hidden sm:inline">Limpiar</span>
                 </Button>
               )}
             </div>
@@ -314,7 +436,7 @@ export const TasksManager: React.FC<TasksManagerProps> = ({ role }) => {
                         <button
                           key={status}
                           onClick={() => handleStatusFilter(status)}
-                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                          className={`px-3 py-2.5 md:py-1.5 rounded-lg text-sm font-medium transition-all min-h-[44px] md:min-h-0 ${
                             isSelected
                               ? 'bg-blue-600 text-white'
                               : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -358,12 +480,35 @@ export const TasksManager: React.FC<TasksManagerProps> = ({ role }) => {
 
       {/* Lista de Tareas */}
       <Card className="bg-white shadow-sm">
-        <Table
-          data={tasks}
-          columns={columns}
-          loading={loading}
-          emptyMessage="No hay tareas disponibles"
-        />
+        {tasks.length === 0 && !(externalLoading !== undefined ? externalLoading : internalLoading) ? (
+          <div className="p-12 text-center">
+            <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+              <CheckSquare className="w-12 h-12 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              No hay tareas aún
+            </h3>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+              Crea tu primera tarea para comenzar a organizar tu trabajo. Las tareas aparecerán automáticamente en el tab Prioridades según su nivel de prioridad.
+            </p>
+              <Button
+                variant="primary"
+                onClick={() => setShowCreateModal(true)}
+                size="lg"
+                className="min-h-[44px] px-4"
+              >
+                <Plus size={20} className="mr-2" />
+                Crear primera tarea
+              </Button>
+          </div>
+        ) : (
+          <Table
+            data={tasks}
+            columns={columns}
+            loading={externalLoading !== undefined ? externalLoading : internalLoading}
+            emptyMessage="No hay tareas disponibles"
+          />
+        )}
       </Card>
 
       {showCreateModal && (

@@ -3,6 +3,17 @@ import { useAuth } from '../../../context/AuthContext';
 import { Card, Button, Table, Tabs, Modal, Input, Select } from '../../../components/componentsreutilizables';
 import { ds } from '../../adherencia/ui/ds';
 import { Lead, LeadFilters, LeadStatus, LeadSource } from '../types';
+
+// Tipo para filtros globales
+export interface GlobalFilters {
+  dateRange?: {
+    preset?: string;
+    startDate: Date;
+    endDate: Date;
+  };
+  source?: LeadSource;
+  status?: LeadStatus;
+}
 import { getLeads, createLead, updateLead, deleteLead } from '../api';
 import { PipelineKanban } from './PipelineKanban';
 import { LeadCapture } from './LeadCapture';
@@ -31,7 +42,8 @@ import {
   FileDown,
   FileText,
   Zap,
-  Receipt
+  Receipt,
+  ArrowRight
 } from 'lucide-react';
 
 interface LeadsManagerProps {
@@ -39,6 +51,10 @@ interface LeadsManagerProps {
   onOpenCaptureModalRef?: React.MutableRefObject<(() => void) | null>;
   showFollowUpsFilter?: boolean;
   onFollowUpsFilterChange?: (value: boolean) => void;
+  globalFilters?: GlobalFilters;
+  selectedLeadId?: string | null;
+  onSelectLead?: (leadId: string) => void;
+  onViewInPipeline?: (leadId: string) => void;
 }
 
 export const LeadsManager: React.FC<LeadsManagerProps> = ({ 
@@ -46,6 +62,10 @@ export const LeadsManager: React.FC<LeadsManagerProps> = ({
   onOpenCaptureModalRef,
   showFollowUpsFilter = false,
   onFollowUpsFilterChange,
+  globalFilters,
+  selectedLeadId,
+  onSelectLead,
+  onViewInPipeline,
 }) => {
   const { user } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -85,11 +105,20 @@ export const LeadsManager: React.FC<LeadsManagerProps> = ({
   const loadLeads = async () => {
     setLoading(true);
     try {
-      const updatedFilters = {
+      const updatedFilters: LeadFilters = {
         ...filters,
         businessType,
         ...(businessType === 'entrenador' && user?.id ? { assignedTo: [user.id] } : {}),
         ...(searchTerm ? { search: searchTerm } : {}),
+        // Aplicar filtros globales
+        ...(globalFilters?.dateRange ? {
+          dateRange: {
+            start: globalFilters.dateRange.startDate,
+            end: globalFilters.dateRange.endDate,
+          },
+        } : {}),
+        ...(globalFilters?.source ? { source: [globalFilters.source] } : {}),
+        ...(globalFilters?.status ? { status: [globalFilters.status] } : {}),
       };
       console.log('[LeadsManager] Cargando leads con filtros:', {
         updatedFilters,
@@ -160,7 +189,7 @@ export const LeadsManager: React.FC<LeadsManagerProps> = ({
   // Cargar leads cuando cambian los filtros, búsqueda o filtro rápido
   useEffect(() => {
     loadLeads();
-  }, [filters, businessType, user?.id, quickFilter, searchTerm, probabilityFilter]);
+  }, [filters, businessType, user?.id, quickFilter, searchTerm, probabilityFilter, globalFilters]);
 
   const handleCreateLead = async (leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
@@ -323,6 +352,28 @@ export const LeadsManager: React.FC<LeadsManagerProps> = ({
         </div>
       ),
     },
+    ...(onSelectLead || onViewInPipeline ? [{
+      key: 'actions' as keyof Lead,
+      label: 'Acciones',
+      render: (value: any, row: Lead) => (
+        <div className="flex items-center gap-2">
+          {onViewInPipeline && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewInPipeline(row.id);
+              }}
+              title="Ver en pipeline"
+            >
+              <Kanban className="w-4 h-4 mr-1" />
+              Ver en pipeline
+            </Button>
+          )}
+        </div>
+      ),
+    }] : []),
   ];
 
   return (
@@ -507,6 +558,12 @@ export const LeadsManager: React.FC<LeadsManagerProps> = ({
                   columns={columns}
                   loading={loading}
                   emptyMessage="No hay leads disponibles"
+                  getRowProps={(row: Lead) => ({
+                    onClick: () => onSelectLead?.(row.id),
+                    className: selectedLeadId === row.id 
+                      ? 'bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-500' 
+                      : 'cursor-pointer',
+                  })}
                 />
               </div>
             )}

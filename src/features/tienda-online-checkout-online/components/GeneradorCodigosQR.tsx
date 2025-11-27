@@ -8,7 +8,8 @@ import {
   eliminarCodigoQR,
 } from '../api/codigosQR';
 import { getProductos } from '../api/productos';
-import { QrCode, Plus, Download, Trash2, Copy, Check, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { getEnlacesPagoEntrenador } from '../api/enlacesPago';
+import { QrCode, Plus, Download, Trash2, Copy, Check, Eye, EyeOff, ExternalLink, Package, Gift, Link2 } from 'lucide-react';
 
 interface GeneradorCodigosQRProps {
   entrenadorId: string;
@@ -27,13 +28,18 @@ export const GeneradorCodigosQR: React.FC<GeneradorCodigosQRProps> = ({
   const [copiado, setCopiado] = useState<string | null>(null);
 
   // Formulario
+  const [tipoQR, setTipoQR] = useState<'producto' | 'bono' | 'enlace_pago'>('producto');
   const [servicioSeleccionado, setServicioSeleccionado] = useState<string>('');
+  const [bonoSeleccionado, setBonoSeleccionado] = useState<string>('');
+  const [enlacePagoSeleccionado, setEnlacePagoSeleccionado] = useState<string>('');
   const [descripcion, setDescripcion] = useState<string>('');
   const [creando, setCreando] = useState(false);
+  const [enlacesPago, setEnlacesPago] = useState<any[]>([]);
 
   useEffect(() => {
     cargarCodigosQR();
     cargarProductos();
+    cargarEnlacesPago();
   }, [entrenadorId]);
 
   const cargarCodigosQR = async () => {
@@ -51,30 +57,60 @@ export const GeneradorCodigosQR: React.FC<GeneradorCodigosQRProps> = ({
   const cargarProductos = async () => {
     try {
       const data = await getProductos(rol);
-      // Solo servicios
-      setProductos(data.filter((p) => p.tipo === 'servicio' && p.disponible));
+      // Todos los productos disponibles
+      setProductos(data.filter((p) => p.disponible));
     } catch (error) {
       console.error('Error cargando productos:', error);
     }
   };
 
+  const cargarEnlacesPago = async () => {
+    try {
+      const data = await getEnlacesPagoEntrenador(entrenadorId);
+      setEnlacesPago(data);
+    } catch (error) {
+      console.error('Error cargando enlaces de pago:', error);
+    }
+  };
+
   const handleCrearCodigoQR = async () => {
-    if (!servicioSeleccionado) {
+    let requestData: any = {
+      tipo: tipoQR,
+      entrenadorId,
+      descripcion: descripcion.trim() || undefined,
+    };
+
+    if (tipoQR === 'producto' && !servicioSeleccionado) {
+      alert('Por favor, selecciona un producto o servicio');
       return;
+    }
+    if (tipoQR === 'producto') {
+      requestData.servicioId = servicioSeleccionado;
+    } else if (tipoQR === 'bono') {
+      if (!bonoSeleccionado) {
+        alert('Por favor, selecciona un bono');
+        return;
+      }
+      requestData.bonoId = bonoSeleccionado;
+    } else if (tipoQR === 'enlace_pago') {
+      if (!enlacePagoSeleccionado) {
+        alert('Por favor, selecciona un enlace de pago');
+        return;
+      }
+      requestData.enlacePagoId = enlacePagoSeleccionado;
     }
 
     setCreando(true);
     try {
-      const nuevoCodigo = await crearCodigoQR({
-        servicioId: servicioSeleccionado,
-        entrenadorId,
-        descripcion: descripcion.trim() || undefined,
-      });
+      const nuevoCodigo = await crearCodigoQR(requestData);
 
       setCodigosQR([nuevoCodigo, ...codigosQR]);
       setMostrarModal(false);
       setServicioSeleccionado('');
+      setBonoSeleccionado('');
+      setEnlacePagoSeleccionado('');
       setDescripcion('');
+      setTipoQR('producto');
     } catch (error: any) {
       alert(error.message || 'Error al crear el código QR');
     } finally {
@@ -292,7 +328,11 @@ export const GeneradorCodigosQR: React.FC<GeneradorCodigosQRProps> = ({
               variant="primary"
               onClick={handleCrearCodigoQR}
               loading={creando}
-              disabled={!servicioSeleccionado}
+              disabled={
+                (tipoQR === 'producto' && !servicioSeleccionado) ||
+                (tipoQR === 'bono' && !bonoSeleccionado) ||
+                (tipoQR === 'enlace_pago' && !enlacePagoSeleccionado)
+              }
             >
               Generar Código QR
             </Button>
@@ -301,16 +341,65 @@ export const GeneradorCodigosQR: React.FC<GeneradorCodigosQRProps> = ({
       >
         <div className="space-y-4">
           <Select
-            label="Servicio"
-            value={servicioSeleccionado}
-            onChange={(value) => setServicioSeleccionado(value)}
-            options={productos.map((p) => ({
-              value: p.id,
-              label: `${p.nombre} - €${p.precio.toFixed(2)}`,
-            }))}
-            placeholder="Selecciona un servicio"
+            label="Tipo de Código QR"
+            value={tipoQR}
+            onChange={(value) => {
+              setTipoQR(value as 'producto' | 'bono' | 'enlace_pago');
+              setServicioSeleccionado('');
+              setBonoSeleccionado('');
+              setEnlacePagoSeleccionado('');
+            }}
+            options={[
+              { value: 'producto', label: 'Producto/Servicio' },
+              { value: 'bono', label: 'Bono' },
+              { value: 'enlace_pago', label: 'Enlace de Pago' },
+            ]}
             required
           />
+
+          {tipoQR === 'producto' && (
+            <Select
+              label="Producto/Servicio"
+              value={servicioSeleccionado}
+              onChange={(value) => setServicioSeleccionado(value)}
+              options={productos.map((p) => ({
+                value: p.id,
+                label: `${p.nombre} - €${p.precioBase.toFixed(2)}`,
+              }))}
+              placeholder="Selecciona un producto o servicio"
+              required
+            />
+          )}
+
+          {tipoQR === 'bono' && (
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                <strong>Nota:</strong> Para generar un código QR de bono, primero debes crear el bono. 
+                Esta funcionalidad estará disponible próximamente.
+              </p>
+              <Input
+                label="ID del Bono (temporal)"
+                value={bonoSeleccionado}
+                onChange={(e) => setBonoSeleccionado(e.target.value)}
+                placeholder="Ingresa el ID del bono"
+                required
+              />
+            </div>
+          )}
+
+          {tipoQR === 'enlace_pago' && (
+            <Select
+              label="Enlace de Pago"
+              value={enlacePagoSeleccionado}
+              onChange={(value) => setEnlacePagoSeleccionado(value)}
+              options={enlacesPago.map((e) => ({
+                value: e.id,
+                label: `${e.producto.nombre} - ${e.descripcion || 'Sin descripción'}`,
+              }))}
+              placeholder="Selecciona un enlace de pago"
+              required
+            />
+          )}
 
           <Input
             label="Descripción (opcional)"
@@ -320,10 +409,30 @@ export const GeneradorCodigosQR: React.FC<GeneradorCodigosQRProps> = ({
           />
 
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>Nota:</strong> El código QR generado permitirá a tus clientes pagar este servicio
+            <p className="text-sm text-blue-800 mb-2">
+              <strong>Nota:</strong> El código QR generado permitirá a tus clientes acceder al contenido seleccionado
               escaneando el código con su teléfono. El código se puede descargar e imprimir para uso en persona.
             </p>
+            <div className="flex items-center gap-2 text-xs text-blue-700 mt-2">
+              {tipoQR === 'producto' && (
+                <>
+                  <Package size={14} />
+                  <span>QR para producto/servicio</span>
+                </>
+              )}
+              {tipoQR === 'bono' && (
+                <>
+                  <Gift size={14} />
+                  <span>QR para bono</span>
+                </>
+              )}
+              {tipoQR === 'enlace_pago' && (
+                <>
+                  <Link2 size={14} />
+                  <span>QR para enlace de pago</span>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </Modal>

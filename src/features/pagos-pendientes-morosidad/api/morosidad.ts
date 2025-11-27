@@ -1,4 +1,17 @@
-import { PagoPendiente, FiltroMorosidad, EstadisticasMorosidad, MetodoPago, EnlacePago, PlataformaPago, AjusteDeudaData } from '../types';
+import { 
+  PagoPendiente, 
+  FiltroMorosidad, 
+  EstadisticasMorosidad, 
+  MetodoPago, 
+  EnlacePago, 
+  PlataformaPago, 
+  AjusteDeudaData,
+  ClienteMoroso,
+  NivelRiesgo,
+  EstadoMorosidad,
+  FiltrosClienteMoroso,
+  HistorialMorosidad
+} from '../types';
 import { getHistorialSesionesCliente } from '../../agenda-calendario/api/sesiones';
 import { seguimientoAPI } from './seguimiento';
 
@@ -730,6 +743,452 @@ export const morosidadAPI = {
     };
     
     return mockPagosPendientes[index];
+  }
+};
+
+// ============================================================================
+// FUNCIONES DE GESTIÓN DE CLIENTES MOROSOS
+// ============================================================================
+
+/**
+ * Datos mock de clientes morosos para desarrollo.
+ * En producción, estos datos vendrían de la base de datos a través del endpoint:
+ * GET /cobros/morosidad/clientes
+ */
+const mockClientesMorosos: ClienteMoroso[] = [
+  {
+    idCliente: 'cliente1',
+    nombreCliente: 'Juan Pérez',
+    email: 'juan@example.com',
+    telefono: '+57 300 123 4567',
+    importeTotalAdeudado: 238000,
+    importeVencido: 238000,
+    numeroFacturasVencidas: 1,
+    diasMaximoRetraso: 3,
+    nivelRiesgo: 'bajo',
+    estadoMorosidad: 'en_revision',
+    fechaUltimoPago: new Date('2024-01-15'),
+    fechaUltimoContacto: new Date('2024-02-01'),
+    gestorAsignado: 'gestor1',
+    notasInternas: 'Cliente de confianza, pago pendiente de confirmación',
+    historialMorosidad: [
+      {
+        id: 'hist1',
+        fecha: new Date('2024-02-01'),
+        tipoCambio: 'contacto',
+        valorNuevo: 'Recordatorio amigable enviado',
+        usuario: 'sistema',
+        notas: 'Primer recordatorio automático'
+      }
+    ]
+  },
+  {
+    idCliente: 'cliente2',
+    nombreCliente: 'María García',
+    email: 'maria@example.com',
+    telefono: '+57 300 234 5678',
+    importeTotalAdeudado: 357000,
+    importeVencido: 357000,
+    numeroFacturasVencidas: 1,
+    diasMaximoRetraso: 12,
+    nivelRiesgo: 'medio',
+    estadoMorosidad: 'en_gestion',
+    fechaUltimoPago: new Date('2024-01-10'),
+    fechaUltimoContacto: new Date('2024-02-04'),
+    gestorAsignado: 'gestor2',
+    historialMorosidad: [
+      {
+        id: 'hist2',
+        fecha: new Date('2024-01-28'),
+        tipoCambio: 'contacto',
+        valorNuevo: 'Recordatorio amigable enviado',
+        usuario: 'sistema'
+      },
+      {
+        id: 'hist3',
+        fecha: new Date('2024-02-04'),
+        tipoCambio: 'contacto',
+        valorNuevo: 'Recordatorio firme enviado',
+        usuario: 'sistema'
+      },
+      {
+        id: 'hist4',
+        fecha: new Date('2024-02-05'),
+        tipoCambio: 'estado_morosidad',
+        valorAnterior: 'en_revision',
+        valorNuevo: 'en_gestion',
+        usuario: 'gestor2',
+        notas: 'Cliente contactado, requiere seguimiento activo'
+      }
+    ]
+  },
+  {
+    idCliente: 'cliente3',
+    nombreCliente: 'Carlos Rodríguez',
+    email: 'carlos@example.com',
+    telefono: '+57 300 345 6789',
+    importeTotalAdeudado: 95200,
+    importeVencido: 95200,
+    numeroFacturasVencidas: 1,
+    diasMaximoRetraso: 25,
+    nivelRiesgo: 'alto',
+    estadoMorosidad: 'plan_de_pago',
+    fechaUltimoPago: new Date('2024-01-05'),
+    fechaUltimoContacto: new Date('2024-02-05'),
+    gestorAsignado: 'gestor1',
+    notasInternas: 'Cliente ha sido contactado, esperando respuesta. Negociando plan de pagos',
+    historialMorosidad: [
+      {
+        id: 'hist5',
+        fecha: new Date('2024-01-22'),
+        tipoCambio: 'contacto',
+        valorNuevo: 'Recordatorio urgente enviado',
+        usuario: 'sistema'
+      },
+      {
+        id: 'hist6',
+        fecha: new Date('2024-02-01'),
+        tipoCambio: 'contacto',
+        valorNuevo: 'Llamada telefónica realizada',
+        usuario: 'gestor1',
+        notas: 'Cliente prometió pagar esta semana'
+      },
+      {
+        id: 'hist7',
+        fecha: new Date('2024-02-05'),
+        tipoCambio: 'nivel_riesgo',
+        valorAnterior: 'medio',
+        valorNuevo: 'alto',
+        usuario: 'sistema',
+        notas: 'Actualización automática por días de retraso'
+      },
+      {
+        id: 'hist8',
+        fecha: new Date('2024-02-06'),
+        tipoCambio: 'estado_morosidad',
+        valorAnterior: 'en_gestion',
+        valorNuevo: 'plan_de_pago',
+        usuario: 'gestor1',
+        notas: 'Cliente solicita plan de pagos'
+      }
+    ]
+  },
+  {
+    idCliente: 'cliente4',
+    nombreCliente: 'Ana Martínez',
+    email: 'ana@example.com',
+    telefono: '+57 300 456 7890',
+    importeTotalAdeudado: 180000,
+    importeVencido: 180000,
+    numeroFacturasVencidas: 1,
+    diasMaximoRetraso: 58,
+    nivelRiesgo: 'critico',
+    estadoMorosidad: 'derivado_externo',
+    fechaUltimoPago: new Date('2023-11-15'),
+    fechaUltimoContacto: new Date('2024-01-15'),
+    gestorAsignado: 'gestor3',
+    notasInternas: 'Caso escalado a gestión legal',
+    historialMorosidad: [
+      {
+        id: 'hist9',
+        fecha: new Date('2024-01-10'),
+        tipoCambio: 'estado_morosidad',
+        valorAnterior: 'en_gestion',
+        valorNuevo: 'derivado_externo',
+        usuario: 'gestor3',
+        notas: 'Documentación enviada a asesor legal'
+      },
+      {
+        id: 'hist10',
+        fecha: new Date('2024-01-12'),
+        tipoCambio: 'nivel_riesgo',
+        valorAnterior: 'alto',
+        valorNuevo: 'critico',
+        usuario: 'sistema',
+        notas: 'Actualización automática por días de retraso críticos'
+      }
+    ]
+  },
+  {
+    idCliente: 'cliente5',
+    nombreCliente: 'Luis Hernández',
+    email: 'luis@example.com',
+    telefono: '+57 300 567 8901',
+    importeTotalAdeudado: 420000,
+    importeVencido: 420000,
+    numeroFacturasVencidas: 1,
+    diasMaximoRetraso: 35,
+    nivelRiesgo: 'critico',
+    estadoMorosidad: 'plan_de_pago',
+    fechaUltimoPago: new Date('2024-01-20'),
+    fechaUltimoContacto: new Date('2024-02-08'),
+    gestorAsignado: 'gestor2',
+    notasInternas: 'Cliente solicita plan de pagos',
+    historialMorosidad: [
+      {
+        id: 'hist11',
+        fecha: new Date('2024-02-08'),
+        tipoCambio: 'contacto',
+        valorNuevo: 'Reunión para negociar plan de pagos',
+        usuario: 'gestor2',
+        notas: 'Pendiente de respuesta del cliente'
+      }
+    ]
+  }
+];
+
+/**
+ * Calcula el nivel de riesgo de un cliente moroso basado en el importe adeudado
+ * y los días de retraso máximo.
+ * 
+ * Lógica de clasificación:
+ * - Bajo: <30 días y <200.000 COP
+ * - Medio: <30 días y >=200.000 COP, o 30-60 días y <500.000 COP
+ * - Alto: 30-60 días y >=500.000 COP, o >60 días y <1.000.000 COP
+ * - Crítico: >60 días y >=1.000.000 COP, o >90 días independientemente del monto
+ * 
+ * @param importeTotalAdeudado - Importe total adeudado en COP
+ * @param diasMaximoRetraso - Días de retraso máximo
+ * @returns Nivel de riesgo calculado
+ */
+export function calcularNivelRiesgo(
+  importeTotalAdeudado: number,
+  diasMaximoRetraso: number
+): NivelRiesgo {
+  // Casos críticos: más de 90 días o más de 60 días con montos altos
+  if (diasMaximoRetraso > 90) {
+    return 'critico';
+  }
+  
+  if (diasMaximoRetraso > 60 && importeTotalAdeudado >= 1000000) {
+    return 'critico';
+  }
+  
+  // Casos de alto riesgo
+  if (diasMaximoRetraso > 60 && importeTotalAdeudado >= 500000) {
+    return 'alto';
+  }
+  
+  if (diasMaximoRetraso >= 30 && diasMaximoRetraso <= 60 && importeTotalAdeudado >= 500000) {
+    return 'alto';
+  }
+  
+  // Casos de riesgo medio
+  if (diasMaximoRetraso >= 30 && diasMaximoRetraso <= 60 && importeTotalAdeudado < 500000) {
+    return 'medio';
+  }
+  
+  if (diasMaximoRetraso < 30 && importeTotalAdeudado >= 200000) {
+    return 'medio';
+  }
+  
+  // Casos de bajo riesgo: menos de 30 días y menos de 200.000 COP
+  return 'bajo';
+}
+
+/**
+ * API de gestión de clientes morosos.
+ * 
+ * NOTA: En producción, estas funciones se conectarían a los siguientes endpoints:
+ * - GET /cobros/morosidad/clientes - Obtener lista de clientes morosos
+ * - GET /cobros/morosidad/clientes/:idCliente - Obtener cliente moroso por ID
+ * - PATCH /cobros/morosidad/clientes/:idCliente/nivel-riesgo - Actualizar nivel de riesgo
+ * - PATCH /cobros/morosidad/clientes/:idCliente/estado - Actualizar estado de morosidad
+ * 
+ * Componentes que consumen esta API:
+ * - MorosidadList.tsx - Listado principal de clientes morosos
+ * - ClasificadorRiesgo.tsx - Clasificación y actualización de niveles de riesgo
+ * - DashboardMorosidad.tsx - Dashboard con métricas y resumen de morosidad
+ */
+export const clientesMorososAPI = {
+  /**
+   * Obtiene la lista de clientes morosos aplicando los filtros especificados.
+   * 
+   * @param filtros - Filtros opcionales para refinar la búsqueda
+   * @returns Promise con array de clientes morosos
+   * 
+   * Consumido por: MorosidadList.tsx, DashboardMorosidad.tsx
+   */
+  async getClientesMorosos(filtros?: FiltrosClienteMoroso): Promise<ClienteMoroso[]> {
+    // Simular latencia de red
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    let clientes = [...mockClientesMorosos];
+    
+    // Aplicar filtros
+    if (filtros) {
+      if (filtros.nivelRiesgo && filtros.nivelRiesgo.length > 0) {
+        clientes = clientes.filter(c => filtros.nivelRiesgo!.includes(c.nivelRiesgo));
+      }
+      
+      if (filtros.estadoMorosidad && filtros.estadoMorosidad.length > 0) {
+        clientes = clientes.filter(c => filtros.estadoMorosidad!.includes(c.estadoMorosidad));
+      }
+      
+      if (filtros.diasRetrasoMin !== undefined) {
+        clientes = clientes.filter(c => c.diasMaximoRetraso >= filtros.diasRetrasoMin!);
+      }
+      
+      if (filtros.diasRetrasoMax !== undefined) {
+        clientes = clientes.filter(c => c.diasMaximoRetraso <= filtros.diasRetrasoMax!);
+      }
+      
+      if (filtros.importeMin !== undefined) {
+        clientes = clientes.filter(c => c.importeTotalAdeudado >= filtros.importeMin!);
+      }
+      
+      if (filtros.importeMax !== undefined) {
+        clientes = clientes.filter(c => c.importeTotalAdeudado <= filtros.importeMax!);
+      }
+      
+      if (filtros.gestorAsignado) {
+        clientes = clientes.filter(c => c.gestorAsignado === filtros.gestorAsignado);
+      }
+      
+      if (filtros.clienteId) {
+        clientes = clientes.filter(c => c.idCliente === filtros.clienteId);
+      }
+    }
+    
+    // Calcular niveles de riesgo actualizados para cada cliente
+    // (en producción esto vendría del backend, aquí lo calculamos para mantener coherencia)
+    clientes = clientes.map(cliente => ({
+      ...cliente,
+      nivelRiesgo: calcularNivelRiesgo(cliente.importeTotalAdeudado, cliente.diasMaximoRetraso)
+    }));
+    
+    // Ordenar por días de retraso (mayor a menor) y luego por importe (mayor a menor)
+    clientes.sort((a, b) => {
+      if (b.diasMaximoRetraso !== a.diasMaximoRetraso) {
+        return b.diasMaximoRetraso - a.diasMaximoRetraso;
+      }
+      return b.importeTotalAdeudado - a.importeTotalAdeudado;
+    });
+    
+    return clientes;
+  },
+
+  /**
+   * Obtiene un cliente moroso específico por su ID.
+   * 
+   * @param idCliente - ID del cliente a buscar
+   * @returns Promise con el cliente moroso o null si no se encuentra
+   * 
+   * Consumido por: MorosidadList.tsx (detalle de cliente), ClasificadorRiesgo.tsx
+   */
+  async getClienteMorosoById(idCliente: string): Promise<ClienteMoroso | null> {
+    // Simular latencia de red
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    const cliente = mockClientesMorosos.find(c => c.idCliente === idCliente);
+    
+    if (!cliente) {
+      return null;
+    }
+    
+    // Asegurar que el nivel de riesgo está actualizado
+    const clienteActualizado = {
+      ...cliente,
+      nivelRiesgo: calcularNivelRiesgo(cliente.importeTotalAdeudado, cliente.diasMaximoRetraso)
+    };
+    
+    return clienteActualizado;
+  },
+
+  /**
+   * Actualiza el nivel de riesgo de un cliente moroso.
+   * 
+   * @param clienteId - ID del cliente
+   * @param nuevoNivel - Nuevo nivel de riesgo a asignar
+   * @returns Promise con el cliente actualizado
+   * 
+   * Consumido por: ClasificadorRiesgo.tsx
+   * 
+   * Endpoint real: PATCH /cobros/morosidad/clientes/:idCliente/nivel-riesgo
+   */
+  async actualizarNivelRiesgo(
+    clienteId: string,
+    nuevoNivel: NivelRiesgo
+  ): Promise<ClienteMoroso> {
+    // Simular latencia de red
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    const index = mockClientesMorosos.findIndex(c => c.idCliente === clienteId);
+    
+    if (index === -1) {
+      throw new Error('Cliente moroso no encontrado');
+    }
+    
+    const cliente = mockClientesMorosos[index];
+    const nivelAnterior = cliente.nivelRiesgo;
+    
+    // Actualizar nivel de riesgo
+    mockClientesMorosos[index] = {
+      ...cliente,
+      nivelRiesgo: nuevoNivel,
+      historialMorosidad: [
+        ...(cliente.historialMorosidad || []),
+        {
+          id: `hist-${Date.now()}`,
+          fecha: new Date(),
+          tipoCambio: 'nivel_riesgo',
+          valorAnterior: nivelAnterior,
+          valorNuevo: nuevoNivel,
+          usuario: 'usuario_actual',
+          notas: `Nivel de riesgo actualizado manualmente de ${nivelAnterior} a ${nuevoNivel}`
+        }
+      ]
+    };
+    
+    return mockClientesMorosos[index];
+  },
+
+  /**
+   * Actualiza el estado de morosidad de un cliente.
+   * 
+   * @param clienteId - ID del cliente
+   * @param nuevoEstado - Nuevo estado de morosidad
+   * @returns Promise con el cliente actualizado
+   * 
+   * Consumido por: MorosidadList.tsx, DashboardMorosidad.tsx
+   * 
+   * Endpoint real: PATCH /cobros/morosidad/clientes/:idCliente/estado
+   */
+  async actualizarEstadoMorosidad(
+    clienteId: string,
+    nuevoEstado: EstadoMorosidad
+  ): Promise<ClienteMoroso> {
+    // Simular latencia de red
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    const index = mockClientesMorosos.findIndex(c => c.idCliente === clienteId);
+    
+    if (index === -1) {
+      throw new Error('Cliente moroso no encontrado');
+    }
+    
+    const cliente = mockClientesMorosos[index];
+    const estadoAnterior = cliente.estadoMorosidad;
+    
+    // Actualizar estado de morosidad
+    mockClientesMorosos[index] = {
+      ...cliente,
+      estadoMorosidad: nuevoEstado,
+      historialMorosidad: [
+        ...(cliente.historialMorosidad || []),
+        {
+          id: `hist-${Date.now()}`,
+          fecha: new Date(),
+          tipoCambio: 'estado_morosidad',
+          valorAnterior: estadoAnterior,
+          valorNuevo: nuevoEstado,
+          usuario: 'usuario_actual',
+          notas: `Estado de morosidad actualizado de ${estadoAnterior} a ${nuevoEstado}`
+        }
+      ]
+    };
+    
+    return mockClientesMorosos[index];
   }
 };
 

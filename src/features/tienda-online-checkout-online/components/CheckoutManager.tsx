@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { Card, Button, Input, Select, Modal, Badge } from '../../../components/componentsreutilizables';
-import { Carrito, DatosCheckout, MetodoPago, DatosCheckoutGuardados, CarritoItem, CodigoPromocional, DescuentoFidelidad, PlanPagoFraccionado, PagoFraccionadoSeleccionado } from '../types';
-import { getMetodosPago, procesarCheckout } from '../api/checkout';
+import { Carrito, DatosCheckout, MetodoPago, DatosCheckoutGuardados, CarritoItem, CodigoPromocional, DescuentoFidelidad, PlanPagoFraccionado, PagoFraccionadoSeleccionado, Pedido, ItemCarrito } from '../types';
+import { getMetodosPago, procesarCheckout, crearPedidoDesdeCarrito, procesarPago } from '../api/checkout';
 import { getDatosCheckoutGuardados, esClienteRecurrente, guardarDatosCheckout } from '../api/clientesRecurrentes';
 import { calcularDescuentoFidelidad } from '../api/fidelidad';
 import { aplicarDescuentosACarritoItem } from '../utils/descuentos';
 import { validarCodigoPromocional as validarCodigoAPI } from '../api/codigosPromocionales';
 import { getPlanesPagoFraccionado, calcularPagoFraccionado, esElegibleParaPagoFraccionado } from '../api/pagoFraccionado';
 import { validarCodigoReferido } from '../api/referidos';
-import { CheckCircle, AlertCircle, CreditCard, Lock, Tag, Calendar, Repeat, Info, Zap, UserCheck, X, Check, Sparkles, Divide, Users } from 'lucide-react';
+import { CheckCircle, AlertCircle, CreditCard, Lock, Tag, Calendar, Repeat, Info, Zap, UserCheck, X, Check, Sparkles, Divide, Users, ShoppingCart, User, Truck, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { ReservaSesionCheckout } from './ReservaSesionCheckout';
+
+type CheckoutStep = 'resumen' | 'datos' | 'pago' | 'confirmacion' | 'resultado';
 
 interface CheckoutManagerProps {
   carritoBase: CarritoItem[];
@@ -18,7 +20,22 @@ interface CheckoutManagerProps {
   entrenadorId?: string;
   onAplicarCodigoPromocional?: (codigo: string) => Promise<{ exito: boolean; error?: string }>;
   onRemoverCodigoPromocional?: () => void;
+  onPedidoCompletado?: (pedido: Pedido) => void;
 }
+
+// Helper function to convert CarritoItem[] to ItemCarrito[]
+const convertirCarritoItemAItemCarrito = (carritoItems: CarritoItem[]): ItemCarrito[] => {
+  return carritoItems.map((item, index) => ({
+    id: `item-${item.producto.id}-${index}`,
+    productoId: item.producto.id,
+    nombreProducto: item.producto.nombre,
+    cantidad: item.cantidad,
+    precioUnitario: item.precioBase || item.producto.precio,
+    importeSubtotal: item.subtotal,
+    varianteSeleccionadaOpcional: undefined,
+    notasOpcionales: undefined,
+  }));
+};
 
 export const CheckoutManager: React.FC<CheckoutManagerProps> = ({
   carritoBase,
@@ -27,7 +44,13 @@ export const CheckoutManager: React.FC<CheckoutManagerProps> = ({
   entrenadorId,
   onAplicarCodigoPromocional,
   onRemoverCodigoPromocional,
+  onPedidoCompletado,
 }) => {
+  // Wizard step state
+  const [pasoActual, setPasoActual] = useState<CheckoutStep>('resumen');
+  const [pedido, setPedido] = useState<Pedido | null>(null);
+  const [estadoPago, setEstadoPago] = useState<'pagado' | 'fallido' | null>(null);
+  const [procesandoPago, setProcesandoPago] = useState(false);
   const [codigoInput, setCodigoInput] = useState('');
   const [aplicandoCodigo, setAplicandoCodigo] = useState(false);
   const [errorCodigo, setErrorCodigo] = useState<string | null>(null);
@@ -556,6 +579,96 @@ export const CheckoutManager: React.FC<CheckoutManagerProps> = ({
     setMostrarReserva(false);
   };
 
+  // Definición de pasos del wizard
+  const pasos = [
+    { id: 'resumen' as CheckoutStep, label: 'Resumen del carrito', icon: ShoppingCart },
+    { id: 'datos' as CheckoutStep, label: 'Datos del cliente', icon: User },
+    { id: 'pago' as CheckoutStep, label: 'Método de pago', icon: CreditCard },
+    { id: 'confirmacion' as CheckoutStep, label: 'Resumen final', icon: Lock },
+    { id: 'resultado' as CheckoutStep, label: 'Confirmación', icon: CheckCircle },
+  ];
+
+  const pasoActualIndex = pasos.findIndex(p => p.id === pasoActual);
+
+  // Navegación entre pasos
+  const irAlSiguientePaso = () => {
+    const siguienteIndex = pasoActualIndex + 1;
+    if (siguienteIndex < pasos.length) {
+      setPasoActual(pasos[siguienteIndex].id);
+    }
+  };
+
+  const irAlPasoAnterior = () => {
+    const anteriorIndex = pasoActualIndex - 1;
+    if (anteriorIndex >= 0) {
+      setPasoActual(pasos[anteriorIndex].id);
+    }
+  };
+
+  // Manejo de confirmación y pago
+  const handleConfirmarYPagar = async () => {
+    if (!validarDatos()) {
+      return;
+    }
+
+    setProcesandoPago(true);
+    setErrores({});
+
+    try {
+      // Convertir CarritoItem[] a ItemCarrito[]
+      const itemsCarrito = convertirCarritoItemAItemCarrito(carrito.items);
+
+      // Crear el pedido
+      const nuevoPedido = await crearPedidoDesdeCarrito({
+        items: itemsCarrito,
+        emailCliente: datos.email,
+        metodoPago: datos.metodoPago as MetodoPago,
+        codigoPromocionalOpcional: codigoPromocional?.codigo,
+      });
+
+      setPedido(nuevoPedido);
+
+      // Procesar el pago
+      const resultadoPago = await procesarPago(nuevoPedido.id);
+      const pedidoActualizado = resultadoPago.pedidoActualizado;
+
+      setPedido(pedidoActualizado);
+
+      if (pedidoActualizado.estado === 'pagado') {
+        setEstadoPago('pagado');
+        // Llamar al callback si existe
+        if (onPedidoCompletado) {
+          onPedidoCompletado(pedidoActualizado);
+        }
+        // También usar el método legacy si existe
+        if (onCheckoutExitoso) {
+          const ventaId = `VENTA-${Date.now()}`;
+          const facturaId = `FAC-${Date.now()}`;
+          onCheckoutExitoso(ventaId, facturaId);
+        }
+      } else if (pedidoActualizado.estado === 'fallido') {
+        setEstadoPago('fallido');
+      }
+
+      // Si requiere redirección a pasarela
+      if (resultadoPago.redirectUrlPasarelaOpcional) {
+        window.location.href = resultadoPago.redirectUrlPasarelaOpcional;
+        return;
+      }
+
+      // Si todo salió bien, ir al paso de confirmación
+      setPasoActual('resultado');
+    } catch (error) {
+      console.error('Error al procesar pago:', error);
+      setErrores({
+        general: error instanceof Error ? error.message : 'Error al procesar el pago. Intenta de nuevo.',
+      });
+      setEstadoPago('fallido');
+    } finally {
+      setProcesandoPago(false);
+    }
+  };
+
   // Si se muestra la reserva, solo mostrar ese componente
   if (mostrarReserva && ventaExito && entrenadorId) {
     return (
@@ -590,7 +703,175 @@ export const CheckoutManager: React.FC<CheckoutManagerProps> = ({
     );
   }
 
+  // Renderizar paso de resultado (confirmación)
+  if (pasoActual === 'resultado') {
+    return (
+      <div className="space-y-6">
+        {/* Indicador de pasos */}
+        <Card className="p-4 bg-white shadow-sm">
+          <div className="flex items-center justify-between">
+            {pasos.map((paso, index) => {
+              const Icon = paso.icon;
+              return (
+                <div key={paso.id} className="flex items-center flex-1">
+                  <div className="flex flex-col items-center flex-1">
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center font-medium transition ${
+                        index < pasoActualIndex || paso.id === 'resultado'
+                          ? 'bg-green-600 text-white'
+                          : index === pasoActualIndex
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-200 text-gray-600'
+                      }`}
+                    >
+                      {index < pasoActualIndex ? (
+                        <CheckCircle size={20} />
+                      ) : (
+                        <Icon size={20} />
+                      )}
+                    </div>
+                    <span className="mt-2 text-xs font-medium text-gray-600 text-center max-w-[100px]">
+                      {paso.label}
+                    </span>
+                  </div>
+                  {index < pasos.length - 1 && (
+                    <div
+                      className={`flex-1 h-1 mx-2 ${
+                        index < pasoActualIndex ? 'bg-green-600' : 'bg-gray-200'
+                      }`}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+
+        {/* Contenido de confirmación */}
+        <Card className="p-8 bg-white shadow-sm text-center">
+          {procesandoPago ? (
+            <div className="space-y-4">
+              <Loader2 size={48} className="mx-auto text-blue-500 animate-spin" />
+              <h3 className="text-xl font-semibold text-gray-900">
+                Procesando pago...
+              </h3>
+              <p className="text-gray-600">Por favor espera mientras procesamos tu pago.</p>
+            </div>
+          ) : estadoPago === 'pagado' ? (
+            <div className="space-y-4">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                <CheckCircle size={40} className="text-green-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">
+                ¡Pago realizado con éxito!
+              </h3>
+              <p className="text-gray-600">
+                Tu pedido ha sido procesado correctamente.
+              </p>
+              {pedido && (
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg space-y-2 text-left">
+                  <p className="text-sm text-gray-600">
+                    <span className="font-semibold">Número de pedido:</span>{' '}
+                    <span className="font-mono">{pedido.numeroPedido}</span>
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <span className="font-semibold">Total:</span> €{pedido.importeTotal.toFixed(2)}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <span className="font-semibold">Estado:</span>{' '}
+                    <span className="text-green-600 font-semibold">Pagado</span>
+                  </p>
+                </div>
+              )}
+              <div className="flex gap-3 justify-center pt-4">
+                <Button variant="primary" onClick={onCancelar}>
+                  Finalizar
+                </Button>
+              </div>
+            </div>
+          ) : estadoPago === 'fallido' ? (
+            <div className="space-y-4">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+                <AlertCircle size={40} className="text-red-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">
+                Error en el pago
+              </h3>
+              <p className="text-gray-600">
+                No se pudo procesar el pago. Por favor, intenta de nuevo.
+              </p>
+              {errores.general && (
+                <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                  <p className="text-sm text-red-600">{errores.general}</p>
+                </div>
+              )}
+              <div className="flex gap-3 justify-center pt-4">
+                <Button variant="secondary" onClick={() => setPasoActual('pago')}>
+                  Reintentar pago
+                </Button>
+                <Button variant="primary" onClick={onCancelar}>
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          ) : null}
+        </Card>
+      </div>
+    );
+  }
+
   return (
+    <div className="space-y-6">
+      {/* Indicador de pasos */}
+      <Card className="p-4 bg-white shadow-sm">
+        <div className="flex items-center justify-between">
+          {pasos.map((paso, index) => {
+            const Icon = paso.icon;
+            return (
+              <div key={paso.id} className="flex items-center flex-1">
+                <div className="flex flex-col items-center flex-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Permitir navegación solo a pasos anteriores o el actual
+                      if (index <= pasoActualIndex) {
+                        setPasoActual(paso.id);
+                      }
+                    }}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center font-medium transition ${
+                      index < pasoActualIndex
+                        ? 'bg-green-600 text-white hover:bg-green-700'
+                        : index === pasoActualIndex
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-600 cursor-not-allowed'
+                    }`}
+                    disabled={index > pasoActualIndex}
+                  >
+                    {index < pasoActualIndex ? (
+                      <CheckCircle size={20} />
+                    ) : (
+                      <Icon size={20} />
+                    )}
+                  </button>
+                  <span className="mt-2 text-xs font-medium text-gray-600 text-center max-w-[100px]">
+                    {paso.label}
+                  </span>
+                </div>
+                {index < pasos.length - 1 && (
+                  <div
+                    className={`flex-1 h-1 mx-2 ${
+                      index < pasoActualIndex ? 'bg-green-600' : 'bg-gray-200'
+                    }`}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* Contenido según el paso actual */}
+      {pasoActual === 'resumen' && (
     <>
       {/* Resumen del Carrito */}
       <Card className="p-6 bg-white shadow-sm mb-6">
@@ -856,14 +1137,29 @@ export const CheckoutManager: React.FC<CheckoutManagerProps> = ({
         </Card>
       )}
 
+          {/* Navegación del paso de resumen */}
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="secondary" onClick={onCancelar}>
+              Cancelar
+            </Button>
+            <Button variant="primary" onClick={irAlSiguientePaso}>
+              Continuar
+              <ChevronRight size={18} className="ml-1" />
+            </Button>
+          </div>
+        </>
+      )}
+
+      {pasoActual === 'datos' && (
+        <>
       <Card className="p-6 bg-white shadow-sm">
         <div className="space-y-6">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-blue-100 rounded-xl ring-1 ring-blue-200/70">
-              <Lock size={20} className="text-blue-600" />
+              <User size={20} className="text-blue-600" />
             </div>
             <h2 className="text-xl font-bold text-gray-900">
-              Datos de Facturación
+              Datos del Cliente y Envío
             </h2>
           </div>
 
@@ -933,7 +1229,7 @@ export const CheckoutManager: React.FC<CheckoutManagerProps> = ({
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Nombre completo"
@@ -972,6 +1268,35 @@ export const CheckoutManager: React.FC<CheckoutManagerProps> = ({
                 required
                 disabled={modoRapido}
               />
+            </div>
+
+          {/* Navegación del paso de datos */}
+          <div className="flex justify-between gap-3 pt-4">
+            <Button variant="secondary" onClick={irAlPasoAnterior}>
+              <ChevronLeft size={18} className="mr-1" />
+              Volver
+            </Button>
+            <Button variant="primary" onClick={irAlSiguientePaso}>
+              Continuar
+              <ChevronRight size={18} className="ml-1" />
+            </Button>
+          </div>
+          </div>
+        </Card>
+        </>
+      )}
+
+      {pasoActual === 'pago' && (
+        <>
+        <Card className="p-6 bg-white shadow-sm">
+          <div className="space-y-6">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-blue-100 rounded-xl ring-1 ring-blue-200/70">
+                <CreditCard size={20} className="text-blue-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">
+                Método de Pago
+              </h2>
             </div>
 
             <Select
@@ -1253,6 +1578,84 @@ export const CheckoutManager: React.FC<CheckoutManagerProps> = ({
               </Card>
             )}
 
+            {/* Navegación del paso de pago */}
+            <div className="flex justify-between gap-3 pt-4">
+              <Button variant="secondary" onClick={irAlPasoAnterior}>
+                <ChevronLeft size={18} className="mr-1" />
+                Volver
+              </Button>
+              <Button variant="primary" onClick={irAlSiguientePaso} disabled={!datos.metodoPago}>
+                Continuar
+                <ChevronRight size={18} className="ml-1" />
+              </Button>
+            </div>
+          </div>
+        </Card>
+        </>
+      )}
+
+      {pasoActual === 'confirmacion' && (
+        <>
+        <Card className="p-6 bg-white shadow-sm">
+          <div className="space-y-6">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-blue-100 rounded-xl ring-1 ring-blue-200/70">
+                <Lock size={20} className="text-blue-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">
+                Resumen Final y Confirmación
+              </h2>
+            </div>
+
+            {errores.general && (
+              <div className="p-4 rounded-xl bg-red-50 border border-red-200">
+                <div className="flex items-center gap-2">
+                  <AlertCircle size={20} className="text-red-600" />
+                  <p className="text-sm text-red-600">{errores.general}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Resumen del pedido */}
+            <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+              <h3 className="font-semibold text-gray-900">Resumen del pedido</h3>
+              {carrito.items.map((item, index) => (
+                <div key={index} className="flex justify-between text-sm">
+                  <span className="text-gray-600">
+                    {item.producto.nombre} × {item.cantidad}
+                  </span>
+                  <span className="text-gray-900">€{item.subtotal.toFixed(2)}</span>
+                </div>
+              ))}
+              <div className="border-t border-gray-200 pt-3 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Subtotal</span>
+                  <span className="text-gray-900">€{carrito.subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Impuestos (21%)</span>
+                  <span className="text-gray-900">€{carrito.impuestos.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between pt-2 border-t border-gray-200 font-semibold">
+                  <span className="text-gray-900">Total</span>
+                  <span className="text-lg text-blue-600">€{carrito.total.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Información del cliente */}
+            <div className="border border-gray-200 rounded-lg p-4 space-y-2">
+              <h3 className="font-semibold text-gray-900">Datos del cliente</h3>
+              <p className="text-sm text-gray-600"><span className="font-medium">Nombre:</span> {datos.nombre}</p>
+              <p className="text-sm text-gray-600"><span className="font-medium">Email:</span> {datos.email}</p>
+              <p className="text-sm text-gray-600"><span className="font-medium">Teléfono:</span> {datos.telefono}</p>
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">Método de pago:</span>{' '}
+                {metodosPago.find((m) => m.id === datos.metodoPago)?.nombre || datos.metodoPago}
+              </p>
+            </div>
+
+            {/* Términos y condiciones */}
             <div className="space-y-2">
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
@@ -1274,64 +1677,35 @@ export const CheckoutManager: React.FC<CheckoutManagerProps> = ({
               )}
             </div>
 
+            {/* Botones de navegación */}
             <div className="flex gap-3 pt-4">
               <Button
                 type="button"
                 variant="secondary"
-                onClick={onCancelar}
-                disabled={procesando}
+                onClick={irAlPasoAnterior}
+                disabled={procesandoPago}
               >
-                Cancelar
+                <ChevronLeft size={18} className="mr-1" />
+                Volver
               </Button>
               <Button
-                type="submit"
+                type="button"
                 variant="primary"
-                loading={procesando}
+                onClick={handleConfirmarYPagar}
+                loading={procesandoPago}
+                disabled={!datos.terminosAceptados || procesandoPago}
                 fullWidth
               >
                 {datos.pagoFraccionado
-                  ? `Procesar Pago (€${datos.pagoFraccionado.montoPorCuota.toFixed(2)}/mes x ${datos.pagoFraccionado.numeroCuotas})`
-                  : `Procesar Pago (€${carrito.total.toFixed(2)})`}
+                  ? `Confirmar y pagar (€${datos.pagoFraccionado.montoPorCuota.toFixed(2)}/mes x ${datos.pagoFraccionado.numeroCuotas})`
+                  : `Confirmar y pagar (€${carrito.total.toFixed(2)})`}
               </Button>
             </div>
-          </form>
-        </div>
-      </Card>
+          </div>
+        </Card>
+        </>
+      )}
 
-      <Modal
-        isOpen={mostrarExito}
-        onClose={handleExitoConfirmar}
-        title="Compra Exitosa"
-        size="md"
-        footer={
-          <Button variant="primary" onClick={handleExitoConfirmar}>
-            Aceptar
-          </Button>
-        }
-      >
-        <div className="space-y-4">
-          <div className="flex items-center justify-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-              <CheckCircle size={40} className="text-green-600" />
-            </div>
-          </div>
-          <div className="text-center space-y-2">
-            <p className="text-base font-medium text-gray-900">
-              Tu compra se ha procesado correctamente
-            </p>
-            {ventaExito && (
-              <div className="space-y-1 mt-4">
-                <p className="text-sm text-gray-600">
-                  ID de Venta: <span className="font-mono text-gray-900">{ventaExito.ventaId}</span>
-                </p>
-                <p className="text-sm text-gray-600">
-                  Factura: <span className="font-mono text-gray-900">{ventaExito.facturaId}</span>
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </Modal>
     </>
   );
 };

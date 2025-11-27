@@ -116,43 +116,50 @@ export const ConfiguracionPoliticasCancelacion: React.FC<ConfiguracionPoliticasC
             </div>
           </div>
 
-          {/* Activar/Desactivar política */}
-          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-            <div>
-              <label className="text-sm font-medium text-gray-900">
-                Activar política de cancelación
-              </label>
-              <p className="text-sm text-gray-600 mt-1">
-                Cuando está desactivada, los clientes pueden cancelar sin restricciones
-              </p>
+          {/* Bloque: Activación */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Activación de la Política</h4>
+            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+              <div>
+                <label className="text-sm font-medium text-gray-900">
+                  Activar política de cancelación
+                </label>
+                <p className="text-sm text-gray-600 mt-1">
+                  Cuando está desactivada, los clientes pueden cancelar sin restricciones
+                </p>
+              </div>
+              <Switch
+                checked={politica.activa}
+                onChange={(checked) => handleChange('activa', checked)}
+              />
             </div>
-            <Switch
-              checked={politica.activa}
-              onChange={(checked) => handleChange('activa', checked)}
-            />
           </div>
 
           {politica.activa && (
             <>
-              {/* Horas de anticipación mínimas */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  Horas de anticipación mínimas
-                </label>
-                <Input
-                  type="number"
-                  value={politica.horasAnticipacionMinimas}
-                  onChange={(e) => handleChange('horasAnticipacionMinimas', parseInt(e.target.value) || 0)}
-                  min={0}
-                  max={168}
-                  placeholder="24"
-                />
-                <p className="text-xs text-gray-500">
-                  Tiempo mínimo de anticipación requerido para cancelar sin penalización (en horas). 
-                  Ejemplo: 24 horas significa que el cliente debe cancelar al menos 24 horas antes de la sesión.
-                </p>
-              </div>
+              {/* Bloque: Reglas de Cancelación */}
+              <div className="space-y-4 pt-4 border-t border-gray-200">
+                <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Reglas de Cancelación</h4>
+                
+                {/* Horas de anticipación mínimas */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Horas de anticipación mínimas
+                  </label>
+                  <Input
+                    type="number"
+                    value={politica.horasAnticipacionMinimas}
+                    onChange={(e) => handleChange('horasAnticipacionMinimas', parseInt(e.target.value) || 0)}
+                    min={0}
+                    max={168}
+                    placeholder="24"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Tiempo mínimo de anticipación requerido para cancelar sin penalización (en horas). 
+                    Ejemplo: 24 horas significa que el cliente debe cancelar al menos 24 horas antes de la sesión.
+                  </p>
+                </div>
 
               {/* Permitir cancelación de último momento */}
               <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
@@ -172,109 +179,119 @@ export const ConfiguracionPoliticasCancelacion: React.FC<ConfiguracionPoliticasC
 
               {politica.permitirCancelacionUltimoMomento && (
                 <>
-                  {/* Aplicar multa por cancelación de último momento */}
-                  <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                    <div>
-                      <label className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                        <DollarSign className="w-4 h-4" />
-                        Aplicar multa por cancelación de último momento
-                      </label>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Cobrar una multa cuando se cancela con menos del tiempo mínimo de anticipación
-                      </p>
-                    </div>
-                    <Switch
-                      checked={politica.aplicarMultaCancelacionUltimoMomento}
-                      onChange={(checked) => handleChange('aplicarMultaCancelacionUltimoMomento', checked)}
-                    />
-                  </div>
-
-                  {politica.aplicarMultaCancelacionUltimoMomento && (
-                    <div className="grid grid-cols-2 gap-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-900">
-                          Porcentaje de multa (%)
+                  {/* Bloque: Multas y Penalizaciones */}
+                  <div className="pt-4 border-t border-gray-200">
+                    <h5 className="text-sm font-medium text-gray-900 mb-4">Multas y Penalizaciones</h5>
+                    
+                    {/* Aplicar multa por cancelación de último momento */}
+                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg mb-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                          <DollarSign className="w-4 h-4" />
+                          Aplicar multa por cancelación de último momento
                         </label>
-                        <Input
-                          type="number"
-                          value={politica.porcentajeMulta || ''}
-                          onChange={(e) => handleChange('porcentajeMulta', e.target.value ? parseInt(e.target.value) : undefined)}
-                          min={0}
-                          max={100}
-                          placeholder="50"
-                        />
-                        <p className="text-xs text-gray-500">
-                          Porcentaje del precio de la sesión a cobrar como multa (ej: 50 = 50%)
+                        <p className="text-sm text-gray-600 mt-1">
+                          Cobrar una multa cuando se cancela con menos del tiempo mínimo de anticipación
                         </p>
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-900">
-                          Monto fijo de multa (€)
+                      <Switch
+                        checked={politica.aplicarMultaCancelacionUltimoMomento}
+                        onChange={(checked) => handleChange('aplicarMultaCancelacionUltimoMomento', checked)}
+                      />
+                    </div>
+
+                    {politica.aplicarMultaCancelacionUltimoMomento && (
+                      <div className="grid grid-cols-2 gap-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-900">
+                            Porcentaje de multa (%)
+                          </label>
+                          <Input
+                            type="number"
+                            value={politica.porcentajeMulta || ''}
+                            onChange={(e) => handleChange('porcentajeMulta', e.target.value ? parseInt(e.target.value) : undefined)}
+                            min={0}
+                            max={100}
+                            placeholder="50"
+                          />
+                          <p className="text-xs text-gray-500">
+                            Porcentaje del precio de la sesión a cobrar como multa (ej: 50 = 50%)
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-900">
+                            Monto fijo de multa (€)
+                          </label>
+                          <Input
+                            type="number"
+                            value={politica.montoMultaFijo || ''}
+                            onChange={(e) => handleChange('montoMultaFijo', e.target.value ? parseFloat(e.target.value) : undefined)}
+                            min={0}
+                            step="0.01"
+                            placeholder="10.00"
+                          />
+                          <p className="text-xs text-gray-500">
+                            Monto fijo a cobrar como multa (alternativa al porcentaje). Si ambos están configurados, se usa el porcentaje.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Aplicar penalización en bono */}
+                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                      <div>
+                        <label className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4" />
+                          Aplicar penalización en bono
                         </label>
-                        <Input
-                          type="number"
-                          value={politica.montoMultaFijo || ''}
-                          onChange={(e) => handleChange('montoMultaFijo', e.target.value ? parseFloat(e.target.value) : undefined)}
-                          min={0}
-                          step="0.01"
-                          placeholder="10.00"
-                        />
-                        <p className="text-xs text-gray-500">
-                          Monto fijo a cobrar como multa (alternativa al porcentaje). Si ambos están configurados, se usa el porcentaje.
+                        <p className="text-sm text-gray-600 mt-1">
+                          Descontar una sesión del bono del cliente al cancelar de último momento
                         </p>
                       </div>
+                      <Switch
+                        checked={politica.aplicarPenalizacionBono}
+                        onChange={(checked) => handleChange('aplicarPenalizacionBono', checked)}
+                      />
                     </div>
-                  )}
-
-                  {/* Aplicar penalización en bono */}
-                  <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                    <div>
-                      <label className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4" />
-                        Aplicar penalización en bono
-                      </label>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Descontar una sesión del bono del cliente al cancelar de último momento
-                      </p>
-                    </div>
-                    <Switch
-                      checked={politica.aplicarPenalizacionBono}
-                      onChange={(checked) => handleChange('aplicarPenalizacionBono', checked)}
-                    />
                   </div>
                 </>
               )}
 
-              {/* Notificar cliente */}
-              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                <div>
+              {/* Bloque: Notificaciones y Mensajes */}
+              <div className="pt-4 border-t border-gray-200">
+                <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Notificaciones y Mensajes</h4>
+                
+                {/* Notificar cliente */}
+                <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg mb-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-900">
+                      Notificar al cliente
+                    </label>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Enviar notificación al cliente sobre las políticas de cancelación al hacer una reserva
+                    </p>
+                  </div>
+                  <Switch
+                    checked={politica.notificarCliente}
+                    onChange={(checked) => handleChange('notificarCliente', checked)}
+                  />
+                </div>
+
+                {/* Mensaje personalizado */}
+                <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-900">
-                    Notificar al cliente
+                    Mensaje personalizado
                   </label>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Enviar notificación al cliente sobre las políticas de cancelación al hacer una reserva
+                  <Textarea
+                    value={politica.mensajePersonalizado || ''}
+                    onChange={(e) => handleChange('mensajePersonalizado', e.target.value)}
+                    placeholder="Por favor, cancela con al menos 24 horas de anticipación para evitar cargos."
+                    rows={3}
+                  />
+                  <p className="text-xs text-gray-500">
+                    Mensaje que se mostrará al cliente al intentar cancelar o al hacer una reserva (si la notificación está activada)
                   </p>
                 </div>
-                <Switch
-                  checked={politica.notificarCliente}
-                  onChange={(checked) => handleChange('notificarCliente', checked)}
-                />
-              </div>
-
-              {/* Mensaje personalizado */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-900">
-                  Mensaje personalizado
-                </label>
-                <Textarea
-                  value={politica.mensajePersonalizado || ''}
-                  onChange={(e) => handleChange('mensajePersonalizado', e.target.value)}
-                  placeholder="Por favor, cancela con al menos 24 horas de anticipación para evitar cargos."
-                  rows={3}
-                />
-                <p className="text-xs text-gray-500">
-                  Mensaje que se mostrará al cliente al intentar cancelar o al hacer una reserva (si la notificación está activada)
-                </p>
               </div>
             </>
           )}

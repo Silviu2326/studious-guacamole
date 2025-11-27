@@ -23,6 +23,7 @@ interface LeadCardProps {
   onSelect?: (leadId: string, channel: 'instagram' | 'whatsapp') => void;
   onAssign?: (leadId: string) => void;
   hoursWithoutResponse?: number;
+  isSelected?: boolean;
 }
 
 const getChannelIcon = (channel: Lead['sourceChannel']) => {
@@ -119,7 +120,7 @@ const getSLAStatus = (slaStatus: Lead['slaStatus'], slaDueTimestamp: string) => 
   }
 };
 
-export const LeadCard: React.FC<LeadCardProps> = ({ lead, onSelect, onAssign, hoursWithoutResponse = 0 }) => {
+export const LeadCard: React.FC<LeadCardProps> = ({ lead, onSelect, onAssign, hoursWithoutResponse = 0, isSelected = false }) => {
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -181,6 +182,8 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onSelect, onAssign, ho
     <Card 
       className={`bg-white shadow-sm hover:shadow-lg transition-all cursor-pointer relative overflow-hidden ${
         isUrgent ? `border-2 ${urgencyStatus.color} ring-2 ${urgencyStatus.ringColor}` : ''
+      } ${
+        isSelected ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''
       }`}
       padding="md"
     >

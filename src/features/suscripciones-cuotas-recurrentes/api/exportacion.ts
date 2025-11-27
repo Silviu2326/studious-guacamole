@@ -2,6 +2,12 @@ import {
   ExportarDatosRequest,
   DatosExportacion,
   FormatoExportacion,
+  ExportarSuscripcionesRequest,
+  ExportarCuotasRequest,
+  ExportarMetricasRequest,
+  ExportacionResponse,
+  Suscripcion,
+  Cuota,
 } from '../types';
 import { getSuscripciones } from './suscripciones';
 import { getCuotas } from './cuotas';
@@ -293,4 +299,278 @@ function generarTextoPDF(datos: DatosExportacion): string {
 
   return lineas.join('\n');
 }
+
+/**
+ * Exporta solo suscripciones en formato CSV o Excel
+ */
+export const exportarSuscripciones = async (
+  request: ExportarSuscripcionesRequest
+): Promise<ExportacionResponse> => {
+  // Simular delay de procesamiento
+  await new Promise(resolve => setTimeout(resolve, 800));
+
+  // Obtener suscripciones con filtros
+  let suscripciones = await getSuscripciones('entrenador', request.entrenadorId);
+  
+  // Filtrar por fecha si se especifica
+  if (request.fechaInicio || request.fechaFin) {
+    suscripciones = suscripciones.filter(s => {
+      const fechaInicio = new Date(s.fechaInicio);
+      if (request.fechaInicio && fechaInicio < new Date(request.fechaInicio)) {
+        return false;
+      }
+      if (request.fechaFin && fechaInicio > new Date(request.fechaFin)) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  // Filtrar por plan si se especifica
+  if (request.planId) {
+    suscripciones = suscripciones.filter(s => s.planId === request.planId);
+  }
+
+  // Convertir a CSV
+  const lineas: string[] = [];
+  lineas.push('ID,Cliente ID,Cliente Nombre,Cliente Email,Cliente Teléfono,Tipo,Plan ID,Plan Nombre,Precio,Precio Original,Frecuencia Pago,Fecha Inicio,Fecha Vencimiento,Estado,Sesiones Incluidas,Sesiones Usadas,Sesiones Disponibles,Fecha Creación,Fecha Cancelación,Motivo Cancelación');
+  
+  suscripciones.forEach(s => {
+    lineas.push([
+      s.id,
+      s.clienteId,
+      `"${s.clienteNombre}"`,
+      s.clienteEmail,
+      s.clienteTelefono || '',
+      s.tipo,
+      s.planId,
+      `"${s.planNombre}"`,
+      s.precio,
+      s.precioOriginal || '',
+      s.frecuenciaPago,
+      s.fechaInicio,
+      s.fechaVencimiento,
+      s.estado,
+      s.sesionesIncluidas || '',
+      s.sesionesUsadas || '',
+      s.sesionesDisponibles || '',
+      s.fechaCreacion,
+      s.fechaCancelacion || '',
+      s.motivoCancelacion ? `"${s.motivoCancelacion}"` : '',
+    ].join(','));
+  });
+
+  const contenido = lineas.join('\n');
+  const fechaActual = new Date().toISOString().split('T')[0];
+  const extension = request.formato === 'excel' ? '.csv' : '.csv';
+  const nombreArchivo = `suscripciones_${fechaActual}${extension}`;
+  
+  // Crear blob y URL
+  const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+
+  return {
+    url,
+    blob,
+    nombreArchivo,
+  };
+};
+
+/**
+ * Exporta solo cuotas en formato CSV o Excel
+ */
+export const exportarCuotas = async (
+  request: ExportarCuotasRequest
+): Promise<ExportacionResponse> => {
+  // Simular delay de procesamiento
+  await new Promise(resolve => setTimeout(resolve, 800));
+
+  // Obtener suscripciones para filtrar cuotas
+  let suscripciones = await getSuscripciones('entrenador', request.entrenadorId);
+  
+  // Filtrar por plan si se especifica
+  if (request.planId) {
+    suscripciones = suscripciones.filter(s => s.planId === request.planId);
+  }
+
+  const suscripcionIds = suscripciones.map(s => s.id);
+
+  // Obtener cuotas
+  let cuotas = await getCuotas();
+  cuotas = cuotas.filter(c => suscripcionIds.includes(c.suscripcionId));
+  
+  // Filtrar por fecha si se especifica
+  if (request.fechaInicio || request.fechaFin) {
+    cuotas = cuotas.filter(c => {
+      const fechaVencimiento = new Date(c.fechaVencimiento);
+      if (request.fechaInicio && fechaVencimiento < new Date(request.fechaInicio)) {
+        return false;
+      }
+      if (request.fechaFin && fechaVencimiento > new Date(request.fechaFin)) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  // Convertir a CSV
+  const lineas: string[] = [];
+  lineas.push('ID,Suscripción ID,Cliente ID,Cliente Nombre,Importe,Fecha Vencimiento,Fecha Pago,Estado,Método Pago,Referencia,Notas');
+  
+  cuotas.forEach(c => {
+    const suscripcion = suscripciones.find(s => s.id === c.suscripcionId);
+    lineas.push([
+      c.id,
+      c.suscripcionId,
+      c.clienteId,
+      `"${suscripcion?.clienteNombre || ''}"`,
+      c.importe || c.monto || 0,
+      c.fechaVencimiento,
+      c.fechaPagoOpcional || c.fechaPago || '',
+      c.estado,
+      c.metodoPago || '',
+      c.referencia || '',
+      c.notas ? `"${c.notas}"` : '',
+    ].join(','));
+  });
+
+  const contenido = lineas.join('\n');
+  const fechaActual = new Date().toISOString().split('T')[0];
+  const extension = request.formato === 'excel' ? '.csv' : '.csv';
+  const nombreArchivo = `cuotas_${fechaActual}${extension}`;
+  
+  // Crear blob y URL
+  const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+
+  return {
+    url,
+    blob,
+    nombreArchivo,
+  };
+};
+
+/**
+ * Exporta métricas de suscripciones en formato CSV o Excel
+ */
+export const exportarMetricasSuscripciones = async (
+  request: ExportarMetricasRequest
+): Promise<ExportacionResponse> => {
+  // Simular delay de procesamiento
+  await new Promise(resolve => setTimeout(resolve, 1000));
+
+  // Obtener suscripciones
+  let suscripciones = await getSuscripciones('entrenador', request.entrenadorId);
+  
+  // Filtrar por fecha si se especifica
+  if (request.fechaInicio || request.fechaFin) {
+    suscripciones = suscripciones.filter(s => {
+      const fechaInicio = new Date(s.fechaInicio);
+      if (request.fechaInicio && fechaInicio < new Date(request.fechaInicio)) {
+        return false;
+      }
+      if (request.fechaFin && fechaInicio > new Date(request.fechaFin)) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  // Filtrar por plan si se especifica
+  if (request.planId) {
+    suscripciones = suscripciones.filter(s => s.planId === request.planId);
+  }
+
+  // Obtener cuotas para calcular métricas
+  const todasCuotas = await getCuotas();
+  const suscripcionIds = suscripciones.map(s => s.id);
+  const cuotas = todasCuotas.filter(c => suscripcionIds.includes(c.suscripcionId));
+
+  // Calcular métricas por suscripción
+  const metricas = suscripciones.map(s => {
+    const cuotasSuscripcion = cuotas.filter(c => c.suscripcionId === s.id);
+    const cuotasPagadas = cuotasSuscripcion.filter(c => c.estado === 'pagada');
+    const cuotasPendientes = cuotasSuscripcion.filter(c => c.estado === 'pendiente');
+    const cuotasVencidas = cuotasSuscripcion.filter(c => c.estado === 'vencida');
+    const cuotasFallidas = cuotasSuscripcion.filter(c => c.estado === 'fallida');
+    
+    const ingresosTotales = cuotasPagadas.reduce((sum, c) => sum + (c.importe || c.monto || 0), 0);
+    const tasaUsoSesiones = s.sesionesIncluidas && s.sesionesIncluidas > 0
+      ? ((s.sesionesUsadas || 0) / s.sesionesIncluidas) * 100
+      : 0;
+    
+    const diasActiva = Math.floor(
+      (new Date().getTime() - new Date(s.fechaInicio).getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    return {
+      suscripcionId: s.id,
+      clienteNombre: s.clienteNombre,
+      clienteEmail: s.clienteEmail,
+      planNombre: s.planNombre,
+      estado: s.estado,
+      precio: s.precio,
+      frecuenciaPago: s.frecuenciaPago,
+      fechaInicio: s.fechaInicio,
+      fechaVencimiento: s.fechaVencimiento,
+      diasActiva,
+      sesionesIncluidas: s.sesionesIncluidas || 0,
+      sesionesUsadas: s.sesionesUsadas || 0,
+      tasaUsoSesiones: tasaUsoSesiones.toFixed(2),
+      totalCuotas: cuotasSuscripcion.length,
+      cuotasPagadas: cuotasPagadas.length,
+      cuotasPendientes: cuotasPendientes.length,
+      cuotasVencidas: cuotasVencidas.length,
+      cuotasFallidas: cuotasFallidas.length,
+      ingresosTotales: ingresosTotales.toFixed(2),
+      tasaPagoPuntual: cuotasSuscripcion.length > 0
+        ? ((cuotasPagadas.length / cuotasSuscripcion.length) * 100).toFixed(2)
+        : '0.00',
+    };
+  });
+
+  // Convertir a CSV
+  const lineas: string[] = [];
+  lineas.push('Suscripción ID,Cliente Nombre,Cliente Email,Plan,Estado,Precio,Frecuencia Pago,Fecha Inicio,Fecha Vencimiento,Días Activa,Sesiones Incluidas,Sesiones Usadas,Tasa Uso Sesiones (%),Total Cuotas,Cuotas Pagadas,Cuotas Pendientes,Cuotas Vencidas,Cuotas Fallidas,Ingresos Totales,Tasa Pago Puntual (%)');
+  
+  metricas.forEach(m => {
+    lineas.push([
+      m.suscripcionId,
+      `"${m.clienteNombre}"`,
+      m.clienteEmail,
+      `"${m.planNombre}"`,
+      m.estado,
+      m.precio,
+      m.frecuenciaPago,
+      m.fechaInicio,
+      m.fechaVencimiento,
+      m.diasActiva,
+      m.sesionesIncluidas,
+      m.sesionesUsadas,
+      m.tasaUsoSesiones,
+      m.totalCuotas,
+      m.cuotasPagadas,
+      m.cuotasPendientes,
+      m.cuotasVencidas,
+      m.cuotasFallidas,
+      m.ingresosTotales,
+      m.tasaPagoPuntual,
+    ].join(','));
+  });
+
+  const contenido = lineas.join('\n');
+  const fechaActual = new Date().toISOString().split('T')[0];
+  const extension = request.formato === 'excel' ? '.csv' : '.csv';
+  const nombreArchivo = `metricas_suscripciones_${fechaActual}${extension}`;
+  
+  // Crear blob y URL
+  const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+
+  return {
+    url,
+    blob,
+    nombreArchivo,
+  };
+};
 

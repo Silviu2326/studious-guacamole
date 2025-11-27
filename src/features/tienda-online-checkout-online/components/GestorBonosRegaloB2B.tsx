@@ -3,7 +3,7 @@ import { Card, Button, Input, Select, Modal, Badge, Table } from '../../../compo
 import { BonoRegaloB2B, CrearBonoRegaloB2BRequest, Producto } from '../types';
 import { crearBonoRegaloB2B, getBonosB2B, actualizarEstadoBonoB2B } from '../api/bonosB2B';
 import { getProductos } from '../api/productos';
-import { Building2, Gift, Plus, Calendar, Mail, Phone, FileText, CheckCircle, XCircle, Clock, Download, Eye, Info } from 'lucide-react';
+import { Building2, Gift, Plus, Calendar, Mail, Phone, FileText, CheckCircle, XCircle, Clock, Download, Eye, Info, Search, Filter } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 
 interface GestorBonosRegaloB2BProps {
@@ -20,6 +20,8 @@ export const GestorBonosRegaloB2B: React.FC<GestorBonosRegaloB2BProps> = ({
   const [mostrarModalCrear, setMostrarModalCrear] = useState(false);
   const [bonoSeleccionado, setBonoSeleccionado] = useState<BonoRegaloB2B | null>(null);
   const [mostrarDetalle, setMostrarDetalle] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState<string>('todos');
 
   const [formulario, setFormulario] = useState<CrearBonoRegaloB2BRequest>({
     empresaNombre: '',
@@ -144,6 +146,18 @@ export const GestorBonosRegaloB2B: React.FC<GestorBonosRegaloB2BProps> = ({
 
   const productoSeleccionado = productos.find((p) => p.id === formulario.productoId);
 
+  const bonosFiltrados = bonosB2B.filter((bono) => {
+    const coincideBusqueda =
+      bono.empresaNombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+      bono.empresaEmail.toLowerCase().includes(busqueda.toLowerCase());
+
+    if (filtroEstado === 'todos') {
+      return coincideBusqueda;
+    }
+
+    return coincideBusqueda && bono.estado === filtroEstado;
+  });
+
   const columnas = [
     {
       key: 'empresa',
@@ -228,10 +242,40 @@ export const GestorBonosRegaloB2B: React.FC<GestorBonosRegaloB2BProps> = ({
         </Button>
       </div>
 
+      {/* Filtros */}
+      <Card className="p-4 bg-white shadow-sm">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Search size={18} className="text-gray-400" />
+            <Input
+              placeholder="Buscar por empresa o email..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              className="flex-1"
+            />
+          </div>
+          <div className="flex items-center gap-4">
+            <Filter size={18} className="text-gray-400" />
+            <label className="text-sm font-medium text-gray-700">Estado:</label>
+            <Select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+              options={[
+                { value: 'todos', label: 'Todos' },
+                { value: 'generado', label: 'Generado' },
+                { value: 'enviado', label: 'Enviado' },
+                { value: 'utilizado', label: 'Utilizado' },
+                { value: 'vencido', label: 'Vencido' },
+              ]}
+            />
+          </div>
+        </div>
+      </Card>
+
       {/* Tabla de bonos */}
       <Card className="p-0 bg-white shadow-sm">
         <Table
-          data={bonosB2B}
+          data={bonosFiltrados}
           columns={columnas}
           loading={cargando}
           emptyMessage="No hay bonos B2B creados. Crea tu primer bono para empresas."

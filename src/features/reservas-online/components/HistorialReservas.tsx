@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, Table, Button, Modal, Select } from '../../../components/componentsreutilizables';
 import { Badge } from '../../../components/componentsreutilizables/Badge';
 import { Reserva, NotaDeSesion } from '../types';
-import { getReservas, marcarReservaComoPagada, marcarReservaComoNoShow, marcarReservaComoCompletada, verificarYMarcarCompletadasAutomaticamente } from '../api';
+import { getReservas, marcarReservaComoPagada, marcarReservaComoNoShow, marcarReservaComoCompletada, verificarYMarcarCompletadasAutomaticamente, FiltrosReservas } from '../api';
 import { ReprogramarReserva } from './ReprogramarReserva';
 import { AgregarNotaSesion } from './AgregarNotaSesion';
 import { getNotaPorReserva } from '../api/notasSesion';
@@ -20,6 +20,7 @@ export const HistorialReservas: React.FC<HistorialReservasProps> = ({ role }) =>
   const [loading, setLoading] = useState(true);
   const [filtroEstado, setFiltroEstado] = useState<'todas' | 'completadas' | 'pendientes' | 'confirmadas' | 'canceladas' | 'no-show'>('todas');
   const [filtroCliente, setFiltroCliente] = useState<string>('todos');
+  const [filtroTipoSesion, setFiltroTipoSesion] = useState<'todos' | 'presencial' | 'videollamada'>('todos');
   const [reservaReprogramar, setReservaReprogramar] = useState<Reserva | null>(null);
   const [reservaNota, setReservaNota] = useState<Reserva | null>(null);
   const [reservaMarcarPago, setReservaMarcarPago] = useState<Reserva | null>(null);
@@ -62,7 +63,18 @@ export const HistorialReservas: React.FC<HistorialReservasProps> = ({ role }) =>
       fechaFinCarga.setMonth(fechaFinCarga.getMonth() + 1);
     }
     
-    let datos = await getReservas(fechaInicioCarga, fechaFinCarga, role);
+    // Construir filtros para getReservas
+    const filtros: FiltrosReservas = {
+      fechaInicio: fechaInicioCarga,
+      fechaFin: fechaFinCarga,
+    };
+    
+    // Aplicar filtro de tipo de sesión si está activo
+    if (filtroTipoSesion !== 'todos') {
+      filtros.tipoSesion = filtroTipoSesion;
+    }
+    
+    let datos = await getReservas(filtros, role);
     
     // Verificar y marcar automáticamente las reservas que deben completarse (solo para entrenadores)
     if (role === 'entrenador' && user?.id) {
@@ -89,7 +101,7 @@ export const HistorialReservas: React.FC<HistorialReservasProps> = ({ role }) =>
       );
       setNotasExistentes(notasMap);
     }
-  }, [role, user?.id, usarFiltroFechas]);
+  }, [role, user?.id, usarFiltroFechas, filtroTipoSesion]);
 
   // Cargar reservas al montar el componente o cuando cambia el rol/usuario
   useEffect(() => {
@@ -165,6 +177,11 @@ export const HistorialReservas: React.FC<HistorialReservasProps> = ({ role }) =>
         return false;
       }
 
+      // Filtro por tipo de sesión
+      if (filtroTipoSesion !== 'todos' && reserva.tipoSesion !== filtroTipoSesion) {
+        return false;
+      }
+
       // Filtro por rango de fechas (si está activo, ya se aplica en la carga, pero por seguridad lo validamos aquí también)
       if (usarFiltroFechas) {
         const fechaReserva = new Date(reserva.fecha);
@@ -181,7 +198,7 @@ export const HistorialReservas: React.FC<HistorialReservasProps> = ({ role }) =>
 
       return true;
     });
-  }, [reservas, filtroEstado, filtroCliente, usarFiltroFechas, fechaInicio, fechaFin]);
+  }, [reservas, filtroEstado, filtroCliente, filtroTipoSesion, usarFiltroFechas, fechaInicio, fechaFin]);
 
   // Ordenar reservas: completadas primero, luego por fecha descendente
   const reservasOrdenadas = useMemo(() => {
@@ -622,7 +639,7 @@ export const HistorialReservas: React.FC<HistorialReservasProps> = ({ role }) =>
               <h3 className="text-xl font-bold text-gray-900">
                 Historial de Reservas
               </h3>
-              {(filtroEstado !== 'todas' || filtroCliente !== 'todos' || usarFiltroFechas) && (
+              {(filtroEstado !== 'todas' || filtroCliente !== 'todos' || filtroTipoSesion !== 'todos' || usarFiltroFechas) && (
                 <p className="text-sm text-gray-600 mt-1">
                   Mostrando {reservasOrdenadas.length} de {reservas.length} reservas
                 </p>
@@ -735,6 +752,38 @@ export const HistorialReservas: React.FC<HistorialReservasProps> = ({ role }) =>
               </div>
             )}
 
+            {/* Filtro por tipo de sesión */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">Filtrar por tipo de sesión:</span>
+              </div>
+              <div className="w-64">
+                <Select
+                  value={filtroTipoSesion}
+                  onChange={(e) => setFiltroTipoSesion(e.target.value as 'todos' | 'presencial' | 'videollamada')}
+                  options={[
+                    { value: 'todos', label: 'Todos los tipos' },
+                    { value: 'presencial', label: 'Presencial' },
+                    { value: 'videollamada', label: 'Videollamada' },
+                  ]}
+                  placeholder="Selecciona un tipo"
+                  fullWidth={false}
+                  className="w-full"
+                />
+              </div>
+              {filtroTipoSesion !== 'todos' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setFiltroTipoSesion('todos')}
+                  className="text-sm"
+                >
+                  Limpiar filtro
+                </Button>
+              )}
+            </div>
+
             {/* Filtros de estado */}
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-2">
@@ -801,13 +850,14 @@ export const HistorialReservas: React.FC<HistorialReservasProps> = ({ role }) =>
               >
                 No Show ({reservas.filter(r => r.estado === 'no-show').length})
               </button>
-              {(filtroEstado !== 'todas' || filtroCliente !== 'todos' || usarFiltroFechas) && (
+              {(filtroEstado !== 'todas' || filtroCliente !== 'todos' || filtroTipoSesion !== 'todos' || usarFiltroFechas) && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => {
                     setFiltroEstado('todas');
                     setFiltroCliente('todos');
+                    setFiltroTipoSesion('todos');
                     handleLimpiarFiltroFechas();
                   }}
                   className="text-sm ml-2"

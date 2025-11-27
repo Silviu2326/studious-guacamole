@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Users, Calendar, DollarSign, Target, BarChart3, Settings, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { TrendingUp, Users, Calendar, DollarSign, Target, BarChart3, Settings, ArrowUp, ArrowDown, Minus, Clock, AlertCircle, RefreshCw } from 'lucide-react';
 import { Card, MetricCards, Button, Modal, Input } from '../../../components/componentsreutilizables';
-import { MetricasOcupacion, ComparativaOcupacion, ConfiguracionMetaOcupacion, ProyeccionIngresos } from '../types';
+import { MetricasOcupacion, ComparativaOcupacion, ConfiguracionMetaOcupacion, ProyeccionIngresos, RangoFechas, ContextoMetricas } from '../types';
 import {
   getMetricasOcupacionSemanal,
   getMetricasOcupacionMensual,
@@ -10,10 +10,19 @@ import {
   getConfiguracionMetaOcupacion,
   actualizarConfiguracionMetaOcupacion,
 } from '../api/analytics';
+import { getMetricasSesiones, getSeriesOcupacionPorDia } from '../api/metricasSesiones';
 import { useAuth } from '../../../context/AuthContext';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, PieChart, Pie, Cell } from 'recharts';
 
-export const AnalyticsOcupacion: React.FC = () => {
+interface AnalyticsOcupacionProps {
+  rangoFechas?: RangoFechas;
+  contexto?: ContextoMetricas;
+}
+
+export const AnalyticsOcupacion: React.FC<AnalyticsOcupacionProps> = ({ 
+  rangoFechas: rangoFechasProp, 
+  contexto: contextoProp 
+}) => {
   const { user } = useAuth();
   const [vista, setVista] = useState<'semana' | 'mes'>('semana');
   const [metricasSemanales, setMetricasSemanales] = useState<MetricasOcupacion[]>([]);
@@ -22,30 +31,63 @@ export const AnalyticsOcupacion: React.FC = () => {
   const [proyeccion, setProyeccion] = useState<ProyeccionIngresos | null>(null);
   const [configuracion, setConfiguracion] = useState<ConfiguracionMetaOcupacion | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [mostrarModalConfig, setMostrarModalConfig] = useState(false);
   const [formConfig, setFormConfig] = useState({
     metaSemanal: '80',
     metaMensual: '75',
     precioPromedioSesion: '50',
   });
+  const [metricasSesiones, setMetricasSesiones] = useState<any>(null);
+  const [serieOcupacionPorDia, setSerieOcupacionPorDia] = useState<any[]>([]);
 
   useEffect(() => {
     cargarDatos();
-  }, [vista, user?.id]);
+  }, [vista, user?.id, rangoFechasProp]);
 
   const cargarDatos = async () => {
     setLoading(true);
+    setError(null);
     try {
       const fechaActual = new Date();
-      const [semanales, mensuales, config] = await Promise.all([
+      
+      // Determinar rango de fechas
+      let fechaInicio: Date;
+      let fechaFin: Date;
+      
+      if (rangoFechasProp) {
+        fechaInicio = rangoFechasProp.fechaInicio;
+        fechaFin = rangoFechasProp.fechaFin;
+      } else {
+        // Por defecto: última semana o mes según vista
+        if (vista === 'semana') {
+          fechaInicio = new Date(fechaActual);
+          fechaInicio.setDate(fechaInicio.getDate() - 7);
+          fechaFin = new Date(fechaActual);
+        } else {
+          fechaInicio = new Date(fechaActual.getFullYear(), fechaActual.getMonth(), 1);
+          fechaFin = new Date(fechaActual.getFullYear(), fechaActual.getMonth() + 1, 0);
+        }
+      }
+      
+      const contexto: ContextoMetricas = contextoProp || {
+        userId: user?.id,
+        role: user?.role as 'entrenador' | 'gimnasio',
+      };
+      
+      const [semanales, mensuales, config, metricasSesionesData, serieOcupacion] = await Promise.all([
         getMetricasOcupacionSemanal(fechaActual, 4, user?.id),
         getMetricasOcupacionMensual(fechaActual, 3, user?.id),
         getConfiguracionMetaOcupacion(user?.id),
+        getMetricasSesiones(fechaInicio, fechaFin, user?.id),
+        getSeriesOcupacionPorDia({ fechaInicio, fechaFin }, contexto),
       ]);
 
       setMetricasSemanales(semanales);
       setMetricasMensuales(mensuales);
       setConfiguracion(config);
+      setMetricasSesiones(metricasSesionesData);
+      setSerieOcupacionPorDia(serieOcupacion);
 
       // Calcular comparativa según vista actual
       const metricasActuales = vista === 'semana' ? semanales : mensuales;
@@ -93,6 +135,7 @@ export const AnalyticsOcupacion: React.FC = () => {
       });
     } catch (error) {
       console.error('Error cargando datos:', error);
+      setError('No se pudieron cargar los datos de analytics. Por favor, intenta de nuevo.');
     } finally {
       setLoading(false);
     }
@@ -115,21 +158,59 @@ export const AnalyticsOcupacion: React.FC = () => {
   const metricasActuales = vista === 'semana' ? metricasSemanales : metricasMensuales;
   const ultimaMetrica = metricasActuales[metricasActuales.length - 1];
 
-  if (loading && metricasActuales.length === 0) {
+  // Manejo de errores parciales - no rompe toda la página
+  if (error && !ultimaMetrica) {
     return (
-      <div className="text-center py-8">
-        <div className="text-gray-600">Cargando analytics...</div>
-      </div>
+      <Card className="bg-white shadow-sm border-red-200">
+        <div className="p-6">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-semibold text-red-900 mb-1">
+                Error al cargar analytics
+              </h3>
+              <p className="text-sm text-red-700 mb-4">
+                {error}
+              </p>
+              <Button 
+                variant="secondary" 
+                size="sm"
+                onClick={cargarDatos}
+                className="border-red-300 text-red-700 hover:bg-red-50"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Reintentar
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
     );
   }
 
-  if (!ultimaMetrica) {
+  if (loading && metricasActuales.length === 0 && !error) {
+    return (
+      <Card className="bg-white shadow-sm">
+        <div className="p-6">
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-sm text-gray-600">Cargando analytics...</p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  if (!ultimaMetrica && !loading && !error) {
     return (
       <Card className="bg-white shadow-sm">
         <div className="p-6">
           <div className="text-center py-8">
             <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">No hay datos de analytics disponibles</p>
+            <p className="text-sm font-medium text-gray-600 mb-1">No hay datos de analytics disponibles</p>
+            <p className="text-xs text-gray-500">Los datos aparecerán aquí cuando haya sesiones registradas.</p>
           </div>
         </div>
       </Card>
@@ -294,6 +375,169 @@ export const AnalyticsOcupacion: React.FC = () => {
           </ResponsiveContainer>
         </div>
       </Card>
+
+      {/* Ocupación por Franja Horaria */}
+      {metricasSesiones && metricasSesiones.sesionesPorHorario && metricasSesiones.sesionesPorHorario.length > 0 && (
+        <Card className="bg-white shadow-sm">
+          <div className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Clock className="w-5 h-5 text-gray-600" />
+              <h3 className="text-xl font-bold text-gray-900">
+                Ocupación por Franja Horaria
+              </h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Distribución de sesiones a lo largo del día. Identifica las horas pico y los períodos de menor actividad.
+            </p>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={metricasSesiones.sesionesPorHorario}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                <XAxis 
+                  dataKey="horario" 
+                  tick={{ fill: '#64748B', fontSize: 12 }} 
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis tick={{ fill: '#64748B', fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#fff',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '8px',
+                    padding: '8px',
+                  }}
+                  formatter={(value: number, name: string) => {
+                    if (name === 'cantidad') return [`${value} sesiones`, 'Cantidad'];
+                    if (name === 'porcentaje') return [`${value}%`, 'Porcentaje'];
+                    return [value, name];
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="cantidad" fill="#3B82F6" name="Sesiones" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      )}
+
+      {/* Ocupación por Día de la Semana */}
+      {metricasSesiones && metricasSesiones.sesionesPorDiaSemana && metricasSesiones.sesionesPorDiaSemana.length > 0 && (
+        <Card className="bg-white shadow-sm">
+          <div className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Calendar className="w-5 h-5 text-gray-600" />
+              <h3 className="text-xl font-bold text-gray-900">
+                Ocupación por Día de la Semana
+              </h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Distribución de sesiones por día. Identifica qué días de la semana tienen mayor demanda.
+            </p>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={metricasSesiones.sesionesPorDiaSemana}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                <XAxis 
+                  dataKey="diaSemana" 
+                  tick={{ fill: '#64748B', fontSize: 12 }} 
+                />
+                <YAxis tick={{ fill: '#64748B', fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#fff',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '8px',
+                    padding: '8px',
+                  }}
+                  formatter={(value: number, name: string) => {
+                    if (name === 'cantidad') return [`${value} sesiones`, 'Cantidad'];
+                    if (name === 'porcentaje') return [`${value}%`, 'Porcentaje'];
+                    return [value, name];
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="cantidad" fill="#10B981" name="Sesiones" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      )}
+
+      {/* Ocupación por Tipo de Sesión */}
+      {metricasSesiones && metricasSesiones.sesionesPorTipo && metricasSesiones.sesionesPorTipo.length > 0 && (
+        <Card className="bg-white shadow-sm">
+          <div className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="w-5 h-5 text-gray-600" />
+              <h3 className="text-xl font-bold text-gray-900">
+                Ocupación por Tipo de Sesión
+              </h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Distribución de sesiones por tipo. Identifica qué tipos de sesión son más populares.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={metricasSesiones.sesionesPorTipo}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                  <XAxis 
+                    dataKey="tipo" 
+                    tick={{ fill: '#64748B', fontSize: 12 }} 
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis tick={{ fill: '#64748B', fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: '1px solid #E2E8F0',
+                      borderRadius: '8px',
+                      padding: '8px',
+                    }}
+                    formatter={(value: number, name: string) => {
+                      if (name === 'cantidad') return [`${value} sesiones`, 'Cantidad'];
+                      if (name === 'porcentaje') return [`${value}%`, 'Porcentaje'];
+                      return [value, name];
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="cantidad" fill="#8B5CF6" name="Sesiones" />
+                </BarChart>
+              </ResponsiveContainer>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={metricasSesiones.sesionesPorTipo}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ tipo, porcentaje }) => `${tipo}: ${porcentaje}%`}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="cantidad"
+                  >
+                    {metricasSesiones.sesionesPorTipo.map((entry: any, index: number) => {
+                      const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+                      return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                    })}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: '1px solid #E2E8F0',
+                      borderRadius: '8px',
+                      padding: '8px',
+                    }}
+                    formatter={(value: number) => [`${value} sesiones`, 'Cantidad']}
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Comparativa con período anterior */}
       {comparativa && (

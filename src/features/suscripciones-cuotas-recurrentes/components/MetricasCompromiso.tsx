@@ -92,6 +92,22 @@ export const MetricasCompromiso: React.FC<MetricasCompromisoProps> = ({
 
   const metricasFiltradas = getMetricasFiltradas();
 
+  // Calcular métricas de uso real
+  const totalSesionesIncluidas = resumen.metricas.reduce((sum, m) => sum + m.sesionesIncluidasUltimos3Meses, 0);
+  const totalSesionesUsadas = resumen.metricas.reduce((sum, m) => sum + m.sesionesUsadasUltimos3Meses, 0);
+  const porcentajeUsoSesiones = totalSesionesIncluidas > 0 
+    ? (totalSesionesUsadas / totalSesionesIncluidas) * 100 
+    : 0;
+
+  const clientesUsandoPlan = resumen.metricas.filter(m => m.sesionesUsadasUltimos3Meses > 0).length;
+  const porcentajeClientesUsandoPlan = resumen.totalClientes > 0
+    ? (clientesUsandoPlan / resumen.totalClientes) * 100
+    : 0;
+
+  const frecuenciaMediaAsistencia = resumen.metricas.length > 0
+    ? resumen.metricas.reduce((sum, m) => sum + m.promedioSesionesPorMes, 0) / resumen.metricas.length
+    : 0;
+
   const metricCards = [
     {
       id: 'total',
@@ -100,6 +116,30 @@ export const MetricasCompromiso: React.FC<MetricasCompromisoProps> = ({
       subtitle: 'Suscripciones activas',
       icon: <Users className="w-5 h-5" />,
       color: 'info' as const,
+    },
+    {
+      id: 'sesiones-consumidas',
+      title: 'Sesiones Consumidas vs Incluidas',
+      value: `${totalSesionesUsadas}/${totalSesionesIncluidas}`,
+      subtitle: `${porcentajeUsoSesiones.toFixed(1)}% de uso`,
+      icon: <Activity className="w-5 h-5" />,
+      color: porcentajeUsoSesiones > 70 ? ('success' as const) : porcentajeUsoSesiones > 50 ? ('warning' as const) : ('error' as const),
+    },
+    {
+      id: 'clientes-usando-plan',
+      title: '% Clientes Usando Plan',
+      value: `${porcentajeClientesUsandoPlan.toFixed(1)}%`,
+      subtitle: `${clientesUsandoPlan} de ${resumen.totalClientes} clientes`,
+      icon: <Users className="w-5 h-5" />,
+      color: porcentajeClientesUsandoPlan > 80 ? ('success' as const) : porcentajeClientesUsandoPlan > 60 ? ('warning' as const) : ('error' as const),
+    },
+    {
+      id: 'frecuencia-asistencia',
+      title: 'Frecuencia Media Asistencia',
+      value: `${frecuenciaMediaAsistencia.toFixed(1)}`,
+      subtitle: 'Sesiones por mes promedio',
+      icon: <Calendar className="w-5 h-5" />,
+      color: frecuenciaMediaAsistencia > 8 ? ('success' as const) : frecuenciaMediaAsistencia > 4 ? ('warning' as const) : ('error' as const),
     },
     {
       id: 'riesgo',
@@ -319,6 +359,56 @@ export const MetricasCompromiso: React.FC<MetricasCompromisoProps> = ({
         </div>
         
         <MetricCards data={metricCards} columns={4} />
+        
+        {/* Métricas de uso detalladas */}
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <div className="text-sm text-blue-600 font-medium mb-1">Sesiones Consumidas vs Incluidas</div>
+            <div className="text-2xl font-bold text-blue-900">
+              {totalSesionesUsadas} / {totalSesionesIncluidas}
+            </div>
+            <div className="text-xs text-blue-600 mt-1">
+              {porcentajeUsoSesiones.toFixed(1)}% de utilización
+            </div>
+            <div className="mt-2 w-full bg-blue-200 rounded-full h-2">
+              <div
+                className="bg-blue-600 h-2 rounded-full"
+                style={{ width: `${Math.min(100, porcentajeUsoSesiones)}%` }}
+              />
+            </div>
+          </div>
+          
+          <div className="bg-green-50 p-4 rounded-lg">
+            <div className="text-sm text-green-600 font-medium mb-1">Clientes Activos</div>
+            <div className="text-2xl font-bold text-green-900">
+              {clientesUsandoPlan} / {resumen.totalClientes}
+            </div>
+            <div className="text-xs text-green-600 mt-1">
+              {porcentajeClientesUsandoPlan.toFixed(1)}% usando su plan
+            </div>
+            <div className="mt-2 w-full bg-green-200 rounded-full h-2">
+              <div
+                className="bg-green-600 h-2 rounded-full"
+                style={{ width: `${Math.min(100, porcentajeClientesUsandoPlan)}%` }}
+              />
+            </div>
+          </div>
+          
+          <div className="bg-purple-50 p-4 rounded-lg">
+            <div className="text-sm text-purple-600 font-medium mb-1">Frecuencia Media</div>
+            <div className="text-2xl font-bold text-purple-900">
+              {frecuenciaMediaAsistencia.toFixed(1)}
+            </div>
+            <div className="text-xs text-purple-600 mt-1">
+              Sesiones por mes promedio
+            </div>
+            <div className="mt-2 text-sm text-purple-700">
+              {frecuenciaMediaAsistencia >= 8 ? 'Alta frecuencia' : 
+               frecuenciaMediaAsistencia >= 4 ? 'Frecuencia media' : 
+               'Baja frecuencia'}
+            </div>
+          </div>
+        </div>
       </Card>
 
       <Card className="bg-white shadow-sm p-6">

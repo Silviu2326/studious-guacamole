@@ -1,22 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { KPI } from '../types';
-import { getKPIs, createKPI, updateKPI } from '../api/metrics';
-import { Card, Button, Table, Modal, Input, Select, Textarea, Badge } from '../../../components/componentsreutilizables';
-import { Settings, Plus, Edit2, ToggleLeft, ToggleRight, Loader2 } from 'lucide-react';
+import { getKPIs, updateKPIVisibility, updateKPITarget, updateKPIThresholds } from '../api/metrics';
+import { Card, Button, Input, Tabs, Switch, Badge } from '../../../components/componentsreutilizables';
+import { Settings, Loader2, CheckCircle2, AlertCircle, Info, Eye, EyeOff, Target, AlertTriangle } from 'lucide-react';
 
 interface KPIConfiguratorProps {
   role: 'entrenador' | 'gimnasio';
 }
 
+type Mode = 'simple' | 'advanced';
+
 export const KPIConfigurator: React.FC<KPIConfiguratorProps> = ({ role }) => {
   const [kpis, setKpis] = useState<KPI[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingKPI, setEditingKPI] = useState<KPI | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  const [mode, setMode] = useState<Mode>('simple');
+  const [editingKPI, setEditingKPI] = useState<string | null>(null);
+  const [editFormData, setEditFormData] = useState<{
+    target?: number;
+    warningThreshold?: number;
+    dangerThreshold?: number;
+  }>({});
 
   useEffect(() => {
     loadKPIs();
   }, [role]);
+
+  // Limpiar mensaje de éxito después de 3 segundos
+  useEffect(() => {
+    if (saveSuccess) {
+      const timer = setTimeout(() => setSaveSuccess(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [saveSuccess]);
 
   const loadKPIs = async () => {
     setLoading(true);
@@ -30,251 +47,362 @@ export const KPIConfigurator: React.FC<KPIConfiguratorProps> = ({ role }) => {
     }
   };
 
-  const handleCreate = () => {
-    setEditingKPI(null);
-    setIsModalOpen(true);
-  };
-
-  const handleEdit = (kpi: KPI) => {
-    setEditingKPI(kpi);
-    setIsModalOpen(true);
-  };
-
-  const handleToggle = async (kpi: KPI) => {
+  const handleToggleVisibility = async (kpi: KPI) => {
+    const newVisibility = !kpi.isVisible;
+    setSaving(kpi.id);
+    setSaveSuccess(null);
+    
     try {
-      await updateKPI(kpi.id, { enabled: !kpi.enabled });
-      loadKPIs();
+      await updateKPIVisibility(kpi.id, newVisibility);
+      await loadKPIs();
+      setSaveSuccess(kpi.id);
     } catch (error) {
-      console.error('Error toggling KPI:', error);
+      console.error('Error updating KPI visibility:', error);
+      alert('Error al actualizar la visibilidad del KPI');
+    } finally {
+      setSaving(null);
     }
   };
 
-  const columns = [
+  const handleStartEdit = (kpi: KPI) => {
+    setEditingKPI(kpi.id);
+    setEditFormData({
+      target: kpi.targetValue || kpi.target,
+      warningThreshold: kpi.warningThreshold,
+      dangerThreshold: kpi.dangerThreshold,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingKPI(null);
+    setEditFormData({});
+  };
+
+  const handleSaveEdit = async (kpi: KPI) => {
+    setSaving(kpi.id);
+    setSaveSuccess(null);
+    
+    try {
+      await updateKPITarget(
+        kpi.id,
+        editFormData.target ?? kpi.targetValue ?? kpi.target ?? 0,
+        editFormData.warningThreshold,
+        editFormData.dangerThreshold
+      );
+      await loadKPIs();
+      setEditingKPI(null);
+      setEditFormData({});
+      setSaveSuccess(kpi.id);
+    } catch (error) {
+      console.error('Error updating KPI:', error);
+      alert('Error al guardar los cambios del KPI');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const getCategoryBadgeVariant = (category: string): 'blue' | 'green' | 'purple' | 'yellow' | 'red' => {
+    const categoryMap: Record<string, 'blue' | 'green' | 'purple' | 'yellow' | 'red'> = {
+      'financiero': 'green',
+      'finanzas': 'green',
+      'clientes': 'blue',
+      'operacional': 'purple',
+      'operaciones': 'purple',
+      'marketing': 'yellow',
+      'calidad': 'red',
+    };
+    return categoryMap[category.toLowerCase()] || 'blue';
+  };
+
+  const tabs = [
     {
-      key: 'name',
-      label: 'KPI',
-      render: (value: string, row: KPI) => (
-        <div>
-          <div className="font-semibold text-gray-900">{value}</div>
-          {row.description && (
-            <div className="text-xs text-gray-500 mt-1">
-              {row.description}
-            </div>
-          )}
-        </div>
-      ),
+      id: 'simple',
+      label: 'Modo Simple',
+      icon: <Eye className="w-4 h-4" />,
     },
     {
-      key: 'category',
-      label: 'Categoría',
-      render: (value: string) => (
-        <Badge variant="blue">{value}</Badge>
-      ),
-    },
-    {
-      key: 'unit',
-      label: 'Unidad',
-    },
-    {
-      key: 'enabled',
-      label: 'Estado',
-      render: (value: boolean, row: KPI) => (
-        <button
-          onClick={() => handleToggle(row)}
-          className="flex items-center gap-2"
-        >
-          {value ? (
-            <ToggleRight className="w-6 h-6 text-green-600" />
-          ) : (
-            <ToggleLeft className="w-6 h-6 text-gray-400" />
-          )}
-          <Badge variant={value ? 'green' : 'gray'}>
-            {value ? 'Activo' : 'Inactivo'}
-          </Badge>
-        </button>
-      ),
-    },
-    {
-      key: 'actions',
-      label: 'Acciones',
-      render: (_: any, row: KPI) => (
-        <button
-          onClick={() => handleEdit(row)}
-          className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all"
-          title="Editar"
-        >
-          <Edit2 className="w-4 h-4" />
-        </button>
-      ),
+      id: 'advanced',
+      label: 'Modo Avanzado',
+      icon: <Settings className="w-4 h-4" />,
     },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Toolbar superior */}
-      <div className="flex items-center justify-end">
-        <Button variant="primary" onClick={handleCreate}>
-          <Plus size={20} className="mr-2" />
-          Nuevo KPI
-        </Button>
-      </div>
+      {/* Información explicativa */}
+      <Card className="p-4 bg-blue-50 border-l-4 border-l-blue-500">
+        <div className="flex items-start gap-3">
+          <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-blue-900 mb-1">
+              Configuración de KPIs
+            </h3>
+            <p className="text-sm text-blue-800">
+              Los KPIs configurados aquí impactan directamente en el Dashboard y en otros módulos del sistema. 
+              Activa o desactiva KPIs para personalizar tu vista, o edita objetivos y umbrales de alerta en modo avanzado.
+            </p>
+          </div>
+        </div>
+      </Card>
 
-      {/* Tabla de KPIs */}
+      {/* Selector de modo */}
+      <Card className="p-4 bg-white shadow-sm">
+        <Tabs
+          items={tabs}
+          activeTab={mode}
+          onTabChange={(tabId) => setMode(tabId as Mode)}
+          variant="pills"
+          fullWidth
+        />
+      </Card>
+
+      {/* Contenido según el modo */}
       {loading ? (
         <Card className="p-8 text-center bg-white shadow-sm">
           <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
-          <p className="text-gray-600">Cargando...</p>
+          <p className="text-gray-600">Cargando KPIs...</p>
         </Card>
+      ) : kpis.length === 0 ? (
+        <Card className="p-12 text-center bg-white shadow-sm">
+          <Target className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">No hay KPIs disponibles</h3>
+          <p className="text-gray-600">
+            No se encontraron KPIs para tu rol. Contacta al administrador del sistema.
+          </p>
+        </Card>
+      ) : mode === 'simple' ? (
+        /* Modo Simple: Lista con toggle de visibilidad */
+        <div className="space-y-3">
+          {kpis.map((kpi) => (
+            <Card
+              key={kpi.id}
+              className={`p-4 bg-white shadow-sm transition-all ${
+                saveSuccess === kpi.id ? 'ring-2 ring-green-500' : ''
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="font-semibold text-gray-900">{kpi.name}</h3>
+                    <Badge variant={getCategoryBadgeVariant(kpi.category)}>
+                      {kpi.category}
+                    </Badge>
+                    {saveSuccess === kpi.id && (
+                      <div className="flex items-center gap-1 text-green-600 text-sm">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Guardado</span>
+                      </div>
+                    )}
+                  </div>
+                  {kpi.description && (
+                    <p className="text-sm text-gray-600 mb-2">{kpi.description}</p>
+                  )}
+                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <span>Unidad: {kpi.unit}</span>
+                    {kpi.targetValue && (
+                      <span>Objetivo: {kpi.targetValue.toLocaleString()} {kpi.unit}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 ml-4">
+                  {saving === kpi.id ? (
+                    <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      {kpi.isVisible ? (
+                        <Eye className="w-4 h-4 text-gray-400" />
+                      ) : (
+                        <EyeOff className="w-4 h-4 text-gray-400" />
+                      )}
+                      <Switch
+                        checked={kpi.isVisible ?? kpi.enabled}
+                        onChange={() => handleToggleVisibility(kpi)}
+                        size="md"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
       ) : (
-        <Table
-          data={kpis}
-          columns={columns}
-          loading={false}
-          emptyMessage="No hay KPIs configurados"
-        />
-      )}
+        /* Modo Avanzado: Edición de objetivos y umbrales */
+        <div className="space-y-4">
+          {kpis.map((kpi) => (
+            <Card
+              key={kpi.id}
+              className={`p-5 bg-white shadow-sm ${
+                saveSuccess === kpi.id ? 'ring-2 ring-green-500' : ''
+              }`}
+            >
+              <div className="space-y-4">
+                {/* Header del KPI */}
+                <div className="flex items-start justify-between border-b border-gray-200 pb-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="font-semibold text-gray-900">{kpi.name}</h3>
+                      <Badge variant={getCategoryBadgeVariant(kpi.category)}>
+                        {kpi.category}
+                      </Badge>
+                      {saveSuccess === kpi.id && (
+                        <div className="flex items-center gap-1 text-green-600 text-sm">
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>Cambios guardados</span>
+                        </div>
+                      )}
+                    </div>
+                    {kpi.description && (
+                      <p className="text-sm text-gray-600">{kpi.description}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 ml-4">
+                    {kpi.isVisible ? (
+                      <Badge variant="green">Visible</Badge>
+                    ) : (
+                      <Badge variant="gray">Oculto</Badge>
+                    )}
+                  </div>
+                </div>
 
-      <KPIModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingKPI(null);
-        }}
-        onSave={loadKPIs}
-        kpi={editingKPI}
-        role={role}
-      />
+                {/* Formulario de edición */}
+                {editingKPI === kpi.id ? (
+                  <div className="space-y-4 pt-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <Target className="w-4 h-4 inline mr-1" />
+                          Valor Objetivo
+                        </label>
+                        <Input
+                          type="number"
+                          value={editFormData.target?.toString() || ''}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              target: e.target.value ? parseFloat(e.target.value) : undefined,
+                            })
+                          }
+                          placeholder="Ej: 50000"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Unidad: {kpi.unit}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <AlertTriangle className="w-4 h-4 inline mr-1 text-yellow-600" />
+                          Umbral de Advertencia
+                        </label>
+                        <Input
+                          type="number"
+                          value={editFormData.warningThreshold?.toString() || ''}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              warningThreshold: e.target.value ? parseFloat(e.target.value) : undefined,
+                            })
+                          }
+                          placeholder="Opcional"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Activa alerta de advertencia
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <AlertCircle className="w-4 h-4 inline mr-1 text-red-600" />
+                          Umbral de Peligro
+                        </label>
+                        <Input
+                          type="number"
+                          value={editFormData.dangerThreshold?.toString() || ''}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              dangerThreshold: e.target.value ? parseFloat(e.target.value) : undefined,
+                            })
+                          }
+                          placeholder="Opcional"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Activa alerta crítica
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-200">
+                      <Button
+                        variant="secondary"
+                        onClick={handleCancelEdit}
+                        disabled={saving === kpi.id}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        variant="primary"
+                        onClick={() => handleSaveEdit(kpi)}
+                        disabled={saving === kpi.id}
+                        loading={saving === kpi.id}
+                      >
+                        {saving === kpi.id ? 'Guardando...' : 'Guardar Cambios'}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="pt-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <div className="text-xs text-gray-500 mb-1">Valor Objetivo</div>
+                        <div className="text-lg font-semibold text-gray-900">
+                          {kpi.targetValue || kpi.target ? (
+                            <>
+                              {(kpi.targetValue || kpi.target)?.toLocaleString()} {kpi.unit}
+                            </>
+                          ) : (
+                            <span className="text-gray-400">No definido</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="p-3 bg-yellow-50 rounded-lg">
+                        <div className="text-xs text-gray-500 mb-1">Umbral de Advertencia</div>
+                        <div className="text-lg font-semibold text-gray-900">
+                          {kpi.warningThreshold !== undefined ? (
+                            <>
+                              {kpi.warningThreshold.toLocaleString()} {kpi.unit}
+                            </>
+                          ) : (
+                            <span className="text-gray-400">No configurado</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="p-3 bg-red-50 rounded-lg">
+                        <div className="text-xs text-gray-500 mb-1">Umbral de Peligro</div>
+                        <div className="text-lg font-semibold text-gray-900">
+                          {kpi.dangerThreshold !== undefined ? (
+                            <>
+                              {kpi.dangerThreshold.toLocaleString()} {kpi.unit}
+                            </>
+                          ) : (
+                            <span className="text-gray-400">No configurado</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-end">
+                      <Button
+                        variant="primary"
+                        onClick={() => handleStartEdit(kpi)}
+                        disabled={saving === kpi.id}
+                      >
+                        <Settings className="w-4 h-4 mr-2" />
+                        Editar Configuración
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
-
-interface KPIModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: () => void;
-  kpi?: KPI | null;
-  role: 'entrenador' | 'gimnasio';
-}
-
-const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, onSave, kpi, role }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    metric: '',
-    unit: '',
-    category: '',
-    enabled: true,
-    target: '',
-  });
-
-  useEffect(() => {
-    if (kpi) {
-      setFormData({
-        name: kpi.name,
-        description: kpi.description || '',
-        metric: kpi.metric,
-        unit: kpi.unit,
-        category: kpi.category,
-        enabled: kpi.enabled,
-        target: kpi.target?.toString() || '',
-      });
-    } else {
-      setFormData({
-        name: '',
-        description: '',
-        metric: '',
-        unit: '',
-        category: '',
-        enabled: true,
-        target: '',
-      });
-    }
-  }, [kpi, isOpen]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      if (kpi) {
-        await updateKPI(kpi.id, {
-          ...formData,
-          target: formData.target ? parseFloat(formData.target) : undefined,
-        });
-      } else {
-        await createKPI({
-          ...formData,
-          target: formData.target ? parseFloat(formData.target) : undefined,
-          role: [role],
-        });
-      }
-      onSave();
-      onClose();
-    } catch (error) {
-      console.error('Error saving KPI:', error);
-      alert('Error al guardar el KPI');
-    }
-  };
-
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={kpi ? 'Editar KPI' : 'Nuevo KPI'}
-      size="lg"
-      footer={
-        <div className="flex gap-3">
-          <Button variant="secondary" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button variant="primary" onClick={handleSubmit}>
-            Guardar
-          </Button>
-        </div>
-      }
-    >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Input
-          label="Nombre"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          required
-        />
-        <Textarea
-          label="Descripción"
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-        />
-        <Input
-          label="Métrica"
-          value={formData.metric}
-          onChange={(e) => setFormData({ ...formData, metric: e.target.value })}
-          placeholder="facturacion, adherencia, ocupacion..."
-          required
-        />
-        <div className="grid grid-cols-2 gap-4">
-          <Input
-            label="Unidad"
-            value={formData.unit}
-            onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-            placeholder="€, %, clientes..."
-            required
-          />
-          <Input
-            label="Categoría"
-            value={formData.category}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-            placeholder="financiero, operacional..."
-            required
-          />
-        </div>
-        <Input
-          label="Objetivo (opcional)"
-          type="number"
-          value={formData.target}
-          onChange={(e) => setFormData({ ...formData, target: e.target.value })}
-          placeholder="Valor objetivo"
-        />
-      </form>
-    </Modal>
-  );
-};
-

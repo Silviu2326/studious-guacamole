@@ -1,20 +1,25 @@
 import React, { useState, useCallback } from 'react';
 import { Upload, X, FileText, Image, File, Trash2, Eye } from 'lucide-react';
 import { Button } from '../../../components/componentsreutilizables';
-import { ArchivoAdjunto } from '../types/expenses';
+import { ArchivoAdjunto, ExpenseAttachment } from '../types/expenses';
+import { updateExpense } from '../api/expenses';
 
 interface ExpenseFileUploadProps {
   archivos: ArchivoAdjunto[];
   onFilesChange: (archivos: ArchivoAdjunto[]) => void;
   maxFiles?: number;
   maxSizeMB?: number;
+  expenseId?: string; // ID del gasto al que asociar los adjuntos (opcional)
+  onAttachmentAssociated?: (attachment: ExpenseAttachment) => void; // Callback cuando se asocia un adjunto
 }
 
 export const ExpenseFileUpload: React.FC<ExpenseFileUploadProps> = ({
   archivos = [],
   onFilesChange,
   maxFiles = 10,
-  maxSizeMB = 10
+  maxSizeMB = 10,
+  expenseId,
+  onAttachmentAssociated
 }) => {
   const [isDragActive, setIsDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +55,49 @@ export const ExpenseFileUpload: React.FC<ExpenseFileUploadProps> = ({
     return 'other';
   };
 
+  /**
+   * Función mock para asociar un adjunto a un Expense existente
+   * En producción, esto subiría el archivo al servidor y lo asociaría al gasto
+   */
+  const asociarAdjuntoAExpense = async (
+    expenseId: string,
+    archivo: ArchivoAdjunto
+  ): Promise<ExpenseAttachment> => {
+    // Simular latencia de red
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // Convertir ArchivoAdjunto a ExpenseAttachment
+    const attachment: ExpenseAttachment = {
+      id: archivo.id,
+      expenseId: expenseId,
+      url: archivo.url,
+      nombreArchivo: archivo.nombre,
+      tipoArchivo: archivo.tipo === 'image' ? 'image/jpeg' : 
+                   archivo.tipo === 'pdf' ? 'application/pdf' : 'application/octet-stream',
+      fechaSubida: archivo.fechaSubida,
+      tamaño: archivo.tamaño
+    };
+    
+    // Si hay un expenseId, actualizar el gasto con el nuevo adjunto
+    if (expenseId) {
+      try {
+        // Obtener el gasto actual (esto es mock, en producción vendría de la API)
+        // Por ahora, solo simulamos la asociación
+        // En producción: await updateExpense(expenseId, { adjuntos: [...existingAttachments, attachment] });
+        
+        // Callback para notificar que se asoció el adjunto
+        if (onAttachmentAssociated) {
+          onAttachmentAssociated(attachment);
+        }
+      } catch (error) {
+        console.error('Error al asociar adjunto al gasto:', error);
+        throw error;
+      }
+    }
+    
+    return attachment;
+  };
+
   const handleFileUpload = async (file: File): Promise<ArchivoAdjunto> => {
     // Simular upload - En producción, esto debería subir el archivo al servidor
     return new Promise((resolve) => {
@@ -64,6 +112,14 @@ export const ExpenseFileUpload: React.FC<ExpenseFileUploadProps> = ({
           tamaño: file.size,
           fechaSubida: new Date()
         };
+        
+        // Si hay un expenseId, asociar el adjunto al gasto
+        if (expenseId) {
+          asociarAdjuntoAExpense(expenseId, nuevoArchivo).catch(error => {
+            console.error('Error al asociar adjunto:', error);
+          });
+        }
+        
         resolve(nuevoArchivo);
       }, 500);
     });

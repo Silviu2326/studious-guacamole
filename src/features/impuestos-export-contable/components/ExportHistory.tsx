@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Table, TableColumn, Card, Badge } from '../../../components/componentsreutilizables';
-import { accountingExportApi, AccountingExport } from '../api';
+import { accountingExportApi, AccountingExport, getExportHistory } from '../api';
 import { Download, CheckCircle, Clock, XCircle, History } from 'lucide-react';
+import { saveAs } from 'file-saver';
 
 interface ExportHistoryProps {
   onDownload?: (exportId: string) => void;
@@ -18,12 +19,60 @@ export const ExportHistory: React.FC<ExportHistoryProps> = ({ onDownload }) => {
   const loadHistory = async () => {
     setLoading(true);
     try {
-      const response = await accountingExportApi.getHistory();
-      setExports(response.data);
+      // Usar getExportHistory de la API
+      const history = await getExportHistory();
+      
+      // Convertir el formato de getExportHistory al formato AccountingExport
+      const convertedExports: AccountingExport[] = history.map(item => {
+        // Mapear formato 'excel' a 'xlsx' para compatibilidad
+        let format: 'csv' | 'pdf' | 'a3' | 'sage50' | 'xlsx' = 'xlsx';
+        if (item.formato === 'excel') {
+          format = 'xlsx';
+        } else if (['csv', 'pdf', 'a3', 'sage50'].includes(item.formato)) {
+          format = item.formato as 'csv' | 'pdf' | 'a3' | 'sage50';
+        }
+        
+        return {
+          id: item.id,
+          createdAt: item.fecha,
+          generatedBy: item.usuario,
+          dateRange: item.rangoFechas,
+          format,
+          status: 'completed' as const,
+          downloadUrl: `/api/v1/finance/exports/${item.id}/download`
+        };
+      });
+      
+      setExports(convertedExports);
     } catch (error) {
       console.error('Error loading export history:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownload = async (exportId: string, downloadUrl?: string) => {
+    if (!downloadUrl) {
+      console.warn('No download URL available for export:', exportId);
+      return;
+    }
+
+    try {
+      // Simular descarga del archivo
+      // En producción, esto haría una llamada real al backend
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Crear un blob simulado para la descarga
+      const blob = new Blob(['Simulated export content'], { type: 'application/octet-stream' });
+      const fileName = `export-${exportId}.${downloadUrl.split('.').pop() || 'xlsx'}`;
+      saveAs(blob, fileName);
+      
+      // Llamar al callback si existe
+      if (onDownload) {
+        onDownload(exportId);
+      }
+    } catch (error) {
+      console.error('Error downloading export:', error);
     }
   };
 
@@ -114,11 +163,11 @@ export const ExportHistory: React.FC<ExportHistoryProps> = ({ onDownload }) => {
       render: (_, row) => (
         row.status === 'completed' && row.downloadUrl ? (
           <button
-            onClick={() => onDownload?.(row.id)}
+            onClick={() => handleDownload(row.id, row.downloadUrl)}
             className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
           >
             <Download size={16} />
-            Descargar
+            Descargar de nuevo
           </button>
         ) : null
       )

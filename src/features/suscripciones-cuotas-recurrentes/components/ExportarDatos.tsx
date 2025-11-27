@@ -1,74 +1,136 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Button, Select, Input } from '../../../components/componentsreutilizables';
 import {
-  ExportarDatosRequest,
+  TipoDatoExportacion,
   FormatoExportacion,
+  ExportarSuscripcionesRequest,
+  ExportarCuotasRequest,
+  ExportarMetricasRequest,
 } from '../types';
-import { exportarYDescargar } from '../api/exportacion';
+import {
+  exportarSuscripciones,
+  exportarCuotas,
+  exportarMetricasSuscripciones,
+} from '../api/exportacion';
+import { getSuscripciones } from '../api/suscripciones';
 import {
   Download,
-  FileText,
   FileSpreadsheet,
-  File,
   Calendar,
   Loader2,
   CheckCircle2,
   AlertCircle,
+  X,
+  Info,
+  FileText,
 } from 'lucide-react';
 
 interface ExportarDatosProps {
   entrenadorId?: string;
 }
 
+interface ToastMessage {
+  tipo: 'success' | 'error';
+  texto: string;
+}
+
 export const ExportarDatos: React.FC<ExportarDatosProps> = ({
   entrenadorId,
 }) => {
-  const [formato, setFormato] = useState<FormatoExportacion>('csv');
+  const [tipoDato, setTipoDato] = useState<TipoDatoExportacion>('suscripciones');
+  const [formato, setFormato] = useState<'csv' | 'excel'>('csv');
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
-  const [incluirSuscripciones, setIncluirSuscripciones] = useState(true);
-  const [incluirPagos, setIncluirPagos] = useState(true);
-  const [incluirCanceladas, setIncluirCanceladas] = useState(false);
-  const [incluirPausadas, setIncluirPausadas] = useState(false);
+  const [planId, setPlanId] = useState<string>('');
+  const [planesDisponibles, setPlanesDisponibles] = useState<Array<{ id: string; nombre: string }>>([]);
   const [exportando, setExportando] = useState(false);
-  const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+
+  // Cargar planes disponibles
+  useEffect(() => {
+    const cargarPlanes = async () => {
+      try {
+        const suscripciones = await getSuscripciones('entrenador', entrenadorId);
+        const planesUnicos = Array.from(
+          new Map(
+            suscripciones.map(s => [s.planId, { id: s.planId, nombre: s.planNombre }])
+          ).values()
+        );
+        setPlanesDisponibles([
+          { id: '', nombre: 'Todos los planes' },
+          ...planesUnicos,
+        ]);
+      } catch (error) {
+        console.error('Error cargando planes:', error);
+      }
+    };
+    cargarPlanes();
+  }, [entrenadorId]);
 
   const handleExportar = async () => {
-    if (!incluirSuscripciones && !incluirPagos) {
-      setMensaje({
-        tipo: 'error',
-        texto: 'Debes seleccionar al menos suscripciones o pagos para exportar',
-      });
-      return;
-    }
-
     setExportando(true);
-    setMensaje(null);
+    setToast(null);
 
     try {
-      const request: ExportarDatosRequest = {
-        entrenadorId,
-        formato,
-        fechaInicio: fechaInicio || undefined,
-        fechaFin: fechaFin || undefined,
-        incluirSuscripciones,
-        incluirPagos,
-        incluirCanceladas,
-        incluirPausadas,
-      };
+      let response;
 
-      await exportarYDescargar(request);
+      switch (tipoDato) {
+        case 'suscripciones': {
+          const request: ExportarSuscripcionesRequest = {
+            entrenadorId,
+            formato,
+            fechaInicio: fechaInicio || undefined,
+            fechaFin: fechaFin || undefined,
+            planId: planId || undefined,
+          };
+          response = await exportarSuscripciones(request);
+          break;
+        }
+        case 'cuotas': {
+          const request: ExportarCuotasRequest = {
+            entrenadorId,
+            formato,
+            fechaInicio: fechaInicio || undefined,
+            fechaFin: fechaFin || undefined,
+            planId: planId || undefined,
+          };
+          response = await exportarCuotas(request);
+          break;
+        }
+        case 'metricas': {
+          const request: ExportarMetricasRequest = {
+            entrenadorId,
+            formato,
+            fechaInicio: fechaInicio || undefined,
+            fechaFin: fechaFin || undefined,
+            planId: planId || undefined,
+          };
+          response = await exportarMetricasSuscripciones(request);
+          break;
+        }
+      }
 
-      setMensaje({
+      // Simular descarga
+      if (response?.url) {
+        const link = document.createElement('a');
+        link.href = response.url;
+        link.download = response.nombreArchivo;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(response.url);
+      }
+
+      setToast({
         tipo: 'success',
-        texto: 'Datos exportados correctamente. El archivo se descargará automáticamente.',
+        texto: `Exportación completada. Archivo "${response?.nombreArchivo}" descargado.`,
       });
 
-      // Limpiar mensaje después de 5 segundos
-      setTimeout(() => setMensaje(null), 5000);
+      // Limpiar toast después de 5 segundos
+      setTimeout(() => setToast(null), 5000);
     } catch (error) {
       console.error('Error exportando datos:', error);
-      setMensaje({
+      setToast({
         tipo: 'error',
         texto: 'Error al exportar los datos. Por favor, intenta de nuevo.',
       });
@@ -77,32 +139,27 @@ export const ExportarDatos: React.FC<ExportarDatosProps> = ({
     }
   };
 
-  const getIconoFormato = (formato: FormatoExportacion) => {
-    switch (formato) {
-      case 'csv':
-      case 'excel':
-        return <FileSpreadsheet className="w-5 h-5" />;
-      case 'pdf':
-        return <FileText className="w-5 h-5" />;
-      case 'json':
-        return <File className="w-5 h-5" />;
+  const getDescripcionTipoDato = (tipo: TipoDatoExportacion): string => {
+    switch (tipo) {
+      case 'suscripciones':
+        return 'Ideal para enviar a tu gestor o contable. Incluye información completa de todas las suscripciones activas.';
+      case 'cuotas':
+        return 'Perfecto para análisis de pagos y facturación. Contiene el historial completo de cuotas y pagos.';
+      case 'metricas':
+        return 'Excelente para análisis avanzado en Excel. Incluye métricas calculadas como tasas de uso, retención y compromiso.';
       default:
-        return <File className="w-5 h-5" />;
+        return '';
     }
   };
 
-  const getDescripcionFormato = (formato: FormatoExportacion) => {
-    switch (formato) {
-      case 'csv':
-        return 'Formato CSV compatible con Excel y Google Sheets';
-      case 'excel':
-        return 'Formato Excel (.xlsx) - Nota: Se exportará como CSV';
-      case 'pdf':
-        return 'Formato PDF - Nota: Se exportará como texto formateado';
-      case 'json':
-        return 'Formato JSON para análisis programático';
-      default:
-        return '';
+  const getIconoTipoDato = (tipo: TipoDatoExportacion) => {
+    switch (tipo) {
+      case 'suscripciones':
+        return <FileText className="w-5 h-5" />;
+      case 'cuotas':
+        return <Download className="w-5 h-5" />;
+      case 'metricas':
+        return <FileSpreadsheet className="w-5 h-5" />;
     }
   };
 
@@ -111,42 +168,73 @@ export const ExportarDatos: React.FC<ExportarDatosProps> = ({
       <div className="flex items-center gap-3 mb-6">
         <Download className="w-6 h-6 text-blue-600" />
         <h3 className="text-xl font-semibold text-gray-900">
-          Exportar Datos de Suscripciones y Pagos
+          Exportar Datos
         </h3>
       </div>
 
       <p className="text-gray-600 mb-6">
-        Exporta los datos de suscripciones y pagos para análisis personalizados o compartir con tu asesor fiscal.
+        Exporta datos de suscripciones, cuotas o métricas en formato CSV o Excel para análisis externo.
       </p>
 
-      {/* Formato de exportación */}
+      {/* Selector de tipo de dato */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-3">
+          Tipo de Dato a Exportar
+        </label>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {(['suscripciones', 'cuotas', 'metricas'] as TipoDatoExportacion[]).map((tipo) => (
+            <button
+              key={tipo}
+              type="button"
+              onClick={() => setTipoDato(tipo)}
+              className={`flex flex-col items-start p-4 border-2 rounded-lg transition-all text-left ${
+                tipoDato === tipo
+                  ? 'border-blue-600 bg-blue-50 text-blue-700'
+                  : 'border-gray-200 hover:border-gray-300 text-gray-700'
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                {getIconoTipoDato(tipo)}
+                <span className="font-medium capitalize">{tipo}</span>
+              </div>
+              <p className="text-xs text-gray-600 mt-1">
+                {getDescripcionTipoDato(tipo)}
+              </p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Selector de formato */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Formato de Exportación
         </label>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {(['csv', 'excel', 'pdf', 'json'] as FormatoExportacion[]).map((fmt) => (
+        <div className="grid grid-cols-2 gap-3">
+          {(['csv', 'excel'] as const).map((fmt) => (
             <button
               key={fmt}
               type="button"
               onClick={() => setFormato(fmt)}
-              className={`flex flex-col items-center justify-center p-4 border-2 rounded-lg transition-all ${
+              className={`flex items-center justify-center gap-2 p-4 border-2 rounded-lg transition-all ${
                 formato === fmt
                   ? 'border-blue-600 bg-blue-50 text-blue-700'
                   : 'border-gray-200 hover:border-gray-300 text-gray-700'
               }`}
             >
-              {getIconoFormato(fmt)}
-              <span className="mt-2 text-sm font-medium uppercase">{fmt}</span>
+              <FileSpreadsheet className="w-5 h-5" />
+              <span className="font-medium uppercase">{fmt}</span>
             </button>
           ))}
         </div>
         <p className="mt-2 text-xs text-gray-500">
-          {getDescripcionFormato(formato)}
+          {formato === 'csv'
+            ? 'Formato CSV compatible con Excel y Google Sheets'
+            : 'Formato Excel (.xlsx) - Se exportará como CSV compatible'}
         </p>
       </div>
 
-      {/* Filtros de fecha */}
+      {/* Filtros de periodo */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -174,82 +262,54 @@ export const ExportarDatos: React.FC<ExportarDatosProps> = ({
         </div>
       </div>
 
-      {/* Opciones de contenido */}
+      {/* Filtro de plan */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-3">
-          Contenido a Exportar
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Plan (Opcional)
         </label>
-        <div className="space-y-3">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={incluirSuscripciones}
-              onChange={(e) => setIncluirSuscripciones(e.target.checked)}
-              className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-            />
-            <span className="text-gray-700">Incluir Suscripciones</span>
-          </label>
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={incluirPagos}
-              onChange={(e) => setIncluirPagos(e.target.checked)}
-              className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-            />
-            <span className="text-gray-700">Incluir Pagos</span>
-          </label>
-        </div>
+        <Select
+          value={planId}
+          onChange={(e) => setPlanId(e.target.value)}
+          className="w-full"
+        >
+          {planesDisponibles.map((plan) => (
+            <option key={plan.id} value={plan.id}>
+              {plan.nombre}
+            </option>
+          ))}
+        </Select>
       </div>
 
-      {/* Opciones adicionales */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-3">
-          Opciones Adicionales
-        </label>
-        <div className="space-y-3">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={incluirCanceladas}
-              onChange={(e) => setIncluirCanceladas(e.target.checked)}
-              className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-            />
-            <span className="text-gray-700">Incluir Suscripciones Canceladas</span>
-          </label>
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={incluirPausadas}
-              onChange={(e) => setIncluirPausadas(e.target.checked)}
-              className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-            />
-            <span className="text-gray-700">Incluir Suscripciones Pausadas</span>
-          </label>
-        </div>
-      </div>
-
-      {/* Mensaje de estado */}
-      {mensaje && (
+      {/* Toast Notification */}
+      {toast && (
         <div
-          className={`mb-4 p-4 rounded-lg flex items-center gap-3 ${
-            mensaje.tipo === 'success'
+          className={`mb-4 p-4 rounded-lg flex items-center justify-between gap-3 ${
+            toast.tipo === 'success'
               ? 'bg-green-50 text-green-800 border border-green-200'
               : 'bg-red-50 text-red-800 border border-red-200'
           }`}
         >
-          {mensaje.tipo === 'success' ? (
-            <CheckCircle2 className="w-5 h-5" />
-          ) : (
-            <AlertCircle className="w-5 h-5" />
-          )}
-          <span className="text-sm">{mensaje.texto}</span>
+          <div className="flex items-center gap-3">
+            {toast.tipo === 'success' ? (
+              <CheckCircle2 className="w-5 h-5" />
+            ) : (
+              <AlertCircle className="w-5 h-5" />
+            )}
+            <span className="text-sm">{toast.texto}</span>
+          </div>
+          <button
+            onClick={() => setToast(null)}
+            className="p-1 hover:bg-black/5 rounded-full transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
       {/* Botón de exportar */}
       <Button
         onClick={handleExportar}
-        disabled={exportando || (!incluirSuscripciones && !incluirPagos)}
+        disabled={exportando}
         className="w-full md:w-auto"
         variant="primary"
       >
@@ -266,20 +326,28 @@ export const ExportarDatos: React.FC<ExportarDatosProps> = ({
         )}
       </Button>
 
-      {/* Información adicional */}
+      {/* Información de ayuda */}
       <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <h4 className="text-sm font-semibold text-blue-900 mb-2">
-          Información sobre la exportación
-        </h4>
-        <ul className="text-xs text-blue-800 space-y-1">
-          <li>• Los datos se exportarán según los filtros seleccionados</li>
-          <li>• El archivo se descargará automáticamente cuando esté listo</li>
-          <li>• Los formatos CSV y Excel son ideales para análisis en hojas de cálculo</li>
-          <li>• El formato JSON es útil para análisis programático o integraciones</li>
-          <li>• Puedes compartir estos datos con tu asesor fiscal de forma segura</li>
-        </ul>
+        <div className="flex items-start gap-3">
+          <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <h4 className="text-sm font-semibold text-blue-900 mb-2">
+              ¿Para qué sirve cada export?
+            </h4>
+            <ul className="text-xs text-blue-800 space-y-1">
+              <li>
+                <strong>Suscripciones:</strong> Para enviar a tu gestor o contable. Incluye información completa de todas las suscripciones.
+              </li>
+              <li>
+                <strong>Cuotas:</strong> Para análisis de pagos y facturación. Contiene el historial completo de cuotas y pagos.
+              </li>
+              <li>
+                <strong>Métricas:</strong> Para análisis avanzado en Excel. Incluye métricas calculadas como tasas de uso, retención y compromiso.
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
     </Card>
   );
 };
-

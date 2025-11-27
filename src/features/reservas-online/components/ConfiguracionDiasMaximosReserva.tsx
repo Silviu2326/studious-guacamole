@@ -102,6 +102,14 @@ export const ConfiguracionDiasMaximosReserva: React.FC<ConfiguracionDiasMaximosR
 
   return (
     <div className="space-y-6">
+      {/* Bloque: Restricciones de Reserva */}
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Límites de Reserva</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Establece límites temporales para controlar cuándo los clientes pueden realizar reservas
+        </p>
+      </div>
+
       <Card className="bg-white shadow-sm">
         <div className="p-6">
           <div className="flex items-center gap-3 mb-6">
@@ -186,7 +194,7 @@ export const ConfiguracionDiasMaximosReserva: React.FC<ConfiguracionDiasMaximosR
           </div>
 
           {haCambiado && (
-            <div className="mt-6 flex justify-end">
+            <div className="mt-6 pt-4 border-t border-gray-200 flex justify-end">
               <Button
                 variant="primary"
                 onClick={guardarConfiguracion}

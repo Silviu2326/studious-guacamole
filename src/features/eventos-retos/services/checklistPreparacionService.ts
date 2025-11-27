@@ -1,415 +1,355 @@
-// Servicio para checklist de preparación de eventos
-import { Evento, ChecklistPreparacion, ItemChecklist, PlantillaChecklist } from '../api/events';
-import { TipoEvento } from '../api/events';
+/**
+ * Servicio mock para gestión de checklists de preparación
+ * 
+ * Este servicio soporta la parte de gestión de checklists de preparación para eventos.
+ * Proporciona funciones para obtener plantillas disponibles, asignar checklists a eventos
+ * y actualizar el estado de los items del checklist.
+ */
 
-const STORAGE_KEY_PLANTILLAS = 'plantillas-checklist-eventos';
+import { PreparationChecklist, ChecklistItem } from '../types';
+import { cargarEventos, guardarEventos } from '../api/events';
+
+// Mock storage para plantillas de checklist
+const MOCK_STORAGE_KEY_PLANTILLAS = 'mock_checklist_templates';
 
 /**
- * Crea un checklist de preparación vacío
+ * Obtiene las plantillas de checklist disponibles
+ * 
+ * @returns Lista de plantillas de PreparationChecklist disponibles
  */
-export const crearChecklistVacio = (): ChecklistPreparacion => {
-  return {
-    items: [],
-    recordatorioUnDiaAntes: true,
-    recordatorioEnviado: false,
-  };
-};
+export const obtenerChecklistsDisponibles = async (): Promise<PreparationChecklist[]> => {
+  // Simular delay de red
+  await new Promise(resolve => setTimeout(resolve, 300));
 
-/**
- * Agrega un item al checklist
- */
-export const agregarItemChecklist = (
-  checklist: ChecklistPreparacion,
-  item: Omit<ItemChecklist, 'id' | 'completado' | 'fechaCompletado'>
-): ChecklistPreparacion => {
-  const nuevoItem: ItemChecklist = {
-    ...item,
-    id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    completado: false,
-  };
-
-  return {
-    ...checklist,
-    items: [...checklist.items, nuevoItem].sort((a, b) => a.orden - b.orden),
-  };
-};
-
-/**
- * Actualiza un item del checklist
- */
-export const actualizarItemChecklist = (
-  checklist: ChecklistPreparacion,
-  itemId: string,
-  updates: Partial<ItemChecklist>
-): ChecklistPreparacion => {
-  return {
-    ...checklist,
-    items: checklist.items.map(item =>
-      item.id === itemId ? { ...item, ...updates } : item
-    ),
-  };
-};
-
-/**
- * Marca un item como completado
- */
-export const completarItemChecklist = (
-  checklist: ChecklistPreparacion,
-  itemId: string,
-  completado: boolean
-): ChecklistPreparacion => {
-  return {
-    ...checklist,
-    items: checklist.items.map(item =>
-      item.id === itemId
-        ? {
-            ...item,
-            completado,
-            fechaCompletado: completado ? new Date() : undefined,
-          }
-        : item
-    ),
-  };
-};
-
-/**
- * Elimina un item del checklist
- */
-export const eliminarItemChecklist = (
-  checklist: ChecklistPreparacion,
-  itemId: string
-): ChecklistPreparacion => {
-  return {
-    ...checklist,
-    items: checklist.items.filter(item => item.id !== itemId),
-  };
-};
-
-/**
- * Reordena items del checklist
- */
-export const reordenarItemsChecklist = (
-  checklist: ChecklistPreparacion,
-  itemIds: string[]
-): ChecklistPreparacion => {
-  const itemsMap = new Map(checklist.items.map(item => [item.id, item]));
-  const itemsReordenados = itemIds
-    .map((id, index) => {
-      const item = itemsMap.get(id);
-      return item ? { ...item, orden: index } : null;
-    })
-    .filter((item): item is ItemChecklist => item !== null);
-
-  return {
-    ...checklist,
-    items: itemsReordenados,
-  };
-};
-
-/**
- * Aplica una plantilla de checklist a un evento
- */
-export const aplicarPlantillaChecklist = (
-  checklist: ChecklistPreparacion,
-  plantilla: PlantillaChecklist
-): ChecklistPreparacion => {
-  const nuevosItems: ItemChecklist[] = plantilla.items.map((item, index) => ({
-    ...item,
-    id: `item-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
-    completado: false,
-  }));
-
-  return {
-    ...checklist,
-    items: [...checklist.items, ...nuevosItems].sort((a, b) => a.orden - b.orden),
-    plantillaId: plantilla.id,
-  };
-};
-
-/**
- * Guarda una plantilla de checklist
- */
-export const guardarPlantillaChecklist = async (
-  plantilla: Partial<PlantillaChecklist>
-): Promise<PlantillaChecklist> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const plantillasStorage = localStorage.getItem(STORAGE_KEY_PLANTILLAS);
-      const plantillas: PlantillaChecklist[] = plantillasStorage
-        ? JSON.parse(plantillasStorage)
-        : [];
-
-      const nuevaPlantilla: PlantillaChecklist = {
-        id: plantilla.id || `plantilla-${Date.now()}`,
-        nombre: plantilla.nombre || 'Nueva Plantilla',
-        descripcion: plantilla.descripcion,
-        tipoEvento: plantilla.tipoEvento,
-        items: plantilla.items || [],
-        creadoPor: plantilla.creadoPor || '',
-        createdAt: plantilla.createdAt || new Date(),
-        updatedAt: new Date(),
-        usoFrecuente: plantilla.usoFrecuente || 0,
-      };
-
-      const index = plantillas.findIndex(p => p.id === nuevaPlantilla.id);
-      if (index >= 0) {
-        plantillas[index] = nuevaPlantilla;
-      } else {
-        plantillas.push(nuevaPlantilla);
-      }
-
-      localStorage.setItem(STORAGE_KEY_PLANTILLAS, JSON.stringify(plantillas));
-      resolve(nuevaPlantilla);
-    }, 300);
-  });
-};
-
-/**
- * Obtiene todas las plantillas de checklist
- */
-export const obtenerPlantillasChecklist = async (
-  tipoEvento?: TipoEvento,
-  userId?: string
-): Promise<PlantillaChecklist[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const plantillasStorage = localStorage.getItem(STORAGE_KEY_PLANTILLAS);
-      const plantillas: PlantillaChecklist[] = plantillasStorage
-        ? JSON.parse(plantillasStorage)
-        : [];
-
-      let plantillasFiltradas = plantillas;
-
-      // Filtrar por usuario si se proporciona
-      if (userId) {
-        plantillasFiltradas = plantillasFiltradas.filter(
-          p => p.creadoPor === userId
-        );
-      }
-
-      // Filtrar por tipo de evento si se proporciona
-      if (tipoEvento) {
-        plantillasFiltradas = plantillasFiltradas.filter(
-          p => !p.tipoEvento || p.tipoEvento === tipoEvento
-        );
-      }
-
-      // Ordenar por uso frecuente
-      plantillasFiltradas.sort((a, b) => b.usoFrecuente - a.usoFrecuente);
-
-      resolve(plantillasFiltradas);
-    }, 300);
-  });
-};
-
-/**
- * Elimina una plantilla de checklist
- */
-export const eliminarPlantillaChecklist = async (
-  plantillaId: string
-): Promise<void> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const plantillasStorage = localStorage.getItem(STORAGE_KEY_PLANTILLAS);
-      const plantillas: PlantillaChecklist[] = plantillasStorage
-        ? JSON.parse(plantillasStorage)
-        : [];
-
-      const plantillasFiltradas = plantillas.filter(p => p.id !== plantillaId);
-      localStorage.setItem(STORAGE_KEY_PLANTILLAS, JSON.stringify(plantillasFiltradas));
-      resolve();
-    }, 300);
-  });
-};
-
-/**
- * Verifica y envía recordatorios de preparación un día antes
- */
-export const verificarYEnviarRecordatoriosPreparacion = async (
-  eventos: Evento[]
-): Promise<void> => {
-  const ahora = new Date();
-  const mañana = new Date(ahora);
-  mañana.setDate(mañana.getDate() + 1);
-  mañana.setHours(0, 0, 0, 0);
-
-  const eventosConRecordatorio = eventos.filter(evento => {
-    const checklist = evento.checklistPreparacion;
-    if (!checklist || !checklist.recordatorioUnDiaAntes) {
-      return false;
+  try {
+    // Intentar obtener plantillas guardadas
+    const stored = localStorage.getItem(MOCK_STORAGE_KEY_PLANTILLAS);
+    if (stored) {
+      const plantillas = JSON.parse(stored);
+      return plantillas.map((p: any) => ({
+        ...p,
+        items: p.items.map((item: any) => ({
+          ...item,
+          fechaCompletado: item.fechaCompletado ? new Date(item.fechaCompletado) : undefined,
+        })),
+      }));
     }
 
-    if (checklist.recordatorioEnviado) {
-      return false;
-    }
-
-    const fechaInicio = new Date(evento.fechaInicio);
-    fechaInicio.setHours(0, 0, 0, 0);
-
-    // Verificar si el evento es mañana
-    return fechaInicio.getTime() === mañana.getTime() && evento.estado === 'programado';
-  });
-
-  for (const evento of eventosConRecordatorio) {
-    await enviarRecordatorioPreparacion(evento);
+    // Retornar plantillas predefinidas si no hay guardadas
+    return obtenerPlantillasPredefinidas();
+  } catch (error) {
+    console.error('Error obteniendo checklists disponibles:', error);
+    return obtenerPlantillasPredefinidas();
   }
 };
 
 /**
- * Envía recordatorio de preparación
+ * Asigna un checklist a un evento
+ * 
+ * @param eventId - ID del evento al que se asignará el checklist
+ * @param checklistId - ID del checklist (plantilla) a asignar
+ * @returns Resultado de la asignación
  */
-export const enviarRecordatorioPreparacion = async (
-  evento: Evento
-): Promise<{ success: boolean; error?: string }> => {
+export const asignarChecklistAEvento = async (
+  eventId: string,
+  checklistId: string
+): Promise<{
+  success: boolean;
+  checklist?: PreparationChecklist;
+  error?: string;
+}> => {
+  // Simular delay de red
+  await new Promise(resolve => setTimeout(resolve, 400));
+
   try {
-    const checklist = evento.checklistPreparacion;
-    if (!checklist) {
-      return { success: false, error: 'No hay checklist de preparación' };
+    // Obtener el checklist (plantilla)
+    const checklists = await obtenerChecklistsDisponibles();
+    const plantilla = checklists.find(c => c.id === checklistId);
+
+    if (!plantilla) {
+      return {
+        success: false,
+        error: `Checklist con ID ${checklistId} no encontrado`,
+      };
     }
 
-    const itemsPendientes = checklist.items.filter(item => !item.completado);
-    
-    if (itemsPendientes.length === 0) {
-      return { success: true }; // Todos los items están completados
+    // Cargar eventos
+    const eventos = cargarEventos();
+    const eventoIndex = eventos.findIndex(e => e.id === eventId);
+
+    if (eventoIndex === -1) {
+      return {
+        success: false,
+        error: `Evento con ID ${eventId} no encontrado`,
+      };
     }
 
-    // TODO: Integrar con servicio de notificaciones (email/SMS/WhatsApp)
-    // Por ahora, solo marcamos como enviado
-    console.log(`Enviando recordatorio de preparación para evento: ${evento.nombre}`);
-    console.log(`Items pendientes: ${itemsPendientes.map(i => i.nombre).join(', ')}`);
+    // Crear una copia del checklist para el evento (no es plantilla)
+    const checklistParaEvento: PreparationChecklist = {
+      id: `checklist-${eventId}-${Date.now()}`,
+      nombre: plantilla.nombre,
+      items: plantilla.items.map(item => ({
+        ...item,
+        id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        completado: false,
+        fechaCompletado: undefined,
+        completadoPor: undefined,
+      })),
+      esPlantilla: false,
+      eventId: eventId,
+    };
 
-    return { success: true };
+    // Asignar checklist al evento
+    if (!eventos[eventoIndex].checklistPreparacion) {
+      eventos[eventoIndex].checklistPreparacion = {
+        items: checklistParaEvento.items.map(item => ({
+          id: item.id,
+          nombre: item.descripcion, // Mapear descripcion a nombre para compatibilidad
+          descripcion: item.descripcion,
+          orden: item.orden,
+          categoria: item.categoria,
+          completado: item.completado,
+          obligatorio: item.obligatorio,
+        })),
+        recordatorioUnDiaAntes: true,
+        recordatorioEnviado: false,
+        plantillaId: checklistId,
+      };
+    }
+
+    // Guardar eventos
+    guardarEventos(eventos);
+
+    console.log(`[ChecklistPreparacionService] Checklist ${checklistId} asignado al evento ${eventId}`);
+
+    return {
+      success: true,
+      checklist: checklistParaEvento,
+    };
   } catch (error) {
-    console.error('Error enviando recordatorio de preparación:', error);
+    console.error('Error asignando checklist a evento:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Error desconocido',
+      error: error instanceof Error ? error.message : 'Error desconocido al asignar checklist',
     };
   }
 };
 
 /**
- * Obtiene el porcentaje de completado del checklist
+ * Actualiza el estado de un item del checklist
+ * 
+ * @param eventId - ID del evento
+ * @param itemId - ID del item a actualizar
+ * @param completado - Nuevo estado de completado
+ * @returns Resultado de la actualización
  */
-export const obtenerPorcentajeCompletado = (
-  checklist: ChecklistPreparacion
-): number => {
-  if (checklist.items.length === 0) {
-    return 100; // Si no hay items, está completo
-  }
+export const actualizarEstadoItem = async (
+  eventId: string,
+  itemId: string,
+  completado: boolean
+): Promise<{
+  success: boolean;
+  error?: string;
+}> => {
+  // Simular delay de red
+  await new Promise(resolve => setTimeout(resolve, 300));
 
-  const completados = checklist.items.filter(item => item.completado).length;
-  return Math.round((completados / checklist.items.length) * 100);
+  try {
+    // Cargar eventos
+    const eventos = cargarEventos();
+    const eventoIndex = eventos.findIndex(e => e.id === eventId);
+
+    if (eventoIndex === -1) {
+      return {
+        success: false,
+        error: `Evento con ID ${eventId} no encontrado`,
+      };
+    }
+
+    const evento = eventos[eventoIndex];
+
+    if (!evento.checklistPreparacion) {
+      return {
+        success: false,
+        error: 'El evento no tiene checklist de preparación asignado',
+      };
+    }
+
+    // Buscar y actualizar el item
+    const itemIndex = evento.checklistPreparacion.items.findIndex(item => item.id === itemId);
+
+    if (itemIndex === -1) {
+      return {
+        success: false,
+        error: `Item con ID ${itemId} no encontrado en el checklist`,
+      };
+    }
+
+    // Actualizar estado del item
+    evento.checklistPreparacion.items[itemIndex].completado = completado;
+    
+    // Si se marca como completado, agregar fecha y usuario (mock)
+    if (completado) {
+      // En una implementación real, se obtendría del contexto de usuario
+      evento.checklistPreparacion.items[itemIndex].fechaCompletado = new Date();
+      evento.checklistPreparacion.items[itemIndex].completadoPor = 'usuario-actual';
+    } else {
+      evento.checklistPreparacion.items[itemIndex].fechaCompletado = undefined;
+      evento.checklistPreparacion.items[itemIndex].completadoPor = undefined;
+    }
+
+    // Guardar eventos
+    guardarEventos(eventos);
+
+    console.log(`[ChecklistPreparacionService] Item ${itemId} del evento ${eventId} actualizado: ${completado ? 'completado' : 'pendiente'}`);
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error('Error actualizando estado de item:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error desconocido al actualizar item',
+    };
+  }
 };
 
 /**
- * Crea plantillas predefinidas por tipo de evento
+ * Obtiene plantillas predefinidas de checklist
  */
-export const obtenerPlantillasPredefinidas = (): PlantillaChecklist[] => {
+function obtenerPlantillasPredefinidas(): PreparationChecklist[] {
   return [
     {
-      id: 'plantilla-presencial-default',
+      id: 'plantilla-presencial-basica',
       nombre: 'Evento Presencial - Básico',
-      descripcion: 'Plantilla básica para eventos presenciales',
-      tipoEvento: 'presencial',
       items: [
         {
-          nombre: 'Verificar materiales necesarios',
-          descripcion: 'Revisar que todos los materiales estén disponibles',
+          id: 'item-1',
+          descripcion: 'Verificar materiales necesarios',
+          obligatorio: true,
+          completado: false,
           orden: 0,
           categoria: 'material',
         },
         {
-          nombre: 'Confirmar ubicación',
-          descripcion: 'Verificar que el espacio esté reservado y disponible',
+          id: 'item-2',
+          descripcion: 'Confirmar ubicación y disponibilidad',
+          obligatorio: true,
+          completado: false,
           orden: 1,
           categoria: 'preparacion',
         },
         {
-          nombre: 'Preparar lista de participantes',
-          descripcion: 'Tener lista actualizada de participantes confirmados',
+          id: 'item-3',
+          descripcion: 'Preparar lista de participantes confirmados',
+          obligatorio: false,
+          completado: false,
           orden: 2,
           categoria: 'documentacion',
         },
         {
-          nombre: 'Revisar equipamiento',
-          descripcion: 'Comprobar que el equipamiento esté en buen estado',
+          id: 'item-4',
+          descripcion: 'Revisar equipamiento y estado',
+          obligatorio: true,
+          completado: false,
           orden: 3,
           categoria: 'material',
         },
       ],
-      creadoPor: 'system',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      usoFrecuente: 0,
+      esPlantilla: true,
     },
     {
-      id: 'plantilla-virtual-default',
+      id: 'plantilla-virtual-basica',
       nombre: 'Evento Virtual - Básico',
-      descripcion: 'Plantilla básica para eventos virtuales',
-      tipoEvento: 'virtual',
       items: [
         {
-          nombre: 'Probar conexión a internet',
-          descripcion: 'Verificar que la conexión sea estable',
+          id: 'item-5',
+          descripcion: 'Probar conexión a internet',
+          obligatorio: true,
+          completado: false,
           orden: 0,
           categoria: 'preparacion',
         },
         {
-          nombre: 'Probar plataforma (Zoom/Teams)',
-          descripcion: 'Asegurar que la plataforma funcione correctamente',
+          id: 'item-6',
+          descripcion: 'Probar plataforma (Zoom/Teams/etc)',
+          obligatorio: true,
+          completado: false,
           orden: 1,
           categoria: 'preparacion',
         },
         {
-          nombre: 'Preparar materiales de presentación',
-          descripcion: 'Tener listos los materiales a compartir',
+          id: 'item-7',
+          descripcion: 'Preparar materiales de presentación',
+          obligatorio: false,
+          completado: false,
           orden: 2,
           categoria: 'material',
         },
         {
-          nombre: 'Enviar link de acceso',
-          descripcion: 'Verificar que los participantes tengan el link',
+          id: 'item-8',
+          descripcion: 'Enviar link de acceso a participantes',
+          obligatorio: true,
+          completado: false,
           orden: 3,
           categoria: 'preparacion',
         },
       ],
-      creadoPor: 'system',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      usoFrecuente: 0,
+      esPlantilla: true,
     },
     {
-      id: 'plantilla-reto-default',
+      id: 'plantilla-reto-basica',
       nombre: 'Reto - Básico',
-      descripcion: 'Plantilla básica para retos',
-      tipoEvento: 'reto',
       items: [
         {
-          nombre: 'Preparar materiales de seguimiento',
-          descripcion: 'Documentos, apps, etc. para seguimiento',
+          id: 'item-9',
+          descripcion: 'Preparar materiales de seguimiento',
+          obligatorio: false,
+          completado: false,
           orden: 0,
           categoria: 'material',
         },
         {
-          nombre: 'Configurar sistema de métricas',
-          descripcion: 'Asegurar que el sistema de seguimiento esté listo',
+          id: 'item-10',
+          descripcion: 'Configurar sistema de métricas',
+          obligatorio: true,
+          completado: false,
           orden: 1,
           categoria: 'preparacion',
         },
         {
-          nombre: 'Preparar mensajes motivacionales',
-          descripcion: 'Tener listos mensajes para enviar a participantes',
+          id: 'item-11',
+          descripcion: 'Preparar mensajes motivacionales',
+          obligatorio: false,
+          completado: false,
           orden: 2,
           categoria: 'preparacion',
         },
       ],
-      creadoPor: 'system',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      usoFrecuente: 0,
+      esPlantilla: true,
     },
   ];
+}
+
+/**
+ * Función auxiliar para guardar plantillas personalizadas (mock)
+ */
+export const guardarPlantillaChecklist = async (
+  plantilla: PreparationChecklist
+): Promise<PreparationChecklist> => {
+  await new Promise(resolve => setTimeout(resolve, 300));
+
+  const plantillas = await obtenerChecklistsDisponibles();
+  const index = plantillas.findIndex(p => p.id === plantilla.id);
+
+  if (index >= 0) {
+    plantillas[index] = plantilla;
+  } else {
+    plantillas.push(plantilla);
+  }
+
+  localStorage.setItem(MOCK_STORAGE_KEY_PLANTILLAS, JSON.stringify(plantillas));
+
+  return plantilla;
 };
-
-

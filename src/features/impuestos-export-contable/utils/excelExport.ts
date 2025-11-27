@@ -287,3 +287,158 @@ function createDesgloseMensualTrimestralSheet(data: ExcelExportData): XLSX.WorkS
   return worksheet;
 }
 
+/**
+ * ============================================================================
+ * FUNCIÓN UTILITARIA PARA GENERACIÓN DE EXCEL DESDE DATOS
+ * ============================================================================
+ * 
+ * NOTA IMPORTANTE: En producción, esta función se ejecutaría en el backend
+ * y devolvería una URL real o un stream del archivo generado.
+ * 
+ * La generación de archivos Excel grandes o con muchos datos debe hacerse
+ * en el servidor para:
+ * - Evitar sobrecargar el navegador del cliente
+ * - Procesar grandes volúmenes de datos eficientemente
+ * - Aplicar validaciones y transformaciones complejas
+ * - Gestionar la memoria de forma adecuada
+ * - Proporcionar URLs seguras con tokens de autenticación
+ * ============================================================================
+ */
+
+/**
+ * Opciones para la generación de Excel
+ */
+export interface ExcelExportOpciones {
+  nombreArchivo?: string;
+  incluirIngresos?: boolean;
+  incluirGastos?: boolean;
+  incluirResumenFiscal?: boolean;
+  incluirDesgloseMensual?: boolean;
+  formatoFecha?: string;
+  formatoMoneda?: string;
+  hojasAdicionales?: Array<{ nombre: string; datos: any[][] }>;
+}
+
+/**
+ * Genera un archivo Excel desde datos proporcionados
+ * 
+ * @param datos - Datos a exportar (puede ser cualquier estructura de datos)
+ * @param opciones - Opciones de configuración para la exportación
+ * @returns Blob del archivo Excel o string con URL de descarga (en producción)
+ * 
+ * NOTA: En producción, esta función:
+ * - Se ejecutaría en el backend (Node.js con bibliotecas como ExcelJS, xlsx, etc.)
+ * - Procesaría los datos reales de ingresos y gastos desde la base de datos
+ * - Generaría el archivo Excel con múltiples hojas según las opciones
+ * - Aplicaría formatos, estilos y validaciones según sea necesario
+ * - Almacenaría el archivo en un sistema de almacenamiento (S3, Azure Blob, etc.)
+ * - Devolvería una URL real de descarga con token de autenticación temporal
+ * - O devolvería un stream del archivo para descarga directa
+ * 
+ * Ejemplo de uso (mock):
+ * ```typescript
+ * const datos = {
+ *   ingresos: [...],
+ *   gastos: [...],
+ *   resumen: {...}
+ * };
+ * const url = await generarExcelDesdeDatos(datos, {
+ *   nombreArchivo: 'export-2024.xlsx',
+ *   incluirIngresos: true,
+ *   incluirGastos: true
+ * });
+ * // En producción: url sería una URL real como '/api/exports/abc123/download?token=xyz'
+ * ```
+ * 
+ * Ejemplo de uso en backend (producción):
+ * ```typescript
+ * // En el backend (Node.js)
+ * async function generarExcelDesdeDatos(datos, opciones) {
+ *   const workbook = new ExcelJS.Workbook();
+ *   // ... generar hojas y datos ...
+ *   const buffer = await workbook.xlsx.writeBuffer();
+ *   const url = await storageService.upload(buffer, `exports/${opciones.nombreArchivo}`);
+ *   return url; // URL real de descarga
+ * }
+ * ```
+ */
+export async function generarExcelDesdeDatos(
+  datos: any,
+  opciones?: ExcelExportOpciones
+): Promise<Blob | string> {
+  // Simular delay de procesamiento (en producción sería el tiempo real de generación)
+  await new Promise(resolve => setTimeout(resolve, 800));
+  
+  // En producción, aquí se generaría el Excel real usando bibliotecas como:
+  // - ExcelJS (Node.js)
+  // - xlsx (Node.js)
+  // - Otras bibliotecas de generación de Excel
+  
+  // Por ahora, simulamos generando un Excel básico usando la función existente
+  // si los datos tienen la estructura esperada
+  if (datos.taxSummary && datos.expenses && datos.dateFrom && datos.dateTo) {
+    try {
+      // Usar la función existente generateExcelExport si los datos coinciden
+      await generateExcelExport(datos as ExcelExportData);
+      
+      // En producción, devolveríamos una URL:
+      // return `/api/v1/finance/exports/${exportId}/download?token=${token}`;
+      
+      // Por ahora, devolvemos una URL simulada
+      const nombreArchivo = opciones?.nombreArchivo || 
+        `export-${new Date().toISOString().split('T')[0]}.xlsx`;
+      return `/api/v1/finance/exports/download/${nombreArchivo}?token=mock-token-${Date.now()}`;
+    } catch (error) {
+      console.warn('Error al generar Excel con función existente, usando mock:', error);
+    }
+  }
+  
+  // Si no coincide la estructura, generar un Excel básico mock
+  const workbook = XLSX.utils.book_new();
+  
+  // Crear una hoja básica con los datos
+  const datosArray: any[][] = [];
+  
+  // Encabezado
+  if (opciones?.nombreArchivo) {
+    datosArray.push(['Exportación Contable']);
+    datosArray.push(['Archivo:', opciones.nombreArchivo]);
+    datosArray.push(['Fecha de generación:', new Date().toLocaleString('es-ES')]);
+    datosArray.push([]);
+  }
+  
+  // Convertir datos a array si es un objeto
+  if (typeof datos === 'object' && !Array.isArray(datos)) {
+    Object.entries(datos).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        datosArray.push([key, String(value)]);
+      }
+    });
+  } else if (Array.isArray(datos)) {
+    // Si es un array, usar directamente
+    datosArray.push(...datos);
+  }
+  
+  const worksheet = XLSX.utils.aoa_to_sheet(datosArray);
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Datos');
+  
+  // Generar blob
+  const excelBuffer = XLSX.write(workbook, { 
+    bookType: 'xlsx', 
+    type: 'array'
+  });
+  
+  const blob = new Blob([excelBuffer], { 
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+  });
+  
+  // En producción, aquí subiríamos el blob al almacenamiento y devolveríamos la URL
+  // Por ahora, devolvemos el blob directamente o una URL simulada según el contexto
+  if (opciones?.nombreArchivo) {
+    // Simular URL de descarga (en producción sería real)
+    return `/api/v1/finance/exports/download/${opciones.nombreArchivo}?token=mock-token-${Date.now()}`;
+  }
+  
+  return blob;
+}
+

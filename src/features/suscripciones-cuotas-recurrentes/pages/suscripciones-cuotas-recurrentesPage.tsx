@@ -47,6 +47,10 @@ import {
   Sparkles,
   History,
   Eye,
+  XCircle,
+  BarChart3,
+  TrendingDown,
+  ChevronDown,
 } from 'lucide-react';
 import { Suscripcion } from '../types';
 
@@ -62,7 +66,8 @@ export default function SuscripcionesCuotasRecurrentesPage() {
   const esEntrenador = user?.role === 'entrenador';
   const role = esEntrenador ? 'entrenador' : 'gimnasio';
 
-  const [tabActiva, setTabActiva] = useState<string>('resumen');
+  const [tabActiva, setTabActiva] = useState<string>('activas');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [suscripciones, setSuscripciones] = useState<Suscripcion[]>([]);
   const [, setLoading] = useState(true);
   const [suscripcionSeleccionada, setSuscripcionSeleccionada] = useState<Suscripcion | null>(null);
@@ -252,55 +257,60 @@ export default function SuscripcionesCuotasRecurrentesPage() {
     ];
   }, [suscripciones, esEntrenador]);
 
-  // Tabs adaptadas según el rol
+  // Tabs adaptadas según el rol - Estructura base solicitada
   const tabs = useMemo(() => {
-    const items = [
+    const baseTabs = [
       {
-        id: 'resumen',
-        label: 'Resumen',
+        id: 'activas',
+        label: esEntrenador ? 'Suscripciones Activas' : 'Membresías Activas',
         icon: <CreditCard className="w-4 h-4" />,
+        description: esEntrenador 
+          ? 'Gestiona los paquetes mensuales PT activos de tus clientes'
+          : 'Gestiona las membresías activas de tus socios',
       },
       {
-        id: 'pagos-automatizacion',
-        label: 'Pagos & Automatización',
+        id: 'renovaciones',
+        label: 'Renovaciones',
         icon: <RefreshCw className="w-4 h-4" />,
+        description: esEntrenador
+          ? 'Próximas renovaciones y recordatorios automáticos'
+          : 'Próximas renovaciones y gestión de cuotas recurrentes',
       },
       {
-        id: 'planes-cambios',
-        label: 'Planes & Cambios',
-        icon: <ArrowRightLeft className="w-4 h-4" />,
-      },
-      {
-        id: 'sesiones-uso',
-        label: 'Sesiones & Uso',
+        id: 'sesiones',
+        label: esEntrenador ? 'Sesiones' : 'Uso y Sesiones',
         icon: <Activity className="w-4 h-4" />,
+        description: esEntrenador
+          ? 'Gestión de sesiones disponibles, uso y transferencias'
+          : 'Multisesión y uso compartido de servicios',
       },
       {
-        id: 'retencion-freeze',
-        label: 'Retención & Freeze',
-        icon: <Pause className="w-4 h-4" />,
+        id: 'pagos-fallidos',
+        label: 'Pagos Fallidos',
+        icon: <XCircle className="w-4 h-4" />,
+        description: esEntrenador
+          ? 'Gestiona los pagos fallidos y actualiza métodos de pago'
+          : 'Gestiona los pagos fallidos y morosidad',
       },
       {
-        id: 'analytics-reportes',
-        label: 'Analytics & Reportes',
-        icon: <TrendingUp className="w-4 h-4" />,
+        id: 'analytics',
+        label: 'Analytics',
+        icon: <BarChart3 className="w-4 h-4" />,
+        description: esEntrenador
+          ? 'Métricas de compromiso, retención y análisis de suscripciones'
+          : 'Análisis de membresías, retención y métricas financieras',
+      },
+      {
+        id: 'proyecciones',
+        label: 'Proyecciones',
+        icon: <TrendingDown className="w-4 h-4" />,
+        description: esEntrenador
+          ? 'Proyecciones de ingresos recurrentes y análisis de retención'
+          : 'Proyecciones financieras y análisis de retención de socios',
       },
     ];
 
-    if (esEntrenador) {
-      items.splice(5, 0, {
-        id: 'captacion-promos',
-        label: 'Captación & Promos',
-        icon: <Sparkles className="w-4 h-4" />,
-      });
-      items.push({
-        id: 'experiencia-cliente',
-        label: 'Experiencia Cliente',
-        icon: <Eye className="w-4 h-4" />,
-      });
-    }
-
-    return items;
+    return baseTabs;
   }, [esEntrenador]);
 
   const renderSeleccionSuscripcion = (descripcion: string) => (
@@ -333,13 +343,42 @@ export default function SuscripcionesCuotasRecurrentesPage() {
     </div>
   );
 
+  // Manejo de navegación por teclado
+  const handleKeyDown = (e: React.KeyboardEvent, tabId: string) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setTabActiva(tabId);
+      setMobileMenuOpen(false);
+    } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const currentIndex = tabs.findIndex(tab => tab.id === tabActiva);
+      const nextIndex = e.key === 'ArrowRight' 
+        ? (currentIndex + 1) % tabs.length
+        : (currentIndex - 1 + tabs.length) % tabs.length;
+      setTabActiva(tabs[nextIndex].id);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      setTabActiva(tabs[0].id);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      setTabActiva(tabs[tabs.length - 1].id);
+    }
+  };
+
   const renderTabContent = () => {
     switch (tabActiva) {
-      case 'resumen':
+      case 'activas':
         return (
           <>
+            {/* Resumen de actividad como cabecera de contexto */}
+            {esEntrenador && (
+              <ResumenActividadSuscripciones
+                entrenadorId={user?.id}
+                onRefresh={loadSuscripciones}
+              />
+            )}
             <SuscripcionesManager
-              suscripciones={suscripciones}
+              suscripciones={suscripciones.filter(s => s.estado === 'activa')}
               userType={role}
               onUpdate={handleUpdateSuscripcion}
               onCancel={handleCancelSuscripcion}
@@ -358,60 +397,29 @@ export default function SuscripcionesCuotasRecurrentesPage() {
             )}
           </>
         );
-      case 'pagos-automatizacion':
+      case 'renovaciones':
         return (
           <div className="space-y-6">
-            <GestorCuotas />
-            {esEntrenador && (
-              <GestionPagosFallidos
-                onSuccess={loadSuscripciones}
-              />
-            )}
             <RenovacionesAutomaticas />
-          </div>
-        );
-      case 'planes-cambios':
-        return (
-          <div className="space-y-6">
-            {renderSeleccionSuscripcion(
-              'Selecciona una suscripción para gestionar cambios de plan, transferencias o ajustes individuales.'
-            )}
-            {suscripcionSeleccionada && (
-              <div className="space-y-6">
-                {esEntrenador && (
-                  <>
-                    <CambioPlanPT
-                      suscripcion={suscripcionSeleccionada}
-                      onSuccess={loadSuscripciones}
-                    />
-                    <TransferenciaSesiones
-                      suscripcion={suscripcionSeleccionada}
-                      onSuccess={loadSuscripciones}
-                    />
-                  </>
-                )}
-                {!esEntrenador && (
-                  <UpgradeDowngrade
-                    suscripcion={suscripcionSeleccionada}
-                    onSuccess={loadSuscripciones}
-                  />
-                )}
-              </div>
-            )}
             {esEntrenador && (
-              <>
-                <SuscripcionesGrupales
-                  entrenadorId={user?.id}
-                  onRefresh={loadSuscripciones}
-                />
-                <PropuestaCambioRenovacion
-                  onSuccess={loadSuscripciones}
-                />
-              </>
+              <RecordatoriosRenovacion />
             )}
+            <SuscripcionesManager
+              suscripciones={suscripciones.filter(s => {
+                if (!s.proximaRenovacion) return false;
+                const fecha = new Date(s.proximaRenovacion);
+                const hoy = new Date();
+                const diffDias = (fecha.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24);
+                return diffDias <= 30 && diffDias >= 0;
+              })}
+              userType={role}
+              onUpdate={handleUpdateSuscripcion}
+              onCancel={handleCancelSuscripcion}
+              onSelect={setSuscripcionSeleccionada}
+            />
           </div>
         );
-      case 'sesiones-uso':
+      case 'sesiones':
         return (
           <div className="space-y-6">
             {esEntrenador && (
@@ -428,57 +436,51 @@ export default function SuscripcionesCuotasRecurrentesPage() {
                     console.log('Contactar cliente:', suscripcion);
                   }}
                 />
+                {renderSeleccionSuscripcion(
+                  'Selecciona una suscripción para gestionar las sesiones del paquete o ajustes de uso.'
+                )}
+                {suscripcionSeleccionada && (
+                  <div className="space-y-6">
+                    <GestionSesiones
+                      suscripcion={suscripcionSeleccionada}
+                      onSuccess={loadSuscripciones}
+                    />
+                    <TransferenciaSesiones
+                      suscripcion={suscripcionSeleccionada}
+                      onSuccess={loadSuscripciones}
+                    />
+                  </div>
+                )}
               </>
             )}
-            {renderSeleccionSuscripcion(
-              esEntrenador
-                ? 'Selecciona una suscripción para gestionar las sesiones del paquete o ajustes de uso.'
-                : 'Selecciona una suscripción para gestionar multisesión y uso compartido.'
-            )}
-            {suscripcionSeleccionada && (
-              <div className="space-y-6">
-                {esEntrenador && (
-                  <GestionSesiones
-                    suscripcion={suscripcionSeleccionada}
-                    onSuccess={loadSuscripciones}
-                  />
+            {!esEntrenador && (
+              <>
+                {renderSeleccionSuscripcion(
+                  'Selecciona una suscripción para gestionar multisesión y uso compartido.'
                 )}
-                {!esEntrenador && (
+                {suscripcionSeleccionada && (
                   <Multisesion
                     suscripcion={suscripcionSeleccionada}
                     onSuccess={loadSuscripciones}
                   />
                 )}
-              </div>
+              </>
             )}
           </div>
         );
-      case 'retencion-freeze':
+      case 'pagos-fallidos':
         return (
           <div className="space-y-6">
-            {renderSeleccionSuscripcion(
-              esEntrenador
-                ? 'Selecciona una suscripción para pausar, reanudar o gestionar estrategias de retención.'
-                : 'Selecciona una suscripción para gestionar el freeze de la membresía.'
-            )}
-            {suscripcionSeleccionada && (
-              <FreezeSuscripcion
-                suscripcion={suscripcionSeleccionada}
-                onSuccess={loadSuscripciones}
-              />
-            )}
-            {esEntrenador && <RecordatoriosRenovacion />}
+            <GestionPagosFallidos
+              onSuccess={loadSuscripciones}
+            />
+            <GestorCuotas 
+              soloFallidasVencidas={true}
+              mostrarFiltros={true}
+            />
           </div>
         );
-      case 'captacion-promos':
-        if (!esEntrenador) return null;
-        return (
-          <div className="space-y-6">
-            <CrearSuscripcionPrueba onSuccess={loadSuscripciones} />
-            <DescuentosPersonalizados />
-          </div>
-        );
-      case 'analytics-reportes':
+      case 'analytics':
         return (
           <div className="space-y-6">
             <AnalyticsSuscripciones
@@ -497,28 +499,27 @@ export default function SuscripcionesCuotasRecurrentesPage() {
                   entrenadorId={user?.id}
                   onRefresh={loadSuscripciones}
                 />
-                <ProyeccionesIngresosRetencion
-                  entrenadorId={user?.id}
-                />
-                <ExportarDatos
-                  entrenadorId={user?.id}
-                />
               </>
             )}
+            <ExportarDatos
+              entrenadorId={user?.id}
+            />
           </div>
         );
-      case 'experiencia-cliente':
-        if (!esEntrenador) return null;
+      case 'proyecciones':
         return (
           <div className="space-y-6">
-            {renderSeleccionSuscripcion(
-              'Selecciona una suscripción para revisar la experiencia y vista del cliente.'
-            )}
-            {suscripcionSeleccionada && (
-              <VistaClienteSuscripcion
-                suscripcion={suscripcionSeleccionada}
+            {esEntrenador && (
+              <ProyeccionesIngresosRetencion
+                entrenadorId={user?.id}
               />
             )}
+            {!esEntrenador && (
+              <ProyeccionesIngresosRetencion />
+            )}
+            <ExportarDatos
+              entrenadorId={user?.id}
+            />
           </div>
         );
       default:
@@ -560,33 +561,140 @@ export default function SuscripcionesCuotasRecurrentesPage() {
           {/* Métricas */}
           <MetricCards data={metricas} columns={4} />
 
-          {/* Sistema de Tabs */}
+          {/* Sistema de Tabs - Accesible y Responsive */}
           <Card className="p-0 bg-white shadow-sm">
             <div className="px-4 py-3">
+              {/* Desktop: mostrar todos los tabs */}
               <div
                 role="tablist"
-                aria-label="Secciones"
-                className="flex items-center gap-2 rounded-2xl bg-slate-100 p-1"
+                aria-label={esEntrenador ? "Secciones de suscripciones PT" : "Secciones de membresías"}
+                className="hidden md:flex items-center gap-2 rounded-2xl bg-slate-100 p-1 overflow-x-auto"
               >
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setTabActiva(tab.id)}
-                    className={
-                      tabActiva === tab.id
-                        ? "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all bg-white text-slate-900 shadow-sm ring-1 ring-slate-200"
-                        : "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all text-slate-600 hover:text-slate-900 hover:bg-white/70"
-                    }
-                  >
-                    <span className={tabActiva === tab.id ? "opacity-100" : "opacity-70"}>
-                      {tab.icon}
-                    </span>
-                    <span>{tab.label}</span>
-                  </button>
-                ))}
+                {tabs.map((tab) => {
+                  const isActive = tabActiva === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setTabActiva(tab.id)}
+                      onKeyDown={(e) => handleKeyDown(e, tab.id)}
+                      className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all ${
+                        isActive
+                          ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200"
+                          : "text-slate-600 hover:text-slate-900 hover:bg-white/70"
+                      }`}
+                      role="tab"
+                      aria-selected={isActive}
+                      aria-controls={`tabpanel-${tab.id}`}
+                      id={`tab-${tab.id}`}
+                      tabIndex={isActive ? 0 : -1}
+                    >
+                      <span className={isActive ? "opacity-100" : "opacity-70"}>
+                        {tab.icon}
+                      </span>
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Mobile: dropdown con scroll horizontal */}
+              <div className="md:hidden relative">
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="w-full flex items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium bg-white text-slate-900 shadow-sm ring-1 ring-slate-200"
+                  aria-expanded={mobileMenuOpen}
+                  aria-haspopup="true"
+                  aria-label="Seleccionar sección"
+                >
+                  <div className="flex items-center gap-2">
+                    {tabs.find(t => t.id === tabActiva)?.icon}
+                    <span>{tabs.find(t => t.id === tabActiva)?.label}</span>
+                  </div>
+                  <ChevronDown 
+                    className={`w-4 h-4 transition-transform ${mobileMenuOpen ? 'rotate-180' : ''}`} 
+                  />
+                </button>
+                
+                {mobileMenuOpen && (
+                  <div className="absolute z-10 w-full mt-2 bg-white rounded-xl shadow-lg ring-1 ring-slate-200 overflow-hidden">
+                    {tabs.map((tab) => {
+                      const isActive = tabActiva === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => {
+                            setTabActiva(tab.id);
+                            setMobileMenuOpen(false);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setTabActiva(tab.id);
+                              setMobileMenuOpen(false);
+                            }
+                          }}
+                          className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-left transition-colors ${
+                            isActive
+                              ? "bg-blue-50 text-blue-700"
+                              : "text-slate-700 hover:bg-slate-50"
+                          }`}
+                          role="menuitem"
+                        >
+                          <span className={isActive ? "opacity-100" : "opacity-70"}>
+                            {tab.icon}
+                          </span>
+                          <div className="flex-1">
+                            <div>{tab.label}</div>
+                            {tab.description && (
+                              <div className="text-xs text-slate-500 mt-0.5">
+                                {tab.description}
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Mobile: scroll horizontal alternativo */}
+              <div className="md:hidden mt-3 overflow-x-auto -mx-4 px-4 scrollbar-hide">
+                <div className="flex items-center gap-2 min-w-max">
+                  {tabs.map((tab) => {
+                    const isActive = tabActiva === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setTabActiva(tab.id)}
+                        onKeyDown={(e) => handleKeyDown(e, tab.id)}
+                        className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all whitespace-nowrap ${
+                          isActive
+                            ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200"
+                            : "text-slate-600 hover:text-slate-900 hover:bg-white/70 bg-slate-50"
+                        }`}
+                        role="tab"
+                        aria-selected={isActive}
+                        aria-controls={`tabpanel-${tab.id}`}
+                        id={`tab-mobile-${tab.id}`}
+                        tabIndex={isActive ? 0 : -1}
+                      >
+                        <span className={isActive ? "opacity-100" : "opacity-70"}>
+                          {tab.icon}
+                        </span>
+                        <span>{tab.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
-            <div className="mt-6 px-4 pb-4">
+            <div 
+              className="mt-6 px-4 pb-4"
+              role="tabpanel"
+              id={`tabpanel-${tabActiva}`}
+              aria-labelledby={`tab-${tabActiva}`}
+            >
               {renderTabContent()}
             </div>
           </Card>

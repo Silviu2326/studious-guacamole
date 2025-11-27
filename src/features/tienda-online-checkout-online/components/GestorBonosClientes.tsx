@@ -15,6 +15,7 @@ export const GestorBonosClientes: React.FC<GestorBonosClientesProps> = ({
   const [clientesBonos, setClientesBonos] = useState<ClienteBonoInfo[]>([]);
   const [cargando, setCargando] = useState(false);
   const [busqueda, setBusqueda] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState<string>('todos');
   const [clienteExpandido, setClienteExpandido] = useState<string | null>(null);
 
   useEffect(() => {
@@ -34,11 +35,20 @@ export const GestorBonosClientes: React.FC<GestorBonosClientesProps> = ({
     }
   };
 
-  const clientesFiltrados = clientesBonos.filter(
-    (cliente) =>
+  const clientesFiltrados = clientesBonos.filter((cliente) => {
+    // Filtro de búsqueda
+    const coincideBusqueda =
       cliente.clienteNombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      cliente.clienteEmail.toLowerCase().includes(busqueda.toLowerCase())
-  );
+      cliente.clienteEmail.toLowerCase().includes(busqueda.toLowerCase());
+
+    // Filtro de estado
+    if (filtroEstado === 'todos') {
+      return coincideBusqueda;
+    }
+
+    const tieneBonosConEstado = cliente.bonos.some((b) => b.estado === filtroEstado);
+    return coincideBusqueda && tieneBonosConEstado;
+  });
 
   const getEstadoBadge = (estado: string) => {
     switch (estado) {
@@ -229,16 +239,31 @@ export const GestorBonosClientes: React.FC<GestorBonosClientesProps> = ({
         </Card>
       </div>
 
-      {/* Búsqueda */}
+      {/* Búsqueda y Filtros */}
       <Card className="p-4 bg-white shadow-sm">
-        <div className="flex items-center gap-2">
-          <Search size={20} className="text-gray-400" />
-          <Input
-            placeholder="Buscar por nombre o email del cliente..."
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            className="flex-1"
-          />
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Search size={20} className="text-gray-400" />
+            <Input
+              placeholder="Buscar por nombre o email del cliente..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              className="flex-1"
+            />
+          </div>
+          <div className="flex items-center gap-4">
+            <label className="text-sm font-medium text-gray-700">Filtrar por estado:</label>
+            <Select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+              options={[
+                { value: 'todos', label: 'Todos' },
+                { value: 'activo', label: 'Activos' },
+                { value: 'vencido', label: 'Vencidos' },
+                { value: 'agotado', label: 'Agotados' },
+              ]}
+            />
+          </div>
         </div>
       </Card>
 

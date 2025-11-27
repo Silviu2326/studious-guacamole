@@ -1,56 +1,182 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Metric } from '../types';
-import { getPerformanceMetrics } from '../api/performance';
+import { Metric, PerformanceData, MetricCategory } from '../types';
+import { getPerformanceMetrics, getPerformanceOverview } from '../api/performance';
 import { Card, Button, Select, Badge } from '../../../components/componentsreutilizables';
 import { BarChart3, TrendingUp, TrendingDown, Minus, Loader2, LineChart, PieChart, Calendar, Target, Activity, Filter, Info } from 'lucide-react';
 
+export type ChartType = 'bar' | 'line' | 'list';
+export type PeriodType = 'week' | 'month' | 'quarter' | 'year' | '30days' | '90days' | '365days';
+
 interface MetricsChartProps {
+  /** Rol del usuario */
   role: 'entrenador' | 'gimnasio';
+  /** Categoría inicial para filtrar (opcional) */
   category?: string;
+  /** Datos de rendimiento completos (opcional, si no se proporciona se cargarán automáticamente) */
+  performanceData?: PerformanceData;
+  /** Tipo de gráfico inicial (opcional, por defecto 'list') */
+  initialChartType?: ChartType;
+  /** Período inicial (opcional, por defecto 'month') */
+  initialPeriod?: PeriodType;
+  /** Callback cuando cambia la categoría seleccionada */
+  onCategoryChange?: (category: string) => void;
+  /** Callback cuando cambia el período */
+  onPeriodChange?: (period: PeriodType) => void;
+  /** Callback cuando cambia el tipo de gráfico */
+  onChartTypeChange?: (chartType: ChartType) => void;
+  /** Si es true, el componente carga sus propios datos */
+  autoLoad?: boolean;
+  /** Callback para manejar errores */
+  onError?: (errorMessage: string) => void;
 }
 
-export const MetricsChart: React.FC<MetricsChartProps> = ({ role, category }) => {
+export const MetricsChart: React.FC<MetricsChartProps> = ({ 
+  role, 
+  category: initialCategory,
+  performanceData: externalPerformanceData,
+  initialChartType = 'list',
+  initialPeriod = 'month',
+  onCategoryChange,
+  onPeriodChange,
+  onChartTypeChange,
+  autoLoad = true,
+  onError,
+}) => {
   const [metrics, setMetrics] = useState<Metric[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [chartType, setChartType] = useState<'bar' | 'line' | 'list'>('list');
+  const [performanceData, setPerformanceData] = useState<PerformanceData | null>(externalPerformanceData || null);
+  const [loading, setLoading] = useState(autoLoad && !externalPerformanceData);
+  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory || 'all');
+  const [chartType, setChartType] = useState<ChartType>(initialChartType);
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
-  const [period, setPeriod] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
+  const [period, setPeriod] = useState<PeriodType>(initialPeriod);
+
+  // Mapear PeriodType a formato de API
+  const mapPeriodToApiFormat = (period: PeriodType): string => {
+    if (period === '30days' || period === '90days' || period === '365days') {
+      return period === '30days' ? 'month' : period === '90days' ? 'quarter' : 'year';
+    }
+    return period;
+  };
 
   useEffect(() => {
-    loadMetrics();
-  }, [role, category, period]);
+    if (externalPerformanceData) {
+      setPerformanceData(externalPerformanceData);
+      setMetrics(externalPerformanceData.metrics);
+      setLoading(false);
+    } else if (autoLoad) {
+      loadMetrics();
+    }
+  }, [role, externalPerformanceData, autoLoad]);
+
+  useEffect(() => {
+    if (autoLoad && !externalPerformanceData) {
+      loadMetrics();
+    }
+  }, [period, role]);
 
   const loadMetrics = async () => {
     setLoading(true);
     try {
-      const data = await getPerformanceMetrics(role, period);
-      let filtered = data;
-      if (category) {
-        filtered = data.filter(m => m.category === category);
+      // Usar getPerformanceOverview para obtener datos completos con timeSeries
+      const apiPeriod = mapPeriodToApiFormat(period);
+      const data = await getPerformanceOverview(role, apiPeriod);
+      setPerformanceData(data);
+      let filtered = data.metrics;
+      if (initialCategory && initialCategory !== 'all') {
+        filtered = data.metrics.filter(m => m.category === initialCategory);
       }
       setMetrics(filtered);
     } catch (error) {
       console.error('Error loading metrics:', error);
+      // Fallback a getPerformanceMetrics si getPerformanceOverview falla
+      try {
+        const apiPeriod = mapPeriodToApiFormat(period);
+        const fallbackData = await getPerformanceMetrics(role, apiPeriod);
+        setMetrics(fallbackData);
+      } catch (fallbackError) {
+        console.error('Error loading fallback metrics:', fallbackError);
+        const errorMessage = fallbackError instanceof Error ? fallbackError.message : 'No se pudieron cargar las métricas';
+        if (onError) {
+          onError(errorMessage);
+        }
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Generar datos para gráficos (función auxiliar, no hook)
-  const generateTimeSeriesData = (metricId: string, days: number = 30) => {
-    const data = [];
+  // Obtener datos de series temporales desde PerformanceData
+  const getTimeSeriesData = (metricId: string): Array<{ date: string; value: number }> => {
+    if (!performanceData?.timeSeries) {
+      return [];
+    }
+
     const metric = metrics.find(m => m.id === metricId);
     if (!metric) return [];
-    
-    const baseValue = metric.value;
-    for (let i = 0; i < days; i++) {
-      data.push({
-        date: new Date(Date.now() - (days - i) * 24 * 60 * 60 * 1000).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
-        value: baseValue + (Math.random() * baseValue * 0.1 - baseValue * 0.05) + (i * baseValue * 0.01),
-      });
+
+    // Buscar la serie correspondiente en timeSeries.metrics
+    // Puede estar por id, name, o por alias común
+    const seriesKey = Object.keys(performanceData.timeSeries.metrics).find(key => {
+      const lowerKey = key.toLowerCase();
+      const lowerMetricId = metricId.toLowerCase();
+      const lowerMetricName = metric.name.toLowerCase();
+      return lowerKey === lowerMetricId || 
+             lowerKey.includes(lowerMetricId) || 
+             lowerKey === lowerMetricName.toLowerCase() ||
+             lowerKey.includes('facturacion') && metricId === 'facturacion' ||
+             lowerKey.includes('retencion') && metricId === 'retencion' ||
+             lowerKey.includes('adherencia') && metricId === 'adherencia' ||
+             lowerKey.includes('ocupacion') && metricId === 'ocupacion' ||
+             lowerKey.includes('clientes') && metricId === 'clientes_activos';
+    });
+
+    if (!seriesKey) return [];
+
+    const values = performanceData.timeSeries.metrics[seriesKey];
+    const dates = performanceData.timeSeries.dates;
+
+    if (!values || !dates || values.length !== dates.length) {
+      return [];
     }
-    return data;
+
+    return dates.map((date, index) => ({
+      date: formatDate(date),
+      value: values[index] || 0,
+    }));
+  };
+
+  // Formatear fecha para mostrar
+  const formatDate = (dateString: string): string => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Manejar cambio de categoría
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    if (onCategoryChange) {
+      onCategoryChange(category);
+    }
+  };
+
+  // Manejar cambio de período
+  const handlePeriodChange = (newPeriod: PeriodType) => {
+    setPeriod(newPeriod);
+    if (onPeriodChange) {
+      onPeriodChange(newPeriod);
+    }
+  };
+
+  // Manejar cambio de tipo de gráfico
+  const handleChartTypeChange = (newChartType: ChartType) => {
+    setChartType(newChartType);
+    if (onChartTypeChange) {
+      onChartTypeChange(newChartType);
+    }
   };
 
   // Filtrar métricas por categoría
@@ -79,11 +205,12 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ role, category }) =>
     return { total, withTarget, onTarget, avgProgress };
   }, [filteredMetrics]);
 
-  // Datos del gráfico
+  // Datos del gráfico usando series temporales reales
   const chartData = useMemo(() => {
-    const metricId = selectedMetric || metrics[0]?.id || '';
-    return generateTimeSeriesData(metricId);
-  }, [selectedMetric, metrics]);
+    const metricId = selectedMetric || filteredMetrics[0]?.id || '';
+    if (!metricId) return [];
+    return getTimeSeriesData(metricId);
+  }, [selectedMetric, filteredMetrics, performanceData]);
 
   const getTrendIcon = (direction: 'up' | 'down' | 'neutral') => {
     switch (direction) {
@@ -126,13 +253,16 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ role, category }) =>
         <div className="flex items-center gap-2">
           <select
             value={period}
-            onChange={(e) => setPeriod(e.target.value as any)}
+            onChange={(e) => handlePeriodChange(e.target.value as PeriodType)}
             className="rounded-lg bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-1.5 text-sm"
           >
-            <option value="week">Semana</option>
-            <option value="month">Mes</option>
-            <option value="quarter">Trimestre</option>
-            <option value="year">Año</option>
+            <option value="week">Última semana</option>
+            <option value="30days">Últimos 30 días</option>
+            <option value="month">Último mes</option>
+            <option value="90days">Últimos 90 días</option>
+            <option value="quarter">Último trimestre</option>
+            <option value="365days">Último año</option>
+            <option value="year">Año completo</option>
           </select>
         </div>
       </div>
@@ -185,18 +315,25 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ role, category }) =>
             <label className="text-sm font-medium text-gray-700">Categoría:</label>
             <select
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              onChange={(e) => handleCategoryChange(e.target.value)}
               className="rounded-lg bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-1.5 text-sm"
             >
               <option value="all">Todas</option>
               {categories.map(cat => (
-                <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
+                <option key={cat} value={cat}>
+                  {cat === 'financiero' ? 'Finanzas' :
+                   cat === 'operacional' ? 'Operaciones' :
+                   cat === 'clientes' ? 'Clientes' :
+                   cat === 'comercial' ? 'Comercial' :
+                   cat === 'calidad' ? 'Calidad' :
+                   cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </option>
               ))}
             </select>
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setChartType('list')}
+              onClick={() => handleChartTypeChange('list')}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                 chartType === 'list' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
@@ -204,7 +341,7 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ role, category }) =>
               Lista
             </button>
             <button
-              onClick={() => setChartType('bar')}
+              onClick={() => handleChartTypeChange('bar')}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                 chartType === 'bar' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
@@ -213,7 +350,7 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ role, category }) =>
               Barras
             </button>
             <button
-              onClick={() => setChartType('line')}
+              onClick={() => handleChartTypeChange('line')}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                 chartType === 'line' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
@@ -231,55 +368,100 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ role, category }) =>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-gray-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Comparativa de Métricas</h3>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {selectedMetric && chartData.length > 0 
+                  ? 'Evolución Temporal (Barras)' 
+                  : 'Comparativa de Métricas'}
+              </h3>
             </div>
-            {selectedMetric && (
-              <select
-                value={selectedMetric}
-                onChange={(e) => setSelectedMetric(e.target.value || null)}
-                className="rounded-lg bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-1.5 text-sm"
-              >
-                <option value="">Todas las métricas</option>
-                {filteredMetrics.map(metric => (
-                  <option key={metric.id} value={metric.id}>{metric.name}</option>
-                ))}
-              </select>
-            )}
+            <select
+              value={selectedMetric || ''}
+              onChange={(e) => setSelectedMetric(e.target.value || null)}
+              className="rounded-lg bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-1.5 text-sm"
+            >
+              <option value="">Todas las métricas</option>
+              {filteredMetrics.map(metric => (
+                <option key={metric.id} value={metric.id}>{metric.name}</option>
+              ))}
+            </select>
           </div>
-          <div className="h-80 flex items-end justify-between gap-2">
-            {(selectedMetric ? [filteredMetrics.find(m => m.id === selectedMetric)].filter(Boolean) : filteredMetrics).map((metric) => {
-              const maxValue = Math.max(...filteredMetrics.map(m => m.target ? Math.max(m.value, m.target) : m.value));
-              const valueHeight = (metric.value / maxValue) * 100;
-              const targetHeight = metric.target ? (metric.target / maxValue) * 100 : 0;
-              
-              return (
-                <div key={metric.id} className="flex-1 flex flex-col items-center gap-1 group">
-                  <div className="relative w-full h-full flex flex-col justify-end">
-                    {metric.target && (
+          
+          {/* Si hay una métrica seleccionada y datos de series temporales, mostrar evolución temporal */}
+          {selectedMetric && chartData.length > 0 ? (
+            <div className="h-80 flex items-end justify-between gap-1">
+              {chartData.map((point, index) => {
+                const maxValue = Math.max(...chartData.map(p => p.value), 1);
+                const valueHeight = (point.value / maxValue) * 100;
+                const metric = filteredMetrics.find(m => m.id === selectedMetric);
+                const targetHeight = metric?.target ? (metric.target / maxValue) * 100 : 0;
+                
+                return (
+                  <div key={index} className="flex-1 flex flex-col items-center gap-1 group">
+                    <div className="relative w-full h-full flex flex-col justify-end">
+                      {metric?.target && (
+                        <div
+                          className="w-full bg-gray-300 rounded-t opacity-30 mb-0.5"
+                          style={{ height: `${targetHeight}%`, minHeight: '2px' }}
+                          title={`Objetivo: ${metric.target} ${metric.unit}`}
+                        />
+                      )}
                       <div
-                        className="w-full bg-gray-300 rounded-t opacity-30 mb-0.5"
-                        style={{ height: `${targetHeight}%`, minHeight: '2px' }}
-                        title={`Objetivo: ${metric.target} ${metric.unit}`}
-                      />
-                    )}
-                    <div
-                      className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t hover:from-blue-700 hover:to-blue-500 transition-all cursor-pointer group relative"
-                      style={{ height: `${valueHeight}%`, minHeight: '4px' }}
-                      title={`${metric.name}: ${metric.value} ${metric.unit}`}
-                    >
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                        {metric.name}: {metric.value} {metric.unit}
-                        {metric.target && ` (Objetivo: ${metric.target} ${metric.unit})`}
+                        className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t hover:from-blue-700 hover:to-blue-500 transition-all cursor-pointer group relative"
+                        style={{ height: `${valueHeight}%`, minHeight: '4px' }}
+                        title={`${point.date}: ${point.value.toFixed(metric?.unit === '%' ? 1 : 0)} ${metric?.unit || ''}`}
+                      >
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                          {point.date}: {point.value.toFixed(metric?.unit === '%' ? 1 : 0)} {metric?.unit || ''}
+                          {metric?.target && ` (Objetivo: ${metric.target} ${metric.unit})`}
+                        </div>
                       </div>
                     </div>
+                    {index % Math.max(1, Math.floor(chartData.length / 8)) === 0 && (
+                      <div className="text-xs text-gray-500 text-center mt-2 px-1" style={{ fontSize: '10px', maxHeight: '100px' }}>
+                        {point.date.split(' ')[0]}
+                      </div>
+                    )}
                   </div>
-                  <div className="text-xs text-gray-500 text-center mt-2 px-1" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed', maxHeight: '100px' }}>
-                    {metric.name.split(' ').slice(0, 2).join(' ')}
+                );
+              })}
+            </div>
+          ) : (
+            /* Comparativa de múltiples métricas */
+            <div className="h-80 flex items-end justify-between gap-2">
+              {filteredMetrics.map((metric) => {
+                const maxValue = Math.max(...filteredMetrics.map(m => m.target ? Math.max(m.value, m.target) : m.value), 1);
+                const valueHeight = (metric.value / maxValue) * 100;
+                const targetHeight = metric.target ? (metric.target / maxValue) * 100 : 0;
+                
+                return (
+                  <div key={metric.id} className="flex-1 flex flex-col items-center gap-1 group">
+                    <div className="relative w-full h-full flex flex-col justify-end">
+                      {metric.target && (
+                        <div
+                          className="w-full bg-gray-300 rounded-t opacity-30 mb-0.5"
+                          style={{ height: `${targetHeight}%`, minHeight: '2px' }}
+                          title={`Objetivo: ${metric.target} ${metric.unit}`}
+                        />
+                      )}
+                      <div
+                        className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t hover:from-blue-700 hover:to-blue-500 transition-all cursor-pointer group relative"
+                        style={{ height: `${valueHeight}%`, minHeight: '4px' }}
+                        title={`${metric.name}: ${metric.value} ${metric.unit}`}
+                      >
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                          {metric.name}: {metric.value} {metric.unit}
+                          {metric.target && ` (Objetivo: ${metric.target} ${metric.unit})`}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500 text-center mt-2 px-1" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed', maxHeight: '100px' }}>
+                      {metric.name.split(' ').slice(0, 2).join(' ')}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </Card>
       )}
 
@@ -302,25 +484,43 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ role, category }) =>
               ))}
             </select>
           </div>
-          {chartData.length > 0 && (
-            <div className="h-80 flex items-end justify-between gap-1">
+          {chartData.length > 0 && selectedMetric ? (
+            <div className="h-80 flex items-end justify-between gap-1 relative">
+              {/* Línea de conexión */}
+              <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }}>
+                <polyline
+                  points={chartData.map((point, index) => {
+                    const maxValue = Math.max(...chartData.map(p => p.value), 1);
+                    const height = (point.value / maxValue) * 100;
+                    const x = ((index + 0.5) / chartData.length) * 100;
+                    const y = 100 - height;
+                    return `${x}%,${y}%`;
+                  }).join(' ')}
+                  fill="none"
+                  stroke="#9333EA"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {/* Puntos de datos */}
               {chartData.map((point, index) => {
-                const maxValue = Math.max(...chartData.map(p => p.value));
+                const maxValue = Math.max(...chartData.map(p => p.value), 1);
                 const height = (point.value / maxValue) * 100;
-                const metric = metrics.find(m => m.id === selectedMetric || selectedMetric === null);
+                const metric = filteredMetrics.find(m => m.id === selectedMetric);
                 
                 return (
-                  <div key={index} className="flex-1 flex flex-col items-center">
+                  <div key={index} className="flex-1 flex flex-col items-center relative z-10">
                     <div
-                      className="w-full bg-gradient-to-t from-purple-600 to-purple-400 rounded-t-lg hover:from-purple-700 hover:to-purple-500 transition-all cursor-pointer group relative"
-                      style={{ height: `${height}%`, minHeight: '4px' }}
-                      title={`${point.date}: ${point.value.toFixed(0)} ${metric?.unit || ''}`}
+                      className="w-3 h-3 bg-purple-600 rounded-full hover:bg-purple-700 hover:scale-125 transition-all cursor-pointer group relative"
+                      style={{ marginBottom: `${height}%` }}
+                      title={`${point.date}: ${point.value.toFixed(metric?.unit === '%' ? 1 : 0)} ${metric?.unit || ''}`}
                     >
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                        {point.date}: {point.value.toFixed(0)} {metric?.unit || ''}
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none">
+                        {point.date}: {point.value.toFixed(metric?.unit === '%' ? 1 : 0)} {metric?.unit || ''}
                       </div>
                     </div>
-                    {index % 5 === 0 && (
+                    {index % Math.max(1, Math.floor(chartData.length / 8)) === 0 && (
                       <span className="text-xs text-gray-500 mt-1" style={{ fontSize: '10px' }}>
                         {point.date.split(' ')[0]}
                       </span>
@@ -329,11 +529,10 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ role, category }) =>
                 );
               })}
             </div>
-          )}
-          {chartData.length === 0 && (
+          ) : (
             <div className="text-center py-12 text-gray-400">
               <LineChart className="w-12 h-12 mx-auto mb-2" />
-              <p>Selecciona una métrica para ver su evolución</p>
+              <p>{selectedMetric ? 'No hay datos disponibles para esta métrica' : 'Selecciona una métrica para ver su evolución'}</p>
             </div>
           )}
         </Card>

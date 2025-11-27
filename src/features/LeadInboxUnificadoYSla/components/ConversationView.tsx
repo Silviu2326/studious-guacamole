@@ -10,7 +10,8 @@ import {
   Clock,
   Check,
   CheckCheck,
-  Sparkles
+  Sparkles,
+  User
 } from 'lucide-react';
 import { Button } from '../../../components/componentsreutilizables';
 import { ConversationMessage } from '../types';
@@ -23,13 +24,15 @@ interface ConversationViewProps {
   leadName: string;
   channel: 'instagram' | 'whatsapp';
   onClose: () => void;
+  onViewLead?: () => void;
 }
 
 export const ConversationView: React.FC<ConversationViewProps> = ({
   leadId,
   leadName,
   channel,
-  onClose
+  onClose,
+  onViewLead
 }) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
@@ -171,12 +174,28 @@ export const ConversationView: React.FC<ConversationViewProps> = ({
                 <p className="text-sm text-white/90">{getChannelName()}</p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
+            <div className="flex items-center gap-2">
+              {onViewLead && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    onViewLead();
+                    onClose();
+                  }}
+                  className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  Ver ficha
+                </Button>
+              )}
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
           </div>
         </div>
 

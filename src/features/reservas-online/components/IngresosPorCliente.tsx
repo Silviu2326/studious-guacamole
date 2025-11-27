@@ -1,44 +1,65 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from '../../../components/componentsreutilizables';
-import { IngresoPorCliente } from '../api/ingresos';
+import { Card, Button, Input } from '../../../components/componentsreutilizables';
+import { IngresosPorCliente } from '../types';
 import { getIngresosPorCliente } from '../api/ingresos';
-import { Users, DollarSign, TrendingUp, BarChart3, Loader2, Calendar, Star, Award } from 'lucide-react';
+import { Users, DollarSign, TrendingUp, BarChart3, Loader2, Calendar, Star, Award, Filter } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 
 interface IngresosPorClienteProps {
   entrenadorId?: string;
+  role?: 'entrenador' | 'gimnasio';
 }
 
 const COLORS = ['#3B82F6', '#6366F1', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#14B8A6', '#06B6D4'];
 
-export const IngresosPorCliente: React.FC<IngresosPorClienteProps> = ({ entrenadorId }) => {
-  const [ingresos, setIngresos] = useState<IngresoPorCliente[]>([]);
+export const IngresosPorCliente: React.FC<IngresosPorClienteProps> = ({ entrenadorId, role = 'entrenador' }) => {
+  const [ingresos, setIngresos] = useState<IngresosPorCliente[]>([]);
   const [loading, setLoading] = useState(true);
-  const [periodo, setPeriodo] = useState<'mes' | 'trimestre' | 'año'>('mes');
+  const [periodo, setPeriodo] = useState<'mes' | 'trimestre' | 'año' | 'personalizado'>('mes');
+  const [fechaInicio, setFechaInicio] = useState<string>(() => {
+    const fecha = new Date();
+    fecha.setMonth(fecha.getMonth() - 1);
+    return fecha.toISOString().split('T')[0];
+  });
+  const [fechaFin, setFechaFin] = useState<string>(() => {
+    return new Date().toISOString().split('T')[0];
+  });
+  const [filtroEntrenadorId, setFiltroEntrenadorId] = useState<string>(entrenadorId || '');
 
   useEffect(() => {
     cargarIngresos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [periodo, entrenadorId]);
 
   const cargarIngresos = async () => {
     setLoading(true);
     try {
-      const fechaFin = new Date();
-      const fechaInicio = new Date();
+      let fechaInicioCalc = new Date();
+      let fechaFinCalc = new Date();
       
-      switch (periodo) {
-        case 'mes':
-          fechaInicio.setMonth(fechaInicio.getMonth() - 1);
-          break;
-        case 'trimestre':
-          fechaInicio.setMonth(fechaInicio.getMonth() - 3);
-          break;
-        case 'año':
-          fechaInicio.setFullYear(fechaInicio.getFullYear() - 1);
-          break;
+      if (periodo === 'personalizado') {
+        fechaInicioCalc = new Date(fechaInicio);
+        fechaFinCalc = new Date(fechaFin);
+        fechaFinCalc.setHours(23, 59, 59, 999);
+      } else {
+        switch (periodo) {
+          case 'mes':
+            fechaInicioCalc.setMonth(fechaInicioCalc.getMonth() - 1);
+            break;
+          case 'trimestre':
+            fechaInicioCalc.setMonth(fechaInicioCalc.getMonth() - 3);
+            break;
+          case 'año':
+            fechaInicioCalc.setFullYear(fechaInicioCalc.getFullYear() - 1);
+            break;
+        }
       }
       
-      const datos = await getIngresosPorCliente(fechaInicio, fechaFin, entrenadorId);
+      const datos = await getIngresosPorCliente({
+        fechaInicio: fechaInicioCalc,
+        fechaFin: fechaFinCalc,
+        entrenadorId: filtroEntrenadorId || entrenadorId || undefined,
+      });
       setIngresos(datos);
     } catch (error) {
       console.error('Error cargando ingresos por cliente:', error);
@@ -110,18 +131,70 @@ export const IngresosPorCliente: React.FC<IngresosPorClienteProps> = ({ entrenad
             <div className="flex items-center gap-2">
               <select
                 value={periodo}
-                onChange={(e) => setPeriodo(e.target.value as 'mes' | 'trimestre' | 'año')}
+                onChange={(e) => setPeriodo(e.target.value as 'mes' | 'trimestre' | 'año' | 'personalizado')}
                 className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="mes">Último mes</option>
                 <option value="trimestre">Último trimestre</option>
                 <option value="año">Último año</option>
+                <option value="personalizado">Rango personalizado</option>
               </select>
             </div>
           </div>
           <p className="text-gray-600 mb-6">
             Identifica tus mejores clientes para darles atención especial y fidelizarlos.
           </p>
+
+          {/* Filtros adicionales */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            {periodo === 'personalizado' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fecha Inicio
+                  </label>
+                  <Input
+                    type="date"
+                    value={fechaInicio}
+                    onChange={(e) => setFechaInicio(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fecha Fin
+                  </label>
+                  <Input
+                    type="date"
+                    value={fechaFin}
+                    onChange={(e) => setFechaFin(e.target.value)}
+                  />
+                </div>
+              </>
+            )}
+            {role === 'gimnasio' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Entrenador (Opcional)
+                </label>
+                <Input
+                  type="text"
+                  placeholder="ID del entrenador"
+                  value={filtroEntrenadorId}
+                  onChange={(e) => setFiltroEntrenadorId(e.target.value)}
+                />
+              </div>
+            )}
+            <div className="flex items-end">
+              <Button
+                variant="primary"
+                onClick={cargarIngresos}
+                className="w-full"
+              >
+                <Filter className="w-4 h-4 mr-2" />
+                Actualizar
+              </Button>
+            </div>
+          </div>
 
           {/* Métricas principales */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">

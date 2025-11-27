@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Clock, User, MapPin, FileText, CheckCircle2, Circle, Play, Edit, X } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Clock, User, MapPin, FileText, CheckCircle2, Circle, Play, Edit, X, Building2, Users } from 'lucide-react';
 import { Card, Button } from '../../../components/componentsreutilizables';
 import { Cita } from '../types';
 
@@ -17,6 +17,12 @@ interface ChecklistItem {
   completado: boolean;
 }
 
+interface CitasPorRecurso {
+  recurso: string;
+  tipo: 'sala' | 'entrenador' | 'otro';
+  citas: Cita[];
+}
+
 export const VistaDiaCompleto: React.FC<VistaDiaCompletoProps> = ({
   citas,
   fecha,
@@ -27,15 +33,56 @@ export const VistaDiaCompleto: React.FC<VistaDiaCompletoProps> = ({
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [countdown, setCountdown] = useState<string>('');
 
-  // Filtrar solo las citas de hoy
-  const citasHoy = citas.filter(cita => {
-    const fechaCita = new Date(cita.fechaInicio);
-    return fechaCita.getDate() === fecha.getDate() &&
-           fechaCita.getMonth() === fecha.getMonth() &&
-           fechaCita.getFullYear() === fecha.getFullYear();
-  }).sort((a, b) => 
-    new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime()
-  );
+  // Filtrar solo las citas del día seleccionado
+  const citasHoy = useMemo(() => {
+    return citas.filter(cita => {
+      const fechaCita = new Date(cita.fechaInicio);
+      return fechaCita.getDate() === fecha.getDate() &&
+             fechaCita.getMonth() === fecha.getMonth() &&
+             fechaCita.getFullYear() === fecha.getFullYear();
+    }).sort((a, b) => 
+      new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime()
+    );
+  }, [citas, fecha]);
+
+  // Agrupar citas por recursos (salas, entrenadores)
+  const citasPorRecurso = useMemo(() => {
+    const grupos: Map<string, CitasPorRecurso> = new Map();
+
+    citasHoy.forEach(cita => {
+      // Determinar el recurso: primero por ubicación (sala), luego por entrenador
+      let recursoNombre = 'Sin asignar';
+      let tipoRecurso: 'sala' | 'entrenador' | 'otro' = 'otro';
+
+      if (cita.ubicacion) {
+        recursoNombre = cita.ubicacion;
+        tipoRecurso = 'sala';
+      } else if (cita.entrenador?.nombre || cita.instructorNombre) {
+        recursoNombre = cita.entrenador?.nombre || cita.instructorNombre || 'Entrenador desconocido';
+        tipoRecurso = 'entrenador';
+      }
+
+      const clave = `${tipoRecurso}-${recursoNombre}`;
+      
+      if (!grupos.has(clave)) {
+        grupos.set(clave, {
+          recurso: recursoNombre,
+          tipo: tipoRecurso,
+          citas: []
+        });
+      }
+
+      grupos.get(clave)!.citas.push(cita);
+    });
+
+    // Convertir a array y ordenar: primero salas, luego entrenadores
+    return Array.from(grupos.values()).sort((a, b) => {
+      if (a.tipo === 'sala' && b.tipo !== 'sala') return -1;
+      if (a.tipo !== 'sala' && b.tipo === 'sala') return 1;
+      if (a.tipo === 'entrenador' && b.tipo !== 'entrenador') return -1;
+      return a.recurso.localeCompare(b.recurso);
+    });
+  }, [citasHoy]);
 
   // Cargar checklist del localStorage
   useEffect(() => {
@@ -205,7 +252,7 @@ export const VistaDiaCompleto: React.FC<VistaDiaCompletoProps> = ({
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Columna principal: Sesiones */}
+        {/* Columna principal: Sesiones agrupadas por recursos */}
         <div className="lg:col-span-2 space-y-4">
           {proximaSesion && (
             <Card className="border-2 border-blue-500 bg-blue-50">
@@ -230,27 +277,50 @@ export const VistaDiaCompleto: React.FC<VistaDiaCompletoProps> = ({
             </Card>
           )}
 
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">Todas las Sesiones</h3>
-            {citasHoy.length === 0 ? (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900">Sesiones por Recurso</h3>
+            {citasPorRecurso.length === 0 ? (
               <Card>
                 <div className="p-8 text-center text-gray-500">
                   <Clock className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <p className="text-lg">No hay sesiones programadas para hoy</p>
+                  <p className="text-lg">No hay sesiones programadas para este día</p>
                 </div>
               </Card>
             ) : (
-              citasHoy.map((cita) => (
-                <SesionCard
-                  key={cita.id}
-                  cita={cita}
-                  destacada={false}
-                  onEditar={onEditarSesion}
-                  onCancelar={onCancelarSesion}
-                  onVerDetalle={onVerDetalle}
-                  obtenerNombreTipo={obtenerNombreTipo}
-                  formatoHora={formatoHora}
-                />
+              citasPorRecurso.map((grupo, index) => (
+                <Card key={index} className="border-l-4 border-l-blue-500">
+                  <div className="p-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      {grupo.tipo === 'sala' ? (
+                        <Building2 className="w-5 h-5 text-blue-600" />
+                      ) : grupo.tipo === 'entrenador' ? (
+                        <Users className="w-5 h-5 text-purple-600" />
+                      ) : (
+                        <MapPin className="w-5 h-5 text-gray-600" />
+                      )}
+                      <h4 className="text-lg font-semibold text-gray-900">
+                        {grupo.recurso}
+                      </h4>
+                      <span className="ml-auto text-sm text-gray-500">
+                        {grupo.citas.length} {grupo.citas.length === 1 ? 'sesión' : 'sesiones'}
+                      </span>
+                    </div>
+                    <div className="space-y-3">
+                      {grupo.citas.map((cita) => (
+                        <SesionCard
+                          key={cita.id}
+                          cita={cita}
+                          destacada={false}
+                          onEditar={onEditarSesion}
+                          onCancelar={onCancelarSesion}
+                          onVerDetalle={onVerDetalle}
+                          obtenerNombreTipo={obtenerNombreTipo}
+                          formatoHora={formatoHora}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </Card>
               ))
             )}
           </div>

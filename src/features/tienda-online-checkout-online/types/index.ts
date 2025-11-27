@@ -1,3 +1,205 @@
+// ============================================================================
+// TIPOS BASE DEL MÓDULO TIENDA ONLINE Y CHECKOUT
+// ============================================================================
+
+/**
+ * Categoría de producto
+ * Consumido por: productos.ts, TiendaOnline.tsx
+ */
+export interface CategoriaProducto {
+  id: string;
+  nombre: string;
+  slug: string;
+  descripcionOpcional?: string;
+  ordenOpcional?: number;
+  visible: boolean;
+}
+
+/**
+ * Variante de producto (ej: talla, color, etc.)
+ * Consumido por: productos.ts, TiendaOnline.tsx, CarritoCompras.tsx, CheckoutManager.tsx
+ */
+export interface VarianteProducto {
+  id: string;
+  nombre: string;
+  skuOpcional?: string;
+  atributos: Record<string, string>; // ej: { talla: "M", color: "Rojo" }
+  precioAdicionalOpcional?: number;
+  stockDisponibleOpcional?: number;
+}
+
+/**
+ * Producto base del catálogo
+ * Consumido por: productos.ts, TiendaOnline.tsx, CarritoCompras.tsx, CheckoutManager.tsx
+ */
+export interface Producto {
+  id: string;
+  nombre: string;
+  slug: string;
+  descripcionCorta: string;
+  descripcionLargaOpcional?: string;
+  categoriaId: string;
+  tagsOpcionales?: string[];
+  precioBase: number;
+  activo: boolean;
+  esDestacadoOpcional?: boolean;
+  imagenPrincipalUrlOpcional?: string;
+  imagenesSecundariasUrlsOpcionales?: string[];
+  variantes: VarianteProducto[];
+  stockGeneralOpcional?: number;
+  tipo: "servicio" | "producto" | "bono" | "suscripcion";
+  requiereReservaSesionOpcional?: boolean;
+}
+
+/**
+ * Item del carrito de compras
+ * Consumido por: checkout.ts, CarritoCompras.tsx, CheckoutManager.tsx
+ */
+export interface ItemCarrito {
+  id: string;
+  productoId: string;
+  nombreProducto: string;
+  cantidad: number;
+  precioUnitario: number;
+  importeSubtotal: number;
+  varianteSeleccionadaOpcional?: VarianteProducto;
+  notasOpcionales?: string;
+}
+
+/**
+ * Estado de un pedido
+ * Consumido por: checkout.ts, ventas.ts, CheckoutManager.tsx, GestorVentas.tsx
+ */
+export type EstadoPedido = 
+  | "borrador" 
+  | "pendiente_pago" 
+  | "pagado" 
+  | "cancelado" 
+  | "fallido" 
+  | "reembolsado";
+
+/**
+ * Método de pago disponible
+ * Consumido por: checkout.ts, CheckoutManager.tsx
+ */
+export type MetodoPago = 
+  | "tarjeta" 
+  | "transferencia" 
+  | "paypal" 
+  | "bizum" 
+  | "efectivo" 
+  | "bono" 
+  | "pago_fraccionado";
+
+/**
+ * Pedido/Orden de compra
+ * Consumido por: checkout.ts, ventas.ts, CheckoutManager.tsx, GestorVentas.tsx
+ */
+export interface Pedido {
+  id: string;
+  numeroPedido: string;
+  clienteIdOpcional?: string;
+  emailCliente: string;
+  items: ItemCarrito[];
+  importeProductos: number;
+  impuestos: number;
+  gastosEnvio: number;
+  descuentosTotales: number;
+  importeTotal: number;
+  moneda: string;
+  estado: EstadoPedido;
+  metodoPago: MetodoPago;
+  createdAt: Date;
+  updatedAt: Date;
+  notasOpcionales?: string;
+}
+
+/**
+ * Bono (regalo o prepago)
+ * Consumido por: bonos.ts, checkout.ts, GestorBonosClientes.tsx, CheckoutManager.tsx
+ */
+export interface Bono {
+  id: string;
+  codigo: string;
+  tipo: "regalo" | "prepago";
+  saldoInicial: number;
+  saldoRestante: number;
+  fechaCaducidadOpcional?: Date;
+  esB2BOpcional?: boolean;
+}
+
+/**
+ * Código promocional/descuento
+ * Consumido por: codigosPromocionales.ts, checkout.ts, GestorCodigosPromocionales.tsx, CheckoutManager.tsx
+ */
+export interface CodigoPromocional {
+  id: string;
+  codigo: string;
+  tipoDescuento: "porcentaje" | "importe_fijo";
+  valorDescuento: number;
+  minimoCompraOpcional?: number;
+  maxUsosTotalesOpcional?: number;
+  maxUsosPorClienteOpcional?: number;
+  validoDesdeOpcional?: Date;
+  validoHastaOpcional?: Date;
+  soloPrimerPedidoOpcional?: boolean;
+  soloCategoriasIdsOpcionales?: string[];
+  soloProductosIdsOpcionales?: string[];
+  activo: boolean;
+}
+
+/**
+ * Oferta especial (tiempo limitado, volumen, bundle, flash)
+ * Consumido por: ofertasEspeciales.ts, productos.ts, TiendaOnline.tsx, GestorOfertasEspeciales.tsx
+ */
+export interface OfertaEspecial {
+  id: string;
+  nombre: string;
+  descripcionOpcional?: string;
+  tipo: "tiempo_limitado" | "volumen" | "bundle" | "flash";
+  fechaInicio: Date;
+  fechaFin: Date;
+  productosIds: string[];
+  reglasDescuento: any; // Preparado para ser refinado por utils de descuentos
+  activa: boolean;
+}
+
+/**
+ * Valoración/Review de producto
+ * Consumido por: valoraciones.ts, productos.ts, TiendaOnline.tsx, ValoracionesProducto.tsx
+ */
+export interface Valoracion {
+  id: string;
+  productoId: string;
+  clienteIdOpcional?: string;
+  nombreMostradoOpcional?: string;
+  rating: 1 | 2 | 3 | 4 | 5;
+  comentarioOpcional?: string;
+  verificado: boolean;
+  createdAt: Date;
+}
+
+/**
+ * Enlace de pago público
+ * Consumido por: enlacesPago.ts, CheckoutPublicoPage.tsx, GeneradorEnlacesPago.tsx
+ */
+export interface EnlacePago {
+  id: string;
+  slugPublico: string;
+  descripcionOpcional?: string;
+  importe: number;
+  moneda: string;
+  clienteIdOpcional?: string;
+  fechaCaducidadOpcional?: Date;
+  urlPublica: string;
+  activo: boolean;
+  metadataOpcional?: Record<string, any>;
+}
+
+// ============================================================================
+// TIPOS ADICIONALES Y COMPLEMENTARIOS
+// ============================================================================
+
 export interface DescuentoPorCantidad {
   cantidadMinima: number;
   porcentajeDescuento: number;
@@ -31,7 +233,9 @@ export interface InformacionSuscripcion {
   descuentoRenovacion?: number; // Descuento por renovación automática
 }
 
-export interface Producto {
+// Tipo detallado de producto (complementario al tipo base Producto)
+// Mantenido para compatibilidad con componentes existentes
+export interface ProductoDetallado {
   id: string;
   nombre: string;
   descripcion: string;
@@ -65,7 +269,7 @@ export interface OpcionesSeleccionadas {
 }
 
 export interface CarritoItem {
-  producto: Producto;
+  producto: ProductoDetallado;
   cantidad: number;
   subtotal: number;
   descuentoAplicado?: number; // Descuento aplicado en euros
@@ -98,7 +302,9 @@ export interface CategoriaEntrenamiento {
   color?: string;
 }
 
-export interface MetodoPago {
+// Tipo detallado de método de pago (complementario al tipo base MetodoPago)
+// Mantenido para compatibilidad con componentes existentes
+export interface MetodoPagoDetallado {
   id: string;
   nombre: string;
   tipo: 'tarjeta' | 'paypal' | 'transferencia';
@@ -211,7 +417,7 @@ export interface EnlacePagoDirecto {
   token: string; // Token único para el enlace
   entrenadorId: string;
   productoId: string;
-  producto: Producto;
+  producto: ProductoDetallado;
   cantidad?: number; // Cantidad por defecto (opcional)
   opcionesSeleccionadas?: OpcionesSeleccionadas; // Opciones pre-seleccionadas
   descripcion?: string; // Descripción personalizada del enlace
@@ -223,25 +429,7 @@ export interface EnlacePagoDirecto {
   url: string; // URL completa del enlace
 }
 
-// User Story: Códigos Promocionales
-export interface CodigoPromocional {
-  id: string;
-  codigo: string; // Código único del cupón (ej: "VERANO2024")
-  descripcion: string;
-  tipoDescuento: 'porcentual' | 'fijo'; // Porcentaje o cantidad fija
-  valorDescuento: number; // Porcentaje (0-100) o cantidad fija en euros
-  fechaInicio: Date;
-  fechaFin: Date;
-  activo: boolean;
-  vecesUsado: number;
-  vecesMaximas?: number; // Límite de usos totales (opcional)
-  vecesMaximasPorCliente?: number; // Límite de usos por cliente (opcional)
-  minimoCompra?: number; // Monto mínimo de compra para aplicar el descuento
-  productosAplicables?: string[]; // IDs de productos específicos (si está vacío, aplica a todos)
-  categoriasAplicables?: string[]; // Categorías aplicables (si está vacío, aplica a todas)
-  entrenadorId?: string; // ID del entrenador que creó el código (opcional, para gimnasios)
-  fechaCreacion: Date;
-}
+// Nota: El tipo base CodigoPromocional está definido arriba en la sección de tipos base
 
 export interface ValidacionCodigoPromocional {
   valido: boolean;
@@ -253,7 +441,7 @@ export interface ValidacionCodigoPromocional {
 export interface CodigoQR {
   id: string;
   servicioId: string; // ID del servicio/producto
-  servicio: Producto; // Información del servicio
+  servicio: ProductoDetallado; // Información del servicio
   entrenadorId: string;
   token: string; // Token único para el código QR
   url: string; // URL completa para el pago
@@ -340,7 +528,7 @@ export interface BonoRegaloB2B {
   empresaCIF?: string; // CIF/NIF de la empresa
   entrenadorId: string;
   productoId: string;
-  producto: Producto;
+  producto: ProductoDetallado;
   cantidadBonos: number; // Cantidad de bonos a generar
   valorPorBono: number; // Valor de cada bono
   fechaVencimiento: Date;

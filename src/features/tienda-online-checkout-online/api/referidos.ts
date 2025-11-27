@@ -157,3 +157,163 @@ export async function obtenerEstadisticasReferidos(entrenadorId: string): Promis
   };
 }
 
+// Mock data adicional para resumen y detalle de referidos
+const RESUMEN_REFERIDOS_MOCK: Record<string, {
+  codigoReferido: string;
+  referidosTotales: number;
+  comprasReferidos: number;
+  recompensasAcumuladas: number;
+}> = {
+  'cliente-1': {
+    codigoReferido: 'JUAN123',
+    referidosTotales: 5,
+    comprasReferidos: 3,
+    recompensasAcumuladas: 45.00,
+  },
+  'cliente-2': {
+    codigoReferido: 'MARIA456',
+    referidosTotales: 2,
+    comprasReferidos: 1,
+    recompensasAcumuladas: 15.00,
+  },
+  'cliente-3': {
+    codigoReferido: 'CARLOS789',
+    referidosTotales: 8,
+    comprasReferidos: 6,
+    recompensasAcumuladas: 120.00,
+  },
+};
+
+const REFERIDOS_DETALLE_MOCK: Record<string, Array<{
+  referidoEmail: string;
+  fechaAlta: string;
+  haComprado: boolean;
+}>> = {
+  'cliente-1': [
+    {
+      referidoEmail: 'pedro@example.com',
+      fechaAlta: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      haComprado: true,
+    },
+    {
+      referidoEmail: 'laura@example.com',
+      fechaAlta: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+      haComprado: true,
+    },
+    {
+      referidoEmail: 'miguel@example.com',
+      fechaAlta: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+      haComprado: true,
+    },
+    {
+      referidoEmail: 'sofia@example.com',
+      fechaAlta: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+      haComprado: false,
+    },
+    {
+      referidoEmail: 'david@example.com',
+      fechaAlta: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      haComprado: false,
+    },
+  ],
+  'cliente-2': [
+    {
+      referidoEmail: 'ana@example.com',
+      fechaAlta: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
+      haComprado: true,
+    },
+    {
+      referidoEmail: 'luis@example.com',
+      fechaAlta: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
+      haComprado: false,
+    },
+  ],
+  'cliente-3': [
+    {
+      referidoEmail: 'jose@example.com',
+      fechaAlta: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+      haComprado: true,
+    },
+    {
+      referidoEmail: 'carmen@example.com',
+      fechaAlta: new Date(Date.now() - 55 * 24 * 60 * 60 * 1000).toISOString(),
+      haComprado: true,
+    },
+    {
+      referidoEmail: 'pablo@example.com',
+      fechaAlta: new Date(Date.now() - 50 * 24 * 60 * 60 * 1000).toISOString(),
+      haComprado: true,
+    },
+    {
+      referidoEmail: 'elena@example.com',
+      fechaAlta: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
+      haComprado: true,
+    },
+    {
+      referidoEmail: 'roberto@example.com',
+      fechaAlta: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString(),
+      haComprado: true,
+    },
+    {
+      referidoEmail: 'isabel@example.com',
+      fechaAlta: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
+      haComprado: true,
+    },
+    {
+      referidoEmail: 'fernando@example.com',
+      fechaAlta: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+      haComprado: false,
+    },
+    {
+      referidoEmail: 'patricia@example.com',
+      fechaAlta: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+      haComprado: false,
+    },
+  ],
+};
+
+/**
+ * Obtiene el resumen de referidos de un cliente
+ */
+export async function getResumenReferidos(
+  clienteId: string
+): Promise<{
+  codigoReferido: string;
+  referidosTotales: number;
+  comprasReferidos: number;
+  recompensasAcumuladas: number;
+}> {
+  await new Promise((resolve) => setTimeout(resolve, 200));
+
+  const resumen = RESUMEN_REFERIDOS_MOCK[clienteId];
+
+  if (!resumen) {
+    // Cliente sin referidos
+    const referido = mockReferidos.find((r) => r.referenteId === clienteId);
+    return {
+      codigoReferido: referido?.codigoReferido || 'N/A',
+      referidosTotales: 0,
+      comprasReferidos: 0,
+      recompensasAcumuladas: 0,
+    };
+  }
+
+  return resumen;
+}
+
+/**
+ * Obtiene el detalle de referidos de un cliente
+ */
+export async function getReferidosDetalle(
+  clienteId: string
+): Promise<Array<{ referidoEmail: string; fechaAlta: string; haComprado: boolean }>> {
+  await new Promise((resolve) => setTimeout(resolve, 200));
+
+  const detalle = REFERIDOS_DETALLE_MOCK[clienteId] || [];
+
+  // Ordenar por fecha de alta más reciente primero
+  return detalle.sort(
+    (a, b) => new Date(b.fechaAlta).getTime() - new Date(a.fechaAlta).getTime()
+  );
+}
+

@@ -11,7 +11,8 @@ import {
   Filter,
   Star,
   TrendingUp,
-  Users
+  Users,
+  MessageSquare
 } from 'lucide-react';
 import { 
   getEventosHistorialCliente, 
@@ -21,6 +22,8 @@ import {
   TipoEvento
 } from '../api/events';
 import { Select } from '../../../components/componentsreutilizables/Select';
+import { calcularEstadisticasAsistenciaPorCliente } from '../services/estadisticasAsistenciaService';
+import { obtenerEncuestaPorEvento } from '../services/feedbackService';
 
 interface ClientEventHistoryProps {
   clientId: string;
@@ -29,6 +32,7 @@ interface ClientEventHistoryProps {
 export const ClientEventHistory: React.FC<ClientEventHistoryProps> = ({ clientId }) => {
   const [historial, setHistorial] = useState<EventoHistorialCliente[]>([]);
   const [estadisticas, setEstadisticas] = useState<EstadisticasEventosCliente | null>(null);
+  const [estadisticasAsistencia, setEstadisticasAsistencia] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [tipoFiltro, setTipoFiltro] = useState<TipoEvento | 'todos'>('todos');
 
@@ -39,12 +43,14 @@ export const ClientEventHistory: React.FC<ClientEventHistoryProps> = ({ clientId
   const cargarDatos = async () => {
     setLoading(true);
     try {
-      const [historialData, estadisticasData] = await Promise.all([
+      const [historialData, estadisticasData, estadisticasAsistenciaData] = await Promise.all([
         getEventosHistorialCliente(clientId),
         getEstadisticasEventosCliente(clientId),
+        calcularEstadisticasAsistenciaPorCliente(clientId),
       ]);
       setHistorial(historialData);
       setEstadisticas(estadisticasData);
+      setEstadisticasAsistencia(estadisticasAsistenciaData);
     } catch (error) {
       console.error('Error cargando historial de eventos:', error);
     } finally {
@@ -108,9 +114,85 @@ export const ClientEventHistory: React.FC<ClientEventHistoryProps> = ({ clientId
     );
   }
 
+  // Función para verificar si un evento tiene feedback
+  const tieneFeedback = (eventoId: string): boolean => {
+    const encuesta = obtenerEncuestaPorEvento(eventoId);
+    return encuesta ? encuesta.respuestas.length > 0 : false;
+  };
+
   return (
     <div className="space-y-6">
-      {/* Estadísticas */}
+      {/* Estadísticas de Asistencia (usando estadisticasAsistenciaService) */}
+      {estadisticasAsistencia && (
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Resumen de Asistencia</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-4 bg-blue-50 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-gray-600">Total Eventos</p>
+                <Calendar className="w-5 h-5 text-blue-600" />
+              </div>
+              <p className="text-2xl font-bold text-gray-900">{estadisticasAsistencia.totalEventos}</p>
+            </div>
+
+            <div className="p-4 bg-purple-50 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-gray-600">Inscripciones</p>
+                <Users className="w-5 h-5 text-purple-600" />
+              </div>
+              <p className="text-2xl font-bold text-gray-900">{estadisticasAsistencia.eventosInscritos}</p>
+            </div>
+
+            <div className="p-4 bg-green-50 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-gray-600">Asistencias</p>
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+              <p className="text-2xl font-bold text-gray-900">{estadisticasAsistencia.eventosAsistidos}</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {estadisticasAsistencia.eventosNoAsistidos} no asistidos
+              </p>
+            </div>
+
+            <div className="p-4 bg-orange-50 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-gray-600">% Asistencia</p>
+                <TrendingUp className="w-5 h-5 text-orange-600" />
+              </div>
+              <p className="text-2xl font-bold text-gray-900">{estadisticasAsistencia.porcentajeAsistencia}%</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {estadisticasAsistencia.porcentajeNoShow}% no-show
+              </p>
+            </div>
+          </div>
+
+          {/* Estadísticas por tipo de evento */}
+          {estadisticasAsistencia.eventosPorTipo && (
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Asistencia por Tipo de Evento</h4>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-3 bg-blue-50 rounded-lg">
+                  <MapPin className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+                  <p className="text-lg font-bold text-gray-900">{estadisticasAsistencia.eventosPorTipo.presencial.asistidos}</p>
+                  <p className="text-xs text-gray-600">de {estadisticasAsistencia.eventosPorTipo.presencial.inscritos} presenciales</p>
+                </div>
+                <div className="text-center p-3 bg-purple-50 rounded-lg">
+                  <Video className="w-6 h-6 text-purple-600 mx-auto mb-2" />
+                  <p className="text-lg font-bold text-gray-900">{estadisticasAsistencia.eventosPorTipo.virtual.asistidos}</p>
+                  <p className="text-xs text-gray-600">de {estadisticasAsistencia.eventosPorTipo.virtual.inscritos} virtuales</p>
+                </div>
+                <div className="text-center p-3 bg-green-50 rounded-lg">
+                  <Target className="w-6 h-6 text-green-600 mx-auto mb-2" />
+                  <p className="text-lg font-bold text-gray-900">{estadisticasAsistencia.eventosPorTipo.reto.asistidos}</p>
+                  <p className="text-xs text-gray-600">de {estadisticasAsistencia.eventosPorTipo.reto.inscritos} retos</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Estadísticas adicionales (compatibilidad) */}
       {estadisticas && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="p-4">
@@ -288,7 +370,7 @@ export const ClientEventHistory: React.FC<ClientEventHistoryProps> = ({ clientId
                       )}
                     </div>
 
-                    <div className="flex items-center gap-4 ml-11">
+                    <div className="flex items-center gap-4 ml-11 flex-wrap">
                       {evento.inscrito && (
                         <div className="flex items-center gap-1 text-sm">
                           <Users className="w-4 h-4 text-blue-600" />
@@ -315,6 +397,13 @@ export const ClientEventHistory: React.FC<ClientEventHistoryProps> = ({ clientId
                               ({new Date(evento.fechaCancelacion).toLocaleDateString('es-ES')})
                             </span>
                           )}
+                        </div>
+                      )}
+                      {/* Indicador de feedback */}
+                      {tieneFeedback(evento.eventoId) && (
+                        <div className="flex items-center gap-1 text-sm text-purple-600" title="Este evento tiene feedback disponible">
+                          <MessageSquare className="w-4 h-4" />
+                          <span>Feedback</span>
                         </div>
                       )}
                     </div>

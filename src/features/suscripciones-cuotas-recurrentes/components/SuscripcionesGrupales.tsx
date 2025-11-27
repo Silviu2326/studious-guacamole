@@ -9,13 +9,16 @@ import {
   Percent,
   RefreshCw,
   Save,
-  X
+  X,
+  Eye,
+  Activity
 } from 'lucide-react';
 import { 
   getSuscripcionesGrupales,
   createSuscripcionGrupal,
   agregarMiembroGrupo,
   removerMiembroGrupo,
+  getSuscripciones,
 } from '../api/suscripciones';
 import { 
   Suscripcion,
@@ -47,7 +50,9 @@ export const SuscripcionesGrupales: React.FC<SuscripcionesGrupalesProps> = ({
   const [suscripcionesGrupales, setSuscripcionesGrupales] = useState<Suscripcion[]>([]);
   const [mostrarModalCrear, setMostrarModalCrear] = useState(false);
   const [mostrarModalAgregar, setMostrarModalAgregar] = useState(false);
+  const [mostrarModalDetalle, setMostrarModalDetalle] = useState(false);
   const [grupoSeleccionado, setGrupoSeleccionado] = useState<Suscripcion | null>(null);
+  const [suscripcionesMiembros, setSuscripcionesMiembros] = useState<Suscripcion[]>([]);
   
   // Formulario de creación
   const [formCrear, setFormCrear] = useState<{
@@ -97,6 +102,74 @@ export const SuscripcionesGrupales: React.FC<SuscripcionesGrupalesProps> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadSuscripcionesMiembros = async (grupoId: string) => {
+    try {
+      const todasSuscripciones = await getSuscripciones('entrenador', entrenadorId);
+      const miembros = todasSuscripciones.filter(s => s.grupoId === grupoId && !s.esGrupal);
+      setSuscripcionesMiembros(miembros);
+    } catch (error) {
+      console.error('Error cargando suscripciones de miembros:', error);
+    }
+  };
+
+  const calcularUsoGrupo = (grupo: Suscripcion) => {
+    const miembros = grupo.miembrosGrupo?.filter(m => m.activo) || [];
+    let sesionesIncluidas = 0;
+    let sesionesUsadas = 0;
+    
+    miembros.forEach(miembro => {
+      const suscripcionMiembro = suscripcionesMiembros.find(s => s.id === miembro.suscripcionId);
+      if (suscripcionMiembro) {
+        sesionesIncluidas += suscripcionMiembro.sesionesIncluidas || 0;
+        sesionesUsadas += suscripcionMiembro.sesionesUsadas || 0;
+      }
+    });
+    
+    const sesionesDisponibles = sesionesIncluidas - sesionesUsadas;
+    const porcentajeUso = sesionesIncluidas > 0 ? (sesionesUsadas / sesionesIncluidas) * 100 : 0;
+    
+    return {
+      sesionesIncluidas,
+      sesionesUsadas,
+      sesionesDisponibles,
+      porcentajeUso,
+    };
+  };
+
+  const calcularProrrateo = (grupo: Suscripcion) => {
+    // Calcular prorrateo si hay cambios recientes en miembros
+    const fechaInicio = new Date(grupo.fechaInicio);
+    const fechaVencimiento = new Date(grupo.fechaVencimiento);
+    const hoy = new Date();
+    
+    const diasTotales = Math.ceil((fechaVencimiento.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24));
+    const diasTranscurridos = Math.ceil((hoy.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Si hay miembros agregados recientemente, calcular prorrateo
+    const miembrosRecientes = grupo.miembrosGrupo?.filter(m => {
+      const fechaAgregado = new Date(m.fechaAgregado);
+      const diasDesdeAgregado = Math.ceil((hoy.getTime() - fechaAgregado.getTime()) / (1000 * 60 * 60 * 24));
+      return diasDesdeAgregado < 30; // Miembros agregados en los últimos 30 días
+    }) || [];
+    
+    if (miembrosRecientes.length > 0 && diasTranscurridos > 0) {
+      const precioPorDia = grupo.precioOriginal / diasTotales;
+      const diasRestantes = diasTotales - diasTranscurridos;
+      const montoProrrateado = precioPorDia * diasRestantes;
+      
+      return {
+        aplicado: true,
+        motivo: `Prorrateo por ${miembrosRecientes.length} miembro(s) agregado(s) recientemente`,
+        fechaAplicacion: hoy.toISOString().split('T')[0],
+        montoProrrateado: Math.round(montoProrrateado * 100) / 100,
+        diasTranscurridos,
+        diasRestantes,
+      };
+    }
+    
+    return { aplicado: false };
   };
 
   const handleCrearGrupo = async () => {
@@ -310,16 +383,20 @@ export const SuscripcionesGrupales: React.FC<SuscripcionesGrupalesProps> = ({
     },
     {
       key: 'miembrosGrupo',
-      label: 'Miembros',
-      render: (value: any, row: Suscripcion) => (
-        <div className="space-y-1">
-          {row.miembrosGrupo?.filter(m => m.activo).map((miembro, idx) => (
-            <div key={idx} className="text-sm text-gray-700">
-              {miembro.clienteNombre}
+      label: 'Miembros / Uso',
+      render: (value: any, row: Suscripcion) => {
+        const uso = calcularUsoGrupo(row);
+        return (
+          <div className="space-y-1">
+            <div className="text-sm text-gray-700">
+              {row.miembrosGrupo?.filter(m => m.activo).length || 0} miembro(s)
             </div>
-          ))}
-        </div>
-      ),
+            <div className="text-xs text-gray-500">
+              {uso.sesionesUsadas}/{uso.sesionesIncluidas} sesiones ({uso.porcentajeUso.toFixed(0)}%)
+            </div>
+          </div>
+        );
+      },
     },
     {
       key: 'fechaVencimiento',
@@ -335,6 +412,20 @@ export const SuscripcionesGrupales: React.FC<SuscripcionesGrupalesProps> = ({
       label: 'Acciones',
       render: (value: any, row: Suscripcion) => (
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={async () => {
+              setGrupoSeleccionado(row);
+              if (row.grupoId) {
+                await loadSuscripcionesMiembros(row.grupoId);
+              }
+              setMostrarModalDetalle(true);
+            }}
+            title="Ver detalles"
+          >
+            <Eye className="w-4 h-4" />
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -731,6 +822,161 @@ export const SuscripcionesGrupales: React.FC<SuscripcionesGrupalesProps> = ({
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Modal Detalle Grupo */}
+      <Modal
+        isOpen={mostrarModalDetalle}
+        onClose={() => {
+          setMostrarModalDetalle(false);
+          setGrupoSeleccionado(null);
+          setSuscripcionesMiembros([]);
+        }}
+        title={grupoSeleccionado ? `Detalles: ${grupoSeleccionado.planNombre.replace('Suscripción Grupal: ', '')}` : 'Detalles del Grupo'}
+        size="lg"
+      >
+        {grupoSeleccionado && (
+          <div className="space-y-6">
+            {/* Resumen del Grupo */}
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="bg-gray-50 p-4">
+                <div className="text-sm text-gray-600">Precio Total</div>
+                <div className="text-2xl font-bold text-gray-900 mt-1">
+                  {grupoSeleccionado.precio.toFixed(2)} €
+                </div>
+                {grupoSeleccionado.precioOriginal && grupoSeleccionado.precioOriginal > grupoSeleccionado.precio && (
+                  <div className="text-sm text-gray-500 line-through mt-1">
+                    {grupoSeleccionado.precioOriginal.toFixed(2)} €
+                  </div>
+                )}
+              </Card>
+              <Card className="bg-gray-50 p-4">
+                <div className="text-sm text-gray-600">Miembros Activos</div>
+                <div className="text-2xl font-bold text-gray-900 mt-1">
+                  {grupoSeleccionado.miembrosGrupo?.filter(m => m.activo).length || 0}
+                </div>
+              </Card>
+            </div>
+
+            {/* Uso Total */}
+            {(() => {
+              const uso = calcularUsoGrupo(grupoSeleccionado);
+              return (
+                <Card className="bg-white p-4 border">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                      <Activity className="w-5 h-5" />
+                      Uso Total del Grupo
+                    </h4>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Sesiones Incluidas:</span>
+                      <span className="font-semibold">{uso.sesionesIncluidas}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Sesiones Usadas:</span>
+                      <span className="font-semibold text-blue-600">{uso.sesionesUsadas}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Sesiones Disponibles:</span>
+                      <span className="font-semibold text-green-600">{uso.sesionesDisponibles}</span>
+                    </div>
+                    <div className="mt-3">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm text-gray-600">Porcentaje de Uso:</span>
+                        <span className="font-semibold">{uso.porcentajeUso.toFixed(1)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full"
+                          style={{ width: `${Math.min(100, uso.porcentajeUso)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })()}
+
+            {/* Uso por Miembro */}
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-3">Uso por Miembro</h4>
+              <div className="space-y-3">
+                {suscripcionesMiembros.length > 0 ? (
+                  suscripcionesMiembros.map((suscripcion) => {
+                    const sesionesIncluidas = suscripcion.sesionesIncluidas || 0;
+                    const sesionesUsadas = suscripcion.sesionesUsadas || 0;
+                    const sesionesDisponibles = sesionesIncluidas - sesionesUsadas;
+                    const porcentajeUso = sesionesIncluidas > 0 ? (sesionesUsadas / sesionesIncluidas) * 100 : 0;
+                    
+                    return (
+                      <Card key={suscripcion.id} className="bg-white p-4 border">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <div className="font-semibold text-gray-900">{suscripcion.clienteNombre}</div>
+                            <div className="text-sm text-gray-600">{suscripcion.clienteEmail}</div>
+                          </div>
+                          <Badge color={porcentajeUso > 80 ? 'success' : porcentajeUso > 50 ? 'warning' : 'error'}>
+                            {porcentajeUso.toFixed(0)}%
+                          </Badge>
+                        </div>
+                        <div className="space-y-1 mt-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Usadas:</span>
+                            <span className="font-semibold">{sesionesUsadas}/{sesionesIncluidas}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Disponibles:</span>
+                            <span className="font-semibold text-green-600">{sesionesDisponibles}</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                            <div
+                              className="bg-blue-600 h-2 rounded-full"
+                              style={{ width: `${Math.min(100, porcentajeUso)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-4 text-gray-500">
+                    Cargando información de miembros...
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Prorrateo */}
+            {(() => {
+              const prorrateo = calcularProrrateo(grupoSeleccionado);
+              if (prorrateo.aplicado) {
+                return (
+                  <Card className="bg-yellow-50 p-4 border border-yellow-200">
+                    <h4 className="font-semibold text-gray-900 mb-2">Información de Prorrateo</h4>
+                    <div className="space-y-1 text-sm">
+                      <div className="text-gray-700">{prorrateo.motivo}</div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Monto Prorrateado:</span>
+                        <span className="font-semibold">{prorrateo.montoProrrateado?.toFixed(2)} €</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Días Transcurridos:</span>
+                        <span className="font-semibold">{prorrateo.diasTranscurridos}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Días Restantes:</span>
+                        <span className="font-semibold">{prorrateo.diasRestantes}</span>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              }
+              return null;
+            })()}
+          </div>
+        )}
       </Modal>
     </div>
   );

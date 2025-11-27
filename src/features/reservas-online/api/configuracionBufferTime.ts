@@ -2,6 +2,14 @@ import { ConfiguracionBufferTime } from '../types';
 
 /**
  * Obtiene la configuración de buffer time de un entrenador
+ * 
+ * @param entrenadorId - ID del entrenador
+ * @returns Configuración de buffer time
+ * 
+ * @remarks
+ * Esta es una función mock que simplifica la obtención de configuración.
+ * En producción, se conectaría con un backend que maneja configuraciones
+ * por alcance (global, tipo de sesión, entrenador, centro).
  */
 export const getConfiguracionBufferTime = async (
   entrenadorId: string
@@ -16,8 +24,8 @@ export const getConfiguracionBufferTime = async (
     const config = JSON.parse(configGuardada);
     return {
       ...config,
-      createdAt: new Date(config.createdAt),
-      updatedAt: new Date(config.updatedAt),
+      createdAt: config.createdAt ? new Date(config.createdAt) : new Date(),
+      updatedAt: config.updatedAt ? new Date(config.updatedAt) : new Date(),
     };
   }
   
@@ -26,7 +34,10 @@ export const getConfiguracionBufferTime = async (
     id: `configBufferTime_${entrenadorId}`,
     entrenadorId,
     activo: false,
-    minutosBuffer: 15,
+    minutosAntes: 0,
+    minutosDespues: 15, // 15 minutos de buffer después de cada sesión
+    minutosBuffer: 15, // Alias para compatibilidad
+    aplicaA: 'global',
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -38,6 +49,14 @@ export const getConfiguracionBufferTime = async (
 
 /**
  * Actualiza la configuración de buffer time
+ * 
+ * @param entrenadorId - ID del entrenador
+ * @param configuracion - Configuración parcial a actualizar
+ * @returns Configuración actualizada
+ * 
+ * @remarks
+ * Esta es una función mock que simplifica el guardado de configuración.
+ * En producción, se conectaría con un backend que valida y persiste los datos.
  */
 export const actualizarConfiguracionBufferTime = async (
   entrenadorId: string,
@@ -47,14 +66,36 @@ export const actualizarConfiguracionBufferTime = async (
   
   const config = await getConfiguracionBufferTime(entrenadorId);
   
+  // Sincronizar minutosBuffer con minutosDespues si se actualiza uno u otro
+  const minutosDespues = configuracion.minutosDespues ?? configuracion.minutosBuffer ?? config.minutosDespues;
+  const minutosBuffer = configuracion.minutosBuffer ?? minutosDespues;
+  
   const configActualizada: ConfiguracionBufferTime = {
     ...config,
     ...configuracion,
+    minutosDespues: minutosDespues,
+    minutosBuffer: minutosBuffer, // Mantener alias para compatibilidad
     updatedAt: new Date(),
   };
   
   localStorage.setItem(`configBufferTime_${entrenadorId}`, JSON.stringify(configActualizada));
   return configActualizada;
+};
+
+/**
+ * Guarda la configuración de buffer time (alias de actualizarConfiguracionBufferTime)
+ * 
+ * @param data - Configuración completa de buffer time
+ * @returns Configuración guardada
+ */
+export const saveConfiguracionBufferTime = async (
+  data: ConfiguracionBufferTime
+): Promise<ConfiguracionBufferTime> => {
+  if (!data.entrenadorId) {
+    throw new Error('entrenadorId es requerido');
+  }
+  
+  return await actualizarConfiguracionBufferTime(data.entrenadorId, data);
 };
 
 

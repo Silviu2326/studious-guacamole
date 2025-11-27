@@ -4,6 +4,9 @@ import {
   ProyeccionIngresos,
   AnalisisRetencion,
   Suscripcion,
+  ProyeccionRetencion,
+  EscenarioProyeccion,
+  ParametrosProyeccion,
 } from '../types';
 import { getSuscripciones } from './suscripciones';
 import { getCuotas } from './cuotas';
@@ -46,8 +49,10 @@ export const getProyeccionesYRetencion = async (
     });
 
     // Calcular ingresos confirmados (suscripciones activas)
+    // Nota: Los descuentos ya están aplicados en s.precio, por lo que se reflejan automáticamente
     const ingresosConfirmados = suscripcionesEnMes.reduce((sum, s) => {
       // Ajustar según frecuencia de pago
+      // Usar precio con descuento aplicado (s.precio ya incluye descuentos)
       let montoMensual = s.precio;
       if (s.frecuenciaPago === 'trimestral') {
         montoMensual = s.precio / 3;
@@ -71,8 +76,9 @@ export const getProyeccionesYRetencion = async (
     const cancelacionesEsperadas = Math.round(suscripcionesEnMes.length * tasaCancelacionHistorica / 100);
 
     // Calcular ingresos proyectados (considerando renovaciones y cancelaciones)
+    // Los descuentos se reflejan en s.precio (precio con descuento aplicado)
     const ingresosRenovaciones = renovaciones.reduce((sum, s) => {
-      let montoMensual = s.precio;
+      let montoMensual = s.precio; // Precio ya incluye descuentos aplicados
       if (s.frecuenciaPago === 'trimestral') {
         montoMensual = s.precio / 3;
       } else if (s.frecuenciaPago === 'semestral') {
@@ -194,6 +200,35 @@ export const getProyeccionesYRetencion = async (
   const ingresosTotalesConfirmados = proyecciones.reduce((sum, p) => sum + p.ingresosConfirmados, 0);
   const tasaRetencionPromedio = proyecciones.reduce((sum, p) => sum + p.tasaRetencionEsperada, 0) / proyecciones.length;
 
+  // Calcular MRR (Monthly Recurring Revenue)
+  const mrr = suscripcionesActivas.reduce((sum, s) => {
+    let montoMensual = s.precio; // Precio ya incluye descuentos aplicados
+    if (s.frecuenciaPago === 'trimestral') {
+      montoMensual = s.precio / 3;
+    } else if (s.frecuenciaPago === 'semestral') {
+      montoMensual = s.precio / 6;
+    } else if (s.frecuenciaPago === 'anual') {
+      montoMensual = s.precio / 12;
+    }
+    return sum + montoMensual;
+  }, 0);
+
+  // Calcular MRR sin descuentos
+  const mrrSinDescuentos = suscripcionesActivas.reduce((sum, s) => {
+    const precioBase = s.precioOriginal || s.precio;
+    let montoMensual = precioBase;
+    if (s.frecuenciaPago === 'trimestral') {
+      montoMensual = precioBase / 3;
+    } else if (s.frecuenciaPago === 'semestral') {
+      montoMensual = precioBase / 6;
+    } else if (s.frecuenciaPago === 'anual') {
+      montoMensual = precioBase / 12;
+    }
+    return sum + montoMensual;
+  }, 0);
+
+  const impactoDescuentosMRR = mrrSinDescuentos - mrr;
+
   return {
     proyecciones,
     analisisRetencion,
@@ -204,8 +239,103 @@ export const getProyeccionesYRetencion = async (
       clientesTotales: suscripcionesActivas.length,
       clientesEnRiesgo,
       valorVidaClientePromedio: valorVidaCliente,
+      // Métricas de MRR con descuentos
+      mrr,
+      mrrSinDescuentos,
+      impactoDescuentosMRR,
     },
   };
+};
+
+/**
+ * Genera proyecciones de retención con escenarios optimista, realista y pesimista
+ */
+export const getProyeccionesRetencionEscenarios = async (
+  parametros: ParametrosProyeccion,
+  entrenadorId?: string
+): Promise<ProyeccionRetencion[]> => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  const { churnEsperado, crecimientoAltas, mesesProyeccion } = parametros;
+  const todasSuscripciones = await getSuscripciones('entrenador', entrenadorId);
+  const suscripcionesActivas = todasSuscripciones.filter(s => s.estado === 'activa');
+  
+  // Calcular valores base
+  const numeroSuscripcionesActual = suscripcionesActivas.length;
+  const mrrActual = suscripcionesActivas.reduce((sum, s) => {
+    let montoMensual = s.precio;
+    if (s.frecuenciaPago === 'trimestral') {
+      montoMensual = s.precio / 3;
+    } else if (s.frecuenciaPago === 'semestral') {
+      montoMensual = s.precio / 6;
+    } else if (s.frecuenciaPago === 'anual') {
+      montoMensual = s.precio / 12;
+    }
+    return sum + montoMensual;
+  }, 0);
+  const precioPromedio = numeroSuscripcionesActual > 0 ? mrrActual / numeroSuscripcionesActual : 0;
+
+  const escenarios: EscenarioProyeccion[] = ['optimista', 'realista', 'pesimista'];
+  const fechaActual = new Date();
+
+  return escenarios.map(escenario => {
+    // Factores de ajuste según escenario
+    let factorChurn = 1;
+    let factorCrecimiento = 1;
+    
+    if (escenario === 'optimista') {
+      factorChurn = 0.7; // 30% menos churn
+      factorCrecimiento = 1.3; // 30% más crecimiento
+    } else if (escenario === 'pesimista') {
+      factorChurn = 1.5; // 50% más churn
+      factorCrecimiento = 0.7; // 30% menos crecimiento
+    }
+
+    const churnAjustado = churnEsperado * factorChurn;
+    const crecimientoAjustado = crecimientoAltas * factorCrecimiento;
+
+    const meses: ProyeccionRetencion['meses'] = [];
+    let suscripcionesActuales = numeroSuscripcionesActual;
+    let ingresosActuales = mrrActual;
+
+    for (let i = 0; i < mesesProyeccion; i++) {
+      const fechaProyeccion = new Date(fechaActual);
+      fechaProyeccion.setMonth(fechaActual.getMonth() + i);
+      
+      const mes = fechaProyeccion.toLocaleString('es-ES', { month: 'short', year: 'numeric' });
+      const fechaInicio = new Date(fechaProyeccion.getFullYear(), fechaProyeccion.getMonth(), 1);
+      const fechaFin = new Date(fechaProyeccion.getFullYear(), fechaProyeccion.getMonth() + 1, 0);
+
+      // Calcular churn y crecimiento para este mes
+      const cancelaciones = Math.round(suscripcionesActuales * (churnAjustado / 100));
+      const nuevasAltas = Math.round(crecimientoAjustado);
+      
+      // Actualizar suscripciones
+      suscripcionesActuales = Math.max(0, suscripcionesActuales - cancelaciones + nuevasAltas);
+      ingresosActuales = suscripcionesActuales * precioPromedio;
+
+      meses.push({
+        mes,
+        fechaInicio: fechaInicio.toISOString().split('T')[0],
+        fechaFin: fechaFin.toISOString().split('T')[0],
+        ingresos: ingresosActuales,
+        numeroSuscripciones: suscripcionesActuales,
+        churnEsperado: churnAjustado,
+        crecimientoEsperado: nuevasAltas,
+      });
+    }
+
+    return {
+      escenario,
+      meses,
+      parametros: {
+        churnBase: churnEsperado,
+        crecimientoBase: crecimientoAltas,
+        factorOptimista: escenario === 'optimista' ? 1.3 : undefined,
+        factorPesimista: escenario === 'pesimista' ? 1.5 : undefined,
+      },
+    };
+  });
 };
 
 // Funciones auxiliares
@@ -251,7 +381,7 @@ function calcularValorVidaCliente(
 
   const valoresVida = suscripciones.map(s => {
     const cuotasCliente = cuotas.filter(c => c.suscripcionId === s.id && c.estado === 'pagada');
-    const totalPagado = cuotasCliente.reduce((sum, c) => sum + c.monto, 0);
+    const totalPagado = cuotasCliente.reduce((sum, c) => sum + (c.importe || c.monto || 0), 0);
     return totalPagado;
   });
 

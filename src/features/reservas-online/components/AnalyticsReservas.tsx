@@ -1,47 +1,55 @@
 import React, { useState, useEffect } from 'react';
-import { Card, MetricCards } from '../../../components/componentsreutilizables';
+import { Card, MetricCards, Button, Input } from '../../../components/componentsreutilizables';
 import { AnalyticsReservas as AnalyticsType } from '../types';
-import { BarChart3, TrendingUp, DollarSign, Calendar, Loader2 } from 'lucide-react';
+import { getAnalyticsReservas } from '../api/analytics';
+import { useAuth } from '../../../context/AuthContext';
+import { BarChart3, TrendingUp, DollarSign, Calendar, Loader2, XCircle, AlertTriangle, Filter } from 'lucide-react';
 
 interface AnalyticsReservasProps {
   role: 'entrenador' | 'gimnasio';
 }
 
 export const AnalyticsReservas: React.FC<AnalyticsReservasProps> = ({ role }) => {
+  const { user } = useAuth();
   const [analytics, setAnalytics] = useState<AnalyticsType | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fechaInicio, setFechaInicio] = useState<string>(() => {
+    const fecha = new Date();
+    fecha.setMonth(fecha.getMonth() - 3);
+    return fecha.toISOString().split('T')[0];
+  });
+  const [fechaFin, setFechaFin] = useState<string>(() => {
+    return new Date().toISOString().split('T')[0];
+  });
+  const [entrenadorId, setEntrenadorId] = useState<string>('');
+
+  const cargarAnalytics = async () => {
+    setLoading(true);
+    try {
+      const inicio = new Date(fechaInicio);
+      const fin = new Date(fechaFin);
+      fin.setHours(23, 59, 59, 999); // Incluir todo el día
+
+      const datos = await getAnalyticsReservas(
+        {
+          fechaInicio: inicio,
+          fechaFin: fin,
+          entrenadorId: entrenadorId || undefined,
+        },
+        role
+      );
+      setAnalytics(datos);
+    } catch (error) {
+      console.error('Error cargando analytics:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Simular carga de analytics
-    setTimeout(() => {
-      const datos: AnalyticsType = {
-        totalReservas: 156,
-        reservasConfirmadas: 142,
-        reservasCanceladas: 14,
-        tasaOcupacion: role === 'entrenador' ? 85 : 72,
-        ingresosTotales: role === 'entrenador' ? 7800 : 2130,
-        promedioPorReserva: role === 'entrenador' ? 54.9 : 15.0,
-        reservasPorTipo: {
-          'sesion-1-1': role === 'entrenador' ? 120 : 0,
-          'clase-grupal': role === 'gimnasio' ? 36 : 0,
-          'spinning': role === 'gimnasio' ? 28 : 0,
-          'boxeo': role === 'gimnasio' ? 15 : 0,
-        },
-        reservasPorMes: [
-          { mes: 'Enero', cantidad: 45 },
-          { mes: 'Febrero', cantidad: 52 },
-          { mes: 'Marzo', cantidad: 59 },
-        ],
-        horariosMasReservados: [
-          { hora: '10:00', cantidad: 28 },
-          { hora: '12:00', cantidad: 35 },
-          { hora: '18:00', cantidad: 42 },
-        ],
-      };
-      setAnalytics(datos);
-      setLoading(false);
-    }, 300);
-  }, [role]);
+    cargarAnalytics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role, fechaInicio, fechaFin, entrenadorId]);
 
   if (loading || !analytics) {
     return (
@@ -52,6 +60,11 @@ export const AnalyticsReservas: React.FC<AnalyticsReservasProps> = ({ role }) =>
     );
   }
 
+  // Calcular ratios y métricas adicionales
+  const ratioCancelaciones = analytics.totalReservas > 0
+    ? Math.round((analytics.reservasCanceladas / analytics.totalReservas) * 100)
+    : 0;
+
   const metrics = [
     {
       id: 'total-reservas',
@@ -60,7 +73,7 @@ export const AnalyticsReservas: React.FC<AnalyticsReservasProps> = ({ role }) =>
       icon: <Calendar className="w-6 h-6" />,
       color: 'info' as const,
       trend: {
-        value: 12,
+        value: 0,
         direction: 'up' as const,
       },
     },
@@ -69,10 +82,21 @@ export const AnalyticsReservas: React.FC<AnalyticsReservasProps> = ({ role }) =>
       title: 'Tasa de Ocupación',
       value: `${analytics.tasaOcupacion}%`,
       icon: <TrendingUp className="w-6 h-6" />,
-      color: 'success' as const,
+      color: analytics.tasaOcupacion >= 80 ? 'success' : analytics.tasaOcupacion >= 60 ? 'warning' : 'danger' as const,
       trend: {
-        value: 5,
+        value: 0,
         direction: 'up' as const,
+      },
+    },
+    {
+      id: 'ratio-cancelaciones',
+      title: 'Ratio Cancelaciones',
+      value: `${ratioCancelaciones}%`,
+      icon: <XCircle className="w-6 h-6" />,
+      color: ratioCancelaciones <= 10 ? 'success' : ratioCancelaciones <= 20 ? 'warning' : 'danger' as const,
+      trend: {
+        value: 0,
+        direction: ratioCancelaciones <= 20 ? 'down' : 'up' as const,
       },
     },
     {
@@ -82,7 +106,7 @@ export const AnalyticsReservas: React.FC<AnalyticsReservasProps> = ({ role }) =>
       icon: <DollarSign className="w-6 h-6" />,
       color: 'primary' as const,
       trend: {
-        value: 18,
+        value: 0,
         direction: 'up' as const,
       },
     },
@@ -93,7 +117,7 @@ export const AnalyticsReservas: React.FC<AnalyticsReservasProps> = ({ role }) =>
       icon: <BarChart3 className="w-6 h-6" />,
       color: 'warning' as const,
       trend: {
-        value: 3,
+        value: 0,
         direction: 'up' as const,
       },
     },
@@ -101,12 +125,69 @@ export const AnalyticsReservas: React.FC<AnalyticsReservasProps> = ({ role }) =>
 
   return (
     <div className="space-y-6">
+      {/* Filtros */}
+      <Card className="bg-white shadow-sm">
+        <div className="p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <Filter className="w-5 h-5 text-blue-600" />
+            <h3 className="text-xl font-bold text-gray-900">
+              Filtros
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Fecha Inicio
+              </label>
+              <Input
+                type="date"
+                value={fechaInicio}
+                onChange={(e) => setFechaInicio(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Fecha Fin
+              </label>
+              <Input
+                type="date"
+                value={fechaFin}
+                onChange={(e) => setFechaFin(e.target.value)}
+              />
+            </div>
+            {role === 'gimnasio' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Entrenador (Opcional)
+                </label>
+                <Input
+                  type="text"
+                  placeholder="ID del entrenador"
+                  value={entrenadorId}
+                  onChange={(e) => setEntrenadorId(e.target.value)}
+                />
+              </div>
+            )}
+            <div className="flex items-end">
+              <Button
+                variant="primary"
+                onClick={cargarAnalytics}
+                className="w-full"
+              >
+                Actualizar
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Métricas principales */}
       <Card className="bg-white shadow-sm">
         <div className="p-6 space-y-4">
           <div className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-blue-600" />
             <h3 className="text-xl font-bold text-gray-900">
-              Analytics de Reservas
+              Resumen General
             </h3>
           </div>
 

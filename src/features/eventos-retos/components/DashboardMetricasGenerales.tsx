@@ -14,6 +14,7 @@ interface DashboardMetricasGeneralesProps {
   isOpen: boolean;
   onClose: () => void;
   entrenadorId?: string;
+  onVerEvento?: (eventoId: string) => void; // Callback para ver evento específico
 }
 
 const COLORS = ['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#EF4444'];
@@ -22,13 +23,82 @@ export const DashboardMetricasGenerales: React.FC<DashboardMetricasGeneralesProp
   isOpen,
   onClose,
   entrenadorId,
+  onVerEvento,
 }) => {
   const [periodoMeses, setPeriodoMeses] = useState<number>(12);
+  const [tipoFiltro, setTipoFiltro] = useState<'todos' | 'presencial' | 'virtual' | 'reto'>('todos');
 
-  const metricas = useMemo(() => 
-    obtenerMetricasGeneralesEventos(entrenadorId, periodoMeses),
-    [entrenadorId, periodoMeses]
-  );
+  // Cargar eventos para calcular métricas adicionales
+  const eventos = useMemo(() => {
+    const { cargarEventos } = require('../api/events');
+    let eventos = cargarEventos();
+    
+    if (entrenadorId) {
+      eventos = eventos.filter(e => e.creadoPor === entrenadorId);
+    }
+    
+    // Filtrar por periodo
+    const fechaLimite = new Date();
+    fechaLimite.setMonth(fechaLimite.getMonth() - periodoMeses);
+    eventos = eventos.filter(e => e.fechaInicio >= fechaLimite);
+    
+    return eventos;
+  }, [entrenadorId, periodoMeses]);
+
+  const metricas = useMemo(() => {
+    // Obtener métricas base
+    let metricasBase = obtenerMetricasGeneralesEventos(entrenadorId, periodoMeses);
+    
+    // Aplicar filtro de tipo si está seleccionado
+    let eventosFiltrados = eventos;
+    if (tipoFiltro !== 'todos') {
+      eventosFiltrados = eventos.filter(e => e.tipo === tipoFiltro);
+      
+      // Recalcular métricas con filtro aplicado
+      const totalEventos = eventosFiltrados.length;
+      const eventosProgramados = eventosFiltrados.filter(e => e.estado === 'programado').length;
+      const eventosEnCurso = eventosFiltrados.filter(e => e.estado === 'en-curso').length;
+      const eventosFinalizados = eventosFiltrados.filter(e => e.estado === 'finalizado').length;
+      
+      let totalParticipantes = 0;
+      let totalAsistentes = 0;
+      let totalIngresos = 0;
+      
+      eventosFiltrados.forEach(evento => {
+        const participantes = evento.participantesDetalle || [];
+        const participantesActivos = participantes.filter(p => !p.fechaCancelacion);
+        totalParticipantes += participantesActivos.length;
+        totalAsistentes += participantesActivos.filter(p => p.asistencia).length;
+        
+        if (evento.precio && !evento.esGratuito) {
+          totalIngresos += participantesActivos.length * evento.precio;
+        }
+      });
+      
+      metricasBase = {
+        ...metricasBase,
+        totalEventos,
+        eventosProgramados,
+        eventosEnCurso,
+        eventosFinalizados,
+        totalParticipantes,
+        promedioAsistencia: totalParticipantes > 0 
+          ? Math.round((totalAsistentes / totalParticipantes) * 100 * 10) / 10 
+          : 0,
+        totalIngresos: Math.round(totalIngresos * 100) / 100,
+      };
+    }
+    
+    // Calcular eventos gratuitos vs de pago
+    const eventosGratuitos = eventosFiltrados.filter(e => e.esGratuito).length;
+    const eventosDePago = eventosFiltrados.filter(e => !e.esGratuito && e.precio && e.precio > 0).length;
+    
+    return {
+      ...metricasBase,
+      eventosGratuitos,
+      eventosDePago,
+    };
+  }, [entrenadorId, periodoMeses, tipoFiltro, eventos]);
 
   const getTipoEventoLabel = (tipo: string) => {
     const labels: Record<string, string> = {
@@ -139,8 +209,10 @@ export const DashboardMetricasGenerales: React.FC<DashboardMetricasGeneralesProp
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="large">
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
+      {/* NOTA: Primera capa de responsive - Grids se adaptan a una columna en pantallas pequeñas,
+           sin scroll horizontal. Se puede mejorar más adelante con mejor UX móvil. */}
+      <div className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
               Métricas Generales de Eventos
@@ -149,11 +221,21 @@ export const DashboardMetricasGenerales: React.FC<DashboardMetricasGeneralesProp
               Dashboard con KPIs principales y análisis de rendimiento
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+            <Select
+              value={tipoFiltro}
+              onChange={(e) => setTipoFiltro(e.target.value as any)}
+              className="w-full sm:w-40"
+            >
+              <option value="todos">Todos los tipos</option>
+              <option value="presencial">Presencial</option>
+              <option value="virtual">Virtual</option>
+              <option value="reto">Reto</option>
+            </Select>
             <Select
               value={periodoMeses.toString()}
               onChange={(e) => setPeriodoMeses(Number(e.target.value))}
-              className="w-32"
+              className="w-full sm:w-32"
             >
               <option value="6">6 meses</option>
               <option value="12">12 meses</option>
@@ -169,8 +251,20 @@ export const DashboardMetricasGenerales: React.FC<DashboardMetricasGeneralesProp
           </div>
         </div>
 
-        {/* KPIs principales */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        {/* KPIs principales - Responsive: una columna en móvil, 4 columnas en pantallas grandes */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {metricas.eventosProgramados !== undefined && (
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="w-5 h-5 text-indigo-600" />
+                <p className="text-sm text-gray-500">Eventos Programados</p>
+              </div>
+              <p className="text-2xl font-bold text-gray-900">{metricas.eventosProgramados}</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {metricas.eventosEnCurso || 0} en curso
+              </p>
+            </Card>
+          )}
           <Card className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <Calendar className="w-5 h-5 text-blue-600" />
@@ -227,12 +321,12 @@ export const DashboardMetricasGenerales: React.FC<DashboardMetricasGeneralesProp
           </Card>
         </div>
 
-        {/* Comparativa con periodo anterior */}
-        <Card className="p-6 mb-6">
+        {/* Comparativa con periodo anterior - Responsive: una columna en móvil */}
+        <Card className="p-4 sm:p-6 mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Comparativa con Periodo Anterior
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <div className="p-4 bg-gray-50 rounded-lg">
               <p className="text-sm text-gray-500 mb-2">Total Eventos</p>
               <div className="flex items-center justify-between">
@@ -296,8 +390,8 @@ export const DashboardMetricasGenerales: React.FC<DashboardMetricasGeneralesProp
           </div>
         </Card>
 
-        {/* Gráficos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        {/* Gráficos - Responsive: una columna en móvil, 2 columnas en pantallas grandes */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6">
           <Card className="p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Tendencia Mensual - Eventos y Participantes
@@ -382,8 +476,74 @@ export const DashboardMetricasGenerales: React.FC<DashboardMetricasGeneralesProp
           </Card>
         </div>
 
-        {/* Resumen por tipo de evento */}
-        <Card className="p-6 mb-6">
+        {/* Comparación eventos gratuitos vs de pago - Responsive: una columna en móvil */}
+        <Card className="p-4 sm:p-6 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Eventos Gratuitos vs de Pago
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-gray-700">Eventos Gratuitos</p>
+                <Badge className="bg-green-100 text-green-800">
+                  {metricas.eventosGratuitos || 0}
+                </Badge>
+              </div>
+              <p className="text-2xl font-bold text-gray-900">
+                {metricas.eventosGratuitos || 0}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {metricas.totalEventos > 0 
+                  ? Math.round(((metricas.eventosGratuitos || 0) / metricas.totalEventos) * 100) 
+                  : 0}% del total
+              </p>
+            </div>
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-gray-700">Eventos de Pago</p>
+                <Badge className="bg-blue-100 text-blue-800">
+                  {metricas.eventosDePago || 0}
+                </Badge>
+              </div>
+              <p className="text-2xl font-bold text-gray-900">
+                {metricas.eventosDePago || 0}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {metricas.totalEventos > 0 
+                  ? Math.round(((metricas.eventosDePago || 0) / metricas.totalEventos) * 100) 
+                  : 0}% del total
+              </p>
+            </div>
+          </div>
+          {metricas.eventosGratuitos !== undefined && metricas.eventosDePago !== undefined && (
+            <div className="mt-4">
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'Gratuitos', value: metricas.eventosGratuitos },
+                      { name: 'De Pago', value: metricas.eventosDePago },
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                    outerRadius={60}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    <Cell fill="#10B981" />
+                    <Cell fill="#3B82F6" />
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </Card>
+
+        {/* Resumen por tipo de evento - Responsive: una columna en móvil, 3 columnas en pantallas grandes */}
+        <Card className="p-4 sm:p-6 mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Resumen por Tipo de Evento
           </h3>
@@ -420,8 +580,8 @@ export const DashboardMetricasGenerales: React.FC<DashboardMetricasGeneralesProp
           </div>
         </Card>
 
-        {/* Eventos recientes */}
-        <Card className="p-6 mb-6">
+        {/* Eventos recientes - Responsive: layout adaptativo en móvil */}
+        <Card className="p-4 sm:p-6 mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Eventos Recientes
           </h3>
@@ -429,7 +589,7 @@ export const DashboardMetricasGenerales: React.FC<DashboardMetricasGeneralesProp
             {metricas.eventosRecientes.slice(0, 10).map((evento) => (
               <div
                 key={evento.id}
-                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-6 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
@@ -442,8 +602,8 @@ export const DashboardMetricasGenerales: React.FC<DashboardMetricasGeneralesProp
                     {new Date(evento.fechaInicio).toLocaleDateString('es-ES')}
                   </p>
                 </div>
-                <div className="flex items-center gap-6">
-                  <div className="text-center">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 w-full sm:w-auto">
+                  <div className="text-left sm:text-center">
                     <p className="text-xs text-gray-500">Participantes</p>
                     <p className="text-sm font-medium text-gray-900">
                       {evento.participantes}
@@ -461,6 +621,19 @@ export const DashboardMetricasGenerales: React.FC<DashboardMetricasGeneralesProp
                       ${evento.ingresos.toLocaleString('es-ES')}
                     </p>
                   </div>
+                  {onVerEvento && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        onVerEvento(evento.id);
+                        onClose();
+                      }}
+                      className="ml-4"
+                    >
+                      Ver evento
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}

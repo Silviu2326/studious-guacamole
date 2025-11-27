@@ -1,30 +1,95 @@
 // Componente para mostrar analytics y ranking de eventos
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Card, Button } from '../../../components/componentsreutilizables';
-import { X, Trophy, TrendingUp, TrendingDown, BarChart3, Calendar, Clock, Lightbulb, Star, Users, CheckCircle } from 'lucide-react';
-import { RankingEvento, ComparativaTipoEvento, AnalisisHorarios, InsightsEventos } from '../services/eventosAnalyticsService';
+import { X, Trophy, TrendingUp, TrendingDown, BarChart3, Calendar, Clock, Lightbulb, Star, Users, CheckCircle, Loader2 } from 'lucide-react';
+import { 
+  RankingEvento, 
+  ComparativaTipoEvento, 
+  AnalisisHorarios, 
+  InsightsEventos,
+  obtenerRankingsEventos,
+  compararEventosPorTipo,
+  analizarMejoresHorarios,
+  generarInsightsEventos
+} from '../services/eventosAnalyticsService';
+import { calcularEstadisticasEvento } from '../services/estadisticasAsistenciaService';
+import { getEventById } from '../api/events';
+import { EventMetrics } from '../types';
 import { Badge } from '../../../components/componentsreutilizables/Badge';
 import { Select } from '../../../components/componentsreutilizables/Select';
 
 interface EventAnalyticsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  rankings: RankingEvento[];
-  comparativas: ComparativaTipoEvento[];
-  analisisHorarios: AnalisisHorarios;
-  insights: InsightsEventos;
+  eventId: string;
 }
 
 export const EventAnalyticsModal: React.FC<EventAnalyticsModalProps> = ({
   isOpen,
   onClose,
-  rankings,
-  comparativas,
-  analisisHorarios,
-  insights,
+  eventId,
 }) => {
   const [ordenRanking, setOrdenRanking] = useState<'participacion' | 'asistencia' | 'valoracion' | 'tasaAsistencia'>('valoracion');
+  const [loading, setLoading] = useState(true);
+  const [evento, setEvento] = useState<any>(null);
+  const [metricasEvento, setMetricasEvento] = useState<EventMetrics | null>(null);
+  const [rankings, setRankings] = useState<RankingEvento[]>([]);
+  const [comparativas, setComparativas] = useState<ComparativaTipoEvento[]>([]);
+  const [analisisHorarios, setAnalisisHorarios] = useState<AnalisisHorarios | null>(null);
+  const [insights, setInsights] = useState<InsightsEventos | null>(null);
+
+  useEffect(() => {
+    if (isOpen && eventId) {
+      cargarDatos();
+    }
+  }, [isOpen, eventId]);
+
+  const cargarDatos = async () => {
+    setLoading(true);
+    try {
+      // Cargar evento
+      const eventoData = await getEventById(eventId);
+      setEvento(eventoData);
+
+      if (eventoData) {
+        // Cargar métricas del evento específico
+        const metricas = await calcularEstadisticasEvento(eventId);
+        setMetricasEvento(metricas);
+
+        // Cargar rankings de eventos similares (mismo tipo)
+        const rankingsSimilares = obtenerRankingsEventos({
+          tipo: eventoData.tipo,
+          estado: 'finalizado',
+        });
+        setRankings(rankingsSimilares);
+
+        // Cargar comparativa por tipo
+        const comparativasData = compararEventosPorTipo({
+          estado: 'finalizado',
+        });
+        setComparativas(comparativasData);
+
+        // Cargar análisis de horarios para el tipo de evento
+        const horariosData = analizarMejoresHorarios({
+          tipo: eventoData.tipo,
+          estado: 'finalizado',
+        });
+        setAnalisisHorarios(horariosData);
+
+        // Generar insights
+        const { getEvents } = await import('../api/events');
+        const todosEventos = await getEvents();
+        const eventosFinalizados = todosEventos.filter(e => e.estado === 'finalizado');
+        const insightsData = generarInsightsEventos(eventosFinalizados);
+        setInsights(insightsData);
+      }
+    } catch (error) {
+      console.error('Error cargando datos de analytics:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderStars = (rating: number) => {
     return (
@@ -62,16 +127,49 @@ export const EventAnalyticsModal: React.FC<EventAnalyticsModalProps> = ({
     return colors[tipo] || 'bg-gray-100 text-gray-800';
   };
 
+  if (loading) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} size="large">
+        <div className="p-6">
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <span className="ml-3 text-gray-600">Cargando analytics...</span>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
+
+  if (!evento || !metricasEvento || !analisisHorarios || !insights) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} size="large">
+        <div className="p-6">
+          <div className="text-center py-12">
+            <p className="text-gray-600">No se pudieron cargar los datos del evento.</p>
+            <Button onClick={onClose} variant="primary" className="mt-4">
+              Cerrar
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
+
+  // Filtrar rankings para mostrar solo eventos similares (excluyendo el actual)
+  const rankingsSimilares = rankings
+    .filter(r => r.eventoId !== eventId)
+    .slice(0, 10);
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="large">
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
-              Analytics y Ranking de Eventos
+              Analytics del Evento
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              Análisis de éxito y recomendaciones
+              {evento.nombre}
             </p>
           </div>
           <Button
@@ -82,6 +180,38 @@ export const EventAnalyticsModal: React.FC<EventAnalyticsModalProps> = ({
             <X className="w-5 h-5" />
           </Button>
         </div>
+
+        {/* Resumen de Métricas del Evento */}
+        <Card className="p-6 mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Resumen de Métricas
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-3 bg-white rounded-lg">
+              <Users className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+              <p className="text-xs text-gray-500">Inscritos</p>
+              <p className="text-xl font-bold text-gray-900">{metricasEvento.inscritos}</p>
+            </div>
+            <div className="text-center p-3 bg-white rounded-lg">
+              <CheckCircle className="w-6 h-6 text-green-600 mx-auto mb-2" />
+              <p className="text-xs text-gray-500">Asistencia</p>
+              <p className="text-xl font-bold text-gray-900">{metricasEvento.asistenciaTotal}</p>
+              <p className="text-xs text-gray-500">({metricasEvento.tasaAsistencia.toFixed(1)}%)</p>
+            </div>
+            <div className="text-center p-3 bg-white rounded-lg">
+              <TrendingUp className="w-6 h-6 text-purple-600 mx-auto mb-2" />
+              <p className="text-xs text-gray-500">No Shows</p>
+              <p className="text-xl font-bold text-gray-900">{metricasEvento.noShows}</p>
+              <p className="text-xs text-gray-500">({metricasEvento.tasaNoShow.toFixed(1)}%)</p>
+            </div>
+            <div className="text-center p-3 bg-white rounded-lg">
+              <BarChart3 className="w-6 h-6 text-orange-600 mx-auto mb-2" />
+              <p className="text-xs text-gray-500">Cancelaciones</p>
+              <p className="text-xl font-bold text-gray-900">{metricasEvento.cancelaciones}</p>
+              <p className="text-xs text-gray-500">({metricasEvento.tasaCancelacion.toFixed(1)}%)</p>
+            </div>
+          </div>
+        </Card>
 
         {/* Insights y Recomendaciones */}
         <Card className="p-6 mb-6 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
@@ -171,15 +301,25 @@ export const EventAnalyticsModal: React.FC<EventAnalyticsModalProps> = ({
           </div>
         </Card>
 
-        {/* Ranking de Eventos */}
+        {/* Ranking de Eventos Similares */}
         <Card className="p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">
-              Ranking de Eventos
+              Ranking de Eventos Similares ({getTipoEventoLabel(evento.tipo)})
             </h3>
             <Select
               value={ordenRanking}
-              onChange={(e) => setOrdenRanking(e.target.value as any)}
+              onChange={(e) => {
+                const nuevoOrden = e.target.value as any;
+                setOrdenRanking(nuevoOrden);
+                // Reordenar rankings cuando cambia el orden
+                const nuevosRankings = obtenerRankingsEventos({
+                  tipo: evento.tipo,
+                  estado: 'finalizado',
+                  ordenPor: nuevoOrden,
+                });
+                setRankings(nuevosRankings);
+              }}
               className="w-48"
             >
               <option value="valoracion">Por Valoración</option>
@@ -189,52 +329,58 @@ export const EventAnalyticsModal: React.FC<EventAnalyticsModalProps> = ({
             </Select>
           </div>
           <div className="space-y-3">
-            {rankings.slice(0, 10).map((evento, index) => (
-              <div
-                key={evento.eventoId}
-                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
-              >
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold">
-                    {index + 1}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-medium text-gray-900">{evento.eventoNombre}</p>
-                      <Badge className={getTipoEventoColor(evento.tipo)}>
-                        {getTipoEventoLabel(evento.tipo)}
-                      </Badge>
+            {rankingsSimilares.length === 0 ? (
+              <p className="text-center text-gray-500 py-4">
+                No hay eventos similares para comparar.
+              </p>
+            ) : (
+              rankingsSimilares.map((eventoRanking, index) => (
+                <div
+                  key={eventoRanking.eventoId}
+                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                >
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold">
+                      {index + 1}
                     </div>
-                    <p className="text-xs text-gray-500">
-                      {new Date(evento.fechaInicio).toLocaleDateString()}
-                    </p>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-medium text-gray-900">{eventoRanking.eventoNombre}</p>
+                        <Badge className={getTipoEventoColor(eventoRanking.tipo)}>
+                          {getTipoEventoLabel(eventoRanking.tipo)}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {new Date(eventoRanking.fechaInicio).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-6">
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500">Participación</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {evento.participacion}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500">Asistencia</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {evento.asistencia}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      ({evento.tasaAsistencia.toFixed(0)}%)
-                    </p>
-                  </div>
-                  {evento.valoracionPromedio > 0 && (
+                  <div className="flex items-center gap-6">
                     <div className="text-center">
-                      <p className="text-xs text-gray-500">Valoración</p>
-                      {renderStars(evento.valoracionPromedio)}
+                      <p className="text-xs text-gray-500">Participación</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {eventoRanking.participacion}
+                      </p>
                     </div>
-                  )}
+                    <div className="text-center">
+                      <p className="text-xs text-gray-500">Asistencia</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {eventoRanking.asistencia}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        ({eventoRanking.tasaAsistencia.toFixed(0)}%)
+                      </p>
+                    </div>
+                    {eventoRanking.valoracionPromedio > 0 && (
+                      <div className="text-center">
+                        <p className="text-xs text-gray-500">Valoración</p>
+                        {renderStars(eventoRanking.valoracionPromedio)}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </Card>
 

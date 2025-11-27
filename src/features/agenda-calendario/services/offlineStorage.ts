@@ -1,4 +1,14 @@
-// Servicio para almacenamiento offline usando IndexedDB
+/**
+ * Servicio para almacenamiento offline usando IndexedDB
+ * 
+ * NOTA: Este es un mock para pruebas de UX. La sincronización real con el backend
+ * se implementaría más adelante cuando se integre con la API real.
+ * 
+ * Funcionalidades:
+ * - Almacenamiento local de citas cuando no hay conexión
+ * - Cola de acciones pendientes para sincronizar cuando vuelva la conexión
+ * - Detección automática del estado de conexión
+ */
 const DB_NAME = 'agenda-calendario-db';
 const DB_VERSION = 1;
 const STORE_CITAS = 'citas';
@@ -87,7 +97,40 @@ export const getCitasOffline = async (): Promise<any[]> => {
     const request = store.getAll();
 
     request.onsuccess = () => {
-      resolve(request.result);
+      // Convertir fechas de string a Date si es necesario
+      // IndexedDB puede almacenar Date directamente, pero al serializar/deserializar
+      // pueden convertirse a strings, así que las convertimos de vuelta
+      const citas = request.result.map((cita: any) => {
+        if (typeof cita.fechaInicio === 'string') {
+          cita.fechaInicio = new Date(cita.fechaInicio);
+        }
+        if (cita.fechaFin && typeof cita.fechaFin === 'string') {
+          cita.fechaFin = new Date(cita.fechaFin);
+        }
+        // Convertir fechas en recurrencia si existe
+        if (cita.recurrencia) {
+          if (cita.recurrencia.fechaInicio && typeof cita.recurrencia.fechaInicio === 'string') {
+            cita.recurrencia.fechaInicio = new Date(cita.recurrencia.fechaInicio);
+          }
+          if (cita.recurrencia.fechaFinOpcional && typeof cita.recurrencia.fechaFinOpcional === 'string') {
+            cita.recurrencia.fechaFinOpcional = new Date(cita.recurrencia.fechaFinOpcional);
+          }
+          if (cita.recurrencia.excepciones) {
+            cita.recurrencia.excepciones = cita.recurrencia.excepciones.map((ex: any) => 
+              typeof ex === 'string' ? new Date(ex) : ex
+            );
+          }
+        }
+        // Convertir fechas en historial si existe
+        if (cita.historial) {
+          cita.historial = cita.historial.map((hist: any) => ({
+            ...hist,
+            fecha: hist.fecha && typeof hist.fecha === 'string' ? new Date(hist.fecha) : hist.fecha,
+          }));
+        }
+        return cita;
+      });
+      resolve(citas);
     };
 
     request.onerror = () => {
@@ -147,6 +190,30 @@ export const removePendingChange = async (id: string): Promise<void> => {
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
   });
+};
+
+/**
+ * Encola una acción para sincronizar cuando vuelva la conexión
+ * 
+ * NOTA: Esta es una función mock para pruebas de UX. En producción,
+ * la sincronización real se implementaría cuando se integre con la API.
+ * 
+ * @param accion - Objeto con la información de la acción a encolar
+ * @param accion.type - Tipo de acción: 'create', 'update' o 'delete'
+ * @param accion.data - Datos de la cita (para create/update) o ID (para delete)
+ */
+export const queueAccionOffline = async (accion: {
+  type: 'create' | 'update' | 'delete';
+  data: any;
+}): Promise<void> => {
+  const pendingChange: PendingChange = {
+    id: `pending-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    type: accion.type,
+    data: accion.data,
+    timestamp: Date.now(),
+  };
+
+  return addPendingChange(pendingChange);
 };
 
 // Verificar si hay conexión

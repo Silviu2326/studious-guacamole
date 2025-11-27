@@ -1,4 +1,4 @@
-import { useState, useEffect, RefObject } from 'react';
+import { useEffect, RefObject, useRef } from 'react';
 
 interface SwipeHandlers {
   onSwipeLeft?: () => void;
@@ -13,45 +13,60 @@ interface UseSwipeOptions {
   elementRef?: RefObject<HTMLElement>;
 }
 
+/**
+ * Hook para detectar gestos de swipe (deslizamiento) en dispositivos táctiles
+ * @param handlers - Objeto con callbacks para cada dirección de swipe
+ * @param options - Opciones de configuración (threshold, preventDefault, elementRef)
+ */
 export const useSwipe = (
   handlers: SwipeHandlers,
   options: UseSwipeOptions = {}
 ) => {
   const { threshold = 50, preventDefault = false, elementRef } = options;
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
-  const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
-
   const minSwipeDistance = threshold;
+  
+  // Usar refs para almacenar posiciones sin causar re-renders
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const touchEndRef = useRef<{ x: number; y: number } | null>(null);
+  const handlersRef = useRef(handlers);
+
+  // Actualizar handlers ref cuando cambien
+  useEffect(() => {
+    handlersRef.current = handlers;
+  }, [handlers]);
 
   useEffect(() => {
-    const element = elementRef?.current || window;
+    const element = elementRef?.current || (typeof window !== 'undefined' ? window : null);
     if (!element) return;
 
     const onTouchStart = (e: TouchEvent) => {
       if (preventDefault && e.cancelable) {
         e.preventDefault();
       }
-      setTouchEnd(null);
-      setTouchStart({
+      touchEndRef.current = null;
+      touchStartRef.current = {
         x: e.touches[0].clientX,
         y: e.touches[0].clientY,
-      });
+      };
     };
 
     const onTouchMove = (e: TouchEvent) => {
       if (preventDefault && e.cancelable) {
         e.preventDefault();
       }
-      setTouchEnd({
+      touchEndRef.current = {
         x: e.touches[0].clientX,
         y: e.touches[0].clientY,
-      });
+      };
     };
 
     const onTouchEnd = () => {
+      const touchStart = touchStartRef.current;
+      const touchEnd = touchEndRef.current;
+      
       if (!touchStart || !touchEnd) {
-        setTouchStart(null);
-        setTouchEnd(null);
+        touchStartRef.current = null;
+        touchEndRef.current = null;
         return;
       }
 
@@ -64,34 +79,35 @@ export const useSwipe = (
 
       // Priorizar swipe horizontal sobre vertical
       if (Math.abs(distanceX) > Math.abs(distanceY)) {
-        if (isLeftSwipe && handlers.onSwipeLeft) {
-          handlers.onSwipeLeft();
+        if (isLeftSwipe && handlersRef.current.onSwipeLeft) {
+          handlersRef.current.onSwipeLeft();
         }
-        if (isRightSwipe && handlers.onSwipeRight) {
-          handlers.onSwipeRight();
+        if (isRightSwipe && handlersRef.current.onSwipeRight) {
+          handlersRef.current.onSwipeRight();
         }
       } else {
-        if (isUpSwipe && handlers.onSwipeUp) {
-          handlers.onSwipeUp();
+        if (isUpSwipe && handlersRef.current.onSwipeUp) {
+          handlersRef.current.onSwipeUp();
         }
-        if (isDownSwipe && handlers.onSwipeDown) {
-          handlers.onSwipeDown();
+        if (isDownSwipe && handlersRef.current.onSwipeDown) {
+          handlersRef.current.onSwipeDown();
         }
       }
 
-      setTouchStart(null);
-      setTouchEnd(null);
+      touchStartRef.current = null;
+      touchEndRef.current = null;
     };
 
-    element.addEventListener('touchstart', onTouchStart, { passive: !preventDefault });
-    element.addEventListener('touchmove', onTouchMove, { passive: !preventDefault });
-    element.addEventListener('touchend', onTouchEnd, { passive: !preventDefault });
+    const passiveOption = !preventDefault;
+    element.addEventListener('touchstart', onTouchStart, { passive: passiveOption });
+    element.addEventListener('touchmove', onTouchMove, { passive: passiveOption });
+    element.addEventListener('touchend', onTouchEnd, { passive: passiveOption });
 
     return () => {
       element.removeEventListener('touchstart', onTouchStart);
       element.removeEventListener('touchmove', onTouchMove);
       element.removeEventListener('touchend', onTouchEnd);
     };
-  }, [touchStart, touchEnd, handlers, preventDefault, minSwipeDistance, elementRef]);
+  }, [preventDefault, minSwipeDistance, elementRef]);
 };
 

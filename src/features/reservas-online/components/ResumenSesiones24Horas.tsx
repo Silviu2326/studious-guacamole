@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../../../components/componentsreutilizables';
 import { Reserva } from '../types';
-import { getReservasProximas24Horas } from '../api';
-import { Clock, User, Video, MapPin, CheckCircle, AlertCircle, Calendar, ArrowRight } from 'lucide-react';
+import { getReservasProximas24Horas, marcarReservaComoCompletada } from '../api';
+import { Clock, User, Video, MapPin, CheckCircle, AlertCircle, Calendar, ArrowRight, FileText, CalendarClock, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { AgregarNotaSesion } from './AgregarNotaSesion';
+import { ReprogramarReserva } from './ReprogramarReserva';
+import { useAuth } from '../../../context/AuthContext';
 
 interface ResumenSesiones24HorasProps {
   entrenadorId?: string;
@@ -12,8 +15,12 @@ interface ResumenSesiones24HorasProps {
 export const ResumenSesiones24Horas: React.FC<ResumenSesiones24HorasProps> = ({
   entrenadorId,
 }) => {
+  const { user } = useAuth();
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reservaNota, setReservaNota] = useState<Reserva | null>(null);
+  const [reservaReprogramar, setReservaReprogramar] = useState<Reserva | null>(null);
+  const [procesandoCheckIn, setProcesandoCheckIn] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -115,6 +122,53 @@ export const ResumenSesiones24Horas: React.FC<ResumenSesiones24HorasProps> = ({
         }) + ` a las ${horaInicio}`;
       }
     }
+  };
+
+  const handleCheckIn = async (reserva: Reserva) => {
+    if (!entrenadorId) return;
+    
+    setProcesandoCheckIn(reserva.id);
+    try {
+      const reservaActualizada = await marcarReservaComoCompletada(
+        reserva.id,
+        entrenadorId,
+        'Check-in realizado desde resumen 24h'
+      );
+      
+      // Actualizar la reserva en la lista
+      setReservas(prev => prev.map(r => r.id === reserva.id ? reservaActualizada : r));
+    } catch (error) {
+      console.error('Error realizando check-in:', error);
+      alert('Error al marcar la sesión como completada. Por favor, intenta nuevamente.');
+    } finally {
+      setProcesandoCheckIn(null);
+    }
+  };
+
+  const handleAbrirNota = (reserva: Reserva) => {
+    setReservaNota(reserva);
+  };
+
+  const handleAbrirReprogramar = (reserva: Reserva) => {
+    setReservaReprogramar(reserva);
+  };
+
+  const handleNotaGuardada = () => {
+    // Recargar reservas para reflejar cambios
+    const cargarReservas = async () => {
+      try {
+        const reservas24h = await getReservasProximas24Horas(entrenadorId);
+        setReservas(reservas24h);
+      } catch (error) {
+        console.error('Error recargando reservas:', error);
+      }
+    };
+    cargarReservas();
+  };
+
+  const handleReprogramar = (reservaActualizada: Reserva) => {
+    // Actualizar la reserva en la lista
+    setReservas(prev => prev.map(r => r.id === reservaActualizada.id ? reservaActualizada : r));
   };
 
   if (loading) {
@@ -249,6 +303,34 @@ export const ResumenSesiones24Horas: React.FC<ResumenSesiones24HorasProps> = ({
                     )}
                   </div>
                 </div>
+
+                {/* Acciones rápidas */}
+                <div className="mt-3 pt-3 border-t border-gray-200 flex items-center gap-2">
+                  {reserva.estado === 'confirmada' && (
+                    <button
+                      onClick={() => handleCheckIn(reserva)}
+                      disabled={procesandoCheckIn === reserva.id}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      {procesandoCheckIn === reserva.id ? 'Procesando...' : 'Check-in'}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleAbrirNota(reserva)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    Nota
+                  </button>
+                  <button
+                    onClick={() => handleAbrirReprogramar(reserva)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                  >
+                    <CalendarClock className="w-3.5 h-3.5" />
+                    Reprogramar
+                  </button>
+                </div>
               </div>
             ))}
             
@@ -281,6 +363,27 @@ export const ResumenSesiones24Horas: React.FC<ResumenSesiones24HorasProps> = ({
           </div>
         )}
       </div>
+
+      {/* Modales */}
+      {reservaNota && (
+        <AgregarNotaSesion
+          reserva={reservaNota}
+          isOpen={!!reservaNota}
+          onClose={() => setReservaNota(null)}
+          onNotaGuardada={handleNotaGuardada}
+        />
+      )}
+
+      {reservaReprogramar && (
+        <ReprogramarReserva
+          reserva={reservaReprogramar}
+          isOpen={!!reservaReprogramar}
+          onClose={() => setReservaReprogramar(null)}
+          onReprogramar={handleReprogramar}
+          entrenadorId={entrenadorId}
+          role="entrenador"
+        />
+      )}
     </Card>
   );
 };

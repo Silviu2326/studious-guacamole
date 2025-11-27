@@ -6,10 +6,13 @@ import {
   cancelarReservasRecurrentes, 
   modificarReservasRecurrentes,
   desactivarReservaRecurrente,
-  calcularFechasReservas
+  calcularFechasReservas,
+  updateReservaRecurrente,
+  getReservasFuturasDeRecurrente
 } from '../api/reservasRecurrentes';
+import { getReservas } from '../api/reservas';
 import { useAuth } from '../../../context/AuthContext';
-import { RefreshCw, XCircle, Edit, Calendar, Clock, Users, DollarSign, AlertTriangle, CheckCircle } from 'lucide-react';
+import { RefreshCw, XCircle, Edit, Calendar, Clock, Users, DollarSign, AlertTriangle, CheckCircle, Pause, Play } from 'lucide-react';
 
 interface GestionReservasRecurrentesProps {
   entrenadorId: string;
@@ -22,9 +25,10 @@ export const GestionReservasRecurrentes: React.FC<GestionReservasRecurrentesProp
   const [reservasRecurrentes, setReservasRecurrentes] = useState<ReservaRecurrente[]>([]);
   const [loading, setLoading] = useState(true);
   const [reservaSeleccionada, setReservaSeleccionada] = useState<ReservaRecurrente | null>(null);
-  const [accion, setAccion] = useState<'cancelar' | 'modificar' | null>(null);
+  const [accion, setAccion] = useState<'cancelar' | 'modificar' | 'pausar' | null>(null);
   const [motivo, setMotivo] = useState('');
   const [procesando, setProcesando] = useState(false);
+  const [proximasSesiones, setProximasSesiones] = useState<Record<string, Date[]>>({});
   
   // Estado para modificación
   const [modificaciones, setModificaciones] = useState<{
@@ -39,8 +43,28 @@ export const GestionReservasRecurrentes: React.FC<GestionReservasRecurrentesProp
   const cargarReservasRecurrentes = async () => {
     setLoading(true);
     try {
-      const datos = await getReservasRecurrentes(entrenadorId);
+      const datos = await getReservasRecurrentes({ entrenadorId });
       setReservasRecurrentes(datos);
+      
+      // Cargar próximas sesiones para cada serie recurrente
+      const sesionesMap: Record<string, Date[]> = {};
+      for (const recurrente of datos) {
+        if (recurrente.activo) {
+          const fechas = calcularFechasReservas(
+            recurrente.fechaInicio,
+            recurrente.frecuencia || recurrente.reglaRecurrencia?.frecuencia || 'semanal',
+            recurrente.diaSemana || recurrente.reglaRecurrencia?.diaSemana,
+            recurrente.numeroRepeticiones || recurrente.reglaRecurrencia?.numeroRepeticiones,
+            recurrente.fechaFin || recurrente.fechaFinOpcional || recurrente.reglaRecurrencia?.fechaFin
+          );
+          const fechaActual = new Date();
+          const proximas = fechas
+            .filter(fecha => fecha >= fechaActual)
+            .slice(0, 5); // Mostrar las próximas 5 sesiones
+          sesionesMap[recurrente.id] = proximas;
+        }
+      }
+      setProximasSesiones(sesionesMap);
     } catch (error) {
       console.error('Error cargando reservas recurrentes:', error);
     } finally {
@@ -105,20 +129,62 @@ export const GestionReservasRecurrentes: React.FC<GestionReservasRecurrentesProp
     }
   };
 
+  const handlePausar = async () => {
+    if (!reservaSeleccionada) return;
+
+    setProcesando(true);
+    try {
+      await updateReservaRecurrente(reservaSeleccionada.id, {
+        estado: 'pausada',
+        activo: false,
+      });
+      
+      alert('La serie de reservas recurrentes ha sido pausada.');
+      setReservaSeleccionada(null);
+      setAccion(null);
+      cargarReservasRecurrentes();
+    } catch (error) {
+      console.error('Error al pausar reservas recurrentes:', error);
+      alert('Error al pausar la serie. Por favor, inténtalo de nuevo.');
+    } finally {
+      setProcesando(false);
+    }
+  };
+
+  const handleReanudar = async (recurrente: ReservaRecurrente) => {
+    setProcesando(true);
+    try {
+      await updateReservaRecurrente(recurrente.id, {
+        estado: 'activa',
+        activo: true,
+      });
+      
+      alert('La serie de reservas recurrentes ha sido reanudada.');
+      cargarReservasRecurrentes();
+    } catch (error) {
+      console.error('Error al reanudar reservas recurrentes:', error);
+      alert('Error al reanudar la serie. Por favor, inténtalo de nuevo.');
+    } finally {
+      setProcesando(false);
+    }
+  };
+
   const getFrecuenciaTexto = (recurrente: ReservaRecurrente): string => {
     const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const frecuencia = recurrente.frecuencia || recurrente.reglaRecurrencia?.frecuencia || 'semanal';
+    const diaSemana = recurrente.diaSemana !== undefined ? recurrente.diaSemana : recurrente.reglaRecurrencia?.diaSemana;
     
-    switch (recurrente.frecuencia) {
+    switch (frecuencia) {
       case 'diaria':
         return 'Diaria';
       case 'semanal':
-        return `Semanal (${recurrente.diaSemana !== undefined ? diasSemana[recurrente.diaSemana] : ''})`;
+        return `Semanal${diaSemana !== undefined ? ` (${diasSemana[diaSemana]})` : ''}`;
       case 'quincenal':
         return 'Quincenal';
       case 'mensual':
         return 'Mensual';
       default:
-        return recurrente.frecuencia;
+        return frecuencia;
     }
   };
 
@@ -136,15 +202,16 @@ export const GestionReservasRecurrentes: React.FC<GestionReservasRecurrentesProp
     const fechaActual = new Date();
     const fechas = calcularFechasReservas(
       recurrente.fechaInicio,
-      recurrente.frecuencia,
-      recurrente.diaSemana,
-      recurrente.numeroRepeticiones,
-      recurrente.fechaFin
+      recurrente.frecuencia || recurrente.reglaRecurrencia?.frecuencia || 'semanal',
+      recurrente.diaSemana !== undefined ? recurrente.diaSemana : recurrente.reglaRecurrencia?.diaSemana,
+      recurrente.numeroRepeticiones !== undefined ? recurrente.numeroRepeticiones : recurrente.reglaRecurrencia?.numeroRepeticiones,
+      recurrente.fechaFin || recurrente.fechaFinOpcional || recurrente.reglaRecurrencia?.fechaFin
     );
     return fechas.filter(fecha => fecha >= fechaActual).length;
   };
 
   const reservasActivas = reservasRecurrentes.filter(r => r.activo);
+  const reservasPausadas = reservasRecurrentes.filter(r => !r.activo && r.estado === 'pausada');
 
   const columns = [
     {
@@ -190,6 +257,66 @@ export const GestionReservasRecurrentes: React.FC<GestionReservasRecurrentesProp
           <span>{getFrecuenciaTexto(row)}</span>
         </div>
       ),
+    },
+    {
+      key: 'fechaInicio',
+      label: 'Fecha Inicio',
+      render: (_: any, row: ReservaRecurrente) => (
+        <div className="text-sm">
+          {row.fechaInicio.toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          })}
+        </div>
+      ),
+    },
+    {
+      key: 'fechaFin',
+      label: 'Fecha Fin',
+      render: (_: any, row: ReservaRecurrente) => {
+        const fechaFin = row.fechaFin || row.fechaFinOpcional || row.reglaRecurrencia?.fechaFin;
+        return (
+          <div className="text-sm">
+            {fechaFin 
+              ? fechaFin.toLocaleDateString('es-ES', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric'
+                })
+              : 'Sin límite'}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'proximasSesiones',
+      label: 'Próximas Sesiones',
+      render: (_: any, row: ReservaRecurrente) => {
+        const sesiones = proximasSesiones[row.id] || [];
+        if (sesiones.length === 0) {
+          return <span className="text-sm text-gray-500">Sin sesiones futuras</span>;
+        }
+        return (
+          <div className="text-sm space-y-1">
+            {sesiones.slice(0, 3).map((fecha, idx) => (
+              <div key={idx} className="text-gray-700">
+                {fecha.toLocaleDateString('es-ES', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </div>
+            ))}
+            {sesiones.length > 3 && (
+              <div className="text-xs text-gray-500">
+                +{sesiones.length - 3} más
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: 'precio',
@@ -239,38 +366,61 @@ export const GestionReservasRecurrentes: React.FC<GestionReservasRecurrentesProp
       key: 'acciones',
       label: 'Acciones',
       render: (_: any, row: ReservaRecurrente) => (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => {
-              setReservaSeleccionada(row);
-              setAccion('cancelar');
-            }}
-            disabled={!row.activo}
-          >
-            <XCircle className="w-4 h-4 mr-1" />
-            Cancelar Serie
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => {
-              setReservaSeleccionada(row);
-              setAccion('modificar');
-              setModificaciones({
-                horaInicio: row.horaInicio,
-                horaFin: row.horaFin,
-                tipoSesion: row.tipoSesion,
-                precio: row.precio,
-                duracionMinutos: row.duracionMinutos,
-              });
-            }}
-            disabled={!row.activo}
-          >
-            <Edit className="w-4 h-4 mr-1" />
-            Modificar Serie
-          </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {row.activo ? (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setReservaSeleccionada(row);
+                  setAccion('pausar');
+                }}
+              >
+                <Pause className="w-4 h-4 mr-1" />
+                Pausar
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setReservaSeleccionada(row);
+                  setAccion('modificar');
+                  setModificaciones({
+                    horaInicio: row.horaInicio,
+                    horaFin: row.horaFin,
+                    tipoSesion: row.tipoSesion,
+                    precio: row.precio,
+                    duracionMinutos: row.duracionMinutos,
+                  });
+                }}
+              >
+                <Edit className="w-4 h-4 mr-1" />
+                Modificar
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  setReservaSeleccionada(row);
+                  setAccion('cancelar');
+                }}
+              >
+                <XCircle className="w-4 h-4 mr-1" />
+                Cancelar
+              </Button>
+            </>
+          ) : row.estado === 'pausada' ? (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => handleReanudar(row)}
+              disabled={procesando}
+            >
+              <Play className="w-4 h-4 mr-1" />
+              Reanudar
+            </Button>
+          ) : null}
         </div>
       ),
     },
@@ -312,17 +462,34 @@ export const GestionReservasRecurrentes: React.FC<GestionReservasRecurrentesProp
             Gestiona las series de reservas recurrentes. Puedes cancelar o modificar todas las reservas futuras de una serie a la vez.
           </p>
 
-          {reservasActivas.length === 0 ? (
+          {reservasActivas.length === 0 && reservasPausadas.length === 0 ? (
             <div className="text-center py-12">
               <RefreshCw className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">No hay reservas recurrentes activas.</p>
+              <p className="text-gray-600">No hay reservas recurrentes.</p>
             </div>
           ) : (
-            <Table
-              data={reservasActivas}
-              columns={columns}
-              keyField="id"
-            />
+            <div className="space-y-6">
+              {reservasActivas.length > 0 && (
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Series Activas</h4>
+                  <Table
+                    data={reservasActivas}
+                    columns={columns}
+                    keyField="id"
+                  />
+                </div>
+              )}
+              {reservasPausadas.length > 0 && (
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Series Pausadas</h4>
+                  <Table
+                    data={reservasPausadas}
+                    columns={columns}
+                    keyField="id"
+                  />
+                </div>
+              )}
+            </div>
           )}
         </div>
       </Card>
@@ -402,6 +569,73 @@ export const GestionReservasRecurrentes: React.FC<GestionReservasRecurrentesProp
                 disabled={procesando}
               >
                 {procesando ? 'Cancelando...' : 'Confirmar Cancelación'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal de Pausar */}
+      <Modal
+        isOpen={accion === 'pausar' && reservaSeleccionada !== null}
+        onClose={() => {
+          setAccion(null);
+          setReservaSeleccionada(null);
+        }}
+        title="Pausar Serie de Reservas Recurrentes"
+      >
+        {reservaSeleccionada && (
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div>
+                  <h4 className="font-medium text-blue-800">Pausar serie recurrente</h4>
+                  <p className="text-sm text-blue-700 mt-1">
+                    La serie se pausará y no se crearán nuevas reservas. Las reservas futuras existentes no se cancelarán.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Cliente
+                </label>
+                <p className="text-gray-900">{reservaSeleccionada.clienteNombre}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Horario
+                </label>
+                <p className="text-gray-900">{reservaSeleccionada.horaInicio} - {reservaSeleccionada.horaFin}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Frecuencia
+                </label>
+                <p className="text-gray-900">{getFrecuenciaTexto(reservaSeleccionada)}</p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setAccion(null);
+                  setReservaSeleccionada(null);
+                }}
+                disabled={procesando}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handlePausar}
+                disabled={procesando}
+              >
+                {procesando ? 'Pausando...' : 'Confirmar Pausa'}
               </Button>
             </div>
           </div>

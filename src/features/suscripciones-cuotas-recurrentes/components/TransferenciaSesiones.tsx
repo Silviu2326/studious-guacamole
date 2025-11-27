@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
-import { Suscripcion } from '../types';
-import { Card, Button, Modal, Input, Badge } from '../../../components/componentsreutilizables';
+import React, { useState, useEffect } from 'react';
+import { Suscripcion, SesionIncluida, MiembroGrupo } from '../types';
+import { Card, Button, Modal, Input, Badge, Select } from '../../../components/componentsreutilizables';
 import { 
   transferirSesiones, 
   configurarTransferenciaSesiones,
-  getSuscripcionById 
+  getSuscripcionById,
+  obtenerSesionesIncluidas,
+  crearSesionIncluida,
+  actualizarSesionIncluida,
 } from '../api/suscripciones';
-import { ArrowRight, Settings, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { ArrowRight, Settings, CheckCircle, XCircle, Clock, Users, Calendar } from 'lucide-react';
 
 interface TransferenciaSesionesProps {
   suscripcion: Suscripcion;
@@ -19,8 +22,14 @@ export const TransferenciaSesiones: React.FC<TransferenciaSesionesProps> = ({
 }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalConfigOpen, setModalConfigOpen] = useState(false);
+  const [modalTransferenciaCliente, setModalTransferenciaCliente] = useState(false);
   const [cantidadSesiones, setCantidadSesiones] = useState<number>(0);
   const [loading, setLoading] = useState(false);
+  const [tipoTransferencia, setTipoTransferencia] = useState<'periodo' | 'cliente'>('periodo');
+  const [periodoOrigen, setPeriodoOrigen] = useState<string>('');
+  const [periodoDestino, setPeriodoDestino] = useState<string>('');
+  const [clienteDestinoId, setClienteDestinoId] = useState<string>('');
+  const [sesionesIncluidas, setSesionesIncluidas] = useState<SesionIncluida[]>([]);
   
   // Estados para configuración
   const [transferenciaAutomatica, setTransferenciaAutomatica] = useState(
@@ -36,15 +45,47 @@ export const TransferenciaSesiones: React.FC<TransferenciaSesionesProps> = ({
   const sesionesDisponibles = suscripcion.sesionesDisponibles || 0;
   const sesionesTransferidas = suscripcion.sesionesTransferidas || 0;
   const historialTransferencias = suscripcion.historialTransferencias || [];
+  const miembrosGrupo = suscripcion.miembrosGrupo || [];
   
   // Calcular próximo período
   const fechaVencimiento = new Date(suscripcion.fechaVencimiento);
   const proximoMes = new Date(fechaVencimiento);
   proximoMes.setMonth(proximoMes.getMonth() + 1);
-  const periodoDestino = `${proximoMes.getFullYear()}-${String(proximoMes.getMonth() + 1).padStart(2, '0')}`;
-  const periodoActual = `${fechaVencimiento.getFullYear()}-${String(fechaVencimiento.getMonth() + 1).padStart(2, '0')}`;
+  const periodoDestinoDefault = `${proximoMes.getFullYear()}-${String(proximoMes.getMonth() + 1).padStart(2, '0')}`;
+  const periodoActualDefault = `${fechaVencimiento.getFullYear()}-${String(fechaVencimiento.getMonth() + 1).padStart(2, '0')}`;
+  
+  useEffect(() => {
+    loadSesionesIncluidas();
+  }, [suscripcion.id]);
+  
+  const loadSesionesIncluidas = async () => {
+    try {
+      const sesiones = await obtenerSesionesIncluidas({
+        suscripcionId: suscripcion.id,
+        incluirCaducadas: false,
+      });
+      setSesionesIncluidas(sesiones);
+      
+      // Establecer período origen por defecto
+      if (sesiones.length > 0 && !periodoOrigen) {
+        const sesionActual = sesiones.find(s => {
+          const fechaCad = new Date(s.fechaCaducidad);
+          return fechaCad >= new Date();
+        });
+        if (sesionActual && sesionActual.periodo) {
+          setPeriodoOrigen(sesionActual.periodo);
+        }
+      }
+      
+      if (!periodoDestino) {
+        setPeriodoDestino(periodoDestinoDefault);
+      }
+    } catch (error) {
+      console.error('Error cargando sesiones incluidas:', error);
+    }
+  };
 
-  const handleTransferirSesiones = async () => {
+  const handleTransferirSesiones = async (tipo: 'periodo' | 'cliente' = tipoTransferencia) => {
     if (cantidadSesiones <= 0 || cantidadSesiones > sesionesDisponibles) {
       alert('La cantidad de sesiones debe ser mayor a 0 y no puede exceder las sesiones disponibles');
       return;
@@ -52,13 +93,99 @@ export const TransferenciaSesiones: React.FC<TransferenciaSesionesProps> = ({
 
     setLoading(true);
     try {
-      await transferirSesiones({
-        suscripcionId: suscripcion.id,
-        sesionesATransferir: cantidadSesiones,
-      });
+      if (tipo === 'periodo') {
+        // Transferencia entre períodos
+        const sesionOrigen = sesionesIncluidas.find(s => s.periodo === periodoOrigen);
+        if (!sesionOrigen) {
+          throw new Error('No se encontró la sesión del período origen');
+        }
+        
+        // Reducir sesiones del período origen
+        const nuevasConsumidas = sesionOrigen.consumidas + cantidadSesiones;
+        if (nuevasConsumidas > sesionOrigen.totalSesiones) {
+          throw new Error('No hay suficientes sesiones disponibles en el período origen');
+        }
+        
+        await actualizarSesionIncluida(sesionOrigen.id, {
+          consumidas: nuevasConsumidas,
+        });
+        
+        // Crear o actualizar sesión del período destino
+        const sesionDestino = sesionesIncluidas.find(s => s.periodo === periodoDestino);
+        if (sesionDestino) {
+          await actualizarSesionIncluida(sesionDestino.id, {
+            totalSesiones: sesionDestino.totalSesiones + cantidadSesiones,
+          });
+        } else {
+          await crearSesionIncluida({
+            suscripcionId: suscripcion.id,
+            clienteId: suscripcion.clienteId,
+            totalSesiones: cantidadSesiones,
+            consumidas: 0,
+            fechaCaducidad: new Date(proximoMes.getFullYear(), proximoMes.getMonth() + 1, 0).toISOString(),
+            tipoSesion: 'transferida',
+            periodo: periodoDestino,
+          });
+        }
+        
+        // También llamar a la función original para mantener compatibilidad
+        await transferirSesiones({
+          suscripcionId: suscripcion.id,
+          sesionesATransferir: cantidadSesiones,
+          periodoOrigen,
+          periodoDestino,
+        });
+      } else {
+        // Transferencia entre clientes (solo para suscripciones grupales)
+        if (!suscripcion.esGrupal || miembrosGrupo.length === 0) {
+          throw new Error('Esta funcionalidad solo está disponible para suscripciones grupales');
+        }
+        
+        const miembroDestino = miembrosGrupo.find(m => m.clienteId === clienteDestinoId);
+        if (!miembroDestino) {
+          throw new Error('Cliente destino no encontrado en el grupo');
+        }
+        
+        // Obtener sesiones del cliente origen
+        const sesionOrigen = sesionesIncluidas.find(s => s.periodo === periodoOrigen);
+        if (!sesionOrigen) {
+          throw new Error('No se encontró la sesión del período origen');
+        }
+        
+        // Reducir sesiones del cliente origen
+        await actualizarSesionIncluida(sesionOrigen.id, {
+          consumidas: sesionOrigen.consumidas + cantidadSesiones,
+        });
+        
+        // Obtener suscripción del cliente destino
+        const suscripcionDestino = await getSuscripcionById(miembroDestino.suscripcionId);
+        const sesionesDestino = await obtenerSesionesIncluidas({
+          suscripcionId: suscripcionDestino.id,
+          periodo: periodoDestino,
+        });
+        
+        // Crear o actualizar sesión del cliente destino
+        const sesionDestino = sesionesDestino.find(s => s.periodo === periodoDestino);
+        if (sesionDestino) {
+          await actualizarSesionIncluida(sesionDestino.id, {
+            totalSesiones: sesionDestino.totalSesiones + cantidadSesiones,
+          });
+        } else {
+          await crearSesionIncluida({
+            suscripcionId: suscripcionDestino.id,
+            clienteId: clienteDestinoId,
+            totalSesiones: cantidadSesiones,
+            consumidas: 0,
+            fechaCaducidad: new Date(proximoMes.getFullYear(), proximoMes.getMonth() + 1, 0).toISOString(),
+            tipoSesion: 'transferida',
+            periodo: periodoDestino,
+          });
+        }
+      }
       
       setModalOpen(false);
       setCantidadSesiones(0);
+      await loadSesionesIncluidas();
       onSuccess?.();
     } catch (error: any) {
       console.error('Error transfiriendo sesiones:', error);
@@ -109,17 +236,34 @@ export const TransferenciaSesiones: React.FC<TransferenciaSesionesProps> = ({
                 <Settings className="w-4 h-4 mr-2" />
                 Configurar
               </Button>
-              <Button
-                variant="primary"
-                onClick={() => {
-                  setCantidadSesiones(sesionesDisponibles);
-                  setModalOpen(true);
-                }}
-                disabled={sesionesDisponibles === 0}
-              >
-                <ArrowRight className="w-4 h-4 mr-2" />
-                Transferir Sesiones
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setTipoTransferencia('periodo');
+                    setCantidadSesiones(sesionesDisponibles);
+                    setModalOpen(true);
+                  }}
+                  disabled={sesionesDisponibles === 0}
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Transferir a Período
+                </Button>
+                {suscripcion.esGrupal && miembrosGrupo.length > 0 && (
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setTipoTransferencia('cliente');
+                      setCantidadSesiones(1);
+                      setModalTransferenciaCliente(true);
+                    }}
+                    disabled={sesionesDisponibles === 0}
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    Transferir a Cliente
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -249,21 +393,36 @@ export const TransferenciaSesiones: React.FC<TransferenciaSesionesProps> = ({
         </div>
       </Card>
 
-      {/* Modal para transferir sesiones */}
+      {/* Modal para transferir sesiones entre períodos */}
       <Modal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        title="Transferir Sesiones al Siguiente Mes"
+        title="Transferir Sesiones entre Períodos"
       >
         <div className="space-y-4">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-900">
               <strong>Sesiones disponibles:</strong> {sesionesDisponibles}
             </p>
-            <p className="text-sm text-blue-700 mt-1">
-              Período destino: <strong>{periodoDestino}</strong>
-            </p>
           </div>
+
+          <Select
+            label="Período Origen"
+            value={periodoOrigen}
+            onChange={(e) => setPeriodoOrigen(e.target.value)}
+            options={[
+              ...new Set(sesionesIncluidas.map(s => s.periodo).filter(Boolean))
+            ].map(p => ({ value: p!, label: p! }))}
+          />
+
+          <Input
+            label="Período Destino"
+            type="text"
+            value={periodoDestino}
+            onChange={(e) => setPeriodoDestino(e.target.value)}
+            placeholder="YYYY-MM"
+            helperText="Formato: YYYY-MM (ej: 2024-11)"
+          />
 
           <Input
             label="Cantidad de sesiones a transferir"
@@ -389,6 +548,81 @@ export const TransferenciaSesiones: React.FC<TransferenciaSesionesProps> = ({
               loading={loading}
             >
               Guardar Configuración
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal para transferir sesiones entre clientes */}
+      <Modal
+        isOpen={modalTransferenciaCliente}
+        onClose={() => setModalTransferenciaCliente(false)}
+        title="Transferir Sesiones entre Clientes"
+      >
+        <div className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-sm text-blue-900">
+              <strong>Cliente origen:</strong> {suscripcion.clienteNombre}
+            </p>
+            <p className="text-sm text-blue-700 mt-1">
+              <strong>Sesiones disponibles:</strong> {sesionesDisponibles}
+            </p>
+          </div>
+
+          <Select
+            label="Cliente Destino"
+            value={clienteDestinoId}
+            onChange={(e) => setClienteDestinoId(e.target.value)}
+            options={miembrosGrupo.map(m => ({
+              value: m.clienteId,
+              label: `${m.clienteNombre} (${m.clienteEmail})`,
+            }))}
+          />
+
+          <Select
+            label="Período Origen"
+            value={periodoOrigen}
+            onChange={(e) => setPeriodoOrigen(e.target.value)}
+            options={[
+              ...new Set(sesionesIncluidas.map(s => s.periodo).filter(Boolean))
+            ].map(p => ({ value: p!, label: p! }))}
+          />
+
+          <Input
+            label="Período Destino"
+            type="text"
+            value={periodoDestino}
+            onChange={(e) => setPeriodoDestino(e.target.value)}
+            placeholder="YYYY-MM"
+            helperText="Formato: YYYY-MM (ej: 2024-11)"
+          />
+
+          <Input
+            label="Cantidad de sesiones a transferir"
+            type="number"
+            min={1}
+            max={sesionesDisponibles}
+            value={cantidadSesiones.toString()}
+            onChange={(e) => setCantidadSesiones(parseInt(e.target.value) || 0)}
+            helperText={`Máximo: ${sesionesDisponibles} sesiones`}
+          />
+
+          <div className="flex justify-end gap-2 pt-4">
+            <Button
+              variant="ghost"
+              onClick={() => setModalTransferenciaCliente(false)}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+                        onClick={() => handleTransferirSesiones('cliente')}
+                        loading={loading}
+                        disabled={cantidadSesiones <= 0 || cantidadSesiones > sesionesDisponibles || !clienteDestinoId || !periodoOrigen || !periodoDestino}
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Transferir a Cliente
             </Button>
           </div>
         </div>

@@ -5,7 +5,10 @@ import { getProducto } from './productos';
 let codigosQR: CodigoQR[] = [];
 
 export interface CrearCodigoQRRequest {
-  servicioId: string;
+  tipo: 'producto' | 'bono' | 'enlace_pago';
+  servicioId?: string; // Para tipo 'producto'
+  bonoId?: string; // Para tipo 'bono'
+  enlacePagoId?: string; // Para tipo 'enlace_pago'
   entrenadorId: string;
   descripcion?: string;
 }
@@ -41,15 +44,53 @@ export async function crearCodigoQR(
 ): Promise<CodigoQR> {
   await new Promise((resolve) => setTimeout(resolve, 300));
 
-  // Obtener información del servicio
-  const servicio = await getProducto(request.servicioId);
-  if (!servicio) {
-    throw new Error('Servicio no encontrado');
-  }
+  let servicio: Producto | null = null;
+  let servicioId: string;
 
-  // Verificar que sea un servicio
-  if (servicio.tipo !== 'servicio') {
-    throw new Error('Solo se pueden generar códigos QR para servicios');
+  // Obtener información según el tipo
+  if (request.tipo === 'producto') {
+    if (!request.servicioId) {
+      throw new Error('Se requiere servicioId para tipo producto');
+    }
+    servicio = await getProducto(request.servicioId);
+    if (!servicio) {
+      throw new Error('Producto/Servicio no encontrado');
+    }
+    servicioId = request.servicioId;
+  } else if (request.tipo === 'bono') {
+    if (!request.bonoId) {
+      throw new Error('Se requiere bonoId para tipo bono');
+    }
+    // Para bonos, creamos un producto temporal o usamos el bono directamente
+    // Por ahora, usamos el bonoId como servicioId
+    servicioId = request.bonoId;
+    // Crear un producto temporal para el bono
+    servicio = {
+      id: request.bonoId,
+      nombre: `Bono ${request.bonoId}`,
+      slug: `bono-${request.bonoId}`,
+      descripcionCorta: 'Bono de regalo',
+      categoriaId: '',
+      precioBase: 0,
+      activo: true,
+      tipo: 'bono',
+      variantes: [],
+    } as Producto;
+  } else if (request.tipo === 'enlace_pago') {
+    if (!request.enlacePagoId) {
+      throw new Error('Se requiere enlacePagoId para tipo enlace_pago');
+    }
+    // Importar getEnlacePagoPorToken o similar
+    const { getEnlacesPagoEntrenador } = await import('./enlacesPago');
+    const enlaces = await getEnlacesPagoEntrenador(request.entrenadorId);
+    const enlace = enlaces.find((e) => e.id === request.enlacePagoId);
+    if (!enlace) {
+      throw new Error('Enlace de pago no encontrado');
+    }
+    servicio = enlace.producto;
+    servicioId = enlace.productoId;
+  } else {
+    throw new Error('Tipo de código QR no válido');
   }
 
   const token = generarToken();
@@ -58,7 +99,7 @@ export async function crearCodigoQR(
 
   const nuevoCodigoQR: CodigoQR = {
     id: `QR-${Date.now()}`,
-    servicioId: request.servicioId,
+    servicioId,
     servicio,
     entrenadorId: request.entrenadorId,
     token,

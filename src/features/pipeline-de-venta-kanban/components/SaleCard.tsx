@@ -25,9 +25,10 @@ interface SaleCardProps {
   sale: Sale;
   onUpdate: (updates: Partial<Sale>) => void;
   onPhaseChange?: (newPhase: PipelinePhase) => void;
+  isHighlighted?: boolean;
 }
 
-export const SaleCard: React.FC<SaleCardProps> = ({ sale, onUpdate, onPhaseChange }) => {
+export const SaleCard: React.FC<SaleCardProps> = ({ sale, onUpdate, onPhaseChange, isHighlighted = false }) => {
   const [showDetails, setShowDetails] = useState(false);
   const [showScheduleCall, setShowScheduleCall] = useState(false);
   const [showSendPrice, setShowSendPrice] = useState(false);
@@ -103,7 +104,9 @@ export const SaleCard: React.FC<SaleCardProps> = ({ sale, onUpdate, onPhaseChang
       >
       <Card
         variant="hover"
-        className="h-full flex flex-col transition-shadow overflow-hidden cursor-pointer"
+        className={`h-full flex flex-col transition-shadow overflow-hidden cursor-pointer ${
+          isHighlighted ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+        }`}
         onClick={() => setShowDetails(true)}
       >
         <div className="p-4 space-y-3">

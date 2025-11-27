@@ -9,7 +9,7 @@ import {
   ClienteConBonosRecordatorio,
   CanalRecordatorio,
 } from '../api/recordatoriosBonos';
-import { Bell, Send, Settings, AlertCircle, Clock, Calendar, Users, CheckCircle } from 'lucide-react';
+import { Bell, Send, Settings, AlertCircle, Clock, Calendar, Users, CheckCircle, Search } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 
 interface GestorRecordatoriosBonosProps {
@@ -27,6 +27,7 @@ export const GestorRecordatoriosBonos: React.FC<GestorRecordatoriosBonosProps> =
   const [mostrarConfiguracion, setMostrarConfiguracion] = useState(false);
   const [historialRecordatorios, setHistorialRecordatorios] = useState<RecordatorioEnviado[]>([]);
   const [mostrarHistorial, setMostrarHistorial] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
 
   useEffect(() => {
     cargarClientesConRecordatorios();
@@ -87,7 +88,12 @@ export const GestorRecordatoriosBonos: React.FC<GestorRecordatoriosBonosProps> =
     }).format(new Date(fecha));
   };
 
-  const totalRecordatorios = clientesConRecordatorios.reduce(
+  const clientesFiltrados = clientesConRecordatorios.filter((cliente) =>
+    cliente.clienteNombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+    cliente.clienteEmail.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
+  const totalRecordatorios = clientesFiltrados.reduce(
     (sum, cliente) => sum + cliente.bonos.length,
     0
   );
@@ -130,20 +136,34 @@ export const GestorRecordatoriosBonos: React.FC<GestorRecordatoriosBonosProps> =
           </div>
         </div>
 
-        <div className="mb-4 flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Switch
-              checked={configuracion.activo}
-              onChange={(checked) => setConfiguracion({ ...configuracion, activo: checked })}
-            />
-            <span className="text-sm font-medium text-gray-700">
-              Recordatorios Automáticos {configuracion.activo ? 'Activados' : 'Desactivados'}
-            </span>
+        <div className="mb-4 space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={configuracion.activo}
+                onChange={(checked) => setConfiguracion({ ...configuracion, activo: checked })}
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Recordatorios Automáticos {configuracion.activo ? 'Activados' : 'Desactivados'}
+              </span>
+            </div>
+            {configuracion.activo && (
+              <Badge variant={totalRecordatorios > 0 ? 'warning' : 'success'}>
+                {totalRecordatorios} {totalRecordatorios === 1 ? 'recordatorio pendiente' : 'recordatorios pendientes'}
+              </Badge>
+            )}
           </div>
-          {configuracion.activo && (
-            <Badge variant={totalRecordatorios > 0 ? 'warning' : 'success'}>
-              {totalRecordatorios} {totalRecordatorios === 1 ? 'recordatorio pendiente' : 'recordatorios pendientes'}
-            </Badge>
+          
+          {configuracion.activo && clientesConRecordatorios.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Search size={18} className="text-gray-400" />
+              <Input
+                placeholder="Buscar por nombre o email del cliente..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                className="flex-1"
+              />
+            </div>
           )}
         </div>
 
@@ -155,14 +175,14 @@ export const GestorRecordatoriosBonos: React.FC<GestorRecordatoriosBonosProps> =
           </div>
         ) : cargando ? (
           <div className="text-center py-12 text-gray-500">Cargando...</div>
-        ) : clientesConRecordatorios.length === 0 ? (
+        ) : clientesFiltrados.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             <CheckCircle className="w-12 h-12 mx-auto mb-4 text-green-300" />
             <p>No hay clientes que requieran recordatorios en este momento</p>
           </div>
         ) : (
           <div className="space-y-4">
-            {clientesConRecordatorios.map((cliente) => (
+            {clientesFiltrados.map((cliente) => (
               <Card key={cliente.clienteId} className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div>

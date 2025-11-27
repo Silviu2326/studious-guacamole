@@ -35,9 +35,9 @@ import ConfirmarSesionPage from './features/agenda-calendario/pages/ConfirmarSes
 import ConfirmarReservaPage from './features/reservas-online/pages/ConfirmarReservaPage';
 import { PublicEventRegistrationPage } from './features/eventos-retos/pages/PublicEventRegistrationPage';
 import ReservaPublicaPage from './features/reservas-online/pages/ReservaPublicaPage';
-import { PaginaPagoPublica } from './features/facturacin-cobros/pages/PaginaPagoPublica';
+import { PaginaPagoPublica } from './features/facturacion-cobros/pages/PaginaPagoPublica';
 import CheckoutPublicoPage from './features/tienda-online-checkout-online/pages/CheckoutPublicoPage';
-import { TransformacionLeadsPage } from './features/transformacion-leads/pages';
+import { TransformacionLeadsPage } from './features/transformacion-leads';
 
 import AlertasRestriccionesAlimentariasPage from './features/alertas-restricciones-alimentarias/pages/alertas-restricciones-alimentariasPage';
 import DisponibilidadTurnosStaffPage from './features/disponibilidad-turnos-staff/pages/disponibilidad-turnos-staffPage';
@@ -190,7 +190,7 @@ function App() {
         <Route path="/confirmar-reserva/:token" element={<ConfirmarReservaPage />} />
         <Route path="/evento-inscripcion/:publicLink" element={<PublicEventRegistrationPage />} />
         <Route path="/reservar/:token" element={<ReservaPublicaPage />} />
-        <Route path="/pagar/:token" element={<PaginaPagoPublica />} />
+        <Route path="/pago/:slug" element={<PaginaPagoPublica />} />
         <Route path="/checkout/:token" element={<CheckoutPublicoPage />} />
 
         <Route element={<ProtectedRoute />}>

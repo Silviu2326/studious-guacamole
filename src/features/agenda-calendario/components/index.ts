@@ -1,37 +1,36 @@
+/**
+ * Archivo de barril que facilita la importación de componentes de agenda/calendario
+ * desde un único punto de entrada.
+ * 
+ * Este archivo centraliza todas las exportaciones de componentes del módulo
+ * Agenda y Calendario, simplificando las importaciones en otros archivos.
+ */
+
+// Componente principal del calendario
 export { AgendaCalendar } from './AgendaCalendar';
+
+// Vistas del calendario
+export { VistaDiaCompleto } from './VistaDiaCompleto';
 export { VistaPersonal } from './VistaPersonal';
 export { VistaCentro } from './VistaCentro';
+
+// Modales de sesiones
+export { ModalRapidoCrearSesion } from './ModalRapidoCrearSesion';
+export { ModalEditarSesion } from './ModalEditarSesion';
+export { ModalDetalleSesion } from './ModalDetalleSesion';
+
+// Gestores y configuradores
 export { GestorHorarios } from './GestorHorarios';
 export { ConfiguradorHorariosTrabajo } from './ConfiguradorHorariosTrabajo';
 export { BloqueosAgenda } from './BloqueosAgenda';
-export { ReservasCitas } from './ReservasCitas';
-export { RecordatoriosAutomaticos } from './RecordatoriosAutomaticos';
-export { ConfiguracionRecordatorios } from './ConfiguracionRecordatorios';
-export { ConfiguracionResumenDiario } from './ConfiguracionResumenDiario';
-export { VistaResumenDiario } from './VistaResumenDiario';
-export { HistorialCliente } from './HistorialCliente';
-export { AnalyticsOcupacion } from './AnalyticsOcupacion';
-export { ConfiguracionTiempoDescanso } from './ConfiguracionTiempoDescanso';
-export { ModalRapidoCrearSesion } from './ModalRapidoCrearSesion';
-export { ModalEditarSesion } from './ModalEditarSesion';
-export { ModalCancelarSesion } from './ModalCancelarSesion';
-export { ModalDetalleSesion } from './ModalDetalleSesion';
-export { MenuContextualSesion, BotonAccionesRapidas } from './MenuContextualSesion';
-export { GestorPlantillas } from './GestorPlantillas';
-export { ClienteAutocomplete } from './ClienteAutocomplete';
-export { EstadisticasConfirmacion } from './EstadisticasConfirmacion';
-export { NotificacionesSesion } from './NotificacionesSesion';
-export { ConfirmarSesionCliente } from './ConfirmarSesionCliente';
-export { SincronizacionCalendario } from './SincronizacionCalendario';
-export { GestorEnlacesReserva } from './GestorEnlacesReserva';
-export { PaginaReservaPublica } from './PaginaReservaPublica';
-export { ModalAgregarNotaSesion } from './ModalAgregarNotaSesion';
-export { ModalCambiarEstadoSesion } from './ModalCambiarEstadoSesion';
-export { EstadisticasNoShows } from './EstadisticasNoShows';
-export { ConfiguracionPoliticaCancelacion } from './ConfiguracionPoliticaCancelacion';
-export { EstadisticasCumplimientoPolitica } from './EstadisticasCumplimientoPolitica';
-export { DashboardMetricasSesiones } from './DashboardMetricasSesiones';
-export { MapaCalorHorarios } from './MapaCalorHorarios';
-export { DashboardFinanciero } from './DashboardFinanciero';
 export { GestorListaEspera } from './GestorListaEspera';
 
+// Funcionalidades y recordatorios
+export { RecordatoriosAutomaticos } from './RecordatoriosAutomaticos';
+
+// Analytics y dashboards
+export { AnalyticsOcupacion } from './AnalyticsOcupacion';
+export { DashboardFinanciero } from './DashboardFinanciero';
+
+// Configuración
+export { ConfiguracionPoliticaCancelacion } from './ConfiguracionPoliticaCancelacion';

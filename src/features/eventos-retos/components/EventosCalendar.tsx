@@ -179,9 +179,11 @@ export const EventosCalendar: React.FC<EventosCalendarProps> = ({
 
   return (
     <Card className="bg-white shadow-sm">
-      <div className="p-6">
+      {/* NOTA: Primera capa de responsive - Secciones principales se adaptan a una columna en pantallas pequeñas,
+           sin scroll horizontal. Se puede mejorar más adelante con mejor UX móvil. */}
+      <div className="p-4 sm:p-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center space-x-4">
             <Calendar className="w-6 h-6 text-blue-600" />
             <h2 className="text-xl font-bold text-gray-900">
@@ -210,9 +212,9 @@ export const EventosCalendar: React.FC<EventosCalendarProps> = ({
           </div>
         </div>
 
-        {/* Filtros por tipo */}
+        {/* Filtros por tipo - Scrollables en móvil */}
         {onTipoFiltroChange && (
-          <div className="mb-4 flex items-center gap-2 flex-wrap">
+          <div className="mb-4 flex items-center gap-2 flex-wrap overflow-x-auto pb-2">
             <Filter className="w-4 h-4 text-gray-500" />
             <span className="text-sm font-medium text-gray-700">Filtrar por tipo:</span>
             <Button
@@ -296,9 +298,9 @@ export const EventosCalendar: React.FC<EventosCalendarProps> = ({
           </div>
         </div>
 
-        {/* Vista Mensual */}
+        {/* Vista Mensual - Responsive: una columna en móvil muy pequeño, 7 columnas en pantallas normales */}
         {vista === 'mes' && (
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2 overflow-x-auto">
             {diasSemana.map((dia) => (
               <div
                 key={dia}
@@ -317,7 +319,7 @@ export const EventosCalendar: React.FC<EventosCalendarProps> = ({
                 <div
                   key={index}
                   className={`
-                    bg-white rounded-xl border-2 p-2 min-h-[100px]
+                    bg-white rounded-xl border-2 p-1 sm:p-2 min-h-[80px] sm:min-h-[100px]
                     ${fecha ? 'cursor-pointer hover:bg-slate-50 transition-colors' : ''}
                     ${esHoyDia ? 'ring-2 ring-blue-500 bg-blue-50' : ''}
                     ${esHover ? 'ring-2 ring-green-500 bg-green-50' : ''}

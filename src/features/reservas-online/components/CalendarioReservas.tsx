@@ -7,6 +7,7 @@ import { getReservas, reprogramarReserva, ReprogramacionReserva } from '../api';
 interface CalendarioReservasProps {
   role: 'entrenador' | 'gimnasio';
   entrenadorId?: string;
+  onSelectDia?: (fecha: Date) => void;
 }
 
 type VistaCalendario = 'semana' | 'mes';
@@ -17,7 +18,7 @@ interface DropTarget {
   minuto: number;
 }
 
-export const CalendarioReservas: React.FC<CalendarioReservasProps> = ({ role, entrenadorId }) => {
+export const CalendarioReservas: React.FC<CalendarioReservasProps> = ({ role, entrenadorId, onSelectDia }) => {
   const [fechaActual, setFechaActual] = useState(new Date());
   const [vista, setVista] = useState<VistaCalendario>('semana');
   const [reservas, setReservas] = useState<Reserva[]>([]);
@@ -339,16 +340,16 @@ export const CalendarioReservas: React.FC<CalendarioReservasProps> = ({ role, en
 
   return (
     <Card className="bg-white shadow-sm">
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <CalendarIcon className="w-6 h-6 text-blue-600" />
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <CalendarIcon className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 flex-shrink-0" />
+            <div className="min-w-0">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate">
                 {vista === 'semana' ? getFormatoSemana() : `${meses[fechaActual.getMonth()]} ${fechaActual.getFullYear()}`}
               </h2>
-              <p className="text-sm text-gray-600">
+              <p className="text-xs sm:text-sm text-gray-600">
                 {vista === 'semana' 
                   ? 'Vista semanal de reservas' 
                   : 'Vista mensual de reservas'}
@@ -362,7 +363,7 @@ export const CalendarioReservas: React.FC<CalendarioReservasProps> = ({ role, en
               variant="ghost"
               size="sm"
               onClick={() => setVista('semana')}
-              className={vista === 'semana' ? 'bg-slate-100 text-slate-900' : ''}
+              className={`${vista === 'semana' ? 'bg-slate-100 text-slate-900' : ''} flex-1 sm:flex-initial`}
             >
               Semana
             </Button>
@@ -370,7 +371,7 @@ export const CalendarioReservas: React.FC<CalendarioReservasProps> = ({ role, en
               variant="ghost"
               size="sm"
               onClick={() => setVista('mes')}
-              className={vista === 'mes' ? 'bg-slate-100 text-slate-900' : ''}
+              className={`${vista === 'mes' ? 'bg-slate-100 text-slate-900' : ''} flex-1 sm:flex-initial`}
             >
               Mes
             </Button>
@@ -378,28 +379,29 @@ export const CalendarioReservas: React.FC<CalendarioReservasProps> = ({ role, en
         </div>
 
         {/* Estadísticas */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-            <div className="text-sm text-blue-600 font-medium">Total Reservas</div>
-            <div className="text-2xl font-bold text-blue-900">{estadisticas.totalReservas}</div>
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
+          <div className="bg-blue-50 rounded-lg p-3 sm:p-4 border border-blue-200">
+            <div className="text-xs sm:text-sm text-blue-600 font-medium">Total Reservas</div>
+            <div className="text-xl sm:text-2xl font-bold text-blue-900">{estadisticas.totalReservas}</div>
           </div>
-          <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-            <div className="text-sm text-green-600 font-medium">Confirmadas</div>
-            <div className="text-2xl font-bold text-green-900">{estadisticas.reservasConfirmadas}</div>
+          <div className="bg-green-50 rounded-lg p-3 sm:p-4 border border-green-200">
+            <div className="text-xs sm:text-sm text-green-600 font-medium">Confirmadas</div>
+            <div className="text-xl sm:text-2xl font-bold text-green-900">{estadisticas.reservasConfirmadas}</div>
           </div>
-          <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-            <div className="text-sm text-purple-600 font-medium">Ingresos</div>
-            <div className="text-2xl font-bold text-purple-900">€{estadisticas.ingresosEstimados}</div>
+          <div className="bg-purple-50 rounded-lg p-3 sm:p-4 border border-purple-200">
+            <div className="text-xs sm:text-sm text-purple-600 font-medium">Ingresos</div>
+            <div className="text-lg sm:text-2xl font-bold text-purple-900">€{estadisticas.ingresosEstimados}</div>
           </div>
         </div>
 
         {/* Controles de navegación */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-center sm:justify-start mb-4">
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => vista === 'semana' ? cambiarSemana('anterior') : cambiarMes('anterior')}
+              className="flex-shrink-0"
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
@@ -407,6 +409,7 @@ export const CalendarioReservas: React.FC<CalendarioReservasProps> = ({ role, en
               variant="ghost"
               size="sm"
               onClick={irAHoy}
+              className="px-4"
             >
               Hoy
             </Button>
@@ -414,6 +417,7 @@ export const CalendarioReservas: React.FC<CalendarioReservasProps> = ({ role, en
               variant="ghost"
               size="sm"
               onClick={() => vista === 'semana' ? cambiarSemana('siguiente') : cambiarMes('siguiente')}
+              className="flex-shrink-0"
             >
               <ChevronRight className="w-4 h-4" />
             </Button>
@@ -422,8 +426,8 @@ export const CalendarioReservas: React.FC<CalendarioReservasProps> = ({ role, en
 
         {/* Vista Semana */}
         {vista === 'semana' && (
-          <div className="overflow-x-auto">
-            <div className="grid grid-cols-8 border border-slate-200 rounded-lg overflow-hidden min-w-[800px]">
+          <div className="overflow-x-auto -mx-6 sm:mx-0">
+            <div className="grid grid-cols-8 border border-slate-200 rounded-lg overflow-hidden min-w-[800px] px-6 sm:px-0">
               {/* Columna de horas */}
               <div className="border-r border-slate-200 bg-slate-50 sticky left-0 z-10">
                 <div className="h-16 border-b border-slate-200"></div>
@@ -447,24 +451,27 @@ export const CalendarioReservas: React.FC<CalendarioReservasProps> = ({ role, en
                   fecha.getMonth() === new Date().getMonth() &&
                   fecha.getFullYear() === new Date().getFullYear();
 
-                return (
-                  <div
-                    key={diaIndex}
-                    className={`border-r border-slate-200 last:border-r-0 ${
-                      esHoy ? 'bg-blue-50' : 'bg-white'
-                    }`}
-                  >
-                    {/* Header del día */}
-                    <div className={`h-16 border-b border-slate-200 text-center py-2 ${
+              return (
+                <div
+                  key={diaIndex}
+                  className={`border-r border-slate-200 last:border-r-0 ${
+                    esHoy ? 'bg-blue-50' : 'bg-white'
+                  }`}
+                >
+                  {/* Header del día */}
+                  <div 
+                    className={`h-16 border-b border-slate-200 text-center py-2 cursor-pointer hover:bg-blue-100 transition-colors ${
                       esHoy ? 'bg-blue-100' : 'bg-slate-50'
-                    }`}>
-                      <div className="text-xs font-medium text-slate-600">
-                        {diasSemanaNombres[diaIndex]}
-                      </div>
-                      <div className={`text-lg font-bold ${esHoy ? 'text-blue-600' : 'text-gray-900'}`}>
-                        {fecha.getDate()}
-                      </div>
+                    }`}
+                    onClick={() => onSelectDia?.(fecha)}
+                  >
+                    <div className="text-xs font-medium text-slate-600">
+                      {diasSemanaNombres[diaIndex]}
                     </div>
+                    <div className={`text-lg font-bold ${esHoy ? 'text-blue-600' : 'text-gray-900'}`}>
+                      {fecha.getDate()}
+                    </div>
+                  </div>
 
                     {/* Slots de tiempo */}
                     <div 
@@ -612,7 +619,7 @@ export const CalendarioReservas: React.FC<CalendarioReservasProps> = ({ role, en
 
         {/* Vista Mes */}
         {vista === 'mes' && (
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2">
             {/* Headers de días de la semana */}
             {diasSemanaCompletos.map((dia) => (
               <div
@@ -635,34 +642,35 @@ export const CalendarioReservas: React.FC<CalendarioReservasProps> = ({ role, en
                 <div
                   key={index}
                   className={`
-                    bg-white rounded-xl border border-slate-200 p-2 min-h-[120px]
+                    bg-white rounded-lg sm:rounded-xl border border-slate-200 p-1 sm:p-2 min-h-[80px] sm:min-h-[120px]
                     ${fecha ? 'cursor-pointer hover:bg-slate-50 transition-colors' : ''}
-                    ${esHoy ? 'ring-2 ring-blue-500 bg-blue-50' : ''}
+                    ${esHoy ? 'ring-1 sm:ring-2 ring-blue-500 bg-blue-50' : ''}
                   `}
+                  onClick={() => fecha && onSelectDia?.(fecha)}
                 >
                   {fecha && (
                     <>
-                      <div className={`text-sm font-semibold mb-2 ${esHoy ? 'text-blue-600' : 'text-gray-900'}`}>
+                      <div className={`text-xs sm:text-sm font-semibold mb-1 sm:mb-2 ${esHoy ? 'text-blue-600' : 'text-gray-900'}`}>
                         {fecha.getDate()}
                       </div>
-                      <div className="space-y-1">
-                        {reservasDelDia.slice(0, 3).map((reserva) => {
+                      <div className="space-y-0.5 sm:space-y-1">
+                        {reservasDelDia.slice(0, 2).map((reserva) => {
                           const colorTipo = getColorPorTipo(reserva.tipo);
                           const estiloEstado = getEstiloPorEstado(reserva.estado);
                           return (
                             <div
                               key={reserva.id}
-                              className={`${colorTipo.bg} ${colorTipo.border} border-2 ${estiloEstado} text-white text-xs px-2 py-1 rounded truncate`}
+                              className={`${colorTipo.bg} ${colorTipo.border} border ${estiloEstado} text-white text-[10px] sm:text-xs px-1 sm:px-2 py-0.5 sm:py-1 rounded truncate`}
                               title={`${reserva.clienteNombre} - ${reserva.horaInicio} - ${colorTipo.nombre}`}
                             >
-                              <div className="font-medium truncate">{reserva.clienteNombre}</div>
-                              <div className="text-xs opacity-90">{reserva.horaInicio}</div>
+                              <div className="font-medium truncate hidden sm:block">{reserva.clienteNombre}</div>
+                              <div className="text-[10px] sm:text-xs opacity-90 truncate">{reserva.horaInicio}</div>
                             </div>
                           );
                         })}
-                        {reservasDelDia.length > 3 && (
-                          <div className="text-xs text-slate-500 font-medium">
-                            +{reservasDelDia.length - 3} más
+                        {reservasDelDia.length > 2 && (
+                          <div className="text-[10px] sm:text-xs text-slate-500 font-medium">
+                            +{reservasDelDia.length - 2} más
                           </div>
                         )}
                       </div>
@@ -710,16 +718,17 @@ export const CalendarioReservas: React.FC<CalendarioReservasProps> = ({ role, en
         {/* Instrucciones de drag and drop */}
         {role === 'entrenador' && vista === 'semana' && (
           <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>💡 Tip:</strong> Arrastra las reservas a diferentes horarios para reprogramarlas rápidamente.
+            <p className="text-xs sm:text-sm text-blue-800">
+              <strong>💡 Tip:</strong> <span className="hidden sm:inline">Arrastra las reservas a diferentes horarios para reprogramarlas rápidamente.</span>
+              <span className="sm:hidden">Arrastra reservas para reprogramar.</span>
             </p>
           </div>
         )}
 
         {/* Leyenda - Tipos de Sesión */}
-        <div className="mt-6 pt-6 border-t border-slate-200">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Tipos de Sesión</h3>
-          <div className="flex items-center gap-6 text-sm flex-wrap">
+        <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-slate-200">
+          <h3 className="text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">Tipos de Sesión</h3>
+          <div className="flex items-center gap-3 sm:gap-6 text-xs sm:text-sm flex-wrap">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-blue-500 border-2 border-blue-600 rounded"></div>
               <span className="text-gray-600">Sesión 1-1</span>
@@ -741,9 +750,9 @@ export const CalendarioReservas: React.FC<CalendarioReservasProps> = ({ role, en
               <span className="text-gray-600">Masaje</span>
             </div>
           </div>
-          <div className="mt-4 pt-4 border-t border-slate-200">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Estados</h3>
-            <div className="flex items-center gap-6 text-sm flex-wrap">
+          <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-200">
+            <h3 className="text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">Estados</h3>
+            <div className="flex items-center gap-3 sm:gap-6 text-xs sm:text-sm flex-wrap">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-gray-300 border-2 border-gray-400 rounded opacity-100"></div>
                 <span className="text-gray-600">Confirmada/Completada</span>

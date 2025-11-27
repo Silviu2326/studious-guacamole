@@ -1,13 +1,57 @@
-import React, { useState } from 'react';
-import { Suscripcion } from '../types';
+import React, { useState, useMemo } from 'react';
+import { Suscripcion, CambioEntrenadorRequest } from '../types';
 import { Card, Button, Modal, Select, Badge, Textarea } from '../../../components/componentsreutilizables';
-import { cambiarPlanPT } from '../api/suscripciones';
-import { ArrowRight, TrendingUp, TrendingDown, Info } from 'lucide-react';
+import { cambiarPlanPT, cambiarEntrenadorSuscripcion } from '../api/suscripciones';
+import { ArrowRight, TrendingUp, TrendingDown, Info, User, Calendar, Clock } from 'lucide-react';
 
 interface CambioPlanPTProps {
   suscripcion: Suscripcion;
   onSuccess?: () => void;
 }
+
+// Mock de entrenadores disponibles (en producción vendría de una API)
+const ENTRENADORES_DISPONIBLES = [
+  { id: 'trainer1', nombre: 'Carlos Rodríguez', especialidad: 'Hipertrofia', disponible: true },
+  { id: 'trainer2', nombre: 'Ana Martínez', especialidad: 'Pérdida de peso', disponible: true },
+  { id: 'trainer3', nombre: 'Luis Fernández', especialidad: 'Rehabilitación', disponible: true },
+  { id: 'trainer4', nombre: 'María García', especialidad: 'Atletismo', disponible: true },
+];
+
+// Mock de sesiones programadas (en producción vendría de la API de calendario)
+interface SesionProgramada {
+  id: string;
+  fecha: string;
+  hora: string;
+  tipo: string;
+  estado: 'programada' | 'confirmada' | 'cancelada';
+}
+
+const obtenerSesionesProgramadas = (suscripcionId: string): SesionProgramada[] => {
+  // Mock data - en producción esto vendría de la API
+  return [
+    {
+      id: 'ses1',
+      fecha: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      hora: '10:00',
+      tipo: 'Presencial',
+      estado: 'programada',
+    },
+    {
+      id: 'ses2',
+      fecha: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      hora: '18:00',
+      tipo: 'Presencial',
+      estado: 'confirmada',
+    },
+    {
+      id: 'ses3',
+      fecha: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      hora: '11:00',
+      tipo: 'Online',
+      estado: 'programada',
+    },
+  ];
+};
 
 // Planes PT disponibles
 const PLANES_PT = [
@@ -39,10 +83,22 @@ export const CambioPlanPT: React.FC<CambioPlanPTProps> = ({
   onSuccess,
 }) => {
   const [modalOpen, setModalOpen] = useState(false);
+  const [tipoCambio, setTipoCambio] = useState<'plan' | 'entrenador'>('plan');
   const [nuevoPlanId, setNuevoPlanId] = useState<string>('');
+  const [nuevoEntrenadorId, setNuevoEntrenadorId] = useState<string>('');
   const [aplicarInmediatamente, setAplicarInmediatamente] = useState<boolean>(true);
+  const [fechaCambio, setFechaCambio] = useState<string>(
+    new Date().toISOString().split('T')[0]
+  );
+  const [mantenerSesionesProgramadas, setMantenerSesionesProgramadas] = useState<boolean>(true);
+  const [reasignarSesiones, setReasignarSesiones] = useState<boolean>(false);
   const [motivo, setMotivo] = useState<string>('');
   const [loading, setLoading] = useState(false);
+
+  // Obtener sesiones programadas
+  const sesionesProgramadas = useMemo(() => {
+    return obtenerSesionesProgramadas(suscripcion.id);
+  }, [suscripcion.id]);
 
   const planActual = PLANES_PT.find(p => p.id === suscripcion.planId);
   const nuevoPlan = PLANES_PT.find(p => p.id === nuevoPlanId);
@@ -58,29 +114,66 @@ export const CambioPlanPT: React.FC<CambioPlanPTProps> = ({
     : false;
 
   const handleCambioPlan = async () => {
-    if (!nuevoPlanId || !nuevoPlan) return;
+    if (tipoCambio === 'plan') {
+      if (!nuevoPlanId || !nuevoPlan) return;
 
-    setLoading(true);
-    try {
-      await cambiarPlanPT({
-        suscripcionId: suscripcion.id,
-        nuevoPlanId: nuevoPlanId,
-        nuevoPrecio: nuevoPlan.precio,
-        nuevoSesiones: nuevoPlan.sesiones,
-        aplicarInmediatamente,
-        motivo: motivo || undefined,
-      });
-      
-      setModalOpen(false);
-      setNuevoPlanId('');
-      setMotivo('');
-      setAplicarInmediatamente(true);
-      onSuccess?.();
-    } catch (error) {
-      console.error('Error cambiando plan:', error);
-      alert('Error al cambiar el plan. Por favor, intenta de nuevo.');
-    } finally {
-      setLoading(false);
+      setLoading(true);
+      try {
+        await cambiarPlanPT({
+          suscripcionId: suscripcion.id,
+          nuevoPlanId: nuevoPlanId,
+          nuevoPrecio: nuevoPlan.precio,
+          nuevoSesiones: nuevoPlan.sesiones,
+          aplicarInmediatamente,
+          motivo: motivo || undefined,
+        });
+        
+        setModalOpen(false);
+        setNuevoPlanId('');
+        setMotivo('');
+        setAplicarInmediatamente(true);
+        onSuccess?.();
+      } catch (error) {
+        console.error('Error cambiando plan:', error);
+        alert('Error al cambiar el plan. Por favor, intenta de nuevo.');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // Cambio de entrenador
+      if (!nuevoEntrenadorId) return;
+
+      setLoading(true);
+      try {
+        const nuevoEntrenador = ENTRENADORES_DISPONIBLES.find(e => e.id === nuevoEntrenadorId);
+        if (!nuevoEntrenador) return;
+
+        const request: CambioEntrenadorRequest = {
+          suscripcionId: suscripcion.id,
+          nuevoEntrenadorId: nuevoEntrenador.id,
+          nuevoEntrenadorNombre: nuevoEntrenador.nombre,
+          fechaCambio: aplicarInmediatamente 
+            ? new Date().toISOString().split('T')[0] 
+            : fechaCambio,
+          mantenerSesionesProgramadas,
+          reasignarSesiones,
+          motivo: motivo || undefined,
+        };
+
+        await cambiarEntrenadorSuscripcion(request);
+        
+        setModalOpen(false);
+        setNuevoEntrenadorId('');
+        setMotivo('');
+        setMantenerSesionesProgramadas(true);
+        setReasignarSesiones(false);
+        onSuccess?.();
+      } catch (error) {
+        console.error('Error cambiando entrenador:', error);
+        alert('Error al cambiar el entrenador. Por favor, intenta de nuevo.');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -111,7 +204,7 @@ export const CambioPlanPT: React.FC<CambioPlanPTProps> = ({
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              Cambio de Plan
+              Cambio de Plan / Entrenador
             </h3>
             <p className="text-base text-gray-600 mb-3">
               Plan actual: <span className="font-semibold">{suscripcion.planNombre}</span>
@@ -128,14 +221,39 @@ export const CambioPlanPT: React.FC<CambioPlanPTProps> = ({
               <span>
                 {sesionesActualesDisponibles} sesiones disponibles
               </span>
+              {suscripcion.entrenadorId && (
+                <>
+                  <span>•</span>
+                  <span>
+                    Entrenador: {ENTRENADORES_DISPONIBLES.find(e => e.id === suscripcion.entrenadorId)?.nombre || 'N/A'}
+                  </span>
+                </>
+              )}
             </div>
           </div>
-          <Button
-            variant="primary"
-            onClick={() => setModalOpen(true)}
-          >
-            Cambiar Plan
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="primary"
+              onClick={() => {
+                setTipoCambio('plan');
+                setModalOpen(true);
+              }}
+            >
+              Cambiar Plan
+            </Button>
+            {suscripcion.entrenadorId && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setTipoCambio('entrenador');
+                  setModalOpen(true);
+                }}
+              >
+                <User className="w-4 h-4 mr-2" />
+                Cambiar PT
+              </Button>
+            )}
+          </div>
         </div>
       </Card>
 
@@ -145,51 +263,164 @@ export const CambioPlanPT: React.FC<CambioPlanPTProps> = ({
           if (!loading) {
             setModalOpen(false);
             setNuevoPlanId('');
+            setNuevoEntrenadorId('');
             setMotivo('');
           }
         }}
-        title="Cambiar Plan del Cliente"
+        title={tipoCambio === 'plan' ? 'Cambiar Plan del Cliente' : 'Cambiar Entrenador Personal'}
         size="lg"
       >
         <div className="space-y-6">
-          {/* Plan actual */}
-          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-sm font-medium text-gray-700 mb-2">Plan Actual</p>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-lg font-semibold text-gray-900">
-                  {suscripcion.planNombre}
-                </p>
-                <p className="text-sm text-gray-600">
-                  {planActual?.sesiones || 0} sesiones/mes • {planActual?.precio || 0} €/mes
-                </p>
+          {tipoCambio === 'plan' ? (
+            <>
+              {/* Plan actual */}
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-sm font-medium text-gray-700 mb-2">Plan Actual</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {suscripcion.planNombre}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {planActual?.sesiones || 0} sesiones/mes • {planActual?.precio || 0} €/mes
+                    </p>
+                  </div>
+                  <Badge color="info">Actual</Badge>
+                </div>
               </div>
-              <Badge color="info">Actual</Badge>
-            </div>
-          </div>
 
-          {/* Selección de nuevo plan */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Seleccionar Nuevo Plan
-            </label>
-            <Select
-              value={nuevoPlanId}
-              onChange={(e) => setNuevoPlanId(e.target.value)}
-              options={planesDisponibles.map(plan => ({
-                value: plan.id,
-                label: `${plan.nombre} - ${plan.sesiones} sesiones/mes - ${plan.precio} €/mes`,
-              }))}
-            />
-            {planesDisponibles.length === 0 && (
-              <p className="text-sm text-gray-500 mt-2">
-                No hay otros planes disponibles
-              </p>
-            )}
-          </div>
+              {/* Selección de nuevo plan */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Seleccionar Nuevo Plan
+                </label>
+                <Select
+                  value={nuevoPlanId}
+                  onChange={(e) => setNuevoPlanId(e.target.value)}
+                  options={planesDisponibles.map(plan => ({
+                    value: plan.id,
+                    label: `${plan.nombre} - ${plan.sesiones} sesiones/mes - ${plan.precio} €/mes`,
+                  }))}
+                />
+                {planesDisponibles.length === 0 && (
+                  <p className="text-sm text-gray-500 mt-2">
+                    No hay otros planes disponibles
+                  </p>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Entrenador actual */}
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-sm font-medium text-gray-700 mb-2">Entrenador Actual</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {ENTRENADORES_DISPONIBLES.find(e => e.id === suscripcion.entrenadorId)?.nombre || 'N/A'}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {ENTRENADORES_DISPONIBLES.find(e => e.id === suscripcion.entrenadorId)?.especialidad || ''}
+                    </p>
+                  </div>
+                  <Badge color="info">Actual</Badge>
+                </div>
+              </div>
 
-          {/* Información del cambio */}
-          {nuevoPlan && (
+              {/* Selección de nuevo entrenador */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Seleccionar Nuevo Entrenador Personal
+                </label>
+                <Select
+                  value={nuevoEntrenadorId}
+                  onChange={(e) => setNuevoEntrenadorId(e.target.value)}
+                  options={ENTRENADORES_DISPONIBLES
+                    .filter(e => e.id !== suscripcion.entrenadorId && e.disponible)
+                    .map(entrenador => ({
+                      value: entrenador.id,
+                      label: `${entrenador.nombre} - ${entrenador.especialidad}`,
+                    }))}
+                />
+              </div>
+
+              {/* Sesiones programadas */}
+              {sesionesProgramadas.length > 0 && (
+                <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Clock className="w-5 h-5 text-amber-600" />
+                    <p className="text-sm font-semibold text-amber-900">
+                      Sesiones Programadas ({sesionesProgramadas.length})
+                    </p>
+                  </div>
+                  <div className="space-y-2 mb-4">
+                    {sesionesProgramadas.map(sesion => (
+                      <div key={sesion.id} className="flex items-center justify-between text-sm bg-white p-2 rounded">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-gray-400" />
+                          <span className="text-gray-700">
+                            {new Date(sesion.fecha).toLocaleDateString('es-ES')} a las {sesion.hora}
+                          </span>
+                          <Badge color={sesion.estado === 'confirmada' ? 'success' : 'info'} size="sm">
+                            {sesion.estado}
+                          </Badge>
+                        </div>
+                        <span className="text-gray-500 text-xs">{sesion.tipo}</span>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Opciones de gestión de sesiones */}
+                  <div className="space-y-3 pt-3 border-t border-amber-200">
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        id="mantenerSesiones"
+                        checked={mantenerSesionesProgramadas}
+                        onChange={(e) => {
+                          setMantenerSesionesProgramadas(e.target.checked);
+                          if (e.target.checked) setReasignarSesiones(false);
+                        }}
+                        className="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      />
+                      <label htmlFor="mantenerSesiones" className="flex-1 cursor-pointer">
+                        <p className="text-sm font-medium text-amber-900">
+                          Mantener sesiones programadas con el entrenador actual
+                        </p>
+                        <p className="text-xs text-amber-700 mt-1">
+                          Las sesiones se mantendrán con el entrenador actual hasta completarlas.
+                        </p>
+                      </label>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        id="reasignarSesiones"
+                        checked={reasignarSesiones}
+                        onChange={(e) => {
+                          setReasignarSesiones(e.target.checked);
+                          if (e.target.checked) setMantenerSesionesProgramadas(false);
+                        }}
+                        className="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      />
+                      <label htmlFor="reasignarSesiones" className="flex-1 cursor-pointer">
+                        <p className="text-sm font-medium text-amber-900">
+                          Reasignar sesiones al nuevo entrenador
+                        </p>
+                        <p className="text-xs text-amber-700 mt-1">
+                          Las sesiones programadas se transferirán al nuevo entrenador. El cliente será notificado.
+                        </p>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Información del cambio - Solo para cambio de plan */}
+          {tipoCambio === 'plan' && nuevoPlan && (
             <>
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="flex items-start gap-3">
@@ -255,7 +486,7 @@ export const CambioPlanPT: React.FC<CambioPlanPTProps> = ({
                 )}
               </div>
 
-              {/* Opciones de aplicación */}
+              {/* Opciones de aplicación - Solo para cambio de plan */}
               <div className="space-y-3">
                 <div className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg">
                   <input
@@ -297,6 +528,79 @@ export const CambioPlanPT: React.FC<CambioPlanPTProps> = ({
                 </div>
               </div>
 
+              {!aplicarInmediatamente && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fecha de cambio
+                  </label>
+                  <input
+                    type="date"
+                    value={fechaCambio}
+                    onChange={(e) => setFechaCambio(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Opciones de aplicación para cambio de entrenador */}
+          {tipoCambio === 'entrenador' && nuevoEntrenadorId && (
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg">
+                <input
+                  type="radio"
+                  id="aplicarInmediatoPT"
+                  checked={aplicarInmediatamente}
+                  onChange={() => setAplicarInmediatamente(true)}
+                  className="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                />
+                <label htmlFor="aplicarInmediatoPT" className="flex-1 cursor-pointer">
+                  <p className="text-sm font-medium text-gray-900">
+                    Aplicar inmediatamente
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    El cambio de entrenador se aplica ahora. Las sesiones futuras se programarán con el nuevo entrenador.
+                  </p>
+                </label>
+              </div>
+              
+              <div className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg">
+                <input
+                  type="radio"
+                  id="aplicarProximaRenovacionPT"
+                  checked={!aplicarInmediatamente}
+                  onChange={() => setAplicarInmediatamente(false)}
+                  className="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                />
+                <label htmlFor="aplicarProximaRenovacionPT" className="flex-1 cursor-pointer">
+                  <p className="text-sm font-medium text-gray-900">
+                    Aplicar en fecha específica
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    El cambio se aplicará en la fecha seleccionada.
+                  </p>
+                </label>
+              </div>
+
+              {!aplicarInmediatamente && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fecha de cambio
+                  </label>
+                  <input
+                    type="date"
+                    value={fechaCambio}
+                    onChange={(e) => setFechaCambio(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
               {/* Motivo (opcional) */}
               <div>
                 <Textarea
@@ -326,7 +630,11 @@ export const CambioPlanPT: React.FC<CambioPlanPTProps> = ({
             <Button
               variant="primary"
               onClick={handleCambioPlan}
-              disabled={!nuevoPlanId || loading}
+              disabled={
+                (tipoCambio === 'plan' && !nuevoPlanId) || 
+                (tipoCambio === 'entrenador' && !nuevoEntrenadorId) || 
+                loading
+              }
             >
               {loading ? 'Procesando...' : 'Confirmar Cambio'}
             </Button>

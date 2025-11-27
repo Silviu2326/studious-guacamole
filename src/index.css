@@ -51,4 +51,96 @@
     from { opacity: 0; }
     to { opacity: 1; }
   }
+  
+  .fade-out {
+    animation-name: fadeOut;
+  }
+  
+  .slide-out-up {
+    animation-name: slideOutUp;
+  }
+  
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+  
+  @keyframes slideOutUp {
+    from { 
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to { 
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+  }
+  
+  /* Hide scrollbar utility */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
+}
+
+/* Print styles for fiscal reports */
+@media print {
+  /* Hide interactive elements */
+  button,
+  [role="button"],
+  .no-print,
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  /* Page setup */
+  @page {
+    size: A4 portrait;
+    margin: 1.5cm;
+  }
+
+  /* Ensure content doesn't break awkwardly */
+  .print\\:break-inside-avoid {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Optimize spacing for print */
+  .print\\:space-y-4 > * + * {
+    margin-top: 1rem;
+  }
+
+  /* Ensure text is readable */
+  body {
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  /* Optimize charts for print */
+  .recharts-wrapper {
+    page-break-inside: avoid;
+  }
+
+  /* Table optimizations */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  th, td {
+    border: 1px solid #ddd !important;
+    padding: 8px !important;
+  }
+
+  /* Card styling for print */
+  .card,
+  [class*="Card"] {
+    border: 1px solid #ddd !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
 }

@@ -8,12 +8,16 @@ interface PhaseColumnProps {
   column: PhaseColumnType;
   onSaleUpdate: (saleId: string, updates: Partial<Sale>) => void;
   onSalePhaseChange: (saleId: string, newPhase: PipelinePhase) => void;
+  selectedLeadId?: string | null;
+  selectedSaleRef?: React.MutableRefObject<HTMLDivElement | null>;
 }
 
 export const PhaseColumn: React.FC<PhaseColumnProps> = ({
   column,
   onSaleUpdate,
   onSalePhaseChange,
+  selectedLeadId,
+  selectedSaleRef,
 }) => {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -98,14 +102,23 @@ export const PhaseColumn: React.FC<PhaseColumnProps> = ({
                 };
                 return getDaysWithoutContact(b) - getDaysWithoutContact(a);
               })
-              .map((sale) => (
-                <SaleCard
-                  key={sale.id}
-                  sale={sale}
-                  onUpdate={(updates) => onSaleUpdate(sale.id, updates)}
-                  onPhaseChange={(newPhase) => onSalePhaseChange(sale.id, newPhase)}
-                />
-              ))
+              .map((sale) => {
+                const isSelected = selectedLeadId && sale.leadId === selectedLeadId;
+                return (
+                  <div
+                    key={sale.id}
+                    ref={isSelected ? selectedSaleRef : null}
+                    className={isSelected ? 'ring-2 ring-blue-500 rounded-lg' : ''}
+                  >
+                    <SaleCard
+                      sale={sale}
+                      onUpdate={(updates) => onSaleUpdate(sale.id, updates)}
+                      onPhaseChange={(newPhase) => onSalePhaseChange(sale.id, newPhase)}
+                      isHighlighted={isSelected}
+                    />
+                  </div>
+                );
+              })
           )}
         </div>
       </Card>

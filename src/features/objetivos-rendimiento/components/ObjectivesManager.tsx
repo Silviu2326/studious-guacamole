@@ -2,13 +2,14 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Objective, ObjectiveFilters } from '../types';
 import { getObjectives, createObjective, updateObjective, deleteObjective } from '../api/objectives';
 import { Card, Button, Table, Modal, Input, Select, Textarea, Badge } from '../../../components/componentsreutilizables';
-import { Target, Plus, Edit2, Trash2, Filter, X, Search, Loader2, LayoutGrid, List, TrendingUp, Calendar, BarChart3, Clock } from 'lucide-react';
+import { Target, Plus, Edit2, Trash2, Filter, X, Search, Loader2, LayoutGrid, List, TrendingUp, Calendar, BarChart3, Clock, Eye, Archive } from 'lucide-react';
 
 interface ObjectivesManagerProps {
   role: 'entrenador' | 'gimnasio';
+  onError?: (errorMessage: string) => void;
 }
 
-export const ObjectivesManager: React.FC<ObjectivesManagerProps> = ({ role }) => {
+export const ObjectivesManager: React.FC<ObjectivesManagerProps> = ({ role, onError }) => {
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -17,6 +18,8 @@ export const ObjectivesManager: React.FC<ObjectivesManagerProps> = ({ role }) =>
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedObjective, setSelectedObjective] = useState<Objective | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   useEffect(() => {
     loadObjectives();
@@ -29,6 +32,10 @@ export const ObjectivesManager: React.FC<ObjectivesManagerProps> = ({ role }) =>
       setObjectives(data);
     } catch (error) {
       console.error('Error loading objectives:', error);
+      const errorMessage = error instanceof Error ? error.message : 'No se pudieron cargar los objetivos';
+      if (onError) {
+        onError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -55,23 +62,43 @@ export const ObjectivesManager: React.FC<ObjectivesManagerProps> = ({ role }) =>
     }
   };
 
+  const handleArchive = async (id: string) => {
+    if (window.confirm('¿Estás seguro de archivar este objetivo?')) {
+      try {
+        await deleteObjective(id); // Usa deleteObjective que hace soft delete
+        loadObjectives();
+      } catch (error) {
+        console.error('Error archiving objective:', error);
+      }
+    }
+  };
+
+  const handleViewDetail = (objective: Objective) => {
+    setSelectedObjective(objective);
+    setShowDetailModal(true);
+  };
+
   const getStatusBadge = (status: Objective['status']) => {
-    const statusConfig = {
-      not_started: { label: 'No iniciado', variant: 'blue' as const },
-      in_progress: { label: 'En progreso', variant: 'purple' as const },
-      achieved: { label: 'Alcanzado', variant: 'green' as const },
-      at_risk: { label: 'En riesgo', variant: 'yellow' as const },
-      failed: { label: 'Fallido', variant: 'red' as const },
+    const statusConfig: Record<string, { label: string; variant: 'blue' | 'purple' | 'green' | 'yellow' | 'red' }> = {
+      not_started: { label: 'No iniciado', variant: 'blue' },
+      in_progress: { label: 'En progreso', variant: 'purple' },
+      on_track: { label: 'On Track', variant: 'blue' },
+      achieved: { label: 'Alcanzado', variant: 'green' },
+      completed: { label: 'Completado', variant: 'green' },
+      at_risk: { label: 'En riesgo', variant: 'yellow' },
+      off_track: { label: 'Fuera de Ruta', variant: 'red' },
+      failed: { label: 'Fallido', variant: 'red' },
     };
     
-    const config = statusConfig[status];
+    const statusKey = status as string;
+    const config = statusConfig[statusKey] || { label: statusKey, variant: 'blue' as const };
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
   const columns = [
     {
       key: 'title',
-      label: 'Objetivo',
+      label: 'Nombre Objetivo',
       render: (value: string, row: Objective) => (
         <div>
           <div className="font-semibold text-gray-900">{value}</div>
@@ -80,6 +107,24 @@ export const ObjectivesManager: React.FC<ObjectivesManagerProps> = ({ role }) =>
               {row.description}
             </div>
           )}
+        </div>
+      ),
+    },
+    {
+      key: 'tipo',
+      label: 'Tipo',
+      render: (_: any, row: Objective) => (
+        <div className="text-sm text-gray-700">
+          {row.tipo || row.metric || row.category || 'N/A'}
+        </div>
+      ),
+    },
+    {
+      key: 'periodo',
+      label: 'Periodo',
+      render: (_: any, row: Objective) => (
+        <div className="text-sm text-gray-700">
+          {row.periodo || 'N/A'}
         </div>
       ),
     },
@@ -113,15 +158,26 @@ export const ObjectivesManager: React.FC<ObjectivesManagerProps> = ({ role }) =>
       render: (value: Objective['status']) => getStatusBadge(value),
     },
     {
-      key: 'deadline',
-      label: 'Fecha límite',
-      render: (value: string) => new Date(value).toLocaleDateString('es-ES'),
+      key: 'responsible',
+      label: 'Responsable',
+      render: (_: any, row: Objective) => (
+        <div className="text-sm text-gray-700">
+          {row.responsible || row.responsable || 'Sin asignar'}
+        </div>
+      ),
     },
     {
       key: 'actions',
       label: 'Acciones',
       render: (_: any, row: Objective) => (
         <div className="flex gap-2">
+          <button
+            onClick={() => handleViewDetail(row)}
+            className="p-2 rounded-lg text-gray-600 hover:bg-gray-50 transition-all"
+            title="Ver detalle"
+          >
+            <Eye className="w-4 h-4" />
+          </button>
           <button
             onClick={() => handleEdit(row)}
             className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all"
@@ -130,11 +186,11 @@ export const ObjectivesManager: React.FC<ObjectivesManagerProps> = ({ role }) =>
             <Edit2 className="w-4 h-4" />
           </button>
           <button
-            onClick={() => handleDelete(row.id)}
-            className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-all"
-            title="Eliminar"
+            onClick={() => handleArchive(row.id)}
+            className="p-2 rounded-lg text-orange-600 hover:bg-orange-50 transition-all"
+            title="Archivar"
           >
-            <Trash2 className="w-4 h-4" />
+            <Archive className="w-4 h-4" />
           </button>
         </div>
       ),
@@ -157,30 +213,51 @@ export const ObjectivesManager: React.FC<ObjectivesManagerProps> = ({ role }) =>
     return filtered;
   }, [objectives, searchQuery]);
 
-  // Agrupar por estado para Kanban
+  // Agrupar por estado para Kanban según requisitos: On Track, En Riesgo, Fuera de Ruta, Completado
   const kanbanColumns = useMemo(() => {
-    const statuses: { key: Objective['status']; label: string; color: string }[] = [
-      { key: 'not_started', label: 'No Iniciado', color: 'bg-gray-100 border-gray-300' },
-      { key: 'in_progress', label: 'En Progreso', color: 'bg-blue-100 border-blue-300' },
-      { key: 'at_risk', label: 'En Riesgo', color: 'bg-yellow-100 border-yellow-300' },
-      { key: 'achieved', label: 'Alcanzado', color: 'bg-green-100 border-green-300' },
-      { key: 'failed', label: 'Fallido', color: 'bg-red-100 border-red-300' },
+    const statuses: { key: string; label: string; color: string; statuses: string[] }[] = [
+      { 
+        key: 'on_track', 
+        label: 'On Track', 
+        color: 'bg-blue-100 border-blue-300',
+        statuses: ['on_track', 'in_progress', 'not_started']
+      },
+      { 
+        key: 'at_risk', 
+        label: 'En Riesgo', 
+        color: 'bg-yellow-100 border-yellow-300',
+        statuses: ['at_risk']
+      },
+      { 
+        key: 'off_track', 
+        label: 'Fuera de Ruta', 
+        color: 'bg-red-100 border-red-300',
+        statuses: ['off_track', 'failed']
+      },
+      { 
+        key: 'completed', 
+        label: 'Completado', 
+        color: 'bg-green-100 border-green-300',
+        statuses: ['completed', 'achieved']
+      },
     ];
 
     return statuses.map(status => ({
-      ...status,
-      items: filteredObjectives.filter(obj => obj.status === status.key),
+      key: status.key,
+      label: status.label,
+      color: status.color,
+      items: filteredObjectives.filter((obj: Objective) => status.statuses.includes(obj.status as string)),
     }));
   }, [filteredObjectives]);
 
   // Estadísticas de objetivos
   const stats = useMemo(() => {
     const total = filteredObjectives.length;
-    const achieved = filteredObjectives.filter(o => o.status === 'achieved').length;
-    const inProgress = filteredObjectives.filter(o => o.status === 'in_progress').length;
-    const atRisk = filteredObjectives.filter(o => o.status === 'at_risk').length;
+    const achieved = filteredObjectives.filter((o: Objective) => o.status === 'achieved' || o.status === 'completed').length;
+    const inProgress = filteredObjectives.filter((o: Objective) => o.status === 'in_progress' || o.status === 'on_track').length;
+    const atRisk = filteredObjectives.filter((o: Objective) => o.status === 'at_risk').length;
     const avgProgress = total > 0 
-      ? filteredObjectives.reduce((acc, o) => acc + o.progress, 0) / total 
+      ? filteredObjectives.reduce((acc: number, o: Objective) => acc + o.progress, 0) / total 
       : 0;
 
     return { total, achieved, inProgress, atRisk, avgProgress };
@@ -190,28 +267,40 @@ export const ObjectivesManager: React.FC<ObjectivesManagerProps> = ({ role }) =>
   const upcomingObjectives = useMemo(() => {
     const now = new Date();
     return filteredObjectives
-      .filter(obj => {
+      .filter((obj: Objective) => {
         const deadline = new Date(obj.deadline);
         const diffTime = deadline.getTime() - now.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays > 0 && diffDays <= 30 && obj.status !== 'achieved' && obj.status !== 'failed';
+        return diffDays > 0 && diffDays <= 30 && obj.status !== 'achieved' && obj.status !== 'completed' && obj.status !== 'failed';
       })
-      .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
+      .sort((a: Objective, b: Objective) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
       .slice(0, 5);
   }, [filteredObjectives]);
 
-  const activeFiltersCount = (filters.status ? 1 : 0) + (filters.category ? 1 : 0) + (filters.responsible ? 1 : 0);
+  const activeFiltersCount = (filters.status ? 1 : 0) + (filters.category || filters.tipo ? 1 : 0) + (filters.responsible ? 1 : 0) + (filters.periodo ? 1 : 0);
 
   const handleDragStart = (e: React.DragEvent, objectiveId: string) => {
     e.dataTransfer.setData('objectiveId', objectiveId);
   };
 
-  const handleDrop = async (e: React.DragEvent, newStatus: Objective['status']) => {
+  const handleDrop = async (e: React.DragEvent, kanbanKey: string) => {
     e.preventDefault();
     const objectiveId = e.dataTransfer.getData('objectiveId');
-    const objective = objectives.find(obj => obj.id === objectiveId);
+    const objective = objectives.find((obj: Objective) => obj.id === objectiveId);
     
-    if (objective && objective.status !== newStatus) {
+    if (!objective) return;
+
+    // Mapear las claves del Kanban a estados reales
+    const statusMap: Record<string, string> = {
+      'on_track': 'on_track',
+      'at_risk': 'at_risk',
+      'off_track': 'off_track',
+      'completed': 'completed',
+    };
+
+    const newStatus = statusMap[kanbanKey] as Objective['status'];
+    
+    if (objective && newStatus && objective.status !== newStatus) {
       try {
         await updateObjective(objectiveId, { status: newStatus });
         loadObjectives();
@@ -375,12 +464,33 @@ export const ObjectivesManager: React.FC<ObjectivesManagerProps> = ({ role }) =>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
                     <Target size={16} className="inline mr-1" />
-                    Categoría
+                    Tipo
+                  </label>
+                  <Select
+                    value={filters.tipo || filters.category || ''}
+                    onChange={(e) => setFilters({ ...filters, tipo: e.target.value || undefined, category: e.target.value || undefined })}
+                    options={[
+                      { value: '', label: 'Todos' },
+                      { value: 'facturacion', label: 'Facturación' },
+                      { value: 'retencion', label: 'Retención' },
+                      { value: 'adherencia', label: 'Adherencia' },
+                      { value: 'leads', label: 'Leads' },
+                      { value: 'ocupacion', label: 'Ocupación' },
+                      { value: 'operacional', label: 'Operacional' },
+                      { value: 'comercial', label: 'Comercial' },
+                      { value: 'general', label: 'General' },
+                    ]}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <Calendar size={16} className="inline mr-1" />
+                    Periodo
                   </label>
                   <Input
-                    value={filters.category || ''}
-                    onChange={(e) => setFilters({ ...filters, category: e.target.value || undefined })}
-                    placeholder="financiero, operacional..."
+                    value={filters.periodo || ''}
+                    onChange={(e) => setFilters({ ...filters, periodo: e.target.value || undefined })}
+                    placeholder="2024-12, 2024-Q4..."
                   />
                 </div>
                 <div>
@@ -425,11 +535,24 @@ export const ObjectivesManager: React.FC<ObjectivesManagerProps> = ({ role }) =>
           <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
           <p className="text-gray-600">Cargando...</p>
         </Card>
+      ) : filteredObjectives.length === 0 ? (
+        <Card className="p-12 text-center bg-white shadow-sm">
+          <Target className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">No hay objetivos registrados</h3>
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            Comienza a gestionar el rendimiento de tu gimnasio creando tu primer objetivo. 
+            Establece metas claras y realiza un seguimiento de tu progreso.
+          </p>
+          <Button variant="primary" onClick={handleCreate}>
+            <Plus size={20} className="mr-2" />
+            Crear primer objetivo
+          </Button>
+        </Card>
       ) : viewMode === 'kanban' ? (
         <div className="space-y-6">
           {/* Vista Kanban */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            {kanbanColumns.map((column) => (
+            {kanbanColumns.map((column: { key: string; label: string; color: string; items: Objective[] }) => (
               <div
                 key={column.key}
                 className={`rounded-lg border-2 border-dashed ${column.color} p-4 min-h-[500px]`}
@@ -480,6 +603,13 @@ export const ObjectivesManager: React.FC<ObjectivesManagerProps> = ({ role }) =>
                           </div>
                           <div className="flex gap-1">
                             <button
+                              onClick={() => handleViewDetail(objective)}
+                              className="p-1 rounded text-gray-600 hover:bg-gray-50 transition-all"
+                              title="Ver detalle"
+                            >
+                              <Eye className="w-3 h-3" />
+                            </button>
+                            <button
                               onClick={() => handleEdit(objective)}
                               className="p-1 rounded text-blue-600 hover:bg-blue-50 transition-all"
                               title="Editar"
@@ -487,11 +617,11 @@ export const ObjectivesManager: React.FC<ObjectivesManagerProps> = ({ role }) =>
                               <Edit2 className="w-3 h-3" />
                             </button>
                             <button
-                              onClick={() => handleDelete(objective.id)}
-                              className="p-1 rounded text-red-600 hover:bg-red-50 transition-all"
-                              title="Eliminar"
+                              onClick={() => handleArchive(objective.id)}
+                              className="p-1 rounded text-orange-600 hover:bg-orange-50 transition-all"
+                              title="Archivar"
                             >
-                              <Trash2 className="w-3 h-3" />
+                              <Archive className="w-3 h-3" />
                             </button>
                           </div>
                         </div>
@@ -579,6 +709,107 @@ export const ObjectivesManager: React.FC<ObjectivesManagerProps> = ({ role }) =>
         objective={editingObjective}
         role={role}
       />
+
+      {/* Modal de detalle del objetivo */}
+      {selectedObjective && (
+        <Modal
+          isOpen={showDetailModal}
+          onClose={() => {
+            setShowDetailModal(false);
+            setSelectedObjective(null);
+          }}
+          title={`Detalle: ${selectedObjective.title}`}
+          size="lg"
+          footer={
+            <div className="flex gap-3">
+              <Button variant="secondary" onClick={() => {
+                setShowDetailModal(false);
+                setSelectedObjective(null);
+              }}>
+                Cerrar
+              </Button>
+              <Button variant="primary" onClick={() => {
+                setShowDetailModal(false);
+                handleEdit(selectedObjective);
+              }}>
+                <Edit2 size={18} className="mr-2" />
+                Editar
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Descripción</label>
+              <p className="text-gray-900 mt-1">{selectedObjective.description || 'Sin descripción'}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Tipo</label>
+                <p className="text-gray-900 mt-1">{selectedObjective.tipo || selectedObjective.metric || selectedObjective.category || 'N/A'}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Periodo</label>
+                <p className="text-gray-900 mt-1">{selectedObjective.periodo || 'N/A'}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Estado</label>
+                <div className="mt-1">{getStatusBadge(selectedObjective.status)}</div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Responsable</label>
+                <p className="text-gray-900 mt-1">{selectedObjective.responsible || selectedObjective.responsable || 'Sin asignar'}</p>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Progreso</label>
+              <div className="mt-2">
+                <div className="flex justify-between mb-1">
+                  <span className="text-sm text-gray-900">
+                    {selectedObjective.progress.toFixed(0)}%
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {selectedObjective.currentValue} / {selectedObjective.targetValue} {selectedObjective.unit}
+                  </span>
+                </div>
+                <div className="w-full bg-slate-100 rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full ${
+                      selectedObjective.progress >= 100 ? 'bg-green-600' : 
+                      selectedObjective.progress >= 75 ? 'bg-blue-600' : 
+                      selectedObjective.progress >= 50 ? 'bg-yellow-600' : 
+                      'bg-red-600'
+                    }`}
+                    style={{ width: `${Math.min(selectedObjective.progress, 100)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Fecha límite</label>
+                <p className="text-gray-900 mt-1">{new Date(selectedObjective.deadline).toLocaleDateString('es-ES')}</p>
+              </div>
+              {selectedObjective.fechaInicio && (
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Fecha inicio</label>
+                  <p className="text-gray-900 mt-1">{new Date(selectedObjective.fechaInicio).toLocaleDateString('es-ES')}</p>
+                </div>
+              )}
+            </div>
+            {selectedObjective.tags && selectedObjective.tags.length > 0 && (
+              <div>
+                <label className="text-sm font-medium text-gray-700">Tags</label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {selectedObjective.tags.map((tag, idx) => (
+                    <Badge key={idx} variant="blue">{tag}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

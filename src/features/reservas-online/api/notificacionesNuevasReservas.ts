@@ -20,8 +20,210 @@ export interface NotificacionNuevaReserva {
 const notificaciones: Map<string, NotificacionNuevaReserva[]> = new Map();
 const ultimaReservaVerificada: Map<string, string> = new Map();
 
+// ============================================================================
+// BUS MOCK DE NOTIFICACIONES EN TIEMPO REAL
+// ============================================================================
+// 
+// Este es un bus de eventos mock que simula un sistema de notificaciones
+// en tiempo real. En producción, esto se reemplazaría por:
+//
+// 1. WEBSOCKETS:
+//    - Socket.io: io.to(`entrenador-${entrenadorId}`).emit('nueva-reserva', reserva)
+//    - WebSocket nativo: ws.send(JSON.stringify({ type: 'nueva-reserva', data: reserva }))
+//    - Pusher: await pusher.trigger('canal-entrenador', 'nueva-reserva', reserva)
+//    - Ably: await channel.publish('nueva-reserva', reserva)
+//    - AWS API Gateway WebSocket: await apigateway.postToConnection({ ConnectionId, Data })
+//
+// 2. SERVER-SENT EVENTS (SSE):
+//    - Express: res.write(`data: ${JSON.stringify({ type: 'nueva-reserva', data: reserva })}\n\n`)
+//    - Fastify: reply.raw.write(`data: ${JSON.stringify(event)}\n\n`)
+//
+// 3. COLAS DE MENSAJERÍA (para notificaciones push):
+//    - RabbitMQ: Publicar a exchange 'notificaciones' con routing key 'nueva-reserva'
+//    - AWS SNS: await sns.publish({ TopicArn, Message: JSON.stringify(reserva) })
+//    - Google Cloud Pub/Sub: await pubsub.topic('nueva-reserva').publish(Buffer.from(JSON.stringify(reserva)))
+//    - Redis Pub/Sub: await redis.publish('nueva-reserva', JSON.stringify(reserva))
+//
+// 4. SERVICIOS DE NOTIFICACIONES EN TIEMPO REAL:
+//    - Firebase Realtime Database: ref('notificaciones').push(reserva)
+//    - Firebase Cloud Firestore: await db.collection('notificaciones').add(reserva)
+//    - Supabase Realtime: await supabase.from('notificaciones').insert(reserva)
+//
+// Ejemplo de integración con Socket.io:
+// ```typescript
+// import { Server } from 'socket.io';
+// const io = new Server(server);
+// 
+// export const emitirNuevaReserva = (reserva: Reserva, entrenadorId: string) => {
+//   io.to(`entrenador-${entrenadorId}`).emit('nueva-reserva', {
+//     type: 'nueva-reserva',
+//     data: reserva,
+//     timestamp: new Date()
+//   });
+// };
+// ```
+//
+// Ejemplo de integración con Redis Pub/Sub:
+// ```typescript
+// import Redis from 'ioredis';
+// const redis = new Redis();
+// 
+// export const emitirNuevaReserva = async (reserva: Reserva, entrenadorId: string) => {
+//   await redis.publish(`entrenador:${entrenadorId}:nueva-reserva`, JSON.stringify(reserva));
+// };
+// ```
+// ============================================================================
+
+/**
+ * Tipo de callback para suscripciones a nuevas reservas
+ */
+export type CallbackNuevaReserva = (reserva: Reserva, notificacion: NotificacionNuevaReserva) => void;
+
+/**
+ * Almacenamiento de suscripciones por entrenador
+ * En producción, esto se manejaría con WebSockets o Server-Sent Events
+ */
+const suscripciones: Map<string, Set<CallbackNuevaReserva>> = new Map();
+
+/**
+ * Suscribe un callback para recibir notificaciones de nuevas reservas en tiempo real
+ * 
+ * Este es un bus mock que simula notificaciones en tiempo real. En producción,
+ * esto se reemplazaría por WebSockets, Server-Sent Events, o colas de mensajería.
+ * 
+ * @param entrenadorId - ID del entrenador que quiere recibir notificaciones
+ * @param callback - Función que se ejecutará cuando se cree una nueva reserva
+ * @returns Función para cancelar la suscripción
+ * 
+ * Ejemplo de uso:
+ * ```typescript
+ * const unsubscribe = subscribeNuevasReservas('entrenador-123', (reserva, notificacion) => {
+ *   console.log('Nueva reserva recibida:', reserva);
+ *   // Actualizar UI, mostrar notificación, etc.
+ * });
+ * 
+ * // Más tarde, para cancelar la suscripción:
+ * unsubscribe();
+ * ```
+ */
+export const subscribeNuevasReservas = (
+  entrenadorId: string,
+  callback: CallbackNuevaReserva
+): (() => void) => {
+  if (!suscripciones.has(entrenadorId)) {
+    suscripciones.set(entrenadorId, new Set());
+  }
+  
+  const callbacks = suscripciones.get(entrenadorId)!;
+  callbacks.add(callback);
+  
+  console.log('[NotificacionesNuevasReservas] Suscripción agregada para entrenador:', entrenadorId);
+  console.log('[NotificacionesNuevasReservas] Total de suscripciones:', callbacks.size);
+  
+  // Retornar función para cancelar la suscripción
+  return () => {
+    const callbacks = suscripciones.get(entrenadorId);
+    if (callbacks) {
+      callbacks.delete(callback);
+      console.log('[NotificacionesNuevasReservas] Suscripción cancelada para entrenador:', entrenadorId);
+      if (callbacks.size === 0) {
+        suscripciones.delete(entrenadorId);
+      }
+    }
+  };
+};
+
+/**
+ * Emite un evento de nueva reserva a todos los suscriptores del entrenador
+ * 
+ * Esta función se debe llamar cuando se crea una nueva reserva para notificar
+ * en tiempo real a los suscriptores (por ejemplo, el entrenador que está viendo
+ * su panel de control).
+ * 
+ * En producción, esto se reemplazaría por:
+ * - WebSocket: io.to(`entrenador-${entrenadorId}`).emit('nueva-reserva', reserva)
+ * - Server-Sent Events: res.write(`data: ${JSON.stringify({ type: 'nueva-reserva', data: reserva })}\n\n`)
+ * - Redis Pub/Sub: await redis.publish(`entrenador:${entrenadorId}:nueva-reserva`, JSON.stringify(reserva))
+ * - RabbitMQ: Publicar a exchange 'notificaciones' con routing key `entrenador.${entrenadorId}.nueva-reserva`
+ * 
+ * @param reserva - La reserva que se acaba de crear
+ * @param entrenadorId - ID del entrenador que debe recibir la notificación
+ * @param notificacion - La notificación asociada (opcional, se creará si no se proporciona)
+ */
+export const emitirNuevaReserva = async (
+  reserva: Reserva,
+  entrenadorId: string,
+  notificacion?: NotificacionNuevaReserva
+): Promise<void> => {
+  // Crear notificación si no se proporciona
+  const notif = notificacion || await crearNotificacionNuevaReserva(reserva, entrenadorId);
+  
+  // Obtener todos los callbacks suscritos para este entrenador
+  const callbacks = suscripciones.get(entrenadorId);
+  
+  if (callbacks && callbacks.size > 0) {
+    console.log('[NotificacionesNuevasReservas] Emitiendo nueva reserva a', callbacks.size, 'suscriptores');
+    
+    // Ejecutar todos los callbacks suscritos
+    callbacks.forEach(callback => {
+      try {
+        callback(reserva, notif);
+      } catch (error) {
+        console.error('[NotificacionesNuevasReservas] Error ejecutando callback:', error);
+      }
+    });
+  } else {
+    console.log('[NotificacionesNuevasReservas] No hay suscriptores para entrenador:', entrenadorId);
+  }
+  
+  // ============================================================================
+  // INTEGRACIÓN CON SERVICIOS REALES (COMENTARIOS PARA PRODUCCIÓN)
+  // ============================================================================
+  // 
+  // En producción, aquí se emitiría el evento a través de WebSockets o SSE:
+  //
+  // Ejemplo con Socket.io:
+  // ```typescript
+  // import { Server } from 'socket.io';
+  // const io = new Server(server);
+  // io.to(`entrenador-${entrenadorId}`).emit('nueva-reserva', {
+  //   type: 'nueva-reserva',
+  //   data: reserva,
+  //   notificacion: notif,
+  //   timestamp: new Date()
+  // });
+  // ```
+  //
+  // Ejemplo con Redis Pub/Sub:
+  // ```typescript
+  // import Redis from 'ioredis';
+  // const redis = new Redis();
+  // await redis.publish(
+  //   `entrenador:${entrenadorId}:nueva-reserva`,
+  //   JSON.stringify({ reserva, notificacion: notif })
+  // );
+  // ```
+  //
+  // Ejemplo con AWS API Gateway WebSocket:
+  // ```typescript
+  // import { ApiGatewayManagementApi } from 'aws-sdk';
+  // const apiGateway = new ApiGatewayManagementApi({ endpoint: 'wss://...' });
+  // const connectionIds = await obtenerConnectionIds(entrenadorId);
+  // await Promise.all(connectionIds.map(connectionId =>
+  //   apiGateway.postToConnection({
+  //     ConnectionId: connectionId,
+  //     Data: JSON.stringify({ type: 'nueva-reserva', data: reserva })
+  //   }).promise()
+  // ));
+  // ```
+  // ============================================================================
+};
+
 /**
  * Crea una notificación cuando se realiza una nueva reserva
+ * 
+ * Esta función crea la notificación y automáticamente emite el evento
+ * a todos los suscriptores del bus de notificaciones en tiempo real.
  */
 export const crearNotificacionNuevaReserva = async (
   reserva: Reserva,
@@ -56,6 +258,9 @@ export const crearNotificacionNuevaReserva = async (
     reservaId: reserva.id,
     cliente: reserva.clienteNombre,
   });
+
+  // Emitir evento a todos los suscriptores del bus de notificaciones
+  await emitirNuevaReserva(reserva, entrenadorId, notificacion);
 
   return notificacion;
 };

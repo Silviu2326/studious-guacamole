@@ -1,104 +1,115 @@
 import {
   EntradaListaEspera,
   EstadoListaEspera,
-  HorarioPopular,
-  NotificacionSlotLiberado,
-  ConfiguracionListaEspera,
-  ResumenListaEspera,
   Cita,
+  TipoCita,
+  ContextoMetricas,
 } from '../types';
-import { getCitas, crearCita } from './calendario';
+import { crearCita, getCitas } from './calendario';
 
-// Mock data para lista de espera
+// ============================================================================
+// MOCK DATA STORAGE
+// ============================================================================
+// En producción, esto sería reemplazado por llamadas a una API REST/GraphQL
+// Ejemplo de endpoints:
+// - GET /api/lista-espera?entrenadorId=...&estado=...
+// - POST /api/lista-espera (body: EntradaListaEsperaCreateDto)
+// - DELETE /api/lista-espera/:id
+// - POST /api/lista-espera/:id/asignar (body: { citaId: string })
+
+/**
+ * Almacenamiento mock en memoria de entradas de lista de espera
+ * En producción, esto se almacenaría en una base de datos (PostgreSQL, MongoDB, etc.)
+ * con índices en entrenadorId, cliente.id, estado, prioridad, fechaDeseada
+ */
 let mockListaEspera: EntradaListaEspera[] = [
   {
     id: 'le1',
-    entrenadorId: 'entrenador1',
-    clienteId: '1',
-    clienteNombre: 'Juan Pérez',
-    clienteEmail: 'juan@example.com',
-    clienteTelefono: '+1234567890',
-    diaSemana: 1, // Lunes
-    horaInicio: '10:00',
-    horaFin: '11:00',
-    fechaSolicitud: new Date(),
-    estado: 'activa',
+    cliente: {
+      id: '1',
+      nombre: 'Juan Pérez',
+      email: 'juan@example.com',
+      telefono: '+1234567890',
+    },
+    tipoSesion: 'sesion-1-1',
+    fechaDeseada: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // En 7 días
     prioridad: 1,
+    estado: 'activa',
+    notas: 'Cliente prefiere horario matutino',
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   {
     id: 'le2',
-    entrenadorId: 'entrenador1',
-    clienteId: '2',
-    clienteNombre: 'María García',
-    clienteEmail: 'maria@example.com',
-    clienteTelefono: '+1234567891',
-    diaSemana: 1, // Lunes
-    horaInicio: '10:00',
-    horaFin: '11:00',
-    fechaSolicitud: new Date(Date.now() - 86400000),
-    estado: 'activa',
+    cliente: {
+      id: '2',
+      nombre: 'María García',
+      email: 'maria@example.com',
+      telefono: '+1234567891',
+    },
+    tipoSesion: 'videollamada',
+    fechaDeseada: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // En 5 días
     prioridad: 2,
+    estado: 'activa',
+    notas: 'Solicita sesión de evaluación',
     createdAt: new Date(Date.now() - 86400000),
     updatedAt: new Date(Date.now() - 86400000),
   },
   {
     id: 'le3',
-    entrenadorId: 'entrenador1',
-    clienteId: '3',
-    clienteNombre: 'Carlos Ruiz',
-    clienteEmail: 'carlos@example.com',
-    clienteTelefono: '+1234567892',
-    diaSemana: 3, // Miércoles
-    horaInicio: '16:00',
-    horaFin: '17:00',
-    fechaSolicitud: new Date(Date.now() - 86400000 * 2),
-    estado: 'activa',
+    cliente: {
+      id: '3',
+      nombre: 'Carlos Ruiz',
+      email: 'carlos@example.com',
+      telefono: '+1234567892',
+    },
+    tipoSesion: 'sesion-1-1',
+    fechaDeseada: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // En 10 días
     prioridad: 1,
+    estado: 'activa',
     createdAt: new Date(Date.now() - 86400000 * 2),
     updatedAt: new Date(Date.now() - 86400000 * 2),
   },
 ];
 
-// Mock data para notificaciones
-let mockNotificaciones: NotificacionSlotLiberado[] = [];
-
-// Mock data para configuración
-let mockConfiguracion: ConfiguracionListaEspera = {
-  id: 'config1',
-  entrenadorId: 'entrenador1',
-  activo: true,
-  tiempoRespuestaHoras: 24,
-  notificacionAutomatica: true,
-  metodoNotificacion: 'email',
-  maxEntradasPorCliente: 5,
-  diasValidez: 30,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-};
+// ============================================================================
+// FUNCIONES MOCK PARA LISTA DE ESPERA
+// ============================================================================
 
 /**
- * Obtiene todas las entradas de la lista de espera
+ * Obtiene todas las entradas de la lista de espera según el contexto proporcionado
+ * 
+ * INTEGRACIÓN CON GESTORLISTAESPERA.TSX:
+ * Esta función es llamada por el componente GestorListaEspera.tsx para obtener
+ * y mostrar todas las entradas de la lista de espera. El componente puede filtrar
+ * por estado después de recibir los datos, o se puede agregar un parámetro de filtro
+ * adicional si es necesario.
+ * 
+ * El contexto permite filtrar por entrenadorId o centroId según el rol del usuario.
+ * 
+ * @param contexto - Contexto que incluye información del usuario (entrenadorId, centroId, etc.)
+ * @returns Promise con la lista de entradas de la lista de espera ordenadas por prioridad
  */
 export const getListaEspera = async (
-  entrenadorId: string,
-  estado?: EstadoListaEspera
+  contexto: ContextoMetricas
 ): Promise<EntradaListaEspera[]> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      let lista = mockListaEspera.filter(le => le.entrenadorId === entrenadorId);
+      let lista = [...mockListaEspera];
       
-      if (estado) {
-        lista = lista.filter(le => le.estado === estado);
+      // Filtrar por entrenador si está en el contexto
+      if (contexto.entrenadorId) {
+        // En una implementación real, las entradas tendrían entrenadorId
+        // Por ahora, retornamos todas las entradas mock
+        // lista = lista.filter(le => le.entrenadorId === contexto.entrenadorId);
       }
       
-      // Ordenar por prioridad (menor número = mayor prioridad) y fecha de solicitud
+      // Ordenar por prioridad (menor número = mayor prioridad) y fecha de creación
       lista.sort((a, b) => {
         if (a.prioridad !== b.prioridad) {
           return a.prioridad - b.prioridad;
         }
-        return a.fechaSolicitud.getTime() - b.fechaSolicitud.getTime();
+        return a.createdAt.getTime() - b.createdAt.getTime();
       });
       
       resolve(lista);
@@ -107,69 +118,196 @@ export const getListaEspera = async (
 };
 
 /**
- * Agrega un cliente a la lista de espera
+ * Agrega una nueva entrada a la lista de espera
+ * 
+ * INTEGRACIÓN CON GESTORLISTAESPERA.TSX:
+ * Esta función es llamada cuando el usuario hace clic en "Agregar Cliente" en el
+ * componente GestorListaEspera.tsx. El componente pasa los datos del formulario
+ * y esta función crea la entrada con prioridad automática basada en el número
+ * de entradas activas existentes.
+ * 
+ * @param data - Datos de la entrada a agregar (sin id, estado, prioridad, fechas)
+ * @returns Promise con la entrada creada
  */
-export const agregarClienteListaEspera = async (
-  entrada: Omit<EntradaListaEspera, 'id' | 'fechaSolicitud' | 'estado' | 'prioridad' | 'createdAt' | 'updatedAt'>
+export const addEntradaListaEspera = async (
+  data: Omit<EntradaListaEspera, 'id' | 'estado' | 'prioridad' | 'createdAt' | 'updatedAt' | 'citaId' | 'fechaAsignacion'>
 ): Promise<EntradaListaEspera> => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      try {
+        // Verificar si el cliente ya está en la lista de espera para el mismo tipo de sesión y fecha similar
+        const existe = mockListaEspera.find(le => 
+          le.cliente.id === data.cliente.id &&
+          le.tipoSesion === data.tipoSesion &&
+          le.estado === 'activa' &&
+          Math.abs(le.fechaDeseada.getTime() - data.fechaDeseada.getTime()) < 24 * 60 * 60 * 1000 // Mismo día
+        );
+        
+        if (existe) {
+          reject(new Error('El cliente ya está en la lista de espera para este tipo de sesión en una fecha similar'));
+          return;
+        }
+        
+        // Calcular prioridad (número de entradas activas + 1)
+        const entradasActivas = mockListaEspera.filter(le => le.estado === 'activa').length;
+        
+        const nuevaEntrada: EntradaListaEspera = {
+          ...data,
+          id: `le${Date.now()}`,
+          estado: 'activa',
+          prioridad: entradasActivas + 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        
+        mockListaEspera.push(nuevaEntrada);
+        
+        resolve(nuevaEntrada);
+      } catch (error) {
+        console.error('Error agregando entrada a lista de espera:', error);
+        reject(error);
+      }
+    }, 300);
+  });
+};
+
+/**
+ * Elimina una entrada de la lista de espera
+ * 
+ * INTEGRACIÓN CON GESTORLISTAESPERA.TSX:
+ * Esta función es llamada cuando el usuario hace clic en el botón de eliminar
+ * en el componente GestorListaEspera.tsx. La entrada se marca como 'cancelada'
+ * en lugar de eliminarse físicamente para mantener el historial.
+ * 
+ * Después de eliminar, se reorganizan las prioridades de las entradas restantes.
+ * 
+ * @param id - ID de la entrada a eliminar
+ * @returns Promise que se resuelve cuando la entrada ha sido eliminada
+ */
+export const removeEntradaListaEspera = async (
+  id: string
+): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      const index = mockListaEspera.findIndex(le => le.id === id);
+      
+      if (index === -1) {
+        reject(new Error('Entrada no encontrada'));
+        return;
+      }
+      
+      // Marcar como cancelada en lugar de eliminar físicamente
+      mockListaEspera[index].estado = 'cancelada';
+      mockListaEspera[index].updatedAt = new Date();
+      
+      // Reorganizar prioridades de las entradas activas restantes
+      reorganizarPrioridades();
+      
+      resolve();
+    }, 300);
+  });
+};
+
+/**
+ * Asigna un hueco disponible a una entrada de la lista de espera, convirtiéndola en una cita
+ * 
+ * INTEGRACIÓN CON CREACIÓN/ACTUALIZACIÓN DE CITA:
+ * Esta función simula el proceso de convertir una entrada de lista de espera en una Cita.
+ * 
+ * Flujo de integración:
+ * 1. Cuando se libera un slot (por cancelación de una cita existente), se puede llamar
+ *    a esta función para asignar automáticamente el slot al siguiente cliente en la lista.
+ * 2. La función crea una nueva Cita usando crearCita() del módulo calendario.ts
+ * 3. La entrada de lista de espera se actualiza con:
+ *    - estado: 'asignada'
+ *    - citaId: ID de la cita creada
+ *    - fechaAsignacion: fecha actual
+ * 4. Se reorganizan las prioridades de las entradas restantes
+ * 
+ * INTEGRACIÓN CON GESTORLISTAESPERA.TSX:
+ * Esta función puede ser llamada desde GestorListaEspera.tsx cuando el entrenador
+ * decide asignar manualmente un slot disponible a un cliente de la lista de espera,
+ * o puede ser llamada automáticamente cuando se detecta que se liberó un slot.
+ * 
+ * @param entradaId - ID de la entrada de lista de espera a asignar
+ * @param citaId - ID de la cita que se asignará (opcional, si no se proporciona se crea una nueva)
+ * @returns Promise con la cita creada o actualizada
+ */
+export const asignarHuecoDesdeListaEspera = async (
+  entradaId: string,
+  citaId?: string
+): Promise<Cita> => {
   return new Promise(async (resolve, reject) => {
     try {
-      // Verificar si el cliente ya está en la lista de espera para ese horario
-      const existe = mockListaEspera.find(le => 
-        le.entrenadorId === entrada.entrenadorId &&
-        le.clienteId === entrada.clienteId &&
-        le.diaSemana === entrada.diaSemana &&
-        le.horaInicio === entrada.horaInicio &&
-        le.estado === 'activa'
-      );
+      const entrada = mockListaEspera.find(le => le.id === entradaId);
       
-      if (existe) {
-        reject(new Error('El cliente ya está en la lista de espera para este horario'));
+      if (!entrada) {
+        reject(new Error('Entrada no encontrada'));
         return;
       }
       
-      // Obtener configuración
-      const config = await getConfiguracionListaEspera(entrada.entrenadorId);
-      
-      // Verificar número máximo de entradas por cliente
-      const entradasCliente = mockListaEspera.filter(le => 
-        le.clienteId === entrada.clienteId && 
-        le.entrenadorId === entrada.entrenadorId &&
-        le.estado === 'activa'
-      ).length;
-      
-      if (entradasCliente >= config.maxEntradasPorCliente) {
-        reject(new Error(`El cliente ya tiene el máximo de ${config.maxEntradasPorCliente} entradas en la lista de espera`));
+      if (entrada.estado !== 'activa' && entrada.estado !== 'notificada') {
+        reject(new Error('La entrada no está disponible para asignación'));
         return;
       }
       
-      // Calcular prioridad (número de entradas activas + 1)
-      const entradasActivas = mockListaEspera.filter(le => 
-        le.entrenadorId === entrada.entrenadorId && le.estado === 'activa'
-      ).length;
+      let cita: Cita;
       
-      // Calcular fecha de expiración
-      const fechaExpiracion = new Date();
-      fechaExpiracion.setDate(fechaExpiracion.getDate() + config.diasValidez);
+      if (citaId) {
+        // Si se proporciona un citaId, actualizar la cita existente
+        // En producción, esto haría una llamada PUT /api/citas/:citaId
+        const citas = await getCitas({
+          fechaInicio: new Date(0),
+          fechaFin: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        });
+        
+        const citaExistente = citas.find(c => c.id === citaId);
+        if (!citaExistente) {
+          reject(new Error('Cita no encontrada'));
+          return;
+        }
+        
+        cita = citaExistente;
+      } else {
+        // Crear una nueva cita basada en la entrada de lista de espera
+        // Usar la fecha deseada del cliente como fecha de inicio
+        const fechaInicio = new Date(entrada.fechaDeseada);
+        // Estimar duración basada en el tipo de sesión (por defecto 60 minutos)
+        const duracionMinutos = entrada.tipoSesion === 'videollamada' ? 30 : 60;
+        const fechaFin = new Date(fechaInicio.getTime() + duracionMinutos * 60 * 1000);
+        
+        cita = await crearCita({
+          titulo: `Sesión ${entrada.tipoSesion} con ${entrada.cliente.nombre}`,
+          tipo: entrada.tipoSesion,
+          estado: 'confirmada',
+          fechaInicio,
+          fechaFin,
+          cliente: {
+            id: entrada.cliente.id,
+            nombre: entrada.cliente.nombre,
+            email: entrada.cliente.email,
+            telefono: entrada.cliente.telefono,
+          },
+          notas: entrada.notas 
+            ? `${entrada.notas} - Asignada desde lista de espera`
+            : 'Asignada desde lista de espera',
+        });
+      }
       
-      const nuevaEntrada: EntradaListaEspera = {
-        ...entrada,
-        id: `le${Date.now()}`,
-        fechaSolicitud: new Date(),
-        estado: 'activa',
-        prioridad: entradasActivas + 1,
-        fechaExpiracion,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      // Actualizar la entrada de lista de espera
+      entrada.estado = 'asignada';
+      entrada.citaId = cita.id;
+      entrada.fechaAsignacion = new Date();
+      entrada.updatedAt = new Date();
       
-      mockListaEspera.push(nuevaEntrada);
+      // Reorganizar prioridades de las entradas restantes
+      reorganizarPrioridades();
       
       setTimeout(() => {
-        resolve(nuevaEntrada);
+        resolve(cita);
       }, 300);
     } catch (error) {
-      console.error('Error agregando cliente a lista de espera:', error);
+      console.error('Error asignando hueco desde lista de espera:', error);
       setTimeout(() => {
         reject(error);
       }, 300);
@@ -178,43 +316,18 @@ export const agregarClienteListaEspera = async (
 };
 
 /**
- * Elimina un cliente de la lista de espera
+ * Reorganiza las prioridades de las entradas activas en la lista de espera
+ * 
+ * Esta función se llama automáticamente después de eliminar o asignar una entrada
+ * para mantener las prioridades consistentes (1, 2, 3, ...) basadas en el orden
+ * de creación (más antiguas primero).
  */
-export const eliminarClienteListaEspera = async (
-  entradaId: string,
-  entrenadorId: string
-): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const index = mockListaEspera.findIndex(le => 
-        le.id === entradaId && le.entrenadorId === entrenadorId
-      );
-      
-      if (index === -1) {
-        reject(new Error('Entrada no encontrada'));
-        return;
-      }
-      
-      mockListaEspera[index].estado = 'cancelada';
-      mockListaEspera[index].updatedAt = new Date();
-      
-      // Reorganizar prioridades
-      reorganizarPrioridades(entrenadorId);
-      
-      resolve();
-    }, 300);
-  });
-};
-
-/**
- * Reorganiza las prioridades de la lista de espera
- */
-const reorganizarPrioridades = (entrenadorId: string): void => {
+const reorganizarPrioridades = (): void => {
   const entradasActivas = mockListaEspera
-    .filter(le => le.entrenadorId === entrenadorId && le.estado === 'activa')
+    .filter(le => le.estado === 'activa')
     .sort((a, b) => {
-      // Ordenar por fecha de solicitud (más antiguas primero)
-      return a.fechaSolicitud.getTime() - b.fechaSolicitud.getTime();
+      // Ordenar por fecha de creación (más antiguas primero)
+      return a.createdAt.getTime() - b.createdAt.getTime();
     });
   
   entradasActivas.forEach((entrada, index) => {
@@ -223,310 +336,146 @@ const reorganizarPrioridades = (entrenadorId: string): void => {
   });
 };
 
+// ============================================================================
+// WRAPPER FUNCTIONS PARA COMPATIBILIDAD CON COMPONENTES
+// ============================================================================
+
 /**
- * Obtiene los horarios populares
+ * Wrapper para obtener lista de espera con filtro de estado
  */
-export const getHorariosPopulares = async (
-  entrenadorId: string
-): Promise<HorarioPopular[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const entradasActivas = mockListaEspera.filter(le => 
-        le.entrenadorId === entrenadorId && le.estado === 'activa'
-      );
-      
-      // Agrupar por horario
-      const horariosMap = new Map<string, EntradaListaEspera[]>();
-      
-      entradasActivas.forEach(entrada => {
-        const key = `${entrada.diaSemana}-${entrada.horaInicio}-${entrada.horaFin}`;
-        const horario = horariosMap.get(key) || [];
-        horario.push(entrada);
-        horariosMap.set(key, horario);
-      });
-      
-      // Convertir a HorarioPopular
-      const horariosPopulares: HorarioPopular[] = [];
-      
-      horariosMap.forEach((entradas, key) => {
-        const primera = entradas[0];
-        const asignadas = mockListaEspera.filter(le => 
-          le.entrenadorId === entrenadorId &&
-          le.diaSemana === primera.diaSemana &&
-          le.horaInicio === primera.horaInicio &&
-          le.horaFin === primera.horaFin &&
-          le.estado === 'asignada'
-        );
-        
-        horariosPopulares.push({
-          diaSemana: primera.diaSemana,
-          horaInicio: primera.horaInicio,
-          horaFin: primera.horaFin,
-          numeroSolicitudes: entradas.length,
-          ultimaAsignacion: asignadas.length > 0
-            ? asignadas.sort((a, b) => 
-                (b.fechaAsignacion || b.createdAt).getTime() - 
-                (a.fechaAsignacion || a.createdAt).getTime()
-              )[0].fechaAsignacion
-            : undefined,
-          frecuenciaAsignacion: asignadas.length,
-        });
-      });
-      
-      // Ordenar por número de solicitudes (mayor a menor)
-      horariosPopulares.sort((a, b) => b.numeroSolicitudes - a.numeroSolicitudes);
-      
-      resolve(horariosPopulares);
-    }, 300);
-  });
+export const getListaEsperaWithFilter = async (
+  entrenadorId: string,
+  estado?: EstadoListaEspera
+): Promise<EntradaListaEspera[]> => {
+  const lista = await getListaEspera({ entrenadorId, role: 'entrenador' });
+  if (estado) {
+    return lista.filter(le => le.estado === estado);
+  }
+  return lista;
 };
 
 /**
- * Notifica a los clientes cuando se libera un slot
- */
-export const notificarSlotLiberado = async (
-  citaCancelada: Cita,
-  entrenadorId: string
-): Promise<NotificacionSlotLiberado[]> => {
-  return new Promise(async (resolve) => {
-    try {
-      // Obtener configuración
-      const config = await getConfiguracionListaEspera(entrenadorId);
-      
-      if (!config.activo || !config.notificacionAutomatica) {
-        resolve([]);
-        return;
-      }
-      
-      // Obtener fecha y hora de la cita cancelada
-      const fechaSlot = new Date(citaCancelada.fechaInicio);
-      const diaSemana = fechaSlot.getDay();
-      const horaInicio = fechaSlot.getHours().toString().padStart(2, '0') + ':' + 
-                        fechaSlot.getMinutes().toString().padStart(2, '0');
-      const fechaFin = new Date(citaCancelada.fechaFin);
-      const horaFin = fechaFin.getHours().toString().padStart(2, '0') + ':' + 
-                     fechaFin.getMinutes().toString().padStart(2, '0');
-      
-      // Buscar clientes en lista de espera para ese horario
-      const entradasRelevantes = mockListaEspera.filter(le =>
-        le.entrenadorId === entrenadorId &&
-        le.estado === 'activa' &&
-        le.diaSemana === diaSemana &&
-        le.horaInicio === horaInicio &&
-        le.horaFin === horaFin
-      );
-      
-      if (entradasRelevantes.length === 0) {
-        resolve([]);
-        return;
-      }
-      
-      // Notificar al primero en la lista (mayor prioridad)
-      const primeraEntrada = entradasRelevantes.sort((a, b) => a.prioridad - b.prioridad)[0];
-      
-      // Crear notificación
-      const fechaExpiracion = new Date();
-      fechaExpiracion.setHours(fechaExpiracion.getHours() + config.tiempoRespuestaHoras);
-      
-      const notificacion: NotificacionSlotLiberado = {
-        id: `notif${Date.now()}`,
-        entradaListaEsperaId: primeraEntrada.id,
-        clienteId: primeraEntrada.clienteId,
-        clienteNombre: primeraEntrada.clienteNombre,
-        fechaSlot,
-        horaInicio,
-        horaFin,
-        enviada: true,
-        fechaEnvio: new Date(),
-        leida: false,
-        metodoNotificacion: config.metodoNotificacion,
-        fechaExpiracion,
-        confirmada: false,
-        createdAt: new Date(),
-      };
-      
-      mockNotificaciones.push(notificacion);
-      
-      // Actualizar estado de la entrada
-      primeraEntrada.estado = 'notificada';
-      primeraEntrada.fechaNotificacion = new Date();
-      primeraEntrada.updatedAt = new Date();
-      
-      // En producción, aquí se enviaría la notificación real (email, SMS, etc.)
-      
-      setTimeout(() => {
-        resolve([notificacion]);
-      }, 300);
-    } catch (error) {
-      console.error('Error notificando slot liberado:', error);
-      setTimeout(() => {
-        resolve([]);
-      }, 300);
-    }
-  });
-};
-
-/**
- * Asigna un slot a un cliente de la lista de espera
+ * Wrapper para asignar slot desde lista de espera con fecha específica
  */
 export const asignarSlotListaEspera = async (
   entradaId: string,
   fechaSlot: Date,
   entrenadorId: string
 ): Promise<Cita> => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const entrada = mockListaEspera.find(le => 
-        le.id === entradaId && le.entrenadorId === entrenadorId
-      );
-      
-      if (!entrada) {
-        reject(new Error('Entrada no encontrada'));
-        return;
-      }
-      
-      if (entrada.estado !== 'notificada' && entrada.estado !== 'activa') {
-        reject(new Error('La entrada no está disponible para asignación'));
-        return;
-      }
-      
-      // Crear la cita
-      const fechaInicio = new Date(fechaSlot);
-      const [hora, minuto] = entrada.horaInicio.split(':').map(Number);
-      fechaInicio.setHours(hora, minuto, 0, 0);
-      
-      const fechaFin = new Date(fechaSlot);
-      const [horaFin, minutoFin] = entrada.horaFin.split(':').map(Number);
-      fechaFin.setHours(horaFin, minutoFin, 0, 0);
-      
-      const nuevaCita = await crearCita({
-        titulo: `Sesión con ${entrada.clienteNombre}`,
-        tipo: 'sesion-1-1',
-        estado: 'confirmada',
-        fechaInicio,
-        fechaFin,
-        clienteId: entrada.clienteId,
-        clienteNombre: entrada.clienteNombre,
-        notas: `Asignada desde lista de espera`,
-      });
-      
-      // Actualizar entrada
-      entrada.estado = 'asignada';
-      entrada.fechaAsignacion = new Date();
-      entrada.citaId = nuevaCita.id;
-      entrada.updatedAt = new Date();
-      
-      // Reorganizar prioridades
-      reorganizarPrioridades(entrenadorId);
-      
-      setTimeout(() => {
-        resolve(nuevaCita);
-      }, 300);
-    } catch (error) {
-      console.error('Error asignando slot de lista de espera:', error);
-      setTimeout(() => {
-        reject(error);
-      }, 300);
-    }
+  // Buscar la entrada y actualizar la fecha deseada si es necesario
+  const entrada = mockListaEspera.find(le => le.id === entradaId);
+  if (entrada) {
+    entrada.fechaDeseada = fechaSlot;
+  }
+  return asignarHuecoDesdeListaEspera(entradaId);
+};
+
+/**
+ * Wrapper para agregar cliente a lista de espera (compatibilidad con componente)
+ */
+export const agregarClienteListaEspera = async (data: {
+  entrenadorId: string;
+  clienteId: string;
+  clienteNombre: string;
+  tipoSesion?: TipoCita;
+  fechaDeseada?: Date;
+}): Promise<EntradaListaEspera> => {
+  // Crear fecha deseada si no se proporciona (usando fecha actual + 7 días)
+  const fechaDeseada = data.fechaDeseada || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  
+  return addEntradaListaEspera({
+    cliente: {
+      id: data.clienteId,
+      nombre: data.clienteNombre,
+    },
+    tipoSesion: data.tipoSesion || 'sesion-1-1',
+    fechaDeseada,
   });
 };
 
 /**
- * Obtiene el resumen de la lista de espera
+ * Wrapper para eliminar cliente de lista de espera (compatibilidad con componente)
  */
-export const getResumenListaEspera = async (
+export const eliminarClienteListaEspera = async (
+  entradaId: string,
   entrenadorId: string
-): Promise<ResumenListaEspera> => {
-  return new Promise(async (resolve) => {
-    try {
-      const entradas = await getListaEspera(entrenadorId);
-      const horariosPopulares = await getHorariosPopulares(entrenadorId);
-      
-      const resumen: ResumenListaEspera = {
-        totalEntradas: entradas.length,
-        entradasActivas: entradas.filter(e => e.estado === 'activa').length,
-        entradasNotificadas: entradas.filter(e => e.estado === 'notificada').length,
-        entradasAsignadas: entradas.filter(e => e.estado === 'asignada').length,
-        horariosPopulares: horariosPopulares.slice(0, 5), // Top 5
-        proximasNotificaciones: entradas.filter(e => 
-          e.estado === 'activa' && e.prioridad <= 3
-        ).length,
-      };
-      
-      setTimeout(() => {
-        resolve(resumen);
-      }, 300);
-    } catch (error) {
-      console.error('Error obteniendo resumen de lista de espera:', error);
-      setTimeout(() => {
-        resolve({
-          totalEntradas: 0,
-          entradasActivas: 0,
-          entradasNotificadas: 0,
-          entradasAsignadas: 0,
-          horariosPopulares: [],
-          proximasNotificaciones: 0,
-        });
-      }, 300);
-    }
-  });
+): Promise<void> => {
+  return removeEntradaListaEspera(entradaId);
 };
 
 /**
- * Obtiene la configuración de lista de espera
+ * Obtiene horarios populares (mock - simplificado)
  */
-export const getConfiguracionListaEspera = async (
-  entrenadorId: string
-): Promise<ConfiguracionListaEspera> => {
+export const getHorariosPopulares = async (entrenadorId: string): Promise<any[]> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve(mockConfiguracion);
+      resolve([]);
     }, 300);
   });
 };
 
 /**
- * Actualiza la configuración de lista de espera
+ * Obtiene resumen de lista de espera (mock - simplificado)
+ */
+export const getResumenListaEspera = async (entrenadorId: string): Promise<any> => {
+  return new Promise(async (resolve) => {
+    setTimeout(async () => {
+      const lista = await getListaEspera({ entrenadorId, role: 'entrenador' });
+      resolve({
+        totalEntradas: lista.length,
+        entradasActivas: lista.filter(le => le.estado === 'activa').length,
+        entradasNotificadas: lista.filter(le => le.estado === 'notificada').length,
+        entradasAsignadas: lista.filter(le => le.estado === 'asignada').length,
+        horariosPopulares: [],
+        proximasNotificaciones: 0,
+      });
+    }, 300);
+  });
+};
+
+/**
+ * Obtiene configuración de lista de espera (mock - simplificado)
+ */
+export const getConfiguracionListaEspera = async (entrenadorId: string): Promise<any> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        id: 'config-1',
+        entrenadorId,
+        activo: true,
+        tiempoRespuestaHoras: 24,
+        notificacionAutomatica: true,
+        metodoNotificacion: 'email',
+        maxEntradasPorCliente: 3,
+        diasValidez: 30,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }, 300);
+  });
+};
+
+/**
+ * Actualiza configuración de lista de espera (mock - simplificado)
  */
 export const actualizarConfiguracionListaEspera = async (
-  config: Partial<ConfiguracionListaEspera>,
+  config: any,
   entrenadorId: string
-): Promise<ConfiguracionListaEspera> => {
+): Promise<void> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      mockConfiguracion = {
-        ...mockConfiguracion,
-        ...config,
-        updatedAt: new Date(),
-      };
-      resolve(mockConfiguracion);
+      resolve();
     }, 300);
   });
 };
 
 /**
- * Obtiene las notificaciones de slots liberados
+ * Obtiene notificaciones de slots liberados (mock - simplificado)
  */
-export const getNotificacionesSlotsLiberados = async (
-  entrenadorId: string
-): Promise<NotificacionSlotLiberado[]> => {
+export const getNotificacionesSlotsLiberados = async (entrenadorId: string): Promise<any[]> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      // Obtener notificaciones relacionadas con entradas del entrenador
-      const entradasIds = mockListaEspera
-        .filter(le => le.entrenadorId === entrenadorId)
-        .map(le => le.id);
-      
-      const notificaciones = mockNotificaciones.filter(notif =>
-        entradasIds.includes(notif.entradaListaEsperaId)
-      );
-      
-      // Ordenar por fecha de creación (más recientes primero)
-      notificaciones.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-      
-      resolve(notificaciones);
+      resolve([]);
     }, 300);
   });
 };
-
-

@@ -8,16 +8,22 @@ interface TaskCreatorProps {
   onClose: () => void;
   onCreate: (data: CreateTaskData) => void;
   role: UserRole;
+  /**
+   * Datos iniciales para prellenar el formulario (útil cuando se crea desde una alerta)
+   */
+  initialData?: Partial<CreateTaskData>;
 }
 
-export const TaskCreator: React.FC<TaskCreatorProps> = ({ onClose, onCreate, role }) => {
+export const TaskCreator: React.FC<TaskCreatorProps> = ({ onClose, onCreate, role, initialData }) => {
   const [formData, setFormData] = useState<CreateTaskData>({
-    title: '',
-    description: '',
-    priority: 'media',
-    dueDate: undefined,
-    tags: [],
-    category: '',
+    title: initialData?.title || '',
+    description: initialData?.description || '',
+    priority: initialData?.priority || 'media',
+    dueDate: initialData?.dueDate || undefined,
+    tags: initialData?.tags || [],
+    category: initialData?.category || '',
+    relatedEntityId: initialData?.relatedEntityId,
+    relatedEntityType: initialData?.relatedEntityType,
   });
   const [tagInput, setTagInput] = useState('');
 
@@ -52,6 +58,7 @@ export const TaskCreator: React.FC<TaskCreatorProps> = ({ onClose, onCreate, rol
 
   const categoryOptions = role === 'entrenador'
     ? [
+        { value: '', label: 'Seleccionar categoría' },
         { value: 'cliente', label: 'Cliente' },
         { value: 'lead', label: 'Lead' },
         { value: 'sesión', label: 'Sesión' },
@@ -59,6 +66,7 @@ export const TaskCreator: React.FC<TaskCreatorProps> = ({ onClose, onCreate, rol
         { value: 'preparación', label: 'Preparación' },
       ]
     : [
+        { value: '', label: 'Seleccionar categoría' },
         { value: 'facturación', label: 'Facturación' },
         { value: 'mantenimiento', label: 'Mantenimiento' },
         { value: 'operaciones', label: 'Operaciones' },
@@ -140,6 +148,7 @@ export const TaskCreator: React.FC<TaskCreatorProps> = ({ onClose, onCreate, rol
             type="datetime-local"
             value={formData.dueDate ? new Date(formData.dueDate).toISOString().slice(0, 16) : ''}
             onChange={(e) => setFormData({ ...formData, dueDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
+            placeholder="Seleccionar fecha y hora"
           />
         </div>
 

@@ -456,3 +456,158 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+/**
+ * ============================================================================
+ * FUNCIÓN UTILITARIA PARA GENERACIÓN DE PDF DE REPORTE FISCAL
+ * ============================================================================
+ * 
+ * NOTA IMPORTANTE: En producción, esta función se ejecutaría en el backend
+ * y devolvería una URL real o un stream del archivo generado.
+ * 
+ * La generación de archivos PDF grandes o con muchos datos debe hacerse
+ * en el servidor para:
+ * - Evitar sobrecargar el navegador del cliente
+ * - Procesar grandes volúmenes de datos eficientemente
+ * - Aplicar validaciones y transformaciones complejas
+ * - Gestionar la memoria de forma adecuada
+ * - Proporcionar URLs seguras con tokens de autenticación
+ * - Generar PDFs con mejor calidad y rendimiento
+ * ============================================================================
+ */
+
+/**
+ * Opciones para la generación de PDF fiscal
+ */
+export interface PDFReporteFiscalOpciones {
+  nombreArchivo?: string;
+  incluirIngresos?: boolean;
+  incluirGastos?: boolean;
+  incluirCalculosFiscales?: boolean;
+  incluirGraficos?: boolean;
+  incluirDesgloseMensual?: boolean;
+  formatoFecha?: string;
+  formatoMoneda?: string;
+  idioma?: 'es' | 'en' | 'ca' | 'eu' | 'gl';
+  plantilla?: 'simple' | 'detallado' | 'completo';
+}
+
+/**
+ * Genera un PDF de reporte fiscal desde datos proporcionados
+ * 
+ * @param datos - Datos a exportar (puede ser cualquier estructura de datos)
+ * @param opciones - Opciones de configuración para la exportación
+ * @returns Blob del archivo PDF o string con URL de descarga (en producción)
+ * 
+ * NOTA: En producción, esta función:
+ * - Se ejecutaría en el backend (Node.js con bibliotecas como pdfkit, puppeteer, etc.)
+ * - Procesaría los datos reales de ingresos y gastos desde la base de datos
+ * - Generaría el PDF con formato profesional según las opciones
+ * - Aplicaría estilos, gráficos y tablas según sea necesario
+ * - Almacenaría el archivo en un sistema de almacenamiento (S3, Azure Blob, etc.)
+ * - Devolvería una URL real de descarga con token de autenticación temporal
+ * - O devolvería un stream del archivo para descarga directa
+ * 
+ * Ejemplo de uso (mock):
+ * ```typescript
+ * const datos = {
+ *   fiscalProfile: {...},
+ *   taxSummary: {...},
+ *   expenses: [...],
+ *   dateRange: { from: ..., to: ... }
+ * };
+ * const url = await generarPDFReporteFiscal(datos, {
+ *   nombreArchivo: 'reporte-fiscal-2024.pdf',
+ *   plantilla: 'completo',
+ *   incluirGraficos: true
+ * });
+ * // En producción: url sería una URL real como '/api/exports/abc123/download?token=xyz'
+ * ```
+ * 
+ * Ejemplo de uso en backend (producción):
+ * ```typescript
+ * // En el backend (Node.js)
+ * async function generarPDFReporteFiscal(datos, opciones) {
+ *   const doc = new PDFDocument();
+ *   // ... generar contenido del PDF ...
+ *   const buffer = await doc.end();
+ *   const url = await storageService.upload(buffer, `exports/${opciones.nombreArchivo}`);
+ *   return url; // URL real de descarga
+ * }
+ * ```
+ */
+export async function generarPDFReporteFiscal(
+  datos: any,
+  opciones?: PDFReporteFiscalOpciones
+): Promise<Blob | string> {
+  // Simular delay de procesamiento (en producción sería el tiempo real de generación)
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // En producción, aquí se generaría el PDF real usando bibliotecas como:
+  // - PDFKit (Node.js)
+  // - Puppeteer (Node.js) para renderizar HTML a PDF
+  // - jsPDF (si se ejecuta en servidor)
+  // - Otras bibliotecas de generación de PDF
+  
+  // Por ahora, simulamos generando un PDF básico usando la función existente
+  // si los datos tienen la estructura esperada
+  if (datos.fiscalProfile && datos.taxSummary && datos.expenses && datos.dateRange) {
+    try {
+      // Usar la función existente generateTaxPDFReport si los datos coinciden
+      const pdfBlob = await generateTaxPDFReport(datos as PDFReportData);
+      
+      // En producción, aquí subiríamos el blob al almacenamiento y devolveríamos la URL
+      // Por ahora, devolvemos una URL simulada
+      const nombreArchivo = opciones?.nombreArchivo || 
+        `reporte-fiscal-${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      // En producción, devolveríamos una URL real:
+      // return `/api/v1/finance/exports/${exportId}/download?token=${token}`;
+      
+      // Por ahora, devolvemos una URL simulada
+      return `/api/v1/finance/exports/download/${nombreArchivo}?token=mock-token-${Date.now()}`;
+    } catch (error) {
+      console.warn('Error al generar PDF con función existente, usando mock:', error);
+    }
+  }
+  
+  // Si no coincide la estructura, generar un PDF básico mock
+  // En producción, esto se haría con una biblioteca de PDF real
+  const doc = new jsPDF('p', 'mm', 'a4');
+  
+  // Agregar contenido básico
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Reporte Fiscal', 20, 20);
+  
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Fecha de generación: ${new Date().toLocaleString('es-ES')}`, 20, 30);
+  
+  if (opciones?.nombreArchivo) {
+    doc.text(`Archivo: ${opciones.nombreArchivo}`, 20, 40);
+  }
+  
+  // Agregar datos básicos si están disponibles
+  let yPosition = 50;
+  if (typeof datos === 'object' && !Array.isArray(datos)) {
+    Object.entries(datos).slice(0, 20).forEach(([key, value]) => {
+      if (value !== null && value !== undefined && yPosition < 280) {
+        doc.text(`${key}: ${String(value).substring(0, 80)}`, 20, yPosition);
+        yPosition += 7;
+      }
+    });
+  }
+  
+  // Generar blob
+  const pdfBlob = doc.output('blob');
+  
+  // En producción, aquí subiríamos el blob al almacenamiento y devolveríamos la URL
+  // Por ahora, devolvemos el blob directamente o una URL simulada según el contexto
+  if (opciones?.nombreArchivo) {
+    // Simular URL de descarga (en producción sería real)
+    return `/api/v1/finance/exports/download/${opciones.nombreArchivo}?token=mock-token-${Date.now()}`;
+  }
+  
+  return pdfBlob;
+}
+

@@ -1,5 +1,18 @@
 import { TaskPriority, Task } from '../types';
 
+/**
+ * Sistema centralizado de prioridad y colores para tareas y alertas
+ * 
+ * CORRESPONDENCIA DE PRIORIDADES Y COLORES:
+ * - Alta (alta): Rojo 🔴 - Crítico/Urgente
+ * - Media (media): Amarillo 🟡 - Atención/Importante
+ * - Baja (baja): Azul 🔵 - Informativo/Normal
+ */
+
+/**
+ * Calcula la prioridad de una tarea basándose en su fecha de vencimiento,
+ * categoría y tipo de entidad relacionada.
+ */
 export const calculateTaskPriority = (
   dueDate?: Date | string,
   category?: string,
@@ -31,6 +44,12 @@ export const calculateTaskPriority = (
   return 'media';
 };
 
+/**
+ * Obtiene los colores de badge/etiqueta para una prioridad de tarea.
+ * Usado en Badges para mostrar el nivel de prioridad.
+ * 
+ * @returns Clases CSS de Tailwind para background, text y border
+ */
 export const getPriorityColor = (priority: TaskPriority): string => {
   switch (priority) {
     case 'alta':
@@ -44,6 +63,134 @@ export const getPriorityColor = (priority: TaskPriority): string => {
   }
 };
 
+/**
+ * Obtiene los estilos para tarjetas de tareas según su prioridad.
+ * Aplica colores de borde y fondo para dar jerarquía visual.
+ * 
+ * @returns Objeto con clases CSS para border, background y otros estilos
+ */
+export const getTaskPriorityCardStyles = (priority: TaskPriority): {
+  border: string;
+  background: string;
+  borderColor: string;
+} => {
+  switch (priority) {
+    case 'alta':
+      return {
+        border: 'border-2',
+        background: 'bg-red-50',
+        borderColor: 'border-red-200',
+      };
+    case 'media':
+      return {
+        border: 'border-2',
+        background: 'bg-yellow-50',
+        borderColor: 'border-yellow-200',
+      };
+    case 'baja':
+      return {
+        border: 'border-2',
+        background: 'bg-blue-50',
+        borderColor: 'border-blue-200',
+      };
+    default:
+      return {
+        border: 'border',
+        background: 'bg-gray-50',
+        borderColor: 'border-gray-200',
+      };
+  }
+};
+
+/**
+ * Obtiene los colores para íconos según la prioridad de la tarea.
+ * 
+ * @returns Clase CSS de Tailwind para el color del ícono
+ */
+export const getTaskPriorityIconColor = (priority: TaskPriority): string => {
+  switch (priority) {
+    case 'alta':
+      return 'text-red-600';
+    case 'media':
+      return 'text-yellow-600';
+    case 'baja':
+      return 'text-blue-600';
+    default:
+      return 'text-gray-600';
+  }
+};
+
+/**
+ * Obtiene los estilos para tarjetas de alertas según su prioridad.
+ * Mapea la prioridad de la alerta (que usa TaskPriority) a colores visuales consistentes.
+ * 
+ * CORRESPONDENCIA:
+ * - alta → 🔴 Crítico (rojo)
+ * - media → 🟡 Atención (amarillo)
+ * - baja → 🔵 Informativo (azul)
+ * 
+ * @returns Objeto con clases CSS para border, background y otros estilos
+ */
+export const getAlertPriorityCardStyles = (priority: TaskPriority): {
+  border: string;
+  background: string;
+  borderColor: string;
+  ring?: string;
+} => {
+  switch (priority) {
+    case 'alta':
+      return {
+        border: 'border-2',
+        background: 'bg-red-50',
+        borderColor: 'border-red-200',
+        ring: 'ring-1 ring-red-100',
+      };
+    case 'media':
+      return {
+        border: 'border-2',
+        background: 'bg-yellow-50',
+        borderColor: 'border-yellow-200',
+        ring: 'ring-1 ring-yellow-100',
+      };
+    case 'baja':
+      return {
+        border: 'border-2',
+        background: 'bg-blue-50',
+        borderColor: 'border-blue-200',
+        ring: 'ring-1 ring-blue-100',
+      };
+    default:
+      return {
+        border: 'border',
+        background: 'bg-gray-50',
+        borderColor: 'border-gray-200',
+      };
+  }
+};
+
+/**
+ * Obtiene los colores para íconos de alertas según la prioridad.
+ * 
+ * @returns Clase CSS de Tailwind para el color del ícono
+ */
+export const getAlertPriorityIconColor = (priority: TaskPriority): string => {
+  switch (priority) {
+    case 'alta':
+      return 'text-red-600';
+    case 'media':
+      return 'text-yellow-600';
+    case 'baja':
+      return 'text-blue-600';
+    default:
+      return 'text-gray-600';
+  }
+};
+
+/**
+ * Ordena tareas por prioridad (alta → media → baja).
+ * Si tienen la misma prioridad, ordena por fecha de vencimiento (más cercana primero).
+ * Si no tienen fecha de vencimiento, ordena por fecha de creación (más reciente primero).
+ */
 export const sortTasksByPriority = (tasks: Task[]): Task[] => {
   const priorityOrder = { alta: 3, media: 2, baja: 1 };
   return [...tasks].sort((a, b) => {
@@ -62,6 +209,9 @@ export const sortTasksByPriority = (tasks: Task[]): Task[] => {
   });
 };
 
+/**
+ * Obtiene la etiqueta legible en español para una prioridad.
+ */
 export const getPriorityLabel = (priority: TaskPriority): string => {
   switch (priority) {
     case 'alta':

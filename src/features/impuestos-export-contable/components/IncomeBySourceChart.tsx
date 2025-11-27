@@ -202,8 +202,8 @@ export const IncomeBySourceChart: React.FC<IncomeBySourceChartProps> = ({ userId
   };
 
   return (
-    <div className="space-y-6">
-      <Card className="p-0 bg-white shadow-sm">
+    <div className="space-y-6 print:space-y-4">
+      <Card className="p-0 bg-white shadow-sm print:shadow-none print:border print:border-gray-300">
         <div className="space-y-6 p-6">
           {/* Header */}
           <div className="flex items-center justify-between pb-4 border-b border-gray-200">

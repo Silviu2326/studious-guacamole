@@ -26,12 +26,18 @@ import { obtenerEncuestaPorEvento, calcularEstadisticasFeedback, enviarEncuestaP
 import { calcularRankingEventos, compararTiposEvento, analizarMejoresHorarios, generarInsightsEventos, RankingEvento, ComparativaTipoEvento, AnalisisHorarios, InsightsEventos } from '../services/eventosAnalyticsService';
 import { sincronizarEventoConCalendario, desincronizarEventoDeCalendario, conectarGoogleCalendarSiNecesario, obtenerEstadoSincronizacion, sincronizarEventosAutomaticamente } from '../services/calendarioSyncService';
 import { crearChecklistVacio, agregarItemChecklist, completarItemChecklist, eliminarItemChecklist, actualizarItemChecklist, aplicarPlantillaChecklist, obtenerPlantillasChecklist, guardarPlantillaChecklist, obtenerPorcentajeCompletado, verificarYEnviarRecordatoriosPreparacion, obtenerPlantillasPredefinidas } from '../services/checklistPreparacionService';
+import { agregarParticipante as agregarParticipanteService, eliminarParticipante as eliminarParticipanteService, moverParticipanteAListaEspera, moverParticipanteDeListaEspera, DatosCliente } from '../services/participantesService';
+import { marcarAsistencia, registrarNoShow, agregarWalkIn, actualizarAsistenciasMasivas, DatosClienteAnonimo } from '../services/checkInService';
+import { calcularPrecioParticipante, obtenerPrecioPorTipoCliente, formatearPrecio, obtenerEtiquetaPrecio, obtenerRangoPrecios } from '../services/pricingService';
 import { FeedbackResultsModal } from '../components/FeedbackResultsModal';
 import { EventAnalyticsModal } from '../components/EventAnalyticsModal';
 import { DashboardProgresoRetos } from '../components/DashboardProgresoRetos';
 import { DashboardMetricasGenerales } from '../components/DashboardMetricasGenerales';
 import { EventosCalendar } from '../components/EventosCalendar';
 import { ArchivoEventos } from '../components/ArchivoEventos';
+import { EventCommunicationPanel } from '../components/EventCommunicationPanel';
+import { PostEventSection } from '../components/PostEventSection';
+import { SurveyConfigModal } from '../components/SurveyConfigModal';
 
 type TipoEvento = 'presencial' | 'reto' | 'virtual';
 type EstadoEvento = 'borrador' | 'programado' | 'en-curso' | 'finalizado' | 'cancelado';
@@ -140,10 +146,33 @@ interface PlantillaEvento {
   updatedAt: Date;
 }
 
+/**
+ * Página principal de Eventos y Retos
+ * 
+ * ESTRUCTURA ORGANIZADA EN TABS:
+ * - Gestión: Listado principal, crear, editar, duplicar, archivar eventos
+ * - Calendario: Vista de calendario de eventos con drag & drop
+ * - Retos: Gestión específica de retos y seguimiento de progreso
+ * - Comunicaciones: Invitaciones, recordatorios, mensajes grupales, confirmaciones
+ * - Analytics: Dashboards, métricas generales, analytics de eventos y feedback
+ * - Archivo: Eventos archivados con filtros avanzados
+ * 
+ * ESTADO GLOBAL CENTRALIZADO:
+ * - eventoSeleccionado: Evento actualmente seleccionado (compartido entre secciones)
+ * - tipoFiltro, busqueda: Filtros globales aplicables a múltiples secciones
+ * - tabActivo: Controla qué sección/tab está visible
+ * - modalAbierto: Evita conflictos cuando múltiples modales podrían abrirse
+ */
 export default function EventosRetosPage() {
   const { user } = useAuth();
   const isEntrenador = user?.role === 'entrenador';
   
+  // ============================================
+  // ESTADOS PRINCIPALES
+  // ============================================
+  // Estados globales de carga y error para la carga inicial de datos clave
+  const [isLoading, setIsLoading] = useState(true);
+  const [globalError, setGlobalError] = useState<string | null>(null);
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [plantillas, setPlantillas] = useState<PlantillaEvento[]>([]);
   const [tipoFiltro, setTipoFiltro] = useState<TipoEvento | 'todos'>('todos');
@@ -195,6 +224,10 @@ export default function EventosRetosPage() {
   const [nuevoParticipanteTelefono, setNuevoParticipanteTelefono] = useState('');
   const [mostrarFormularioNoInscrito, setMostrarFormularioNoInscrito] = useState(false);
   
+  // ============================================
+  // ESTADOS PARA COMUNICACIONES
+  // ============================================
+  
   // Estados para invitaciones (User Story 1)
   const [mostrarModalInvitaciones, setMostrarModalInvitaciones] = useState(false);
   const [eventoInvitaciones, setEventoInvitaciones] = useState<Evento | null>(null);
@@ -244,6 +277,10 @@ export default function EventosRetosPage() {
   const [canalNotificacionCambio, setCanalNotificacionCambio] = useState<'email' | 'whatsapp' | 'ambos'>('ambos');
   const [enviandoNotificacionCambio, setEnviandoNotificacionCambio] = useState(false);
   
+  // Estado para panel de comunicaciones centralizado
+  const [mostrarPanelComunicaciones, setMostrarPanelComunicaciones] = useState(false);
+  const [eventoComunicaciones, setEventoComunicaciones] = useState<Evento | null>(null);
+  
   // Estados para estadísticas de asistencia (User Story 2)
   const [mostrarModalEstadisticas, setMostrarModalEstadisticas] = useState(false);
   const [eventoEstadisticas, setEventoEstadisticas] = useState<Evento | null>(null);
@@ -251,15 +288,19 @@ export default function EventosRetosPage() {
   
   // Estados para feedback post-evento (User Story 1)
   const [mostrarModalFeedback, setMostrarModalFeedback] = useState(false);
-  const [eventoFeedback, setEventoFeedback] = useState<Evento | null>(null);
-  const [estadisticasFeedback, setEstadisticasFeedback] = useState<EstadisticasFeedback | null>(null);
+  const [eventoFeedbackId, setEventoFeedbackId] = useState<string | null>(null);
   
   // Estados para analytics de eventos (User Story 2)
   const [mostrarModalAnalytics, setMostrarModalAnalytics] = useState(false);
-  const [rankings, setRankings] = useState<RankingEvento[]>([]);
-  const [comparativas, setComparativas] = useState<ComparativaTipoEvento[]>([]);
-  const [analisisHorarios, setAnalisisHorarios] = useState<AnalisisHorarios | null>(null);
-  const [insights, setInsights] = useState<InsightsEventos | null>(null);
+  const [eventoAnalyticsId, setEventoAnalyticsId] = useState<string | null>(null);
+  
+  // Estados para configuración de encuestas post-evento
+  const [mostrarModalConfigurarEncuesta, setMostrarModalConfigurarEncuesta] = useState(false);
+  const [eventoConfigurarEncuesta, setEventoConfigurarEncuesta] = useState<Evento | null>(null);
+  
+  // ============================================
+  // ESTADOS PARA ANALYTICS Y RETOS
+  // ============================================
   
   // Estados para dashboard de progreso de retos (User Story US-ER-23)
   const [mostrarDashboardProgresoRetos, setMostrarDashboardProgresoRetos] = useState(false);
@@ -281,12 +322,30 @@ export default function EventosRetosPage() {
   const [editandoItemChecklist, setEditandoItemChecklist] = useState<string | null>(null);
   
   // Estados para calendario (User Story 1)
-  const [vistaCalendario, setVistaCalendario] = useState(false);
   const [tipoFiltroCalendario, setTipoFiltroCalendario] = useState<TipoEvento | 'todos'>('todos');
   
+  // ============================================
+  // ESTADO GLOBAL CENTRALIZADO
+  // ============================================
+  
+  /**
+   * Tab activo - Controla qué sección principal se muestra
+   * Las secciones están organizadas para facilitar la navegación y comprensión
+   */
+  type TabActivo = 'gestion' | 'calendario' | 'retos' | 'comunicaciones' | 'analytics' | 'archivo';
+  const [tabActivo, setTabActivo] = useState<TabActivo>('gestion');
+  
+  /**
+   * Estado global: modal abierto
+   * Evita conflictos cuando múltiples modales podrían intentar abrirse simultáneamente
+   */
+  const [modalAbierto, setModalAbierto] = useState<string | null>(null);
+  
   // Estados para archivado (User Story 2)
-  const [mostrarArchivo, setMostrarArchivo] = useState(false);
   const [busquedaArchivo, setBusquedaArchivo] = useState('');
+  const [fechaDesdeArchivo, setFechaDesdeArchivo] = useState<string>('');
+  const [fechaHastaArchivo, setFechaHastaArchivo] = useState<string>('');
+  const [rendimientoFiltroArchivo, setRendimientoFiltroArchivo] = useState<'todos' | 'alto' | 'medio' | 'bajo'>('todos');
   
   // Estados para gestión de ubicaciones (User Story 1)
   const [ubicaciones, setUbicaciones] = useState<Ubicacion[]>([]);
@@ -400,29 +459,35 @@ export default function EventosRetosPage() {
   }, []);
 
   const cargarEventos = async () => {
-    // Intentar cargar eventos desde localStorage primero
-    const eventosStorage = localStorage.getItem('eventos');
-    if (eventosStorage) {
-      try {
-        const eventosData = JSON.parse(eventosStorage);
-        // Convertir fechas de string a Date
-        const eventosParsed = eventosData.map((e: any) => ({
-          ...e,
-          fechaInicio: new Date(e.fechaInicio),
-          fechaFin: e.fechaFin ? new Date(e.fechaFin) : undefined,
-          createdAt: new Date(e.createdAt),
-          participantesDetalle: e.participantesDetalle?.map((p: any) => ({
-            ...p,
-            fechaInscripcion: new Date(p.fechaInscripcion),
-            fechaCancelacion: p.fechaCancelacion ? new Date(p.fechaCancelacion) : undefined,
-          })) || [],
-        }));
-        setEventos(eventosParsed);
-        return;
-      } catch (error) {
-        console.error('Error cargando eventos de localStorage:', error);
+    setIsLoading(true);
+    setGlobalError(null);
+    
+    try {
+      // Intentar cargar eventos desde localStorage primero
+      const eventosStorage = localStorage.getItem('eventos');
+      if (eventosStorage) {
+        try {
+          const eventosData = JSON.parse(eventosStorage);
+          // Convertir fechas de string a Date
+          const eventosParsed = eventosData.map((e: any) => ({
+            ...e,
+            fechaInicio: new Date(e.fechaInicio),
+            fechaFin: e.fechaFin ? new Date(e.fechaFin) : undefined,
+            createdAt: new Date(e.createdAt),
+            participantesDetalle: e.participantesDetalle?.map((p: any) => ({
+              ...p,
+              fechaInscripcion: new Date(p.fechaInscripcion),
+              fechaCancelacion: p.fechaCancelacion ? new Date(p.fechaCancelacion) : undefined,
+            })) || [],
+          }));
+          setEventos(eventosParsed);
+          setIsLoading(false);
+          return;
+        } catch (error) {
+          console.error('Error cargando eventos de localStorage:', error);
+          throw new Error('Error al cargar eventos desde el almacenamiento local');
+        }
       }
-    }
 
     // Si no hay eventos en localStorage, crear datos de ejemplo
     // TODO: Implementar llamada a API
@@ -616,6 +681,12 @@ export default function EventosRetosPage() {
     setEventos(eventosEjemplo);
     // Guardar en localStorage
     guardarEventos(eventosEjemplo);
+    setIsLoading(false);
+    } catch (error) {
+      console.error('Error cargando eventos:', error);
+      setGlobalError(error instanceof Error ? error.message : 'Error al cargar los eventos. Por favor, intenta de nuevo.');
+      setIsLoading(false);
+    }
   };
 
   const cargarPlantillas = async () => {
@@ -648,11 +719,16 @@ export default function EventosRetosPage() {
     setPlantillas(plantillasData);
   };
 
+  // ============================================
+  // FILTROS Y DATOS COMPUTADOS
+  // ============================================
+  
+  // Filtrar eventos según la sección activa y filtros globales
   const eventosFiltrados = useMemo(() => {
     let filtrados = eventos;
 
-    // Excluir eventos archivados de la vista principal (a menos que estemos en vista de archivo)
-    if (!mostrarArchivo) {
+    // Excluir eventos archivados de la vista principal (solo en sección Archivo se muestran)
+    if (tabActivo !== 'archivo') {
       filtrados = filtrados.filter(e => !e.archivado);
     } else {
       // En vista de archivo, solo mostrar archivados
@@ -675,7 +751,7 @@ export default function EventosRetosPage() {
     }
 
     return filtrados;
-  }, [eventos, tipoFiltro, busqueda, mostrarArchivo]);
+  }, [eventos, tipoFiltro, busqueda, tabActivo]);
 
   const metricas = useMemo(
     () => {
@@ -1101,11 +1177,25 @@ export default function EventosRetosPage() {
 
       // Si estamos editando un evento existente, detectar cambios relevantes
       if (eventoEditando && eventoEditando.id) {
-        const cambio = detectarCambiosRelevantes(eventoEditando, eventoAGuardar);
+        const cambios = detectarCambiosRelevantes(eventoEditando, eventoAGuardar);
         
-        // Si hay cambio relevante y hay participantes, mostrar modal de notificación
-        if (cambio && (eventoEditando.participantesDetalle?.length || 0) > 0) {
-          setCambioEventoDetectado(cambio);
+        // Si hay cambios relevantes y hay participantes, mostrar modal de notificación
+        if (cambios && cambios.length > 0 && (eventoEditando.participantesDetalle?.length || 0) > 0) {
+          // Crear objeto CambioEvento para compatibilidad con el modal existente
+          const cambioEvento: CambioEvento = {
+            tipo: cambios[0].tipo === 'fecha' || cambios[0].tipo === 'hora' ? 'reprogramacion' : 
+                  cambios[0].tipo === 'estado' && eventoAGuardar.estado === 'cancelado' ? 'cancelacion' :
+                  cambios[0].tipo,
+            eventoAnterior: eventoEditando,
+            eventoNuevo: eventoAGuardar,
+            cambios: cambios,
+            fechaAnterior: eventoEditando.fechaInicio,
+            fechaNueva: eventoAGuardar.fechaInicio,
+            estadoAnterior: eventoEditando.estado,
+            estadoNuevo: eventoAGuardar.estado,
+          };
+          
+          setCambioEventoDetectado(cambioEvento);
           setEventoAGuardarPendiente(eventoAGuardar);
           setNotificarCambioEvento(true);
           setMotivoCambioEvento('');
@@ -1529,9 +1619,10 @@ export default function EventosRetosPage() {
       guardarEventos(eventosActualizados);
 
       // Enviar notificación si se solicitó
-      if (notificarCambioEvento) {
-        const resultado = await enviarNotificacionCambioEvento(
-          cambioEventoDetectado,
+      if (notificarCambioEvento && cambioEventoDetectado) {
+        const resultado = await notificarCambiosAparticipantes(
+          cambioEventoDetectado.eventoNuevo.id,
+          cambioEventoDetectado.cambios,
           motivoCambioEvento || undefined,
           canalNotificacionCambio,
           user?.id || '',
@@ -1616,16 +1707,85 @@ export default function EventosRetosPage() {
   const mostrarFeedbackEvento = (evento: Evento) => {
     const encuesta = obtenerEncuestaPorEvento(evento.id);
     if (encuesta) {
-      const estadisticas = calcularEstadisticasFeedback(encuesta);
-      setEventoFeedback(evento);
-      setEstadisticasFeedback(estadisticas);
+      setEventoFeedbackId(evento.id);
       setMostrarModalFeedback(true);
     } else {
       alert('No hay encuesta disponible para este evento. Las encuestas se envían automáticamente después de que el evento finalice.');
     }
   };
   
-  // Handler para ver analytics de eventos (User Story 2)
+  // Handler para ver analytics de un evento específico (User Story 2)
+  const mostrarAnalyticsEvento = (evento: Evento) => {
+    if (evento.estado !== 'finalizado') {
+      alert('Los analytics están disponibles solo para eventos finalizados.');
+      return;
+    }
+    setEventoAnalyticsId(evento.id);
+    setMostrarModalAnalytics(true);
+  };
+  
+  // Handler para configurar encuesta post-evento
+  const abrirModalConfigurarEncuesta = (evento: Evento) => {
+    setEventoConfigurarEncuesta(evento);
+    setMostrarModalConfigurarEncuesta(true);
+  };
+  
+  // Handler para enviar encuesta post-evento
+  const handleEnviarEncuesta = async (evento: Evento) => {
+    const encuesta = obtenerEncuestaPorEvento(evento.id);
+    if (!encuesta) {
+      alert('Primero debes configurar la encuesta para este evento.');
+      return;
+    }
+    
+    if (encuesta.estado === 'enviada') {
+      alert('La encuesta ya ha sido enviada a los participantes.');
+      return;
+    }
+    
+    try {
+      const participantes = evento.participantesDetalle || [];
+      const resultado = await enviarEncuestaPostEvento(encuesta, participantes);
+      
+      if (resultado.success) {
+        alert(`Encuesta enviada exitosamente a ${resultado.participantesNotificados} participantes.`);
+        // Actualizar eventos si el evento seleccionado es el mismo
+        if (eventoSeleccionado?.id === evento.id) {
+          const eventosActualizados = eventos.map(e => 
+            e.id === evento.id ? { ...e } : e
+          );
+          setEventos(eventosActualizados);
+          guardarEventos(eventosActualizados);
+        }
+      } else {
+        alert(`Error al enviar la encuesta: ${resultado.mensaje}`);
+      }
+    } catch (error) {
+      console.error('Error enviando encuesta:', error);
+      alert('Error al enviar la encuesta. Por favor, intenta de nuevo.');
+    }
+  };
+  
+  // Handler para guardar encuesta configurada
+  const handleEncuestaGuardada = () => {
+    // Recargar eventos para reflejar cambios
+    const eventosStorage = localStorage.getItem('eventos');
+    if (eventosStorage) {
+      try {
+        const eventosCargados: Evento[] = JSON.parse(eventosStorage).map((e: any) => ({
+          ...e,
+          fechaInicio: new Date(e.fechaInicio),
+          fechaFin: e.fechaFin ? new Date(e.fechaFin) : undefined,
+          createdAt: new Date(e.createdAt),
+        }));
+        setEventos(eventosCargados);
+      } catch (error) {
+        console.error('Error recargando eventos:', error);
+      }
+    }
+  };
+  
+  // Handler para ver analytics generales (mantener compatibilidad)
   const mostrarAnalyticsEventos = () => {
     const eventosFinalizados = eventos.filter(e => e.estado === 'finalizado');
     
@@ -1634,15 +1794,12 @@ export default function EventosRetosPage() {
       return;
     }
     
-    const rankingsData = calcularRankingEventos(eventosFinalizados, 'valoracion');
-    const comparativasData = compararTiposEvento(eventosFinalizados);
-    const analisisHorariosData = analizarMejoresHorarios(eventosFinalizados);
-    const insightsData = generarInsightsEventos(eventosFinalizados);
+    // Usar el primer evento finalizado como referencia, o el más reciente
+    const eventoMasReciente = eventosFinalizados.sort((a, b) => 
+      new Date(b.fechaInicio).getTime() - new Date(a.fechaInicio).getTime()
+    )[0];
     
-    setRankings(rankingsData);
-    setComparativas(comparativasData);
-    setAnalisisHorarios(analisisHorariosData);
-    setInsights(insightsData);
+    setEventoAnalyticsId(eventoMasReciente.id);
     setMostrarModalAnalytics(true);
   };
   
@@ -2329,7 +2486,7 @@ export default function EventosRetosPage() {
     }
   };
 
-  // Función para agregar participantes al evento (User Story 1)
+  // Función para agregar participantes al evento (User Story 1) - Refactorizada con servicio
   const agregarParticipantes = async () => {
     if (!eventoAgregarParticipantes || clientesSeleccionados.length === 0) return;
 
@@ -2339,54 +2496,44 @@ export default function EventosRetosPage() {
         clientesSeleccionados.includes(c.id)
       );
 
-      // Crear objetos Participante
-      const nuevosParticipantes: Participante[] = clientesSeleccionadosData.map(cliente => ({
-        id: cliente.id,
-        nombre: cliente.name,
-        email: cliente.email,
-        telefono: cliente.phone,
-        foto: undefined, // Por ahora sin foto
-        confirmado: false, // Por defecto no confirmado
-        asistencia: false,
-        fechaInscripcion: new Date(),
-        esNoInscrito: false,
-      }));
+      let eventosActualizados = [...eventos];
+      let participantesEnEspera = 0;
+      let participantesAgregados = 0;
 
-      // Actualizar evento con lista de espera automática (US-ER-10)
-      const eventosActualizados = eventos.map(e => {
-        if (e.id === eventoAgregarParticipantes.id) {
-          const participantesActuales = e.participantesDetalle || [];
-          const participantesIdsActuales = e.participantes || [];
-          const listaEsperaActual = e.listaEspera || [];
-          
-          // Separar participantes que caben directamente y los que van a lista de espera
-          const espaciosDisponibles = e.capacidad - participantesActuales.length;
-          const participantesQueCaben = nuevosParticipantes.slice(0, Math.max(0, espaciosDisponibles));
-          const participantesEnEspera = nuevosParticipantes.slice(espaciosDisponibles);
-          
-          // Agregar participantes que caben
-          const participantesActualizados = [...participantesActuales, ...participantesQueCaben];
-          const participantesIdsActualizados = [...participantesIdsActuales, ...participantesQueCaben.map(p => p.id)];
-          
-          // Agregar a lista de espera si el evento está lleno
-          const nuevaListaEspera = participantesEnEspera.length > 0 
-            ? [...listaEsperaActual, ...participantesEnEspera]
-            : listaEsperaActual;
-          
-          // Mostrar mensaje si algunos fueron a lista de espera
-          if (participantesEnEspera.length > 0) {
-            alert(`${participantesEnEspera.length} participante(s) agregado(s) a lista de espera. El evento está lleno.`);
-          }
-          
-          return {
-            ...e,
-            participantes: participantesIdsActualizados,
-            participantesDetalle: participantesActualizados,
-            listaEspera: nuevaListaEspera,
+      // Agregar cada participante usando el servicio
+      for (const cliente of clientesSeleccionadosData) {
+        try {
+          const datosCliente: DatosCliente = {
+            id: cliente.id,
+            nombre: cliente.name,
+            email: cliente.email,
+            telefono: cliente.phone,
+            foto: undefined,
           };
+
+          // Por defecto usar 'regular', se puede mejorar para obtener del cliente
+          const tipoCliente: 'regular' | 'premium' | 'vip' = 'regular';
+
+          const resultado = agregarParticipanteService(
+            eventoAgregarParticipantes.id,
+            datosCliente,
+            tipoCliente,
+            eventosActualizados
+          );
+
+          eventosActualizados = eventosActualizados.map(e =>
+            e.id === eventoAgregarParticipantes.id ? resultado.eventoActualizado : e
+          );
+
+          participantesAgregados++;
+          if (resultado.enListaEspera) {
+            participantesEnEspera++;
+          }
+        } catch (error) {
+          console.error(`Error agregando participante ${cliente.name}:`, error);
+          // Continuar con el siguiente participante
         }
-        return e;
-      });
+      }
 
       setEventos(eventosActualizados);
       
@@ -2405,7 +2552,11 @@ export default function EventosRetosPage() {
       setBusquedaClientes('');
       
       // Mostrar confirmación
-      alert(`${nuevosParticipantes.length} participante(s) agregado(s) exitosamente`);
+      if (participantesEnEspera > 0) {
+        alert(`${participantesAgregados} participante(s) agregado(s). ${participantesEnEspera} fueron agregados a lista de espera.`);
+      } else {
+        alert(`${participantesAgregados} participante(s) agregado(s) exitosamente`);
+      }
     } catch (error) {
       console.error('Error agregando participantes:', error);
       alert('Error al agregar participantes');
@@ -2464,147 +2615,97 @@ export default function EventosRetosPage() {
     setMostrarModalEliminarParticipante(true);
   };
 
-  // Función para eliminar participante (US-ER-09)
+  // Función para eliminar participante (US-ER-09) - Refactorizada con servicio
   const eliminarParticipante = () => {
     if (!participanteAEliminar) return;
 
     const { eventoId, participante } = participanteAEliminar;
-    const eventosActualizados = eventos.map(e => {
-      if (e.id === eventoId) {
-        // Remover de participantes confirmados
-        const participantesActualizados = (e.participantesDetalle || []).filter(p => p.id !== participante.id);
-        const participantesIdsActualizados = e.participantes.filter(id => id !== participante.id);
-        
-        // Crear registro de cancelación
-        const cancelacion: Cancelacion = {
-          participanteId: participante.id,
-          participanteNombre: participante.nombre,
-          fechaCancelacion: new Date(),
-          motivo: motivoCancelacionInput || undefined,
-          movidoAEspera: moverAEspera,
-        };
-        
-        const cancelaciones = e.cancelaciones || [];
-        cancelaciones.push(cancelacion);
-        
-        let listaEsperaActualizada = e.listaEspera || [];
-        
-        // Si se elige mover a lista de espera, agregar allí
-        if (moverAEspera) {
-          const participanteEnEspera: Participante = {
-            ...participante,
-            confirmado: false,
-            fechaCancelacion: new Date(),
-            motivoCancelacion: motivoCancelacionInput || undefined,
-          };
-          listaEsperaActualizada = [...listaEsperaActualizada, participanteEnEspera];
-        }
-        
-        // Si hay espacio y hay personas en lista de espera, mover la primera a confirmados
-        const hayEspacio = participantesActualizados.length < e.capacidad;
-        let nuevosParticipantes = participantesActualizados;
-        let nuevaListaEspera = listaEsperaActualizada;
-        let notificacionEnviada = false;
-        
-        if (hayEspacio && listaEsperaActualizada.length > 0) {
-          const primerEnEspera = listaEsperaActualizada[0];
-          nuevosParticipantes = [...nuevosParticipantes, {
-            ...primerEnEspera,
-            confirmado: false,
-            fechaInscripcion: new Date(),
-            fechaCancelacion: undefined,
-            motivoCancelacion: undefined,
-          }];
-          nuevaListaEspera = listaEsperaActualizada.slice(1);
-          notificacionEnviada = true;
-          
-          // Mostrar notificación cuando se libera un espacio (US-ER-10)
-          setTimeout(() => {
-            alert(`¡Espacio liberado! ${primerEnEspera.nombre} ha sido movido automáticamente de la lista de espera a participantes confirmados.`);
-          }, 100);
-          
-          // Aquí se podría enviar una notificación real al primer participante en espera
-          console.log(`Notificación: Se liberó un espacio para ${primerEnEspera.nombre} en el evento ${e.nombre}`);
-        }
-        
-        return {
-          ...e,
-          participantes: participantesIdsActualizados,
-          participantesDetalle: nuevosParticipantes,
-          listaEspera: nuevaListaEspera,
-          cancelaciones,
-        };
+    
+    try {
+      // Usar servicio para eliminar participante
+      const resultado = eliminarParticipanteService(
+        eventoId,
+        participante.id,
+        eventos,
+        motivoCancelacionInput || undefined
+      );
+
+      // Si se eligió mover a lista de espera, hacerlo manualmente
+      let eventoActualizado = resultado.eventoActualizado;
+      if (moverAEspera) {
+        eventoActualizado = moverParticipanteAListaEspera(eventoId, participante.id, [eventoActualizado]);
       }
-      return e;
-    });
-    
-    setEventos(eventosActualizados);
-    
-    // Actualizar evento seleccionado si es el mismo
-    if (eventoSeleccionado?.id === eventoId) {
-      const eventoActualizado = eventosActualizados.find(e => e.id === eventoId);
-      if (eventoActualizado) {
+
+      // Agregar registro de cancelación
+      const cancelaciones = eventoActualizado.cancelaciones || [];
+      cancelaciones.push({
+        participanteId: participante.id,
+        participanteNombre: participante.nombre,
+        fechaCancelacion: new Date(),
+        motivo: motivoCancelacionInput || undefined,
+        movidoAEspera: moverAEspera,
+      });
+      eventoActualizado.cancelaciones = cancelaciones;
+
+      // Actualizar eventos
+      const eventosActualizados = eventos.map(e =>
+        e.id === eventoId ? eventoActualizado : e
+      );
+      
+      setEventos(eventosActualizados);
+      
+      // Actualizar evento seleccionado si es el mismo
+      if (eventoSeleccionado?.id === eventoId) {
         setEventoSeleccionado(eventoActualizado);
       }
+
+      // Mostrar notificación si se movió alguien de lista de espera
+      if (resultado.participanteMovidoDeEspera) {
+        setTimeout(() => {
+          const primerEnEspera = eventoActualizado.listaEspera?.[0];
+          if (primerEnEspera) {
+            alert(`¡Espacio liberado! ${primerEnEspera.nombre} ha sido movido automáticamente de la lista de espera a participantes confirmados.`);
+          }
+        }, 100);
+      }
+      
+      // Cerrar modal y limpiar estados
+      setMostrarModalEliminarParticipante(false);
+      setParticipanteAEliminar(null);
+      setMoverAEspera(false);
+      setMotivoCancelacionInput('');
+    } catch (error) {
+      console.error('Error eliminando participante:', error);
+      alert('Error al eliminar participante');
     }
-    
-    // Cerrar modal y limpiar estados
-    setMostrarModalEliminarParticipante(false);
-    setParticipanteAEliminar(null);
-    setMoverAEspera(false);
-    setMotivoCancelacionInput('');
   };
 
-  // Función para mover participante de lista de espera a confirmados (US-ER-10)
+  // Función para mover participante de lista de espera a confirmados (US-ER-10) - Refactorizada con servicio
   const moverDeEsperaAConfirmados = (eventoId: string, participanteId: string) => {
-    const eventosActualizados = eventos.map(e => {
-      if (e.id === eventoId && e.listaEspera) {
-        const participanteEnEspera = e.listaEspera.find(p => p.id === participanteId);
-        if (participanteEnEspera) {
-          // Verificar si hay espacio
-          const participantesActuales = e.participantesDetalle || [];
-          if (participantesActuales.length >= e.capacidad) {
-            alert('El evento está lleno. No se puede mover más participantes.');
-            return e;
-          }
-          
-          // Remover de lista de espera
-          const nuevaListaEspera = e.listaEspera.filter(p => p.id !== participanteId);
-          
-          // Agregar a confirmados
-          const participanteConfirmado: Participante = {
-            ...participanteEnEspera,
-            confirmado: false,
-            fechaInscripcion: new Date(),
-            fechaCancelacion: undefined,
-            motivoCancelacion: undefined,
-          };
-          
-          const nuevosParticipantes = [...participantesActuales, participanteConfirmado];
-          const nuevosParticipantesIds = [...e.participantes, participanteId];
-          
-          // Mostrar confirmación
-          alert(`${participanteEnEspera.nombre} ha sido movido a participantes confirmados.`);
-          
-          return {
-            ...e,
-            participantes: nuevosParticipantesIds,
-            participantesDetalle: nuevosParticipantes,
-            listaEspera: nuevaListaEspera,
-          };
-        }
-      }
-      return e;
-    });
-    
-    setEventos(eventosActualizados);
-    
-    // Actualizar evento seleccionado si es el mismo
-    if (eventoSeleccionado?.id === eventoId) {
-      const eventoActualizado = eventosActualizados.find(e => e.id === eventoId);
-      if (eventoActualizado) {
+    try {
+      const eventoActualizado = moverParticipanteDeListaEspera(
+        eventoId,
+        participanteId,
+        eventos
+      );
+
+      const eventosActualizados = eventos.map(e =>
+        e.id === eventoId ? eventoActualizado : e
+      );
+      
+      setEventos(eventosActualizados);
+      
+      // Actualizar evento seleccionado si es el mismo
+      if (eventoSeleccionado?.id === eventoId) {
         setEventoSeleccionado(eventoActualizado);
       }
+
+      const participante = eventoActualizado.participantesDetalle?.find(p => p.id === participanteId);
+      if (participante) {
+        alert(`${participante.nombre} ha sido movido a participantes confirmados.`);
+      }
+    } catch (error: any) {
+      alert(error.message || 'Error al mover participante de lista de espera');
     }
   };
 
@@ -2632,123 +2733,106 @@ export default function EventosRetosPage() {
     }));
   };
 
-  // Función para agregar participante no inscrito en check-in
+  // Función para agregar participante no inscrito en check-in - Refactorizada con servicio
   const agregarParticipanteNoInscrito = () => {
     if (!eventoCheckin || !nuevoParticipanteNombre.trim()) {
       alert('Por favor ingresa al menos el nombre del participante');
       return;
     }
 
-    const nuevoId = `no-inscrito-${Date.now()}`;
-    const nuevoParticipante: Participante = {
-      id: nuevoId,
-      nombre: nuevoParticipanteNombre.trim(),
-      email: nuevoParticipanteEmail.trim() || undefined,
-      telefono: nuevoParticipanteTelefono.trim() || undefined,
-      confirmado: false,
-      asistencia: true,
-      fechaInscripcion: new Date(),
-      esNoInscrito: true,
-    };
+    try {
+      const datosClienteAnonimo: DatosClienteAnonimo = {
+        nombre: nuevoParticipanteNombre.trim(),
+        email: nuevoParticipanteEmail.trim() || undefined,
+        telefono: nuevoParticipanteTelefono.trim() || undefined,
+      };
 
-    // Agregar a las asistencias
-    setAsistenciasCheckin(prev => ({
-      ...prev,
-      [nuevoId]: true,
-    }));
+      const eventoActualizado = agregarWalkIn(
+        eventoCheckin.id,
+        datosClienteAnonimo,
+        [eventoCheckin]
+      );
 
-    // Agregar al evento temporalmente (se guardará cuando se guarde el check-in)
-    if (eventoCheckin) {
-      const participantesActuales = eventoCheckin.participantesDetalle || [];
-      eventoCheckin.participantesDetalle = [...participantesActuales, nuevoParticipante];
-      eventoCheckin.participantes = [...eventoCheckin.participantes, nuevoId];
-      setEventoCheckin({ ...eventoCheckin });
+      // Agregar a las asistencias
+      const walkInParticipante = eventoActualizado.participantesDetalle?.find(
+        p => p.esNoInscrito && p.nombre === datosClienteAnonimo.nombre
+      );
+      if (walkInParticipante) {
+        setAsistenciasCheckin(prev => ({
+          ...prev,
+          [walkInParticipante.id]: true,
+        }));
+      }
+
+      // Actualizar evento temporalmente
+      setEventoCheckin(eventoActualizado);
+
+      // Limpiar formulario
+      setNuevoParticipanteNombre('');
+      setNuevoParticipanteEmail('');
+      setNuevoParticipanteTelefono('');
+      setMostrarFormularioNoInscrito(false);
+    } catch (error) {
+      console.error('Error agregando walk-in:', error);
+      alert('Error al agregar participante walk-in');
     }
-
-    // Limpiar formulario
-    setNuevoParticipanteNombre('');
-    setNuevoParticipanteEmail('');
-    setNuevoParticipanteTelefono('');
-    setMostrarFormularioNoInscrito(false);
   };
 
-  // Función para guardar registro de asistencia (User Story 1)
+  // Función para guardar registro de asistencia (User Story 1) - Refactorizada con servicio
   const guardarCheckin = () => {
     if (!eventoCheckin) return;
 
-    // Obtener todos los participantes del evento check-in (incluyendo los agregados temporalmente)
-    const todosLosParticipantesCheckin = eventoCheckin.participantesDetalle || [];
+    try {
+      // Usar servicio para actualizar asistencias masivas
+      const eventoActualizado = actualizarAsistenciasMasivas(
+        eventoCheckin.id,
+        asistenciasCheckin,
+        [eventoCheckin]
+      );
 
-    const eventosActualizados = eventos.map(e => {
-      if (e.id === eventoCheckin.id) {
-        // Crear un mapa de participantes existentes por ID
-        const participantesExistentesMap = new Map(
-          (e.participantesDetalle || []).map(p => [p.id, p])
-        );
+      // Agregar walk-ins que fueron agregados temporalmente
+      const todosLosParticipantesCheckin = eventoCheckin.participantesDetalle || [];
+      const participantesExistentes = eventoActualizado.participantesDetalle || [];
+      const idsExistentes = new Set(participantesExistentes.map(p => p.id));
 
-        // Actualizar o agregar participantes
-        const participantesActualizados: Participante[] = [];
-        const idsProcesados = new Set<string>();
+      // Agregar walk-ins nuevos
+      const walkInsNuevos = todosLosParticipantesCheckin.filter(
+        p => p.esNoInscrito && !idsExistentes.has(p.id) && asistenciasCheckin[p.id] === true
+      );
 
-        // Primero, actualizar participantes existentes con sus asistencias
-        participantesExistentesMap.forEach((p, id) => {
-          const participanteCheckin = todosLosParticipantesCheckin.find(pc => pc.id === id);
-          if (participanteCheckin) {
-            // Usar datos del check-in si están disponibles
-            participantesActualizados.push({
-              ...p,
-              asistencia: asistenciasCheckin[id] !== undefined ? asistenciasCheckin[id] : p.asistencia,
-            });
-          } else {
-            // Mantener participante existente con asistencia actualizada si existe
-            participantesActualizados.push({
-              ...p,
-              asistencia: asistenciasCheckin[id] !== undefined ? asistenciasCheckin[id] : p.asistencia,
-            });
-          }
-          idsProcesados.add(id);
-        });
-
-        // Agregar participantes no inscritos nuevos que fueron agregados en el check-in
-        todosLosParticipantesCheckin.forEach(p => {
-          if (!idsProcesados.has(p.id) && p.esNoInscrito && asistenciasCheckin[p.id] === true) {
-            participantesActualizados.push(p);
-            idsProcesados.add(p.id);
-          }
-        });
-
-        return {
-          ...e,
-          participantesDetalle: participantesActualizados,
-          participantes: participantesActualizados.map(p => p.id),
-        };
+      if (walkInsNuevos.length > 0) {
+        eventoActualizado.participantesDetalle = [...participantesExistentes, ...walkInsNuevos];
+        eventoActualizado.participantes = eventoActualizado.participantesDetalle.map(p => p.id);
       }
-      return e;
-    });
 
-    setEventos(eventosActualizados);
+      const eventosActualizados = eventos.map(e =>
+        e.id === eventoCheckin.id ? eventoActualizado : e
+      );
 
-    // Actualizar evento seleccionado si es el mismo
-    if (eventoSeleccionado?.id === eventoCheckin.id) {
-      const eventoActualizado = eventosActualizados.find(e => e.id === eventoCheckin.id);
-      if (eventoActualizado) {
+      setEventos(eventosActualizados);
+
+      // Actualizar evento seleccionado si es el mismo
+      if (eventoSeleccionado?.id === eventoCheckin.id) {
         setEventoSeleccionado(eventoActualizado);
       }
+
+      // Calcular total de asistentes antes de limpiar estados
+      const totalAsistentes = Object.values(asistenciasCheckin).filter(a => a).length;
+
+      // Cerrar modal
+      setMostrarModalCheckin(false);
+      setEventoCheckin(null);
+      setAsistenciasCheckin({});
+      setNuevoParticipanteNombre('');
+      setNuevoParticipanteEmail('');
+      setNuevoParticipanteTelefono('');
+      setMostrarFormularioNoInscrito(false);
+
+      alert(`Check-in guardado exitosamente. Total de asistentes: ${totalAsistentes}`);
+    } catch (error) {
+      console.error('Error guardando check-in:', error);
+      alert('Error al guardar check-in');
     }
-
-    // Calcular total de asistentes antes de limpiar estados
-    const totalAsistentes = Object.values(asistenciasCheckin).filter(a => a).length;
-
-    // Cerrar modal
-    setMostrarModalCheckin(false);
-    setEventoCheckin(null);
-    setAsistenciasCheckin({});
-    setNuevoParticipanteNombre('');
-    setNuevoParticipanteEmail('');
-    setNuevoParticipanteTelefono('');
-    setMostrarFormularioNoInscrito(false);
-
-    alert(`Check-in guardado exitosamente. Total de asistentes: ${totalAsistentes}`);
   };
 
   // Función para exportar participantes a Excel (User Story 2)
@@ -2892,66 +2976,11 @@ export default function EventosRetosPage() {
               </div>
               <div className="flex gap-2">
                 <Button
-                  onClick={() => {
-                    setVistaCalendario(!vistaCalendario);
-                    setMostrarArchivo(false);
-                  }}
-                  variant={vistaCalendario ? "primary" : "secondary"}
-                  iconLeft={<Calendar className="w-4 h-4" />}
-                >
-                  Calendario
-                </Button>
-                <Button
-                  onClick={() => {
-                    setMostrarArchivo(!mostrarArchivo);
-                    setVistaCalendario(false);
-                  }}
-                  variant={mostrarArchivo ? "primary" : "secondary"}
-                  iconLeft={<Archive className="w-4 h-4" />}
-                >
-                  Archivo
-                </Button>
-                <Button
-                  onClick={mostrarAnalyticsEventos}
-                  variant="secondary"
-                  iconLeft={<TrendingUp className="w-4 h-4" />}
-                >
-                  Analytics
-                </Button>
-                <Button
-                  onClick={mostrarMetricasGenerales}
-                  variant="secondary"
-                  iconLeft={<BarChart3 className="w-4 h-4" />}
-                >
-                  Métricas Generales
-                </Button>
-                <Button
-                  onClick={() => setMostrarGaleríaPlantillas(true)}
-                  variant="secondary"
-                  iconLeft={<BookOpen className="w-4 h-4" />}
-                >
-                  Plantillas
-                </Button>
-                <Button
                   onClick={() => handleNuevoEvento('presencial')}
-                  variant="secondary"
-                  iconLeft={<MapPin className="w-4 h-4" />}
+                  variant="primary"
+                  iconLeft={<Plus className="w-4 h-4" />}
                 >
-                  Nuevo Presencial
-                </Button>
-                <Button
-                  onClick={() => handleNuevoEvento('reto')}
-                  variant="secondary"
-                  iconLeft={<Target className="w-4 h-4" />}
-                >
-                  Nuevo Reto
-                </Button>
-                <Button
-                  onClick={() => handleNuevoEvento('virtual')}
-                  variant="secondary"
-                  iconLeft={<Video className="w-4 h-4" />}
-                >
-                  Nuevo Virtual
+                  Nuevo Evento
                 </Button>
               </div>
             </div>
@@ -2962,39 +2991,189 @@ export default function EventosRetosPage() {
       {/* Contenedor Principal */}
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-6 py-8">
         <div className="space-y-6">
-          {/* Métricas */}
-          <MetricCards data={metricas} />
-
-          {/* Vista de Calendario (User Story 1) */}
-          {vistaCalendario && (
-            <div className="mb-6">
-              <EventosCalendar
-                eventos={eventos}
-                onEventoClick={(evento) => setEventoSeleccionado(evento)}
-                onEventoMove={handleMoverEvento}
-                tipoFiltro={tipoFiltroCalendario}
-                onTipoFiltroChange={setTipoFiltroCalendario}
-              />
+          {/* Estado de carga inicial - Skeleton/Placeholders */}
+          {isLoading && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <Card key={i} className="p-4">
+                    <div className="animate-pulse">
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                      <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-full"></div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+              <Card className="p-6">
+                <div className="animate-pulse space-y-4">
+                  <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-full"></div>
+                  <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                  <div className="h-4 bg-gray-200 rounded w-4/6"></div>
+                </div>
+              </Card>
             </div>
           )}
 
-          {/* Vista de Archivo (User Story 2) */}
-          {mostrarArchivo && (
-            <div className="mb-6">
-              <ArchivoEventos
-                eventos={eventos}
-                busqueda={busquedaArchivo}
-                tipoFiltro={tipoFiltroArchivo}
-                onBusquedaChange={setBusquedaArchivo}
-                onTipoFiltroChange={setTipoFiltroArchivo}
-                onDesarchivar={desarchivarEvento}
-                onEventoClick={(evento) => setEventoSeleccionado(evento)}
-              />
-            </div>
+          {/* Estado de error global - Mensaje con botón reintentar */}
+          {globalError && !isLoading && (
+            <Card className="p-6 border-red-200 bg-red-50">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="text-lg font-semibold text-red-900 mb-1">Error al cargar datos</h3>
+                    <p className="text-sm text-red-700">{globalError}</p>
+                  </div>
+                </div>
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setGlobalError(null);
+                    cargarEventos();
+                  }}
+                  iconLeft={<RefreshCw className="w-4 h-4" />}
+                >
+                  Reintentar
+                </Button>
+              </div>
+            </Card>
           )}
 
-          {/* Próximos Eventos (User Story 2) - Solo mostrar si no estamos en vista de calendario o archivo */}
-          {!vistaCalendario && !mostrarArchivo && proximosEventos.length > 0 && (
+          {/* Contenido principal - Solo mostrar si no está cargando y no hay error */}
+          {!isLoading && !globalError && (
+            <>
+              {/* Métricas - Mostrar en todas las secciones */}
+              <MetricCards data={metricas} />
+
+          {/* ============================================
+              SISTEMA DE TABS - NAVEGACIÓN PRINCIPAL
+              ============================================ */}
+          {/* NOTA: Primera capa de responsive - Las tabs son scrollables horizontalmente en móvil.
+                   Se puede mejorar más adelante con dropdown o mejor UX móvil. */}
+          <Card className="p-0 bg-white shadow-sm">
+            <div className="px-4 py-3">
+              <div
+                role="tablist"
+                aria-label="Secciones de Eventos y Retos"
+                className="flex items-center gap-2 rounded-2xl bg-slate-100 p-1 overflow-x-auto scrollbar-hide"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {/* Tab: Gestión */}
+                <button
+                  role="tab"
+                  aria-selected={tabActivo === 'gestion'}
+                  onClick={() => setTabActivo('gestion')}
+                  className={`
+                    inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all whitespace-nowrap
+                    ${tabActivo === 'gestion'
+                      ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
+                    }
+                  `}
+                >
+                  <List className="w-4 h-4" />
+                  <span>Gestión</span>
+                </button>
+
+                {/* Tab: Calendario */}
+                <button
+                  role="tab"
+                  aria-selected={tabActivo === 'calendario'}
+                  onClick={() => setTabActivo('calendario')}
+                  className={`
+                    inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all whitespace-nowrap
+                    ${tabActivo === 'calendario'
+                      ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
+                    }
+                  `}
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>Calendario</span>
+                </button>
+
+                {/* Tab: Retos */}
+                <button
+                  role="tab"
+                  aria-selected={tabActivo === 'retos'}
+                  onClick={() => setTabActivo('retos')}
+                  className={`
+                    inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all whitespace-nowrap
+                    ${tabActivo === 'retos'
+                      ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
+                    }
+                  `}
+                >
+                  <Target className="w-4 h-4" />
+                  <span>Retos</span>
+                </button>
+
+                {/* Tab: Comunicaciones */}
+                <button
+                  role="tab"
+                  aria-selected={tabActivo === 'comunicaciones'}
+                  onClick={() => setTabActivo('comunicaciones')}
+                  className={`
+                    inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all whitespace-nowrap
+                    ${tabActivo === 'comunicaciones'
+                      ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
+                    }
+                  `}
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Comunicaciones</span>
+                </button>
+
+                {/* Tab: Analytics */}
+                <button
+                  role="tab"
+                  aria-selected={tabActivo === 'analytics'}
+                  onClick={() => setTabActivo('analytics')}
+                  className={`
+                    inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all whitespace-nowrap
+                    ${tabActivo === 'analytics'
+                      ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
+                    }
+                  `}
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  <span>Analytics</span>
+                </button>
+
+                {/* Tab: Archivo */}
+                <button
+                  role="tab"
+                  aria-selected={tabActivo === 'archivo'}
+                  onClick={() => setTabActivo('archivo')}
+                  className={`
+                    inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all whitespace-nowrap
+                    ${tabActivo === 'archivo'
+                      ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
+                    }
+                  `}
+                >
+                  <Archive className="w-4 h-4" />
+                  <span>Archivo</span>
+                </button>
+            </div>
+            </div>
+          </Card>
+
+          {/* ============================================
+              CONTENIDO DE TABS
+              ============================================ */}
+
+          {/* SECCIÓN: GESTIÓN - Listado principal, crear, editar, duplicar, archivar */}
+          {tabActivo === 'gestion' && (
+            <div className="space-y-6">
+              {/* Próximos Eventos */}
+              {proximosEventos.length > 0 && (
             <Card className="p-6 bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -3055,22 +3234,15 @@ export default function EventosRetosPage() {
                           </div>
                           <div className="flex items-center gap-2 flex-wrap">
                             <button
-                              onClick={() => abrirModalSolicitudConfirmacion(evento)}
-                              className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-                              title="Solicitar confirmación de asistencia"
-                              disabled={evento.estado !== 'programado' || evento.participantes.length === 0}
+                              onClick={() => {
+                                setEventoComunicaciones(evento);
+                                setMostrarPanelComunicaciones(true);
+                              }}
+                              className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
+                              title="Panel de comunicaciones (invitaciones, recordatorios, confirmaciones, mensajes)"
                             >
-                              <CheckSquare className="w-4 h-4" />
-                              Confirmación
-                            </button>
-                            <button
-                              onClick={() => abrirModalMensajeGrupal(evento)}
-                              className="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
-                              title="Enviar mensaje grupal"
-                              disabled={evento.participantes.length === 0}
-                            >
-                              <MessageSquare className="w-4 h-4" />
-                              Mensaje
+                              <MessageCircle className="w-4 h-4" />
+                              Comunicaciones
                             </button>
                             <button
                               onClick={() => abrirModalCheckin(evento)}
@@ -3106,8 +3278,8 @@ export default function EventosRetosPage() {
             </Card>
           )}
 
-          {/* Filtros y Lista de Eventos - Solo mostrar si no estamos en vista de calendario o archivo */}
-          {!vistaCalendario && !mostrarArchivo && (
+              {/* Filtros y Lista de Eventos */}
+              <div className="space-y-4">
             <>
               {/* Filtros */}
               <Card className="p-4 bg-white shadow-sm">
@@ -3390,12 +3562,238 @@ export default function EventosRetosPage() {
               </Card>
             )}
               </div>
-            </>
+            </div>
+          )}
+
+          {/* SECCIÓN: CALENDARIO - Vista de calendario de eventos */}
+          {tabActivo === 'calendario' && (
+            <div className="space-y-6">
+              <EventosCalendar
+                eventos={eventos}
+                onEventoClick={(evento) => setEventoSeleccionado(evento)}
+                onEventoMove={handleMoverEvento}
+                tipoFiltro={tipoFiltroCalendario}
+                onTipoFiltroChange={setTipoFiltroCalendario}
+              />
+        </div>
+          )}
+
+          {/* SECCIÓN: RETOS - Gestión específica de retos y progreso */}
+          {tabActivo === 'retos' && (
+            <div className="space-y-6">
+              {/* Lista de retos activos */}
+              <Card className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-gray-900">Retos Activos</h2>
+                  <Button
+                    onClick={() => handleNuevoEvento('reto')}
+                    variant="primary"
+                    iconLeft={<Plus className="w-4 h-4" />}
+                  >
+                    Nuevo Reto
+                  </Button>
+      </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {eventosFiltrados
+                    .filter(e => e.tipo === 'reto' && (e.estado === 'programado' || e.estado === 'en-curso'))
+                    .map(evento => (
+                      <Card key={evento.id} className="p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
+                        <div className="space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                {getTipoBadge(evento.tipo)}
+                                {getEstadoBadge(evento.estado)}
+                              </div>
+                              <h3 className="font-semibold text-gray-900">{evento.nombre}</h3>
+                              <p className="text-sm text-gray-600 mt-1 line-clamp-2">{evento.descripcion}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Target className="w-4 h-4" />
+                            <span>{evento.duracionDias || 30} días</span>
+                            <Users className="w-4 h-4 ml-2" />
+                            <span>{evento.participantes.length} participantes</span>
+                          </div>
+                          <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => mostrarDashboardProgreso(evento)}
+                              iconLeft={<Target className="w-4 h-4" />}
+                            >
+                              Ver Progreso
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEventoSeleccionado(evento)}
+                              iconLeft={<Eye className="w-4 h-4" />}
+                            >
+                              Ver Detalle
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                </div>
+                {eventosFiltrados.filter(e => e.tipo === 'reto' && (e.estado === 'programado' || e.estado === 'en-curso')).length === 0 && (
+                  <div className="text-center py-12">
+                    <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">No hay retos activos</p>
+                  </div>
+                )}
+              </Card>
+            </div>
+          )}
+
+          {/* SECCIÓN: COMUNICACIONES - Invitaciones, recordatorios, mensajes grupales, confirmaciones */}
+          {tabActivo === 'comunicaciones' && (
+            <div className="space-y-6">
+              <Card className="p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Comunicaciones</h2>
+                <p className="text-gray-600 mb-6">
+                  Gestiona invitaciones, recordatorios, mensajes grupales y confirmaciones de asistencia.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card className="p-4 bg-blue-50 border-blue-200 hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => {
+                      // Abrir modal de invitaciones desde un evento seleccionado o crear uno nuevo
+                      if (eventosFiltrados.length > 0) {
+                        abrirModalInvitaciones(eventosFiltrados[0]);
+                      }
+                    }}
+                  >
+                    <UserPlus className="w-8 h-8 text-blue-600 mb-2" />
+                    <h3 className="font-semibold text-gray-900 mb-1">Invitaciones</h3>
+                    <p className="text-sm text-gray-600">Enviar invitaciones a clientes y grupos</p>
+                  </Card>
+                  <Card className="p-4 bg-purple-50 border-purple-200 hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => {
+                      if (eventosFiltrados.length > 0) {
+                        abrirModalMensajeGrupal(eventosFiltrados[0]);
+                      }
+                    }}
+                  >
+                    <MessageSquare className="w-8 h-8 text-purple-600 mb-2" />
+                    <h3 className="font-semibold text-gray-900 mb-1">Mensajes Grupales</h3>
+                    <p className="text-sm text-gray-600">Enviar mensajes a todos los participantes</p>
+                  </Card>
+                  <Card className="p-4 bg-green-50 border-green-200 hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => {
+                      if (eventosFiltrados.length > 0) {
+                        abrirModalSolicitudConfirmacion(eventosFiltrados[0]);
+                      }
+                    }}
+                  >
+                    <CheckSquare className="w-8 h-8 text-green-600 mb-2" />
+                    <h3 className="font-semibold text-gray-900 mb-1">Confirmaciones</h3>
+                    <p className="text-sm text-gray-600">Solicitar confirmación de asistencia</p>
+                  </Card>
+                  <Card className="p-4 bg-orange-50 border-orange-200 hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => {
+                      if (eventosFiltrados.length > 0 && eventosFiltrados[0].id) {
+                        setEventoHistorialRecordatorios(eventosFiltrados[0]);
+                        setMostrarHistorialRecordatorios(true);
+                      }
+                    }}
+                  >
+                    <Bell className="w-8 h-8 text-orange-600 mb-2" />
+                    <h3 className="font-semibold text-gray-900 mb-1">Recordatorios</h3>
+                    <p className="text-sm text-gray-600">Configurar y ver recordatorios automáticos</p>
+                  </Card>
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* SECCIÓN: ANALYTICS - Dashboards, modales de analítica y feedback */}
+          {tabActivo === 'analytics' && (
+            <div className="space-y-6">
+              <Card className="p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Analytics y Métricas</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={mostrarMetricasGenerales}
+                  >
+                    <BarChart3 className="w-10 h-10 text-blue-600 mb-3" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Métricas Generales</h3>
+                    <p className="text-sm text-gray-600 mb-4">Dashboard completo con KPIs y análisis de rendimiento</p>
+                    <Button variant="primary" size="sm">Ver Dashboard</Button>
+                  </Card>
+                  <Card className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200 hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={mostrarAnalyticsEventos}
+                  >
+                    <TrendingUp className="w-10 h-10 text-purple-600 mb-3" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Analytics de Eventos</h3>
+                    <p className="text-sm text-gray-600 mb-4">Rankings, comparativas y análisis de horarios</p>
+                    <Button variant="primary" size="sm">Ver Analytics</Button>
+                  </Card>
+                </div>
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Eventos Finalizados - Feedback</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {eventosFiltrados
+                      .filter(e => e.estado === 'finalizado')
+                      .slice(0, 6)
+                      .map(evento => (
+                        <Card key={evento.id} className="p-4 hover:shadow-md transition-shadow">
+                          <div className="flex items-start justify-between mb-2">
+                            <h4 className="font-medium text-gray-900">{evento.nombre}</h4>
+                            <Star className="w-4 h-4 text-yellow-400" />
+                          </div>
+                          <p className="text-sm text-gray-600 mb-3">
+                            {new Date(evento.fechaInicio).toLocaleDateString('es-ES')}
+                          </p>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => mostrarFeedbackEvento(evento)}
+                            className="w-full"
+                          >
+                            Ver Feedback
+                          </Button>
+                        </Card>
+                      ))}
+                  </div>
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* SECCIÓN: ARCHIVO - Eventos archivados */}
+          {tabActivo === 'archivo' && (
+            <div className="space-y-6">
+              <ArchivoEventos
+                eventos={eventos}
+                busqueda={busquedaArchivo}
+                tipoFiltro={tipoFiltroArchivo}
+                fechaDesde={fechaDesdeArchivo}
+                fechaHasta={fechaHastaArchivo}
+                rendimientoFiltro={rendimientoFiltroArchivo}
+                onBusquedaChange={setBusquedaArchivo}
+                onTipoFiltroChange={setTipoFiltroArchivo}
+                onFechaDesdeChange={setFechaDesdeArchivo}
+                onFechaHastaChange={setFechaHastaArchivo}
+                onRendimientoFiltroChange={setRendimientoFiltroArchivo}
+                onDesarchivar={desarchivarEvento}
+                onDuplicar={handleDuplicarEvento}
+                onEventoClick={(evento) => setEventoSeleccionado(evento)}
+              />
+            </div>
           )}
         </div>
       </div>
 
-      {/* Modal de Formulario */}
+      {/* ============================================
+          MODALES - TODOS LOS MODALES SE RENDERIZAN AQUÍ
+          ============================================
+          Los modales están organizados al final del componente
+          para mantener el código principal limpio y facilitar
+          la gestión de estados de apertura/cierre.
+          ============================================ */}
+
+      {/* Modal de Formulario - Crear/Editar/Duplicar Evento */}
       {mostrarFormulario && (
         <Modal
           isOpen={mostrarFormulario}
@@ -3489,7 +3887,8 @@ export default function EventosRetosPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* NOTA: Primera capa de responsive - Grid se adapta a una columna en móvil */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Input
                   label="Fecha de Inicio"
@@ -4805,10 +5204,22 @@ export default function EventosRetosPage() {
                               Pendiente
                             </Badge>
                           )}
+                          {participante.tipoCliente && participante.tipoCliente !== 'regular' && (
+                            <Badge variant="purple" className="text-xs capitalize">
+                              {participante.tipoCliente}
+                            </Badge>
+                          )}
                         </div>
-                        {participante.email && (
-                          <p className="text-xs text-gray-500 truncate">{participante.email}</p>
-                        )}
+                        <div className="flex items-center gap-2 mt-1">
+                          {participante.email && (
+                            <p className="text-xs text-gray-500 truncate">{participante.email}</p>
+                          )}
+                          {eventoSeleccionado && (
+                            <span className="text-xs font-medium text-purple-600">
+                              {obtenerEtiquetaPrecio(eventoSeleccionado, participante.tipoCliente || 'regular')}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Botones de acción */}
@@ -4903,12 +5314,24 @@ export default function EventosRetosPage() {
                             <Badge variant="orange" className="text-xs">
                               En espera
                             </Badge>
+                            {participante.tipoCliente && participante.tipoCliente !== 'regular' && (
+                              <Badge variant="purple" className="text-xs capitalize">
+                                {participante.tipoCliente}
+                              </Badge>
+                            )}
                           </div>
-                          {participante.email && (
-                            <p className="text-xs text-gray-500 truncate">{participante.email}</p>
-                          )}
+                          <div className="flex items-center gap-2 mt-1">
+                            {participante.email && (
+                              <p className="text-xs text-gray-500 truncate">{participante.email}</p>
+                            )}
+                            {eventoSeleccionado && (
+                              <span className="text-xs font-medium text-purple-600">
+                                {obtenerEtiquetaPrecio(eventoSeleccionado, participante.tipoCliente || 'regular')}
+                              </span>
+                            )}
+                          </div>
                           {participante.fechaCancelacion && (
-                            <p className="text-xs text-gray-400">
+                            <p className="text-xs text-gray-400 mt-1">
                               Canceló: {new Date(participante.fechaCancelacion).toLocaleDateString()}
                             </p>
                           )}
@@ -4931,6 +5354,21 @@ export default function EventosRetosPage() {
                 </div>
               )}
             </div>
+
+            {/* Sección Post-Evento - Solo para eventos finalizados */}
+            {eventoSeleccionado.estado === 'finalizado' && (
+              <PostEventSection
+                evento={eventoSeleccionado}
+                onConfigurarEncuesta={() => abrirModalConfigurarEncuesta(eventoSeleccionado)}
+                onEnviarEncuesta={() => handleEnviarEncuesta(eventoSeleccionado)}
+                onVerFeedback={() => {
+                  mostrarFeedbackEvento(eventoSeleccionado);
+                }}
+                onVerAnalytics={() => {
+                  mostrarAnalyticsEvento(eventoSeleccionado);
+                }}
+              />
+            )}
 
             <div className="flex justify-end gap-3 pt-4 border-t">
               <Button variant="secondary" onClick={() => setEventoSeleccionado(null)}>
@@ -6782,45 +7220,39 @@ export default function EventosRetosPage() {
       )}
 
       {/* Modal de Feedback Post-Evento (User Story 1) */}
-      {mostrarModalFeedback && eventoFeedback && estadisticasFeedback && (
+      {mostrarModalFeedback && eventoFeedbackId && (
         <FeedbackResultsModal
           isOpen={mostrarModalFeedback}
           onClose={() => {
             setMostrarModalFeedback(false);
-            setEventoFeedback(null);
-            setEstadisticasFeedback(null);
+            setEventoFeedbackId(null);
           }}
-          eventoNombre={eventoFeedback.nombre}
-          estadisticas={estadisticasFeedback}
+          eventId={eventoFeedbackId}
+        />
+      )}
+
+      {/* Modal de Configuración de Encuesta Post-Evento */}
+      {mostrarModalConfigurarEncuesta && eventoConfigurarEncuesta && (
+        <SurveyConfigModal
+          isOpen={mostrarModalConfigurarEncuesta}
+          onClose={() => {
+            setMostrarModalConfigurarEncuesta(false);
+            setEventoConfigurarEncuesta(null);
+          }}
+          evento={eventoConfigurarEncuesta}
+          onSave={handleEncuestaGuardada}
         />
       )}
 
       {/* Modal de Analytics de Eventos (User Story 2) */}
-      {mostrarModalAnalytics && (
+      {mostrarModalAnalytics && eventoAnalyticsId && (
         <EventAnalyticsModal
           isOpen={mostrarModalAnalytics}
           onClose={() => {
             setMostrarModalAnalytics(false);
-            setRankings([]);
-            setComparativas([]);
-            setAnalisisHorarios(null);
-            setInsights(null);
+            setEventoAnalyticsId(null);
           }}
-          rankings={rankings}
-          comparativas={comparativas}
-          analisisHorarios={analisisHorarios || {
-            mejorDiaSemana: { dia: 'N/A', promedioParticipacion: 0, promedioAsistencia: 0, promedioValoracion: 0, totalEventos: 0 },
-            mejorHora: { hora: 0, promedioParticipacion: 0, promedioAsistencia: 0, promedioValoracion: 0, totalEventos: 0 },
-            mejoresHorarios: [],
-          }}
-          insights={insights || {
-            eventosMasExitosos: [],
-            eventosMenosExitosos: [],
-            tendencias: { participacion: 'estable', asistencia: 'estable', valoracion: 'estable' },
-            recomendaciones: [],
-            tipoEventoMasPopular: 'presencial',
-            mejorMomentoParaEventos: { dia: 'N/A', hora: 0 },
-          }}
+          eventId={eventoAnalyticsId}
         />
       )}
 
@@ -7132,6 +7564,10 @@ export default function EventosRetosPage() {
           {/* Se agregará mediante búsqueda y reemplazo del modal de detalle */}
         </>
       )}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,8 +1,13 @@
-import React, { useState } from 'react';
-import { Suscripcion } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Suscripcion, SesionIncluida } from '../types';
 import { Card, Button, Modal, Input, Badge } from '../../../components/componentsreutilizables';
-import { modificarSesiones, añadirBonusSesiones } from '../api/suscripciones';
-import { Plus, Minus, History, Gift } from 'lucide-react';
+import { 
+  modificarSesiones, 
+  añadirBonusSesiones,
+  obtenerSesionesIncluidas,
+  registrarConsumoSesion,
+} from '../api/suscripciones';
+import { Plus, Minus, History, Gift, CheckCircle, Calendar } from 'lucide-react';
 
 interface GestionSesionesProps {
   suscripcion: Suscripcion;
@@ -15,6 +20,9 @@ export const GestionSesiones: React.FC<GestionSesionesProps> = ({
 }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalBonusOpen, setModalBonusOpen] = useState(false);
+  const [modalConsumoOpen, setModalConsumoOpen] = useState(false);
+  const [sesionesIncluidas, setSesionesIncluidas] = useState<SesionIncluida[]>([]);
+  const [loading, setLoading] = useState(false);
   const [tipoAjuste, setTipoAjuste] = useState<'añadir' | 'quitar'>('añadir');
   const [cantidadSesiones, setCantidadSesiones] = useState<number>(1);
   const [motivo, setMotivo] = useState<string>('');
@@ -23,6 +31,51 @@ export const GestionSesiones: React.FC<GestionSesionesProps> = ({
   // Estados para sesiones bonus
   const [cantidadBonusSesiones, setCantidadBonusSesiones] = useState<number>(1);
   const [motivoBonus, setMotivoBonus] = useState<string>('');
+  
+  // Estados para registro de consumo
+  const [sesionSeleccionada, setSesionSeleccionada] = useState<SesionIncluida | null>(null);
+  const [cantidadConsumo, setCantidadConsumo] = useState<number>(1);
+  
+  useEffect(() => {
+    loadSesionesIncluidas();
+  }, [suscripcion.id]);
+  
+  const loadSesionesIncluidas = async () => {
+    setLoading(true);
+    try {
+      const sesiones = await obtenerSesionesIncluidas({
+        suscripcionId: suscripcion.id,
+        incluirCaducadas: true,
+      });
+      setSesionesIncluidas(sesiones);
+    } catch (error) {
+      console.error('Error cargando sesiones incluidas:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleRegistrarConsumo = async () => {
+    if (!sesionSeleccionada) return;
+    
+    try {
+      await registrarConsumoSesion({
+        sesionIncluidaId: sesionSeleccionada.id,
+        cantidad: cantidadConsumo,
+        fechaConsumo: new Date().toISOString(),
+        motivo: motivo || undefined,
+      });
+      
+      setModalConsumoOpen(false);
+      setCantidadConsumo(1);
+      setSesionSeleccionada(null);
+      await loadSesionesIncluidas();
+      onSuccess?.();
+    } catch (error: any) {
+      console.error('Error registrando consumo:', error);
+      alert(error.message || 'Error al registrar el consumo');
+    }
+  };
 
   const sesionesBase = suscripcion.sesionesIncluidas || 0;
   const ajusteActual = suscripcion.sesionesAjuste || 0;
@@ -133,6 +186,120 @@ export const GestionSesiones: React.FC<GestionSesionesProps> = ({
               </p>
             </div>
           </div>
+
+          {/* Sesiones Incluidas vs Consumidas */}
+          {sesionesIncluidas.length > 0 && (
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-lg font-semibold text-gray-900">Sesiones Incluidas por Período</h4>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => {
+                    const sesionActiva = sesionesIncluidas.find(s => {
+                      const fechaCad = new Date(s.fechaCaducidad);
+                      return fechaCad >= new Date();
+                    });
+                    if (sesionActiva) {
+                      setSesionSeleccionada(sesionActiva);
+                      setModalConsumoOpen(true);
+                    }
+                  }}
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Registrar Consumo
+                </Button>
+              </div>
+              <div className="space-y-3">
+                {sesionesIncluidas.map((sesion) => {
+                  const disponible = sesion.totalSesiones - sesion.consumidas;
+                  const porcentaje = sesion.totalSesiones > 0 
+                    ? Math.round((sesion.consumidas / sesion.totalSesiones) * 100)
+                    : 0;
+                  const fechaCad = new Date(sesion.fechaCaducidad);
+                  const hoy = new Date();
+                  const diasRestantes = Math.ceil((fechaCad.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+                  const estaCaducada = fechaCad < hoy;
+                  
+                  return (
+                    <Card key={sesion.id} className={`p-4 border ${estaCaducada ? 'border-gray-300 bg-gray-50' : 'border-blue-200 bg-blue-50'}`}>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h5 className="font-semibold text-gray-900">
+                              Período: {sesion.periodo || 'N/A'}
+                            </h5>
+                            <Badge color={sesion.tipoSesion === 'bonus' ? 'success' : sesion.tipoSesion === 'transferida' ? 'info' : 'primary'}>
+                              {sesion.tipoSesion}
+                            </Badge>
+                            {estaCaducada && (
+                              <Badge color="error">Caducada</Badge>
+                            )}
+                          </div>
+                          
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
+                            <div>
+                              <p className="text-xs text-gray-600 mb-1">Total Incluidas</p>
+                              <p className="text-lg font-semibold text-gray-900">{sesion.totalSesiones}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-600 mb-1">Consumidas</p>
+                              <p className="text-lg font-semibold text-blue-600">{sesion.consumidas}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-600 mb-1">Disponibles</p>
+                              <p className="text-lg font-semibold text-green-600">{disponible}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-600 mb-1 flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                Caducidad
+                              </p>
+                              <p className={`text-sm font-semibold ${estaCaducada ? 'text-red-600' : diasRestantes <= 7 ? 'text-orange-600' : 'text-gray-900'}`}>
+                                {diasRestantes < 0 ? `Hace ${Math.abs(diasRestantes)} días` : diasRestantes === 0 ? 'Hoy' : `${diasRestantes} días`}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {/* Barra de progreso */}
+                          <div className="mb-2">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs text-gray-600">Progreso de uso</span>
+                              <span className="text-xs font-semibold text-gray-900">{porcentaje}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className={`h-2 rounded-full transition-all ${
+                                  porcentaje >= 80 ? 'bg-green-500' : 
+                                  porcentaje >= 50 ? 'bg-yellow-500' : 
+                                  'bg-blue-500'
+                                }`}
+                                style={{ width: `${Math.min(100, porcentaje)}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {!estaCaducada && disponible > 0 && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              setSesionSeleccionada(sesion);
+                              setCantidadConsumo(1);
+                              setModalConsumoOpen(true);
+                            }}
+                          >
+                            Registrar
+                          </Button>
+                        )}
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Historial de sesiones bonus */}
           {historialBonus.length > 0 && (
@@ -445,6 +612,76 @@ export const GestionSesiones: React.FC<GestionSesionesProps> = ({
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Modal para registrar consumo */}
+      <Modal
+        isOpen={modalConsumoOpen}
+        onClose={() => {
+          setModalConsumoOpen(false);
+          setSesionSeleccionada(null);
+          setCantidadConsumo(1);
+        }}
+        title="Registrar Consumo de Sesiones"
+        size="md"
+      >
+        {sesionSeleccionada && (
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-900 mb-2">
+                <strong>Período:</strong> {sesionSeleccionada.periodo || 'N/A'}
+              </p>
+              <p className="text-sm text-blue-700">
+                <strong>Sesiones disponibles:</strong> {sesionSeleccionada.totalSesiones - sesionSeleccionada.consumidas} de {sesionSeleccionada.totalSesiones}
+              </p>
+              <p className="text-sm text-blue-700 mt-1">
+                <strong>Caducidad:</strong> {new Date(sesionSeleccionada.fechaCaducidad).toLocaleDateString('es-ES')}
+              </p>
+            </div>
+
+            <Input
+              label="Cantidad de sesiones a consumir"
+              type="number"
+              min={1}
+              max={sesionSeleccionada.totalSesiones - sesionSeleccionada.consumidas}
+              value={cantidadConsumo.toString()}
+              onChange={(e) => {
+                const value = parseInt(e.target.value) || 1;
+                const max = sesionSeleccionada.totalSesiones - sesionSeleccionada.consumidas;
+                setCantidadConsumo(Math.min(Math.max(1, value), max));
+              }}
+              helperText={`Máximo: ${sesionSeleccionada.totalSesiones - sesionSeleccionada.consumidas} sesiones`}
+            />
+
+            <Input
+              label="Motivo (opcional)"
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              placeholder="Ej: Sesión realizada, Compensación, etc."
+            />
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setModalConsumoOpen(false);
+                  setSesionSeleccionada(null);
+                  setCantidadConsumo(1);
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleRegistrarConsumo}
+                disabled={cantidadConsumo < 1 || cantidadConsumo > (sesionSeleccionada.totalSesiones - sesionSeleccionada.consumidas)}
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Registrar Consumo
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </>
   );

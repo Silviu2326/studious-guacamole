@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Select } from '../../../components/componentsreutilizables';
+import { Card, Button, Select, Input } from '../../../components/componentsreutilizables';
 import {
   ProyeccionesYRetencionRequest,
   ProyeccionesYRetencionResponse,
+  ProyeccionRetencion,
+  ParametrosProyeccion,
 } from '../types';
-import { getProyeccionesYRetencion } from '../api/proyeccionesRetencion';
+import { getProyeccionesYRetencion, getProyeccionesRetencionEscenarios } from '../api/proyeccionesRetencion';
 import {
   TrendingUp,
   DollarSign,
@@ -13,6 +15,7 @@ import {
   BarChart3,
   Calendar,
   Loader2,
+  RefreshCw,
 } from 'lucide-react';
 import {
   LineChart,
@@ -43,13 +46,25 @@ export const ProyeccionesIngresosRetencion: React.FC<ProyeccionesIngresosRetenci
 }) => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ProyeccionesYRetencionResponse | null>(null);
+  const [proyeccionesEscenarios, setProyeccionesEscenarios] = useState<ProyeccionRetencion[]>([]);
   const [mesesProyeccion, setMesesProyeccion] = useState(12);
   const [mesesAnalisis, setMesesAnalisis] = useState(6);
-  const [vistaGrafico, setVistaGrafico] = useState<'ingresos' | 'retencion'>('ingresos');
+  const [vistaGrafico, setVistaGrafico] = useState<'ingresos' | 'retencion' | 'escenarios'>('ingresos');
+  
+  // Parámetros de proyección
+  const [churnEsperado, setChurnEsperado] = useState(5); // 5% churn mensual
+  const [crecimientoAltas, setCrecimientoAltas] = useState(10); // 10 nuevas suscripciones por mes
+  const [loadingEscenarios, setLoadingEscenarios] = useState(false);
 
   useEffect(() => {
     loadData();
   }, [entrenadorId, mesesProyeccion, mesesAnalisis]);
+
+  useEffect(() => {
+    if (vistaGrafico === 'escenarios') {
+      loadEscenarios();
+    }
+  }, [vistaGrafico, churnEsperado, crecimientoAltas, mesesProyeccion, entrenadorId]);
 
   const loadData = async () => {
     setLoading(true);
@@ -66,6 +81,27 @@ export const ProyeccionesIngresosRetencion: React.FC<ProyeccionesIngresosRetenci
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadEscenarios = async () => {
+    setLoadingEscenarios(true);
+    try {
+      const parametros: ParametrosProyeccion = {
+        churnEsperado,
+        crecimientoAltas,
+        mesesProyeccion,
+      };
+      const escenarios = await getProyeccionesRetencionEscenarios(parametros, entrenadorId);
+      setProyeccionesEscenarios(escenarios);
+    } catch (error) {
+      console.error('Error cargando proyecciones de escenarios:', error);
+    } finally {
+      setLoadingEscenarios(false);
+    }
+  };
+
+  const recalcularEscenarios = () => {
+    loadEscenarios();
   };
 
   if (loading) {
@@ -226,6 +262,13 @@ export const ProyeccionesIngresosRetencion: React.FC<ProyeccionesIngresosRetenci
             >
               Retención
             </Button>
+            <Button
+              variant={vistaGrafico === 'escenarios' ? 'primary' : 'secondary'}
+              onClick={() => setVistaGrafico('escenarios')}
+              size="sm"
+            >
+              Escenarios
+            </Button>
           </div>
         </div>
       </Card>
@@ -380,6 +423,182 @@ export const ProyeccionesIngresosRetencion: React.FC<ProyeccionesIngresosRetenci
               </ResponsiveContainer>
             </Card>
           </div>
+        </>
+      )}
+
+      {/* Gráfico de Escenarios */}
+      {vistaGrafico === 'escenarios' && (
+        <>
+          <Card className="bg-white shadow-sm p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">
+                Proyecciones por Escenarios
+              </h3>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={recalcularEscenarios}
+                disabled={loadingEscenarios}
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${loadingEscenarios ? 'animate-spin' : ''}`} />
+                Recalcular
+              </Button>
+            </div>
+
+            {/* Controles de parámetros */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Churn Esperado (% mensual)
+                </label>
+                <Input
+                  type="number"
+                  value={churnEsperado}
+                  onChange={(e) => setChurnEsperado(Number(e.target.value))}
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Crecimiento en Altas (nuevas/mes)
+                </label>
+                <Input
+                  type="number"
+                  value={crecimientoAltas}
+                  onChange={(e) => setCrecimientoAltas(Number(e.target.value))}
+                  min="0"
+                  step="1"
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Meses de Proyección
+                </label>
+                <Select
+                  value={mesesProyeccion.toString()}
+                  onChange={(e) => setMesesProyeccion(Number(e.target.value))}
+                  className="w-full"
+                >
+                  <option value="6">6 meses</option>
+                  <option value="12">12 meses</option>
+                </Select>
+              </div>
+            </div>
+
+            {loadingEscenarios ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                <span className="ml-3 text-gray-600">Calculando escenarios...</span>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={400}>
+                <LineChart margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                  <XAxis 
+                    dataKey="mes" 
+                    stroke="#64748B"
+                    tick={{ fontSize: 12 }}
+                  />
+                  <YAxis 
+                    stroke="#64748B"
+                    tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: '1px solid #E2E8F0',
+                      borderRadius: '8px',
+                    }}
+                    formatter={(value: number) => `${value.toFixed(0)}€`}
+                  />
+                  <Legend />
+                  {proyeccionesEscenarios.map((escenario, index) => {
+                    const color = escenario.escenario === 'optimista' 
+                      ? '#10B981' 
+                      : escenario.escenario === 'pesimista' 
+                      ? '#EF4444' 
+                      : '#3B82F6';
+                    const nombre = escenario.escenario === 'optimista'
+                      ? 'Escenario Optimista'
+                      : escenario.escenario === 'pesimista'
+                      ? 'Escenario Pesimista'
+                      : 'Escenario Realista';
+                    
+                    return (
+                      <Line
+                        key={escenario.escenario}
+                        type="monotone"
+                        dataKey="ingresos"
+                        data={escenario.meses}
+                        name={nombre}
+                        stroke={color}
+                        strokeWidth={2}
+                        dot={{ fill: color, r: 4 }}
+                        activeDot={{ r: 6 }}
+                      />
+                    );
+                  })}
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+
+            {/* Resumen de escenarios */}
+            {!loadingEscenarios && proyeccionesEscenarios.length > 0 && (
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                {proyeccionesEscenarios.map((escenario) => {
+                  const ultimoMes = escenario.meses[escenario.meses.length - 1];
+                  const primerMes = escenario.meses[0];
+                  const crecimiento = ultimoMes.ingresos - primerMes.ingresos;
+                  const porcentajeCrecimiento = primerMes.ingresos > 0
+                    ? (crecimiento / primerMes.ingresos) * 100
+                    : 0;
+
+                  const bgColor = escenario.escenario === 'optimista'
+                    ? 'bg-green-50'
+                    : escenario.escenario === 'pesimista'
+                    ? 'bg-red-50'
+                    : 'bg-blue-50';
+                  const textColor = escenario.escenario === 'optimista'
+                    ? 'text-green-700'
+                    : escenario.escenario === 'pesimista'
+                    ? 'text-red-700'
+                    : 'text-blue-700';
+                  const borderColor = escenario.escenario === 'optimista'
+                    ? 'border-green-200'
+                    : escenario.escenario === 'pesimista'
+                    ? 'border-red-200'
+                    : 'border-blue-200';
+
+                  return (
+                    <div key={escenario.escenario} className={`${bgColor} p-4 rounded-lg border ${borderColor}`}>
+                      <div className="text-sm font-medium mb-2 capitalize">
+                        Escenario {escenario.escenario}
+                      </div>
+                      <div className={`text-2xl font-bold ${textColor} mb-1`}>
+                        {ultimoMes.ingresos.toFixed(0)}€
+                      </div>
+                      <div className="text-xs text-gray-600 mb-2">
+                        Ingresos proyectados en {ultimoMes.mes}
+                      </div>
+                      <div className="text-xs">
+                        <span className={crecimiento >= 0 ? 'text-green-600' : 'text-red-600'}>
+                          {crecimiento >= 0 ? '+' : ''}{porcentajeCrecimiento.toFixed(1)}%
+                        </span>
+                        {' '}vs inicio
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {ultimoMes.numeroSuscripciones} suscripciones
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
         </>
       )}
 

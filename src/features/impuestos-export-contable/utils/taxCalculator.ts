@@ -1,4 +1,4 @@
-import { TaxCalculation, TaxCalculationSettings } from '../api/types';
+import { TaxCalculation, TaxCalculationSettings, TramoIRPF } from '../api/types';
 
 /**
  * Calcula los impuestos (IRPF e IVA) según el régimen fiscal y los ingresos/gastos
@@ -116,4 +116,128 @@ export function getDefaultTaxSettings(
   return baseSettings;
 }
 
+/**
+ * ============================================================================
+ * FUNCIONES PURAS DE CÁLCULO FISCAL
+ * ============================================================================
+ * Estas funciones implementan la lógica de cálculo de impuestos de forma pura.
+ * 
+ * NOTA: En producción, estas funciones se conectarían con:
+ * - La lógica real del backend que aplica la normativa fiscal vigente
+ * - Servicios de cálculo fiscal actualizados según la legislación española
+ * - Validación de tramos IRPF según normativa Hacienda
+ * - Cálculos de IVA según tipo de actividad y normativa vigente
+ * ============================================================================
+ */
+
+/**
+ * Calcula el IRPF aplicando tramos progresivos
+ * 
+ * @param ingresos - Total de ingresos del período
+ * @param gastos - Total de gastos deducibles del período
+ * @param tramos - Array de tramos IRPF con porcentajes progresivos
+ * @returns Cantidad de IRPF a pagar
+ * 
+ * NOTA: En producción, esta función se conectaría con:
+ * - La normativa fiscal vigente de Hacienda
+ * - Los tramos IRPF oficiales actualizados anualmente
+ * - Cálculos específicos según tipo de actividad y régimen fiscal
+ */
+export function calcularIRPF(
+  ingresos: number,
+  gastos: number,
+  tramos: TramoIRPF[]
+): number {
+  // Calcular base imponible (ingresos - gastos)
+  const baseImponible = Math.max(0, ingresos - gastos);
+  
+  if (baseImponible <= 0 || tramos.length === 0) {
+    return 0;
+  }
+  
+  // Ordenar tramos por 'desde' de menor a mayor
+  const tramosOrdenados = [...tramos].sort((a, b) => a.desde - b.desde);
+  
+  let irpfTotal = 0;
+  let baseRestante = baseImponible;
+  
+  // Aplicar cada tramo progresivamente
+  for (let i = 0; i < tramosOrdenados.length && baseRestante > 0; i++) {
+    const tramo = tramosOrdenados[i];
+    
+    // Verificar si la base imponible alcanza este tramo
+    if (baseImponible > tramo.desde) {
+      // Calcular el rango de este tramo
+      const limiteInferior = tramo.desde;
+      const limiteSuperior = tramo.hasta !== undefined 
+        ? Math.min(tramo.hasta, baseImponible)
+        : baseImponible;
+      
+      // Calcular la base a la que se aplica este tramo
+      const baseEnTramo = limiteSuperior - limiteInferior;
+      
+      if (baseEnTramo > 0) {
+        // Aplicar el porcentaje del tramo
+        const irpfTramo = (baseEnTramo * tramo.porcentaje) / 100;
+        irpfTotal += irpfTramo;
+        baseRestante -= baseEnTramo;
+      }
+    }
+  }
+  
+  return Math.max(0, irpfTotal);
+}
+
+/**
+ * Calcula el IVA neto a pagar o devolver
+ * 
+ * @param ivaRepercutido - IVA cobrado a clientes (repercutido)
+ * @param ivaSoportado - IVA pagado en gastos (soportado/deducible)
+ * @returns Objeto con el resultado del IVA y si es a ingresar o devolver
+ * 
+ * NOTA: En producción, esta función se conectaría con:
+ * - La normativa de IVA vigente según tipo de actividad
+ * - Validación de facturas y justificantes
+ * - Cálculos específicos según régimen de IVA (general, simplificado, etc.)
+ * - Límites y condiciones de deducibilidad según normativa
+ */
+export function calcularIVA(
+  ivaRepercutido: number,
+  ivaSoportado: number
+): { resultado: number; aIngresar: boolean } {
+  const resultado = ivaRepercutido - ivaSoportado;
+  
+  // Si el resultado es positivo, hay que ingresar IVA
+  // Si es negativo, hay derecho a devolución (a ingresar = false)
+  return {
+    resultado: Math.abs(resultado),
+    aIngresar: resultado >= 0
+  };
+}
+
+/**
+ * Calcula las retenciones aplicadas sobre ingresos
+ * 
+ * @param ingresos - Total de ingresos sobre los que aplicar retención
+ * @param porcentaje - Porcentaje de retención a aplicar (ej: 15 para 15%)
+ * @returns Cantidad retenida
+ * 
+ * NOTA: En producción, esta función se conectaría con:
+ * - La normativa de retenciones según tipo de actividad
+ * - Porcentajes oficiales según normativa vigente
+ * - Validación de límites y excepciones según tipo de cliente
+ */
+export function calcularRetenciones(
+  ingresos: number,
+  porcentaje: number
+): number {
+  if (ingresos <= 0 || porcentaje <= 0) {
+    return 0;
+  }
+  
+  // Calcular retención: ingresos * porcentaje / 100
+  const retencion = (ingresos * porcentaje) / 100;
+  
+  return Math.max(0, retencion);
+}
 

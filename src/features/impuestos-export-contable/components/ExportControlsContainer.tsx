@@ -3,6 +3,7 @@ import { Card, Button, Select, SelectOption, Tooltip } from '../../../components
 import { useAccountingExport } from '../hooks';
 import { DateRangePicker } from './DateRangePicker';
 import { Download, FileText, AlertCircle, HelpCircle } from 'lucide-react';
+import { CATEGORIAS_GASTO, CategoriaGasto } from '../types/expenses';
 
 interface ExportControlsContainerProps {
   userType: 'trainer' | 'gym';
@@ -40,7 +41,15 @@ export const ExportControlsContainer: React.FC<ExportControlsContainerProps> = (
   };
 
   const [reportType, setReportType] = useState<'simple' | 'detailedVat'>('simple');
-  const [exportFormat, setExportFormat] = useState<'csv' | 'pdf' | 'a3' | 'sage50' | 'xlsx'>('xlsx');
+  const [exportFormat, setExportFormat] = useState<'csv' | 'pdf' | 'a3' | 'sage50' | 'xlsx' | 'excel' | 'contaplus'>('xlsx');
+  
+  // Filtros de tipos de datos
+  const [includeIncome, setIncludeIncome] = useState(true);
+  const [includeExpenses, setIncludeExpenses] = useState(true);
+  const [includeBankTransactions, setIncludeBankTransactions] = useState(false);
+  
+  // Filtros de categorías
+  const [selectedCategories, setSelectedCategories] = useState<CategoriaGasto[]>([]);
 
   // Para entrenadores, solo opciones simples
   useEffect(() => {
@@ -64,7 +73,9 @@ export const ExportControlsContainer: React.FC<ExportControlsContainerProps> = (
         { value: 'csv', label: 'CSV' },
         { value: 'pdf', label: 'PDF' },
         { value: 'xlsx', label: 'Excel (.xlsx)' },
+        { value: 'excel', label: 'Excel (legacy)' },
         { value: 'a3', label: 'A3con' },
+        { value: 'contaplus', label: 'Contaplus' },
         { value: 'sage50', label: 'Sage 50' }
       ]
     : [
@@ -73,12 +84,32 @@ export const ExportControlsContainer: React.FC<ExportControlsContainerProps> = (
         { value: 'pdf', label: 'PDF' }
       ];
 
+  const handleCategoryToggle = (category: CategoriaGasto) => {
+    if (selectedCategories.includes(category)) {
+      setSelectedCategories(selectedCategories.filter(c => c !== category));
+    } else {
+      setSelectedCategories([...selectedCategories, category]);
+    }
+  };
+
+  const handleSelectAllCategories = () => {
+    if (selectedCategories.length === Object.keys(CATEGORIAS_GASTO).length) {
+      setSelectedCategories([]);
+    } else {
+      setSelectedCategories(Object.keys(CATEGORIAS_GASTO) as CategoriaGasto[]);
+    }
+  };
+
   const handleExport = async () => {
     await generateExport({
-      dateFrom: dateRange.from.toISOString().split('T')[0],
-      dateTo: dateRange.to.toISOString().split('T')[0],
+      dateFrom: dateRange.from,
+      dateTo: dateRange.to,
       format: exportFormat,
-      reportType: reportType
+      reportType: reportType,
+      includeIncome,
+      includeExpenses,
+      includeBankTransactions,
+      categories: selectedCategories.length > 0 ? selectedCategories : undefined
     });
   };
 
@@ -225,9 +256,116 @@ export const ExportControlsContainer: React.FC<ExportControlsContainerProps> = (
               label=""
               options={formatOptions}
               value={exportFormat}
-              onChange={(e) => setExportFormat(e.target.value as 'csv' | 'pdf' | 'a3' | 'sage50' | 'xlsx')}
+              onChange={(e) => setExportFormat(e.target.value as 'csv' | 'pdf' | 'a3' | 'sage50' | 'xlsx' | 'excel' | 'contaplus')}
             />
           </div>
+        </div>
+
+        {/* Tipos de Datos a Exportar */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-slate-700 flex items-center gap-2">
+            <span>Tipos de Datos a Exportar</span>
+            <Tooltip 
+              content={
+                <div className="max-w-xs">
+                  <p className="font-semibold mb-2">Tipos de Datos:</p>
+                  <p className="text-xs mb-2">Selecciona qué tipos de datos quieres incluir en la exportación.</p>
+                  <ul className="text-xs space-y-1 list-disc list-inside">
+                    <li><strong>Ingresos:</strong> Todas las transacciones de ingresos del periodo</li>
+                    <li><strong>Gastos:</strong> Todos los gastos deducibles del periodo</li>
+                    <li><strong>Transacciones Bancarias:</strong> Movimientos bancarios importados</li>
+                  </ul>
+                </div>
+              }
+              position="right"
+              delay={100}
+            >
+              <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
+            </Tooltip>
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <label className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+              <input
+                type="checkbox"
+                checked={includeIncome}
+                onChange={(e) => setIncludeIncome(e.target.checked)}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700">Ingresos</span>
+            </label>
+            <label className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+              <input
+                type="checkbox"
+                checked={includeExpenses}
+                onChange={(e) => setIncludeExpenses(e.target.checked)}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700">Gastos</span>
+            </label>
+            <label className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+              <input
+                type="checkbox"
+                checked={includeBankTransactions}
+                onChange={(e) => setIncludeBankTransactions(e.target.checked)}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700">Transacciones Bancarias</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Filtros de Categorías */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="block text-sm font-medium text-slate-700 flex items-center gap-2">
+              <span>Filtrar por Categorías (Opcional)</span>
+              <Tooltip 
+                content={
+                  <div className="max-w-xs">
+                    <p className="font-semibold mb-2">Filtro de Categorías:</p>
+                    <p className="text-xs mb-2">Selecciona categorías específicas de gastos para incluir en la exportación. Si no seleccionas ninguna, se incluirán todas las categorías.</p>
+                  </div>
+                }
+                position="right"
+                delay={100}
+              >
+                <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
+              </Tooltip>
+            </label>
+            <button
+              onClick={handleSelectAllCategories}
+              className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+            >
+              {selectedCategories.length === Object.keys(CATEGORIAS_GASTO).length 
+                ? 'Deseleccionar todas' 
+                : 'Seleccionar todas'}
+            </button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-2 border border-gray-200 rounded-lg">
+            {Object.values(CATEGORIAS_GASTO).map(cat => (
+              <label
+                key={cat.id}
+                className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
+                  selectedCategories.includes(cat.id)
+                    ? 'bg-blue-50 border border-blue-200'
+                    : 'hover:bg-gray-50 border border-transparent'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedCategories.includes(cat.id)}
+                  onChange={() => handleCategoryToggle(cat.id)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">{cat.nombre}</span>
+              </label>
+            ))}
+          </div>
+          {selectedCategories.length > 0 && (
+            <p className="text-xs text-gray-500">
+              {selectedCategories.length} categoría{selectedCategories.length !== 1 ? 's' : ''} seleccionada{selectedCategories.length !== 1 ? 's' : ''}
+            </p>
+          )}
         </div>
 
         {/* Error Message */}

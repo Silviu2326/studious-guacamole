@@ -1,6 +1,246 @@
 import { Reserva } from '../types';
 import { ReprogramacionReserva } from './reservas';
 
+/**
+ * Interfaz para notificaciones de reserva creada
+ */
+export interface NotificacionReservaCreada {
+  reservaId: string;
+  clienteId: string;
+  clienteNombre: string;
+  clienteEmail?: string;
+  clienteTelefono?: string;
+  fecha: Date;
+  horaInicio: string;
+  horaFin: string;
+  tipoSesion: string;
+  tipo?: string;
+  precio?: number;
+  enviado: boolean;
+  fechaEnvio: Date;
+  canal: 'email' | 'sms' | 'push' | 'whatsapp' | 'todos';
+}
+
+/**
+ * Genera el mensaje de notificación para una reserva creada
+ * 
+ * Este mensaje se envía al cliente cuando se crea una nueva reserva.
+ * Incluye toda la información relevante sobre la reserva.
+ */
+export const generarMensajeReservaCreada = (reserva: Reserva): string => {
+  const fechaStr = reserva.fecha?.toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }) || reserva.fechaInicio?.toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }) || 'Fecha no disponible';
+
+  const tipoSesionStr = reserva.tipoSesion === 'presencial' 
+    ? 'Presencial' 
+    : reserva.tipoSesion === 'videollamada' 
+    ? 'Videollamada' 
+    : 'Sesión';
+
+  const horaInicio = reserva.horaInicio || (reserva.fechaInicio ? 
+    reserva.fechaInicio.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : 
+    'Hora no disponible');
+  const horaFin = reserva.horaFin || (reserva.fechaFin ? 
+    reserva.fechaFin.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : 
+    'Hora no disponible');
+
+  let mensaje = `Hola ${reserva.clienteNombre || 'Cliente'},
+
+¡Tu reserva ha sido creada exitosamente!
+
+📅 Fecha: ${fechaStr}
+⏰ Hora: ${horaInicio} - ${horaFin}
+📋 Tipo: ${tipoSesionStr}
+`;
+
+  if (reserva.precio) {
+    mensaje += `💶 Precio: €${reserva.precio.toFixed(2)}\n`;
+  }
+
+  // Incluir enlace de videollamada si está disponible
+  if (reserva.tipoSesion === 'videollamada' && reserva.enlaceVideollamada) {
+    mensaje += `
+🎥 Enlace de videollamada: ${reserva.enlaceVideollamada}
+
+Haz clic en el enlace para unirte a la sesión en el momento programado.
+`;
+  }
+
+  if (reserva.estado === 'pendiente') {
+    mensaje += `
+⏳ Estado: Pendiente de aprobación
+
+Te notificaremos cuando tu reserva sea confirmada.
+`;
+  } else if (reserva.estado === 'confirmada') {
+    mensaje += `
+✅ Estado: Confirmada
+
+¡Nos vemos en la sesión!
+`;
+  }
+
+  mensaje += `
+Si tienes alguna pregunta o necesitas modificar tu reserva, no dudes en contactarnos.
+
+Saludos,
+Equipo de Entrenamiento`;
+
+  return mensaje;
+};
+
+/**
+ * Envía notificación al cliente cuando se crea una nueva reserva
+ * 
+ * Esta función se debe llamar después de crear una reserva exitosamente.
+ * En un entorno real, esto se integraría con:
+ * - Colas de mensajería (RabbitMQ, AWS SQS, Redis Queue) para procesamiento asíncrono
+ * - Servicios de email (SendGrid, AWS SES, Mailgun)
+ * - Servicios de SMS (Twilio, AWS SNS)
+ * - Servicios de push notifications (Firebase Cloud Messaging, OneSignal)
+ * - WhatsApp Business API para mensajes de WhatsApp
+ * 
+ * @param reserva - La reserva que se acaba de crear
+ * @param canal - Canal de notificación a usar ('todos' envía por todos los canales disponibles)
+ * @returns Información sobre la notificación enviada
+ */
+export const enviarNotificacionReservaCreada = async (
+  reserva: Reserva,
+  canal: 'email' | 'sms' | 'push' | 'whatsapp' | 'todos' = 'todos'
+): Promise<NotificacionReservaCreada> => {
+  await new Promise(resolve => setTimeout(resolve, 300));
+
+  const mensaje = generarMensajeReservaCreada(reserva);
+
+  const notificacion: NotificacionReservaCreada = {
+    reservaId: reserva.id,
+    clienteId: reserva.clienteId,
+    clienteNombre: reserva.clienteNombre || 'Cliente',
+    clienteEmail: `cliente-${reserva.clienteId}@example.com`, // En producción, obtener del sistema de clientes
+    clienteTelefono: `+34 600 000 000`, // En producción, obtener del sistema de clientes
+    fecha: reserva.fecha || reserva.fechaInicio,
+    horaInicio: reserva.horaInicio || (reserva.fechaInicio ? 
+      reserva.fechaInicio.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : 
+      ''),
+    horaFin: reserva.horaFin || (reserva.fechaFin ? 
+      reserva.fechaFin.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : 
+      ''),
+    tipoSesion: reserva.tipoSesion || 'Sesión',
+    tipo: reserva.tipo,
+    precio: reserva.precio,
+    enviado: true,
+    fechaEnvio: new Date(),
+    canal,
+  };
+
+  // Simular envío de notificaciones
+  console.log('[NotificacionesReserva] Enviando notificación de reserva creada:', {
+    cliente: notificacion.clienteNombre,
+    reservaId: reserva.id,
+    estado: reserva.estado,
+    canal,
+    mensaje: mensaje.substring(0, 100) + '...',
+  });
+
+  // ============================================================================
+  // INTEGRACIÓN CON SERVICIOS REALES (COMENTARIOS PARA PRODUCCIÓN)
+  // ============================================================================
+  // 
+  // En un entorno de producción, aquí se integrarían los siguientes servicios:
+  //
+  // 1. COLAS DE MENSAJERÍA (para procesamiento asíncrono):
+  //    - RabbitMQ: Publicar mensaje a cola 'notificaciones.reserva-creada'
+  //    - AWS SQS: Enviar mensaje a cola SQS
+  //    - Redis Queue (Bull): Agregar job a cola de notificaciones
+  //    - Google Cloud Pub/Sub: Publicar evento de reserva creada
+  //
+  // 2. SERVICIOS DE EMAIL:
+  //    - SendGrid: await sgMail.send({ to, from, subject, html })
+  //    - AWS SES: await ses.sendEmail({ Destination, Message, Source })
+  //    - Mailgun: await mailgun.messages().send({ from, to, subject, html })
+  //    - Nodemailer: await transporter.sendMail({ from, to, subject, html })
+  //
+  // 3. SERVICIOS DE SMS:
+  //    - Twilio: await twilioClient.messages.create({ to, from, body })
+  //    - AWS SNS: await sns.publish({ PhoneNumber, Message })
+  //    - MessageBird: await messagebird.messages.create({ recipients, body })
+  //
+  // 4. PUSH NOTIFICATIONS:
+  //    - Firebase Cloud Messaging: await admin.messaging().send({ token, notification })
+  //    - OneSignal: await oneSignal.createNotification({ contents, include_player_ids })
+  //    - Pusher Beams: await beamsClient.publishToInterests(['user-123'], { web, fcm })
+  //
+  // 5. WHATSAPP BUSINESS API:
+  //    - Twilio WhatsApp: await twilioClient.messages.create({ from: 'whatsapp:+...', to, body })
+  //    - WhatsApp Business API: POST a /messages endpoint con template o mensaje libre
+  //
+  // 6. WEBSOCKETS (para notificaciones en tiempo real):
+  //    - Socket.io: io.to(`entrenador-${entrenadorId}`).emit('nueva-reserva', reserva)
+  //    - WebSocket nativo: ws.send(JSON.stringify({ type: 'nueva-reserva', data: reserva }))
+  //    - Pusher: await pusher.trigger('canal-entrenador', 'nueva-reserva', reserva)
+  //    - Ably: await channel.publish('nueva-reserva', reserva)
+  //
+  // Ejemplo de integración con cola de mensajería (RabbitMQ):
+  // ```typescript
+  // import amqp from 'amqplib';
+  // const connection = await amqp.connect('amqp://localhost');
+  // const channel = await connection.createChannel();
+  // await channel.assertQueue('notificaciones.reserva-creada', { durable: true });
+  // await channel.sendToQueue('notificaciones.reserva-creada', 
+  //   Buffer.from(JSON.stringify({ reserva, canal, mensaje })), 
+  //   { persistent: true }
+  // );
+  // ```
+  //
+  // Ejemplo de integración con WebSocket (Socket.io):
+  // ```typescript
+  // import { io } from 'socket.io-client';
+  // const socket = io('https://api.example.com');
+  // socket.emit('nueva-reserva', { reserva, entrenadorId: reserva.entrenadorId });
+  // ```
+  // ============================================================================
+
+  if (canal === 'email' || canal === 'todos') {
+    // Simular envío de email
+    console.log('[NotificacionesReserva] Email enviado a:', notificacion.clienteEmail);
+    console.log('[NotificacionesReserva] Asunto: Reserva creada exitosamente');
+    console.log('[NotificacionesReserva] Mensaje:', mensaje);
+  }
+
+  if (canal === 'sms' || canal === 'todos') {
+    // Para SMS, usar una versión más corta del mensaje
+    const mensajeSMS = `Reserva creada: ${notificacion.fecha.toLocaleDateString('es-ES')} a las ${notificacion.horaInicio}. ${reserva.estado === 'pendiente' ? 'Pendiente de aprobación.' : 'Confirmada.'}`;
+    console.log('[NotificacionesReserva] SMS enviado a:', notificacion.clienteTelefono);
+    console.log('[NotificacionesReserva] Mensaje SMS:', mensajeSMS);
+  }
+
+  if (canal === 'push' || canal === 'todos') {
+    // Simular envío de push notification
+    console.log('[NotificacionesReserva] Push notification enviada a cliente:', reserva.clienteId);
+    console.log('[NotificacionesReserva] Título: Reserva creada');
+    console.log('[NotificacionesReserva] Cuerpo:', `Tu reserva del ${notificacion.fecha.toLocaleDateString('es-ES')} a las ${notificacion.horaInicio} ha sido creada`);
+  }
+
+  if (canal === 'whatsapp' || canal === 'todos') {
+    // Simular envío de WhatsApp
+    console.log('[NotificacionesReserva] WhatsApp enviado a:', notificacion.clienteTelefono);
+    console.log('[NotificacionesReserva] Mensaje WhatsApp:', mensaje);
+    // En producción, aquí se enviarían botones interactivos de WhatsApp
+    console.log('[NotificacionesReserva] Botones WhatsApp: Ver detalles de reserva, Modificar reserva');
+  }
+
+  return notificacion;
+};
+
 export interface NotificacionReprogramacion {
   reservaId: string;
   clienteId: string;

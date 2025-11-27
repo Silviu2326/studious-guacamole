@@ -1,104 +1,147 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Select, Badge } from '../../../components/componentsreutilizables';
-import { Producto, FiltrosProductos, CarritoItem } from '../types';
-import { getProductos } from '../api/productos';
-import { getEstadisticasValoraciones } from '../api/valoraciones';
-import { ValoracionEstrella } from './ValoracionesProducto';
-import { Search, ShoppingCart, Package, Zap, Download, Loader2, Filter, X, Tag, Sparkles, Repeat } from 'lucide-react';
+import { Producto, ItemCarrito, CategoriaProducto } from '../types';
+import { getProductos, getCategorias } from '../api/productos';
+import { Search, ShoppingCart, Package, Zap, Loader2, Filter, X, Sparkles, Star, AlertCircle, Grid, List, Repeat } from 'lucide-react';
 
 interface TiendaOnlineProps {
-  rol: 'entrenador' | 'gimnasio';
-  carrito: CarritoItem[];
-  onAgregarCarrito: (producto: Producto, cantidad?: number) => void;
-  onVerDetalle: (producto: Producto) => void;
+  onAddToCart?: (item: ItemCarrito) => void;
+  onVerDetalle?: (producto: Producto) => void;
+}
+
+interface FiltrosProductos {
+  categoriaId?: string;
+  tipo?: 'servicio' | 'producto' | 'bono' | 'suscripcion';
+  soloDestacados?: boolean;
+  soloActivos?: boolean;
+  precioMin?: number;
+  precioMax?: number;
+  texto?: string;
 }
 
 export const TiendaOnline: React.FC<TiendaOnlineProps> = ({
-  rol,
-  carrito,
-  onAgregarCarrito,
+  onAddToCart,
   onVerDetalle,
-}) => {
+}: TiendaOnlineProps) => {
   const [productos, setProductos] = useState<Producto[]>([]);
+  const [categorias, setCategorias] = useState<CategoriaProducto[]>([]);
   const [cargando, setCargando] = useState(false);
-  const [filtros, setFiltros] = useState<FiltrosProductos>({});
+  const [error, setError] = useState<string | null>(null);
+  const [filtros, setFiltros] = useState<FiltrosProductos>({
+    soloActivos: true,
+  });
   const [busqueda, setBusqueda] = useState('');
-  const [filtrosAvanzados, setFiltrosAvanzados] = useState(false);
-  const [cargandoValoraciones, setCargandoValoraciones] = useState(false);
+  const [mostrarFiltros, setMostrarFiltros] = useState(false);
+  const [vistaGrid, setVistaGrid] = useState(true);
+
+  useEffect(() => {
+    cargarCategorias();
+  }, []);
 
   useEffect(() => {
     cargarProductos();
-  }, [rol, filtros]);
+  }, [filtros]);
+
+  const cargarCategorias = async () => {
+    try {
+      const data = await getCategorias();
+      setCategorias(data);
+    } catch (error) {
+      console.error('Error cargando categorías:', error);
+    }
+  };
 
   const cargarProductos = async () => {
     setCargando(true);
+    setError(null);
     try {
-      const data = await getProductos(rol, filtros);
-      setProductos(data);
+      const filtrosAPI: Parameters<typeof getProductos>[0] = {
+        soloActivos: true,
+        categoriaId: filtros.categoriaId,
+        texto: filtros.texto || busqueda || undefined,
+        soloDestacados: filtros.soloDestacados,
+      };
+
+      const data = await getProductos(filtrosAPI);
       
-      // Cargar estadísticas de valoraciones para cada producto
-      setCargandoValoraciones(true);
-      const productosConValoraciones = await Promise.all(
-        data.map(async (producto) => {
-          try {
-            const estadisticas = await getEstadisticasValoraciones(producto.id);
-            return {
-              ...producto,
-              estadisticasValoraciones: estadisticas,
-            };
-          } catch (error) {
-            console.error(`Error cargando valoraciones para producto ${producto.id}:`, error);
-            return producto;
-          }
-        })
-      );
-      setProductos(productosConValoraciones);
+      // Aplicar filtros adicionales en el cliente (tipo, precio)
+      let productosFiltrados = data;
+
+      if (filtros.tipo) {
+        productosFiltrados = productosFiltrados.filter((p) => p.tipo === filtros.tipo);
+      }
+
+      if (filtros.precioMin !== undefined) {
+        productosFiltrados = productosFiltrados.filter((p) => p.precioBase >= filtros.precioMin!);
+      }
+
+      if (filtros.precioMax !== undefined) {
+        productosFiltrados = productosFiltrados.filter((p) => p.precioBase <= filtros.precioMax!);
+      }
+
+      setProductos(productosFiltrados);
     } catch (error) {
       console.error('Error cargando productos:', error);
+      setError('Error al cargar los productos. Por favor, intenta de nuevo.');
     } finally {
       setCargando(false);
-      setCargandoValoraciones(false);
     }
   };
 
   const handleBuscar = () => {
-    setFiltros({ ...filtros, busqueda });
+    setFiltros({ ...filtros, texto: busqueda });
   };
 
   const handleLimpiarFiltros = () => {
-    setFiltros({});
+    setFiltros({ soloActivos: true });
     setBusqueda('');
   };
 
-  const filtrosActivos = Object.keys(filtros).filter(
-    (key) => filtros[key as keyof FiltrosProductos] !== undefined && filtros[key as keyof FiltrosProductos] !== ''
-  ).length + (busqueda ? 1 : 0);
-
-  const categorias = Array.from(
-    new Set(productos.map((p) => p.categoria))
-  ).sort();
-
-  const handleCategoriaClick = (categoria: string) => {
-    if (filtros.categoria === categoria) {
-      // Si la categoría ya está seleccionada, la deseleccionamos
-      setFiltros({ ...filtros, categoria: undefined });
+  const handleCategoriaClick = (categoriaId: string) => {
+    if (filtros.categoriaId === categoriaId) {
+      setFiltros({ ...filtros, categoriaId: undefined });
     } else {
-      setFiltros({ ...filtros, categoria });
+      setFiltros({ ...filtros, categoriaId });
     }
   };
 
+  const handleAddToCart = (producto: Producto) => {
+    if (!onAddToCart) return;
+
+    const itemCarrito: ItemCarrito = {
+      id: `item-${producto.id}-${Date.now()}`,
+      productoId: producto.id,
+      nombreProducto: producto.nombre,
+      cantidad: 1,
+      precioUnitario: producto.precioBase,
+      importeSubtotal: producto.precioBase,
+    };
+
+    onAddToCart(itemCarrito);
+  };
+
+  const filtrosActivos = Object.keys(filtros).filter(
+    (key) => {
+      const value = filtros[key as keyof FiltrosProductos];
+      return value !== undefined && value !== '' && key !== 'soloActivos';
+    }
+  ).length + (busqueda ? 1 : 0);
+
   const tipos = [
     { value: 'servicio', label: 'Servicios' },
-    { value: 'producto-fisico', label: 'Productos Físicos' },
-    { value: 'producto-digital', label: 'Productos Digitales' },
+    { value: 'producto', label: 'Productos' },
+    { value: 'bono', label: 'Bonos' },
+    { value: 'suscripcion', label: 'Suscripciones' },
   ];
 
   const getTipoIcono = (tipo: string) => {
     switch (tipo) {
       case 'servicio':
         return <Zap className="w-4 h-4" />;
-      case 'producto-digital':
-        return <Download className="w-4 h-4" />;
+      case 'suscripcion':
+        return <Repeat className="w-4 h-4" />;
+      case 'bono':
+        return <Sparkles className="w-4 h-4" />;
       default:
         return <Package className="w-4 h-4" />;
     }
@@ -108,109 +151,89 @@ export const TiendaOnline: React.FC<TiendaOnlineProps> = ({
     switch (tipo) {
       case 'servicio':
         return 'info';
-      case 'producto-digital':
+      case 'suscripcion':
         return 'success';
+      case 'bono':
+        return 'warning';
       default:
         return 'primary';
     }
   };
 
+  const getProductoTags = (producto: Producto) => {
+    const tags = [];
+    if (producto.esDestacadoOpcional) {
+      tags.push({ label: 'Destacado', icon: Star, variant: 'warning' as const });
+    }
+    // Puedes agregar más lógica para "Nuevo" basado en fecha de creación
+    // o "Popular" basado en ventas/valoraciones
+    return tags;
+  };
+
   return (
     <div className="space-y-6">
-      {/* Navegación por Categorías - Destacada para entrenadores */}
-      {rol === 'entrenador' && categorias.length > 0 && (
-        <Card className="bg-white shadow-sm">
-          <div className="p-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Categorías de Entrenamiento
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={handleLimpiarFiltros}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                  !filtros.categoria
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                Todas
-              </button>
-              {categorias.map((categoria) => (
-                <button
-                  key={categoria}
-                  onClick={() => handleCategoriaClick(categoria)}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                    filtros.categoria === categoria
-                      ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  {categoria}
-                </button>
-              ))}
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Sistema de Filtros */}
-      <Card className="mb-6 bg-white shadow-sm">
-        <div className="space-y-4">
+      {/* Barra de búsqueda y controles */}
+      <Card className="bg-white shadow-sm">
+        <div className="p-4 space-y-4">
           {/* Barra de búsqueda */}
-          <div className="rounded-2xl bg-slate-50 ring-1 ring-slate-200 p-3">
-            <div className="flex gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar productos..."
-                  value={busqueda}
-                  onChange={(e) => setBusqueda(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleBuscar()}
-                  className="w-full rounded-xl bg-white text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 pl-10 pr-3 py-2.5"
-                />
-              </div>
-              <Button
-                variant="secondary"
-                onClick={() => setFiltrosAvanzados(!filtrosAvanzados)}
-              >
-                <Filter size={18} className="mr-2" />
-                Filtros
-                {filtrosActivos > 0 && (
-                  <span className="ml-2 bg-blue-500 text-white text-xs rounded-full px-2 py-0.5">
-                    {filtrosActivos}
-                  </span>
-                )}
-              </Button>
-              {filtrosActivos > 0 && (
-                <Button variant="ghost" onClick={handleLimpiarFiltros}>
-                  <X size={18} className="mr-2" />
-                  Limpiar
-                </Button>
-              )}
+          <div className="flex gap-3">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Buscar productos, categorías, tags..."
+                value={busqueda}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBusqueda(e.target.value)}
+                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleBuscar()}
+                className="w-full rounded-lg bg-slate-50 text-slate-900 placeholder-slate-400 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 pr-4 py-2.5"
+              />
             </div>
+            <Button
+              variant="primary"
+              onClick={handleBuscar}
+            >
+              Buscar
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setMostrarFiltros(!mostrarFiltros)}
+            >
+              <Filter size={18} className="mr-2" />
+              Filtros
+              {filtrosActivos > 0 && (
+                <span className="ml-2 bg-blue-500 text-white text-xs rounded-full px-2 py-0.5">
+                  {filtrosActivos}
+                </span>
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => setVistaGrid(!vistaGrid)}
+              title={vistaGrid ? 'Vista lista' : 'Vista grid'}
+            >
+              {vistaGrid ? <List size={18} /> : <Grid size={18} />}
+            </Button>
           </div>
 
-          {/* Panel de filtros avanzados */}
-          {filtrosAvanzados && (
-            <div className="rounded-2xl bg-white ring-1 ring-slate-200 p-4 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Panel de filtros */}
+          {mostrarFiltros && (
+            <div className="rounded-lg bg-slate-50 ring-1 ring-slate-200 p-4 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    <Package size={16} className="inline mr-1" />
                     Categoría
                   </label>
                   <Select
                     placeholder="Todas las categorías"
                     options={[
                       { value: '', label: 'Todas las categorías' },
-                      ...categorias.map((cat) => ({ value: cat, label: cat })),
+                      ...categorias.map((cat: CategoriaProducto) => ({ value: cat.id, label: cat.nombre })),
                     ]}
-                    value={filtros.categoria || ''}
-                    onChange={(e) =>
+                    value={filtros.categoriaId || ''}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                       setFiltros({
                         ...filtros,
-                        categoria: e.target.value || undefined,
+                        categoriaId: e.target.value || undefined,
                       })
                     }
                   />
@@ -218,7 +241,6 @@ export const TiendaOnline: React.FC<TiendaOnlineProps> = ({
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    <Zap size={16} className="inline mr-1" />
                     Tipo
                   </label>
                   <Select
@@ -228,185 +250,282 @@ export const TiendaOnline: React.FC<TiendaOnlineProps> = ({
                       ...tipos,
                     ]}
                     value={filtros.tipo || ''}
-                    onChange={(e) =>
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                       setFiltros({
                         ...filtros,
-                        tipo: e.target.value || undefined,
+                        tipo: e.target.value as any || undefined,
                       })
                     }
                   />
                 </div>
-              </div>
-            </div>
-          )}
 
-          {/* Resumen de resultados */}
-          {productos.length > 0 && (
-            <div className="flex justify-between items-center text-sm text-slate-600 border-t border-slate-200 pt-4">
-              <span>{productos.length} {productos.length === 1 ? 'producto encontrado' : 'productos encontrados'}</span>
-              {filtrosActivos > 0 && (
-                <span>{filtrosActivos} {filtrosActivos === 1 ? 'filtro aplicado' : 'filtros aplicados'}</span>
-              )}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Precio mínimo (€)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={filtros.precioMin || ''}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setFiltros({
+                        ...filtros,
+                        precioMin: e.target.value ? parseFloat(e.target.value) : undefined,
+                      })
+                    }
+                    className="w-full rounded-lg bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 px-3 py-2"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Precio máximo (€)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="999.99"
+                    value={filtros.precioMax || ''}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setFiltros({
+                        ...filtros,
+                        precioMax: e.target.value ? parseFloat(e.target.value) : undefined,
+                      })
+                    }
+                    className="w-full rounded-lg bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filtros.soloDestacados || false}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setFiltros({
+                        ...filtros,
+                        soloDestacados: e.target.checked || undefined,
+                      })
+                    }
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-700">Solo destacados</span>
+                </label>
+
+                {filtrosActivos > 0 && (
+                  <Button variant="ghost" size="sm" onClick={handleLimpiarFiltros}>
+                    <X size={16} className="mr-1" />
+                    Limpiar filtros
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </div>
       </Card>
 
+      {/* Listado de categorías */}
+      {categorias.length > 0 && (
+        <Card className="bg-white shadow-sm">
+          <div className="p-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Categorías
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setFiltros({ ...filtros, categoriaId: undefined })}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  !filtros.categoriaId
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                Todas
+              </button>
+              {categorias.map((categoria) => (
+                <button
+                  key={categoria.id}
+                  onClick={() => handleCategoriaClick(categoria.id)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    filtros.categoriaId === categoria.id
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  {categoria.nombre}
+                </button>
+              ))}
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Resumen de resultados */}
+      {!cargando && productos.length > 0 && (
+        <div className="flex justify-between items-center text-sm text-slate-600">
+          <span className="font-medium">
+            {productos.length} {productos.length === 1 ? 'producto encontrado' : 'productos encontrados'}
+          </span>
+          {filtrosActivos > 0 && (
+            <span className="text-slate-500">
+              {filtrosActivos} {filtrosActivos === 1 ? 'filtro aplicado' : 'filtros aplicados'}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Grid de productos */}
       {cargando ? (
-        <Card className="p-8 text-center bg-white shadow-sm">
+        <Card className="p-12 text-center bg-white shadow-sm">
           <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
-          <p className="text-gray-600">Cargando...</p>
+          <p className="text-gray-600 font-medium">Cargando productos...</p>
+        </Card>
+      ) : error ? (
+        <Card className="p-12 text-center bg-white shadow-sm">
+          <AlertCircle size={48} className="mx-auto text-red-400 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error al cargar productos</h3>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button variant="primary" onClick={cargarProductos}>
+            Intentar de nuevo
+          </Button>
         </Card>
       ) : productos.length === 0 ? (
-        <Card className="p-8 text-center bg-white shadow-sm">
+        <Card className="p-12 text-center bg-white shadow-sm">
           <Package size={48} className="mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No se encontraron productos</h3>
           <p className="text-gray-600 mb-4">
             {filtrosActivos > 0
-              ? 'Intenta ajustar los filtros para ver más resultados'
+              ? 'No hay productos que coincidan con los filtros seleccionados. Intenta ajustar los filtros para ver más resultados.'
               : 'Aún no hay productos disponibles en la tienda'}
           </p>
           {filtrosActivos > 0 && (
             <Button variant="secondary" onClick={handleLimpiarFiltros}>
+              <X size={16} className="mr-2" />
               Limpiar filtros
             </Button>
           )}
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {productos.map((producto) => {
-            const enCarrito = carrito.find((item) => item.producto.id === producto.id);
-            const cantidadEnCarrito = enCarrito?.cantidad || 0;
+        <div className={vistaGrid 
+          ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          : "space-y-4"
+        }>
+          {productos.map((producto: Producto) => {
+            const tags = getProductoTags(producto);
+            const categoriaNombre = categorias.find((c: CategoriaProducto) => c.id === producto.categoriaId)?.nombre || 'Sin categoría';
 
             return (
               <Card
                 key={producto.id}
                 variant="hover"
-                className="h-full flex flex-col transition-shadow overflow-hidden bg-white shadow-sm"
+                className={`h-full flex flex-col transition-all overflow-hidden bg-white shadow-sm hover:shadow-md ${
+                  vistaGrid ? '' : 'flex-row'
+                }`}
               >
                 {/* Imagen */}
-                {producto.imagen ? (
-                  <div className="w-full h-48 bg-gray-100 rounded-xl mb-4 flex items-center justify-center overflow-hidden">
-                    <Package className="w-16 h-16 text-gray-400" />
-                  </div>
-                ) : (
-                  <div className="w-full h-48 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl mb-4 flex items-center justify-center">
+                <div className={`${vistaGrid ? 'w-full h-48' : 'w-48 h-48 flex-shrink-0'} bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center relative overflow-hidden`}>
+                  {producto.imagenPrincipalUrlOpcional ? (
+                    <img 
+                      src={producto.imagenPrincipalUrlOpcional} 
+                      alt={producto.nombre}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
                     <Package className="w-16 h-16 text-white opacity-80" />
-                  </div>
-                )}
-
-                <div className="p-4 flex-1 space-y-3 flex flex-col">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-lg font-semibold text-gray-900 flex-1">
-                      {producto.nombre}
-                    </h3>
-                    <div className="flex flex-col gap-1 items-end">
-                      {producto.metadatos?.suscripcion?.esSuscripcion && (
-                        <Badge variant="info" className="text-xs">
-                          <Repeat size={12} className="mr-1" />
-                          Suscripción
-                        </Badge>
-                      )}
-                      {producto.metadatos?.esBono && (
-                        <Badge variant="success" className="text-xs">
-                          <Sparkles size={12} className="mr-1" />
-                          Bono
-                        </Badge>
-                      )}
-                      {producto.metadatos?.opcionesPersonalizables && producto.metadatos.opcionesPersonalizables.length > 0 && (
-                        <Badge variant="secondary" className="text-xs">
-                          <Tag size={12} className="mr-1" />
-                          Personalizable
-                        </Badge>
-                      )}
-                      <Badge variant={getTipoBadge(producto.tipo) as any}>
-                        {getTipoIcono(producto.tipo)}
-                        <span className="ml-1 capitalize text-xs">
-                          {producto.tipo.replace('-', ' ')}
-                        </span>
-                      </Badge>
+                  )}
+                  {/* Tags flotantes */}
+                  {tags.length > 0 && (
+                    <div className="absolute top-2 right-2 flex flex-col gap-1">
+                      {tags.map((tag: { label: string; icon: React.ComponentType<{ size?: number; className?: string }>; variant: 'warning' | 'success' | 'info' | 'primary' | 'secondary' }, idx: number) => {
+                        const Icon = tag.icon;
+                        return (
+                          <Badge key={idx} variant={tag.variant} className="text-xs shadow-md">
+                            <Icon size={10} className="mr-1" />
+                            {tag.label}
+                          </Badge>
+                        );
+                      })}
                     </div>
+                  )}
+                </div>
+
+                <div className={`p-4 flex-1 space-y-3 flex flex-col ${vistaGrid ? '' : 'min-w-0'}`}>
+                  {/* Header con nombre y tipo */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
+                        {producto.nombre}
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-1">{categoriaNombre}</p>
+                    </div>
+                    <Badge variant={getTipoBadge(producto.tipo) as any} className="flex-shrink-0">
+                      {getTipoIcono(producto.tipo)}
+                      <span className="ml-1 capitalize text-xs">
+                        {producto.tipo}
+                      </span>
+                    </Badge>
                   </div>
 
-                  <p className="text-sm text-gray-600 line-clamp-2">
-                    {producto.descripcion}
+                  {/* Descripción */}
+                  <p className="text-sm text-gray-600 line-clamp-2 flex-1">
+                    {producto.descripcionCorta}
                   </p>
 
-                  {/* Valoraciones */}
-                  {producto.estadisticasValoraciones && producto.estadisticasValoraciones.totalValoraciones > 0 && (
-                    <div className="py-2 border-t border-gray-100">
-                      <ValoracionEstrella
-                        promedio={producto.estadisticasValoraciones.promedio}
-                        totalValoraciones={producto.estadisticasValoraciones.totalValoraciones}
-                        size="sm"
-                        mostrarTotal={true}
-                      />
+                  {/* Tags adicionales */}
+                  {producto.tagsOpcionales && producto.tagsOpcionales.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {producto.tagsOpcionales.slice(0, 3).map((tag, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
                     </div>
                   )}
 
-                  {/* Información de descuentos disponibles */}
-                  {producto.metadatos?.descuentosPorCantidad && producto.metadatos.descuentosPorCantidad.length > 0 && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-2">
-                      <div className="flex items-center gap-1 mb-1">
-                        <Tag size={12} className="text-green-600" />
-                        <span className="text-xs font-semibold text-green-700">
-                          Descuentos por cantidad:
-                        </span>
-                      </div>
-                      <div className="space-y-1">
-                        {producto.metadatos.descuentosPorCantidad.map((desc, idx) => (
-                          <p key={idx} className="text-xs text-green-600">
-                            {desc.cantidadMinima}+ unidades: {desc.porcentajeDescuento}% descuento
-                          </p>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between pt-2">
+                  {/* Precio y stock */}
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                     <div className="flex flex-col">
-                      <span className="text-xl font-bold text-blue-600">
-                        €{producto.precio.toFixed(2)}
+                      <span className="text-2xl font-bold text-blue-600">
+                        €{producto.precioBase.toFixed(2)}
                       </span>
-                      {producto.metadatos?.sesiones && (
-                        <span className="text-xs text-gray-500">
-                          {producto.metadatos.sesiones} {producto.metadatos.sesiones === 1 ? 'sesión' : 'sesiones'}
+                      {producto.stockGeneralOpcional !== undefined && (
+                        <span className="text-xs text-gray-500 mt-1">
+                          Stock: {producto.stockGeneralOpcional}
                         </span>
                       )}
                     </div>
-                    {producto.stock !== undefined && (
-                      <span className="text-xs text-gray-500">
-                        Stock: {producto.stock}
-                      </span>
+                    {!producto.activo && (
+                      <Badge variant="secondary" className="text-xs">
+                        No disponible
+                      </Badge>
                     )}
                   </div>
 
-                  {cantidadEnCarrito > 0 && (
-                    <Badge variant="success" className="text-xs">
-                      {cantidadEnCarrito} en carrito
-                    </Badge>
-                  )}
-
                   {/* Botones de acción */}
                   <div className="flex gap-2 mt-auto pt-3 border-t border-gray-100">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      fullWidth
-                      onClick={() => onVerDetalle(producto)}
-                    >
-                      Ver Detalles
-                    </Button>
+                    {onVerDetalle && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        fullWidth
+                        onClick={() => onVerDetalle(producto)}
+                      >
+                        Ver Detalles
+                      </Button>
+                    )}
                     <Button
                       variant="primary"
                       size="sm"
                       fullWidth
-                      onClick={() => onAgregarCarrito(producto)}
-                      disabled={!producto.disponible}
+                      onClick={() => handleAddToCart(producto)}
+                      disabled={!producto.activo}
                     >
                       <ShoppingCart size={16} className="mr-1" />
-                      Agregar
+                      Añadir al carrito
                     </Button>
                   </div>
                 </div>

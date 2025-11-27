@@ -30,6 +30,7 @@ import {
   NotificacionSlotLiberado,
   ConfiguracionListaEspera,
   ResumenListaEspera,
+  TipoCita,
 } from '../types';
 import {
   getListaEspera,
@@ -61,9 +62,8 @@ export const GestorListaEspera: React.FC = () => {
   const [nuevoCliente, setNuevoCliente] = useState({
     clienteId: '',
     clienteNombre: '',
-    diaSemana: 1,
-    horaInicio: '10:00',
-    horaFin: '11:00',
+    tipoSesion: 'sesion-1-1' as TipoCita,
+    fechaDeseada: '',
   });
 
   useEffect(() => {
@@ -78,7 +78,9 @@ export const GestorListaEspera: React.FC = () => {
     setLoading(true);
     try {
       const [listaData, horariosData, resumenData, configData, notifData] = await Promise.all([
-        getListaEspera(user.id, filtroEstado),
+        getListaEspera({ entrenadorId: user.id, role: 'entrenador' }).then(lista => 
+          filtroEstado ? lista.filter(le => le.estado === filtroEstado) : lista
+        ),
         getHorariosPopulares(user.id),
         getResumenListaEspera(user.id),
         getConfiguracionListaEspera(user.id),
@@ -101,22 +103,24 @@ export const GestorListaEspera: React.FC = () => {
     if (!user?.id || !nuevoCliente.clienteId) return;
 
     try {
+      const fechaDeseada = nuevoCliente.fechaDeseada 
+        ? new Date(nuevoCliente.fechaDeseada)
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Por defecto en 7 días
+      
       await agregarClienteListaEspera({
         entrenadorId: user.id,
         clienteId: nuevoCliente.clienteId,
         clienteNombre: nuevoCliente.clienteNombre,
-        diaSemana: nuevoCliente.diaSemana,
-        horaInicio: nuevoCliente.horaInicio,
-        horaFin: nuevoCliente.horaFin,
+        tipoSesion: nuevoCliente.tipoSesion,
+        fechaDeseada,
       });
       
       setMostrarModalAgregar(false);
       setNuevoCliente({
         clienteId: '',
         clienteNombre: '',
-        diaSemana: 1,
-        horaInicio: '10:00',
-        horaFin: '11:00',
+        tipoSesion: 'sesion-1-1',
+        fechaDeseada: '',
       });
       cargarDatos();
     } catch (error: any) {
@@ -222,26 +226,36 @@ export const GestorListaEspera: React.FC = () => {
     {
       key: 'clienteNombre',
       label: 'Cliente',
-      render: (entrada: EntradaListaEspera) => entrada.clienteNombre,
+      render: (entrada: EntradaListaEspera) => entrada.cliente.nombre,
     },
     {
-      key: 'diaSemana',
-      label: 'Día',
+      key: 'tipoSesion',
+      label: 'Tipo de Sesión',
       render: (entrada: EntradaListaEspera) => {
-        const dia = diasSemana.find(d => d.value === entrada.diaSemana);
-        return dia?.label || 'N/A';
+        const tipos: Record<string, string> = {
+          'sesion-1-1': 'Sesión 1:1',
+          'videollamada': 'Videollamada',
+          'evaluacion': 'Evaluación',
+          'clase-colectiva': 'Clase Colectiva',
+        };
+        return tipos[entrada.tipoSesion] || entrada.tipoSesion;
       },
     },
     {
-      key: 'horario',
-      label: 'Horario',
-      render: (entrada: EntradaListaEspera) => `${entrada.horaInicio} - ${entrada.horaFin}`,
+      key: 'fechaDeseada',
+      label: 'Fecha Deseada',
+      render: (entrada: EntradaListaEspera) => 
+        new Date(entrada.fechaDeseada).toLocaleDateString('es-ES', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        }),
     },
     {
       key: 'fechaSolicitud',
       label: 'Fecha Solicitud',
       render: (entrada: EntradaListaEspera) => 
-        new Date(entrada.fechaSolicitud).toLocaleDateString('es-ES'),
+        new Date(entrada.createdAt).toLocaleDateString('es-ES'),
     },
     {
       key: 'estado',
@@ -264,13 +278,24 @@ export const GestorListaEspera: React.FC = () => {
       render: (entrada: EntradaListaEspera) => (
         <div className="flex gap-2">
           {entrada.estado === 'activa' && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => handleEliminarCliente(entrada.id)}
-            >
-              <X className="w-4 h-4" />
-            </Button>
+            <>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => handleAsignarSlot(entrada.id, entrada.fechaDeseada)}
+                title="Asignar hueco disponible"
+              >
+                <CheckCircle className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => handleEliminarCliente(entrada.id)}
+                title="Eliminar de la lista"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </>
           )}
         </div>
       ),
@@ -490,38 +515,28 @@ export const GestorListaEspera: React.FC = () => {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Día de la Semana
+              Tipo de Sesión
             </label>
             <Select
-              value={nuevoCliente.diaSemana.toString()}
-              onChange={(e) => setNuevoCliente({ ...nuevoCliente, diaSemana: parseInt(e.target.value) })}
-              options={diasSemana.map(dia => ({
-                value: dia.value.toString(),
-                label: dia.label,
-              }))}
+              value={nuevoCliente.tipoSesion}
+              onChange={(e) => setNuevoCliente({ ...nuevoCliente, tipoSesion: e.target.value as TipoCita })}
+              options={[
+                { value: 'sesion-1-1', label: 'Sesión 1:1' },
+                { value: 'videollamada', label: 'Videollamada' },
+                { value: 'evaluacion', label: 'Evaluación' },
+              ]}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Hora Inicio
-              </label>
-              <Input
-                type="time"
-                value={nuevoCliente.horaInicio}
-                onChange={(e) => setNuevoCliente({ ...nuevoCliente, horaInicio: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Hora Fin
-              </label>
-              <Input
-                type="time"
-                value={nuevoCliente.horaFin}
-                onChange={(e) => setNuevoCliente({ ...nuevoCliente, horaFin: e.target.value })}
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Fecha Deseada
+            </label>
+            <Input
+              type="date"
+              value={nuevoCliente.fechaDeseada}
+              onChange={(e) => setNuevoCliente({ ...nuevoCliente, fechaDeseada: e.target.value })}
+              min={new Date().toISOString().split('T')[0]}
+            />
           </div>
         </div>
       </Modal>

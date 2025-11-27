@@ -5,6 +5,7 @@ import { StepSelection } from './StepSelection';
 import { StepConfiguration } from './StepConfiguration';
 import { StepPreview } from './StepPreview';
 import { useBatchTraining, BatchActionType } from '../../../hooks/useBatchTraining';
+import { Zap, ArrowLeft, ArrowRight, Check } from 'lucide-react';
 
 interface BatchTrainingModalProps {
   isOpen: boolean;
@@ -82,15 +83,26 @@ export const BatchTrainingModal: React.FC<BatchTrainingModalProps> = ({ isOpen, 
         {currentStep === 1 ? (
             <Button variant="secondary" onClick={onClose}>Cancelar</Button>
         ) : (
-            <Button variant="secondary" onClick={prevStep}>← Atrás</Button>
+            <Button variant="secondary" onClick={prevStep} className="flex items-center gap-2">
+                <ArrowLeft size={16} /> Atrás
+            </Button>
         )}
         
         <Button 
             variant="primary" 
             onClick={handleNext}
             disabled={currentStep === 1 && !selectedAction}
+            className="flex items-center gap-2"
         >
-            {currentStep === 3 ? '✅ Aplicar Cambios' : 'Siguiente →'}
+            {currentStep === 3 ? (
+                <>
+                    <Check size={16} /> Aplicar Cambios
+                </>
+            ) : (
+                <>
+                    Siguiente <ArrowRight size={16} />
+                </>
+            )}
         </Button>
       </>
     );
@@ -100,7 +112,12 @@ export const BatchTrainingModal: React.FC<BatchTrainingModalProps> = ({ isOpen, 
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`⚡ BATCHTRAINING - Paso ${currentStep} de 3`}
+      title={
+        <div className="flex items-center gap-2">
+            <Zap size={20} className="text-yellow-500" />
+            <span>BATCHTRAINING - Paso {currentStep} de 3</span>
+        </div>
+      }
       size="lg"
       footer={renderFooter()}
       className="transition-all duration-300 ease-in-out"

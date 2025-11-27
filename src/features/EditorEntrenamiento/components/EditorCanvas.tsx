@@ -4,7 +4,6 @@ import { List, ListImperativeAPI } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 
 import { GlobalFilterBar } from './GlobalFilterBar';
-import { CollaboratorsIndicator } from './canvas/CollaboratorsIndicator';
 import { DayCard } from './canvas/DayCard';
 import { EmptyWeekState } from './canvas/EmptyWeekState';
 import { useMediaQuery } from '../hooks/useMediaQuery';
@@ -68,6 +67,7 @@ const WeekRow = ({ index, style, weeks, expandedDayIndex, onToggleExpand, onUpda
 export const EditorCanvas: React.FC = () => {
   const [expandedDayIndex, setExpandedDayIndex] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'weekly' | 'excel' | 'timeline'>('weekly');
+  const [isSimpleMode, setIsSimpleMode] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
 
@@ -257,6 +257,7 @@ export const EditorCanvas: React.FC = () => {
                           isDimmed={shouldDimDay(day)}
                           onCopyFromMonday={dayIndex > 0 ? () => handleCopyFromMonday(day.id, mondayDay) : undefined}
                           onUseAI={handleUseAI}
+                          isSimpleMode={isSimpleMode}
                         />
                       );
                     })}
@@ -273,26 +274,21 @@ export const EditorCanvas: React.FC = () => {
   return (
     <div id="tour-editor-canvas" ref={containerRef} className="flex-1 w-full min-w-0 p-4 pb-20 h-full flex flex-col overflow-y-auto">
       <div className="no-print">
-        {viewMode === 'weekly' && (
-          <GlobalFilterBar
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            activeFilters={activeFilters}
-            onToggleFilter={handleToggleFilter}
-            onClearFilters={() => {
-              setSearchTerm('');
-              setActiveFilters([]);
-            }}
-            resultCount={daysData.filter(d => !shouldDimDay(d)).length}
-            totalCount={daysData.length}
-          />
-        )}
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-4">
             <h2 className="text-xl font-semibold">
               {viewMode === 'weekly' ? 'Vista Semanal' : viewMode === 'excel' ? 'Vista Excel' : 'Vista Timeline'}
             </h2>
-            <CollaboratorsIndicator />
+             <button
+              onClick={() => setIsSimpleMode(!isSimpleMode)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                isSimpleMode 
+                  ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {isSimpleMode ? 'Modo Simple' : 'Modo Edición'}
+            </button>
           </div>
           <div className="flex bg-gray-100 p-1 rounded-lg">
             <button
@@ -318,6 +314,20 @@ export const EditorCanvas: React.FC = () => {
             </button>
           </div>
         </div>
+        {viewMode === 'weekly' && (
+          <GlobalFilterBar
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            activeFilters={activeFilters}
+            onToggleFilter={handleToggleFilter}
+            onClearFilters={() => {
+              setSearchTerm('');
+              setActiveFilters([]);
+            }}
+            resultCount={daysData.filter(d => !shouldDimDay(d)).length}
+            totalCount={daysData.length}
+          />
+        )}
       </div>
 
       {isMobile ? (

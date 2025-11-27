@@ -34,6 +34,10 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
   const location = useLocation();
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['dashboard', 'crm', 'marketing']));
 
+  if (location.pathname.includes('/dietas-asignadas/editor')) {
+    return null;
+  }
+
   const role = user?.role ?? 'gimnasio';
   const isEntrenador = role === 'entrenador';
   const isCreador = role === 'creador';
@@ -64,9 +68,6 @@ export function Sidebar({ isCollapsed, onToggle, onViewChange }: SidebarProps) {
     if (path.includes('adherencia')) return 'adherencia';
     if (path.includes('suite-de-nutricion') || path.includes('dietas-asignadas') || path.includes('editor-de-dieta-meal-planner') || path.includes('plantillas-de-dieta') || path.includes('recetario-comidas-guardadas')) return 'suite-de-nutricion';
     if (path.includes('check-ins-nutricionales')) return 'check-ins-nutricionales';
-    if (path.includes('lista-de-la-compra-supermercado')) return 'lista-de-la-compra-supermercado';
-    if (path.includes('restricciones')) return 'restricciones';
-    if (path.includes('alertas-restricciones-alimentarias')) return 'alertas-restricciones-alimentarias';
     if (path.includes('agenda-reservas')) return 'agenda-reservas';
     if (path.includes('agenda')) return 'agenda';
     if (path.includes('reservas-online')) return 'reservas-online';
@@ -413,9 +414,6 @@ const marketingGimnasioItems: NavItem[] = [
       items: [
         { id: 'suite-de-nutricion', label: 'Suite de Nutrición', icon: UtensilsCrossed, path: '/suite-de-nutricion' },
         { id: 'check-ins-nutricionales', label: 'Check-ins Nutricionales', icon: Apple, path: '/check-ins-nutricionales', entrenadorOnly: true },
-        { id: 'lista-de-la-compra-supermercado', label: 'Lista de la Compra', icon: ShoppingCart, path: '/lista-de-la-compra-supermercado', entrenadorOnly: true },
-        { id: 'restricciones', label: 'Restricciones Alimentarias', icon: ShieldAlert, path: '/restricciones' },
-        { id: 'alertas-restricciones-alimentarias', label: 'Alertas Restricciones', icon: AlertTriangle, path: '/alertas-restricciones-alimentarias' },
       ],
     },
     {

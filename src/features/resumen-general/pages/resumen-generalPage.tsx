@@ -225,6 +225,7 @@ export default function ResumenGeneralPage() {
             data={clientStatus} 
             role={role} 
             loading={loading} 
+            onUpdate={loadDashboardData}
           />
         </div>
       </div>

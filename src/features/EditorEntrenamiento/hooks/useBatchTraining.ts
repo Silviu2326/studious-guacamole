@@ -15,6 +15,10 @@ export interface BatchConfig {
     start: number;
     end: number;
   };
+  sourceWeek: number;
+  templateId: string | null;
+  dayMapping: Record<number, number>; // Day Index (0=Mon) -> Day Index
+  adjustmentType: 'set' | 'add';
   increments: {
     sets: number;
     reps: number;
@@ -40,6 +44,10 @@ export const useBatchTraining = (initialStep = 1) => {
   // Default configuration based on the design doc
   const [config, setConfig] = useState<BatchConfig>({
     weekRange: { start: 1, end: 4 },
+    sourceWeek: 1,
+    templateId: null,
+    dayMapping: {},
+    adjustmentType: 'add',
     increments: {
       sets: 0,
       reps: 0,

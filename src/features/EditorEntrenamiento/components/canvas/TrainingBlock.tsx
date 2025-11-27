@@ -4,7 +4,6 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Block, Exercise } from '../../types/training';
 import { SortableExerciseRow } from './ExerciseRow';
 import { TimerWidget } from '../tools/TimerWidget';
-import { CollaboratorHighlight } from '../collaboration/CollaboratorCursors';
 import { useCollaboration, Collaborator } from '../../context/CollaborationContext';
 import { FitCoachMemoryService } from '../../services/FitCoachMemoryService';
 import { useValidation } from '../../hooks/useValidation';
@@ -16,6 +15,7 @@ interface TrainingBlockProps {
   onDuplicate: () => void;
   onRemove: () => void;
   isLockedBy?: Collaborator | null;
+  isSimpleMode?: boolean;
 }
 
 export const TrainingBlock: React.FC<TrainingBlockProps> = ({
@@ -23,7 +23,8 @@ export const TrainingBlock: React.FC<TrainingBlockProps> = ({
   onUpdateBlock,
   onDuplicate,
   onRemove,
-  isLockedBy
+  isLockedBy,
+  isSimpleMode = false
 }) => {
   const [showTimer, setShowTimer] = useState(false);
   const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
@@ -101,7 +102,6 @@ export const TrainingBlock: React.FC<TrainingBlockProps> = ({
   };
 
   return (
-    <CollaboratorHighlight elementId={block.id} type="block">
       <div className={`relative border rounded-lg mb-2 bg-white transition-all ${isLockedBy ? 'border-orange-200 bg-orange-50/30' : 'border-gray-200 hover:border-blue-300'
         }`}>
         {/* Header */}
@@ -127,9 +127,7 @@ export const TrainingBlock: React.FC<TrainingBlockProps> = ({
               </div>
             )}
           </div>
-          <div className="flex items-center gap-1 pr-14"> {/* Added padding-right to avoid overlap with quick actions */}
-            <span className="text-xs text-gray-400">{block.duration || 0}min</span>
-
+          <div className="flex items-center gap-1"> {/* Action buttons */}
             {isConditioningOrEmom && (
               <button
                 onClick={() => setShowTimer(true)}
@@ -139,15 +137,6 @@ export const TrainingBlock: React.FC<TrainingBlockProps> = ({
                 <Timer size={14} />
               </button>
             )}
-
-            <button
-              disabled={!!isLockedBy}
-              className="text-gray-400 hover:text-gray-600 p-1 disabled:opacity-50"
-              onClick={onDuplicate} // Using prop for duplicate
-              title="Opciones"
-            >
-              <MoreHorizontal size={14} />
-            </button>
           </div>
         </div>
 
@@ -162,7 +151,7 @@ export const TrainingBlock: React.FC<TrainingBlockProps> = ({
         )}
 
         {/* Floating Action Bar for Selection */}
-        {hasSelection && !isLockedBy && (
+        {hasSelection && !isLockedBy && !isSimpleMode && (
           <div className="absolute top-2 right-12 z-10 flex gap-2 bg-white shadow-lg border border-gray-200 rounded-lg p-1 animate-in fade-in zoom-in duration-200">
             {canGroup && (
               <button
@@ -204,8 +193,10 @@ export const TrainingBlock: React.FC<TrainingBlockProps> = ({
                 key={exercise.id}
                 exercise={exercise}
                 isSelected={selectedExercises.has(exercise.id)}
+                isExpanded={false}
                 onToggleSelection={() => toggleSelection(exercise.id)}
                 onRemoveExercise={() => handleRemoveExercise(exercise.id)}
+                hideSelection={isSimpleMode}
               />
             ))}
           </SortableContext>
@@ -223,6 +214,5 @@ export const TrainingBlock: React.FC<TrainingBlockProps> = ({
           </button>
         </div>
       </div>
-    </CollaboratorHighlight>
   );
 };

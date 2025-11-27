@@ -1,16 +1,53 @@
 # Script PowerShell para usar Gemini CLI en modo YOLO con un JSON de prompt
+# Automatiza la respuesta a confirmaciones de ejecución usando PowerShell nativo
 # Uso:
 #   .\gemini_yolo_json.ps1
 # Opcional: puedes pasar la ruta al JSON:
 #   .\gemini_yolo_json.ps1 .\prompt.json
+# Opcional: puedes configurar la auto-respuesta (1=once, 2=always):
+#   $env:GEMINI_AUTO_RESPONSE="2"; .\gemini_yolo_json.ps1 .\prompt.json
 
-Write-Host "[1/5] Iniciando script (YOLO + JSON)..." -ForegroundColor Cyan
+Write-Host "[1/6] Iniciando script (YOLO + JSON con auto-confirmación)..." -ForegroundColor Cyan
+
+# Obtener el directorio del script
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$scriptRoot = Split-Path -Parent $scriptDir
+
+# Buscar el archivo .env en múltiples ubicaciones posibles
+function Find-EnvFile {
+    param([string]$startPath)
+    
+    $currentPath = $startPath
+    $maxDepth = 5  # Limitar la búsqueda a 5 niveles hacia arriba
+    $depth = 0
+    
+    while ($depth -lt $maxDepth) {
+        $envPath = Join-Path $currentPath ".env"
+        if (Test-Path $envPath) {
+            return $envPath
+        }
+        
+        $parentPath = Split-Path -Parent $currentPath
+        if ($parentPath -eq $currentPath) {
+            # Llegamos a la raíz del sistema
+            break
+        }
+        $currentPath = $parentPath
+        $depth++
+    }
+    
+    return $null
+}
 
 # 1. Cargar variables de entorno desde .env si existe
-Write-Host "[2/5] Cargando variables de entorno..." -ForegroundColor Cyan
-if (Test-Path .env) {
-    Write-Host "  -> Archivo .env encontrado, cargando variables..." -ForegroundColor Gray
-    Get-Content .env | ForEach-Object {
+Write-Host "[2/6] Cargando variables de entorno..." -ForegroundColor Cyan
+
+# Buscar .env desde el directorio del script hacia arriba
+$envPath = Find-EnvFile -startPath $scriptDir
+
+if ($envPath) {
+    Write-Host "  -> Archivo .env encontrado en: $envPath" -ForegroundColor Gray
+    Get-Content $envPath | ForEach-Object {
         if ($_ -match '^([^#][^=]*)=(.*)$') {
             $name = $matches[1].Trim()
             $value = $matches[2].Trim()
@@ -23,7 +60,7 @@ if (Test-Path .env) {
 }
 
 # 2. Verificar API Key
-Write-Host "[3/5] Verificando API Key..." -ForegroundColor Cyan
+Write-Host "[3/6] Verificando API Key..." -ForegroundColor Cyan
 if (-not $env:GEMINI_API_KEY) {
     Write-Host "Error: No se encontró la variable GEMINI_API_KEY" -ForegroundColor Red
     Write-Host "Por favor, crea un archivo .env en la raiz y añade: GEMINI_API_KEY=tu_clave_aqui" -ForegroundColor Yellow
@@ -33,17 +70,62 @@ if (-not $env:GEMINI_API_KEY) {
 Write-Host "  -> API Key encontrada" -ForegroundColor Gray
 
 # 3. Obtener ruta del JSON
-$JsonPath = ".\prompt.json"
+$JsonPath = $null
+
 if ($args.Count -ge 1) {
-    $JsonPath = $args[0]
+    # Si se pasa una ruta como argumento, usar esa (puede ser absoluta o relativa al directorio actual)
+    $userPath = $args[0]
+    if ([System.IO.Path]::IsPathRooted($userPath)) {
+        $JsonPath = $userPath
+    } else {
+        # Intentar primero como ruta relativa al directorio actual
+        $JsonPath = Join-Path (Get-Location) $userPath
+        if (-not (Test-Path $JsonPath)) {
+            # Si no existe, intentar como ruta relativa al directorio del script
+            $JsonPath = Join-Path $scriptDir $userPath
+        }
+    }
+} else {
+    # Sin argumentos: buscar prompts.json o prompt.json en múltiples ubicaciones
+    $possibleNames = @("prompts.json", "prompt.json")
+    $searchPaths = @(
+        (Get-Location),           # Directorio actual
+        $scriptDir,                # Directorio del script
+        $scriptRoot                # Directorio padre del script
+    )
+    
+    foreach ($searchPath in $searchPaths) {
+        foreach ($fileName in $possibleNames) {
+            $testPath = Join-Path $searchPath $fileName
+            if (Test-Path $testPath) {
+                $JsonPath = $testPath
+                break
+            }
+        }
+        if ($JsonPath) { break }
+    }
 }
 
-if (-not (Test-Path $JsonPath)) {
-    Write-Host "Error: No se encontró el archivo JSON: $JsonPath" -ForegroundColor Red
+# Verificar que el archivo existe
+if (-not $JsonPath -or -not (Test-Path $JsonPath)) {
+    Write-Host "Error: No se encontró el archivo JSON" -ForegroundColor Red
+    if ($args.Count -ge 1) {
+        Write-Host "  -> Ruta proporcionada: $($args[0])" -ForegroundColor Yellow
+        Write-Host "  -> Ruta resuelta: $JsonPath" -ForegroundColor Yellow
+    } else {
+        Write-Host "  -> Buscado en:" -ForegroundColor Yellow
+        Write-Host "     - Directorio actual: $(Get-Location)" -ForegroundColor Yellow
+        Write-Host "     - Directorio del script: $scriptDir" -ForegroundColor Yellow
+        Write-Host "     - Directorio raíz: $scriptRoot" -ForegroundColor Yellow
+        Write-Host "  -> Archivos buscados: prompts.json, prompt.json" -ForegroundColor Yellow
+    }
     exit 1
 }
 
-Write-Host "[4/5] Leyendo JSON de prompt..." -ForegroundColor Cyan
+# Resolver la ruta completa para mostrar la ruta absoluta
+$JsonPath = Resolve-Path $JsonPath
+
+Write-Host "[4/6] Leyendo JSON de prompt..." -ForegroundColor Cyan
 Write-Host "  -> Archivo: $JsonPath" -ForegroundColor Gray
 
 try {
@@ -54,84 +136,263 @@ try {
     exit 1
 }
 
-# Soportar:
+# Soportar múltiples formatos:
 #  - { "prompt": "texto" }
 #  - { "prompts": ["texto1", "texto2", ...] }
+#  - { "prompts": [{"id": "...", "prompt": "texto"}, ...] }
 $prompts = @()
+$promptMetadata = @()
 
 if ($data.prompts) {
-    $prompts = @($data.prompts)
+    # Verificar si es un array de objetos con propiedad 'prompt'
+    $firstItem = $data.prompts[0]
+    if ($firstItem -and $firstItem.GetType().Name -eq "PSCustomObject" -and $firstItem.prompt) {
+        # Formato: array de objetos con id y prompt
+        $index = 0
+        foreach ($item in $data.prompts) {
+            if ($item.prompt) {
+                $index++
+                $prompts += $item.prompt
+                $promptMetadata += @{
+                    id = if ($item.id) { $item.id } else { "prompt_$index" }
+                    prompt = $item.prompt
+                }
+            }
+        }
+    } else {
+        # Formato: array de strings
+        $prompts = @($data.prompts)
+        for ($i = 0; $i -lt $prompts.Count; $i++) {
+            $promptMetadata += @{
+                id = "prompt_$($i + 1)"
+                prompt = $prompts[$i]
+            }
+        }
+    }
 } elseif ($data.prompt) {
+    # Formato: string simple
     $prompts = @($data.prompt)
+    $promptMetadata += @{
+        id = "prompt_1"
+        prompt = $data.prompt
+    }
 } else {
     Write-Host "Error: El JSON debe contener 'prompt' o 'prompts'" -ForegroundColor Red
     exit 1
 }
 
 Write-Host "  -> Prompts cargados: $($prompts.Count)" -ForegroundColor Gray
-$prompts | ForEach-Object { Write-Host "     - $_" -ForegroundColor DarkGray }
+for ($i = 0; $i -lt $promptMetadata.Count; $i++) {
+    $meta = $promptMetadata[$i]
+    Write-Host "     [$($meta.id)] $(if ($meta.prompt.Length -gt 60) { $meta.prompt.Substring(0, 60) + '...' } else { $meta.prompt })" -ForegroundColor DarkGray
+}
 Write-Host ""
 
 # 4. Verificar Gemini CLI
-Write-Host "[5/5] Llamando a Gemini en modo YOLO..." -ForegroundColor Cyan
+Write-Host "[5/6] Verificando Gemini CLI..." -ForegroundColor Cyan
 $geminiCmd = Get-Command gemini -ErrorAction SilentlyContinue
 if (-not $geminiCmd) {
     Write-Host "Error: Gemini CLI no está instalado" -ForegroundColor Red
     Write-Host "Instala Gemini CLI con: npm install -g @google/gemini-cli" -ForegroundColor Yellow
     exit 1
 }
-Write-Host "  -> Gemini CLI encontrado en: $($geminiCmd.Source)" -ForegroundColor Gray
+$geminiPath = $geminiCmd.Source
+$script:geminiScriptPath = $null  # Inicializar como null por defecto
+$script:geminiNpxArgs = $null     # Inicializar como null por defecto
+
+# Si es un script .ps1, buscar el .cmd correspondiente o usar npx/cmd
+if ($geminiPath -match '\.ps1$') {
+    $geminiCmdPath = $geminiPath -replace '\.ps1$', '.cmd'
+    if (Test-Path $geminiCmdPath) {
+        $geminiPath = $geminiCmdPath
+        Write-Host "  -> Usando wrapper .cmd: $geminiPath" -ForegroundColor Gray
+    } else {
+        # Intentar usar npx para ejecutar gemini (más confiable que ejecutar .ps1 directamente)
+        $npxCmd = Get-Command npx -ErrorAction SilentlyContinue
+        if ($npxCmd) {
+            $geminiPath = "npx"
+            $script:geminiNpxArgs = "--yes @google/gemini-cli"
+            Write-Host "  -> Usando npx para ejecutar gemini" -ForegroundColor Gray
+        } else {
+            # Como último recurso, usar cmd.exe para ejecutar el .ps1
+            $geminiPath = "cmd.exe"
+            $script:geminiScriptPath = $geminiCmd.Source
+            Write-Host "  -> Usando cmd.exe para ejecutar: $script:geminiScriptPath" -ForegroundColor Gray
+        }
+    }
+} else {
+    Write-Host "  -> Gemini CLI encontrado en: $geminiPath" -ForegroundColor Gray
+}
+
+# 5. Configurar auto-respuesta
+Write-Host "[6/6] Configurando auto-confirmación..." -ForegroundColor Cyan
+$autoResponse = if ($env:GEMINI_AUTO_RESPONSE) { $env:GEMINI_AUTO_RESPONSE } else { "1" }
+Write-Host "  -> Auto-respuesta configurada: $autoResponse (1=once, 2=always)" -ForegroundColor Gray
 Write-Host ""
 
-foreach ($Prompt in $prompts) {
+# Función para ejecutar gemini con auto-confirmación
+function Invoke-GeminiWithAutoConfirm {
+    param(
+        [string]$Prompt,
+        [string]$AutoResponse = "1",
+        [string]$GeminiPath = "gemini",
+        [string]$GeminiScriptPath = $null,
+        [string]$GeminiNpxArgs = $null
+    )
+    
+    # Crear proceso de gemini
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    
+    # Determinar cómo ejecutar gemini según el método detectado
+    if ($GeminiNpxArgs) {
+        # Usar npx para ejecutar gemini
+        $psi.FileName = "npx"
+        $escapedPrompt = $Prompt -replace '"', '\"'
+        $psi.Arguments = "$GeminiNpxArgs --yolo --model gemini-3-pro-preview --prompt `"$escapedPrompt`""
+    } elseif ($GeminiScriptPath -and $GeminiPath -eq "cmd.exe") {
+        # Usar cmd.exe para ejecutar el script .ps1
+        $psi.FileName = "cmd.exe"
+        $escapedPrompt = $Prompt -replace '"', '""'
+        $psi.Arguments = "/c powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$GeminiScriptPath`" --yolo --model gemini-3-pro-preview --prompt `"$escapedPrompt`""
+    } else {
+        # Ejecución normal (ejecutable, .cmd, etc.)
+        $psi.FileName = $GeminiPath
+        $psi.Arguments = "--yolo --model gemini-3-pro-preview --prompt `"$Prompt`""
+    }
+    $psi.UseShellExecute = $false
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $psi.RedirectStandardInput = $true
+    $psi.CreateNoWindow = $true
+    $psi.StandardOutputEncoding = [System.Text.Encoding]::UTF8
+    $psi.StandardErrorEncoding = [System.Text.Encoding]::UTF8
+
+    $process = New-Object System.Diagnostics.Process
+    $process.StartInfo = $psi
+
+    # Buffer para acumular salida y detectar confirmaciones
+    $outputBuffer = New-Object System.Text.StringBuilder
+    $hasResponded = $false
+    $responseValue = $AutoResponse  # Capturar en variable local para el closure
+
+    # Evento para capturar salida estándar
+    $outputHandler = {
+        param($sender, $e)
+        $line = $e.Data
+        if ($line) {
+            [void]$outputBuffer.AppendLine($line)
+            Write-Host $line
+        
+            # Detectar confirmación en la línea actual
+            if (-not $hasResponded) {
+                if ($line -match "Allow execution of:" -or $line -match "Waiting for user confirmation") {
+                    $script:hasResponded = $true
+                    Start-Sleep -Milliseconds 300
+                    try {
+                        $process.StandardInput.WriteLine($responseValue)
+                        $process.StandardInput.Flush()
+                        Write-Host "[Auto-confirmación] Respondiendo con: $responseValue" -ForegroundColor DarkGray
+                    } catch {
+                        Write-Host "[Error] No se pudo enviar respuesta: $_" -ForegroundColor Yellow
+                    }
+                }
+            }
+        }
+    }
+
+    # Evento para capturar errores
+    $errorHandler = {
+        param($sender, $e)
+        $line = $e.Data
+        if ($line) {
+            [void]$outputBuffer.AppendLine($line)
+            Write-Host $line -ForegroundColor Yellow
+        }
+    }
+
+    # Registrar eventos
+    $process.add_OutputDataReceived($outputHandler)
+    $process.add_ErrorDataReceived($errorHandler)
+
+    # Iniciar proceso
+    try {
+        $process.Start() | Out-Null
+        $process.BeginOutputReadLine()
+        $process.BeginErrorReadLine()
+    } catch {
+        Write-Host "Error al iniciar gemini: $_" -ForegroundColor Red
+        Write-Host "  -> Ruta del ejecutable: $GeminiPath" -ForegroundColor Yellow
+        Write-Host "  -> Comando completo: $GeminiPath $($psi.Arguments)" -ForegroundColor Yellow
+        if (-not (Test-Path $GeminiPath)) {
+            Write-Host "  -> El archivo no existe en la ruta especificada" -ForegroundColor Red
+        }
+        return 1
+    }
+
+    # Esperar con timeout y verificar confirmaciones periódicamente
+    $timeout = 600000  # 10 minutos en milisegundos
+    $elapsed = 0
+    $checkInterval = 200  # milisegundos
+
+    while (-not $process.HasExited -and $elapsed -lt $timeout) {
+        Start-Sleep -Milliseconds $checkInterval
+        $elapsed += $checkInterval
+        
+        # Verificar si hay confirmaciones en el buffer acumulado
+        if (-not $hasResponded) {
+            $bufferContent = $outputBuffer.ToString()
+            if ($bufferContent -match "Allow execution of:" -or $bufferContent -match "Waiting for user confirmation") {
+                $hasResponded = $true
+                Start-Sleep -Milliseconds 300
+                try {
+                    $process.StandardInput.WriteLine($responseValue)
+                    $process.StandardInput.Flush()
+                    Write-Host "[Auto-confirmación] Respondiendo con: $responseValue" -ForegroundColor DarkGray
+                } catch {
+                    Write-Host "[Error] No se pudo enviar respuesta: $_" -ForegroundColor Yellow
+                }
+            }
+        }
+    }
+
+    if (-not $process.HasExited) {
+        $process.Kill()
+        Write-Host "Timeout: El proceso excedió 10 minutos" -ForegroundColor Red
+        return 1
+    }
+
+    $exitCode = $process.ExitCode
+    $process.WaitForExit()
+    $process.Dispose()
+
+    return $exitCode
+}
+
+for ($i = 0; $i -lt $prompts.Count; $i++) {
+    $Prompt = $prompts[$i]
+    $meta = $promptMetadata[$i]
+    $promptId = $meta.id
+    
     Write-Host "==================================================" -ForegroundColor DarkGray
-    Write-Host "Prompt:" -ForegroundColor Green
+    Write-Host "Prompt [$promptId]:" -ForegroundColor Green
     Write-Host $Prompt
     Write-Host "--------------------------------------------------"
 
-    $job = Start-Job -ScriptBlock {
-        param($p)
-        $ErrorActionPreference = "SilentlyContinue"
-        # Ejecutar gemini y capturar salida y error
-        $res = & gemini --yolo "$p" 2>&1 | Out-String
-        return @{ Output = $res; ExitCode = $LASTEXITCODE }
-    } -ArgumentList $Prompt
-
-    # Esperar hasta 600 segundos (10 minutos) con aviso cada minuto
-    $maxSeconds = 600
-    $elapsed = 0
-    $completed = $null
-
-    while ($elapsed -lt $maxSeconds) {
-        $completed = Wait-Job -Job $job -Timeout 60
-        if ($completed) {
-            break
-        }
-        $elapsed += 60
-        Write-Host "  [En espera] Han pasado $($elapsed / 60) minuto(s)..." -ForegroundColor DarkGray
-    }
-
-    if ($completed) {
-        $result = Receive-Job -Job $job
-        $output = $result.Output
-        $exitCode = $result.ExitCode
+    try {
+        # Ejecutar gemini con auto-confirmación usando PowerShell nativo
+        $scriptPath = if ($script:geminiScriptPath) { $script:geminiScriptPath } else { $null }
+        $npxArgs = if ($script:geminiNpxArgs) { $script:geminiNpxArgs } else { $null }
+        $exitCode = Invoke-GeminiWithAutoConfirm -Prompt $Prompt -AutoResponse $autoResponse -GeminiPath $geminiPath -GeminiScriptPath $scriptPath -GeminiNpxArgs $npxArgs
         
-        $cleanOutput = if ($output) { $output.Trim() } else { "" }
-
         if ($exitCode -eq 0 -or $exitCode -eq $null) {
-            if ($cleanOutput -and $cleanOutput.Length -gt 0) {
-                Write-Host $cleanOutput
-            } else {
-                Write-Host "  (No se recibió respuesta visible)" -ForegroundColor Yellow
-            }
             Write-Host ""
-            Write-Host "  -> Comando ejecutado exitosamente" -ForegroundColor Green
+            Write-Host "  -> Comando ejecutado exitosamente [$promptId]" -ForegroundColor Green
         } else {
-            Write-Host $cleanOutput -ForegroundColor Red
-            Write-Host "Error: El comando falló con código de salida: $exitCode" -ForegroundColor Red
+            Write-Host ""
+            Write-Host "Error: El comando falló con código de salida: $exitCode [$promptId]" -ForegroundColor Red
             
             # Guardar prompt fallido (error de ejecución)
-            $failedLog = "failed_prompts.json"
+            $failedLog = Join-Path $scriptDir "failed_prompts.json"
             $failedData = @()
             if (Test-Path $failedLog) {
                 try {
@@ -139,17 +400,15 @@ foreach ($Prompt in $prompts) {
                     if ($content) { $failedData = @($content | ConvertFrom-Json) }
                 } catch {}
             }
-            $failedData += @{ prompt = $Prompt; reason = "Execution Error (ExitCode: $exitCode)"; timestamp = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss") }
+            $failedData += @{ id = $promptId; prompt = $Prompt; reason = "Execution Error (ExitCode: $exitCode)"; timestamp = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss") }
             $failedData | ConvertTo-Json -Depth 4 | Set-Content $failedLog -Encoding UTF8
             Write-Host "  -> Prompt fallido guardado en $failedLog" -ForegroundColor Yellow
         }
-    } else {
-        # Timeout alcanzado
-        Write-Host "Error: El prompt excedió el tiempo límite de 10 minutos." -ForegroundColor Red
-        Stop-Job -Job $job
+    } catch {
+        Write-Host "Error al ejecutar el script: $_ [$promptId]" -ForegroundColor Red
         
-        # Guardar prompt fallido (timeout)
-        $failedLog = "failed_prompts.json"
+        # Guardar prompt fallido (error de ejecución)
+        $failedLog = Join-Path $scriptDir "failed_prompts.json"
         $failedData = @()
         if (Test-Path $failedLog) {
             try {
@@ -157,12 +416,10 @@ foreach ($Prompt in $prompts) {
                 if ($content) { $failedData = @($content | ConvertFrom-Json) }
             } catch {}
         }
-        $failedData += @{ prompt = $Prompt; reason = "Timeout (>10min)"; timestamp = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss") }
+        $failedData += @{ id = $promptId; prompt = $Prompt; reason = "Script Error: $_"; timestamp = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss") }
         $failedData | ConvertTo-Json -Depth 4 | Set-Content $failedLog -Encoding UTF8
         Write-Host "  -> Prompt fallido guardado en $failedLog" -ForegroundColor Yellow
     }
-
-    Remove-Job -Job $job
 }
 
 Write-Host "==================================================" -ForegroundColor DarkGray

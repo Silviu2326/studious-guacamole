@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card } from '../../../../../components/componentsreutilizables/Card';
+import { Clipboard, TrendingUp, Target, SlidersHorizontal, CalendarRange, Timer } from 'lucide-react';
 
 interface StepSelectionProps {
   onSelect: (option: string) => void;
@@ -10,7 +11,7 @@ export const StepSelection: React.FC<StepSelectionProps> = ({ onSelect, selected
   const options = [
     {
       id: 'duplicate',
-      icon: '📋',
+      icon: <Clipboard size={24} />,
       title: 'DUPLICAR SEMANA',
       description: 'Copiar una semana completa a otra posición',
       subtext: 'Ideal para: Repetir estructura exitosa',
@@ -18,7 +19,7 @@ export const StepSelection: React.FC<StepSelectionProps> = ({ onSelect, selected
     },
     {
       id: 'progression',
-      icon: '🔄',
+      icon: <TrendingUp size={24} />,
       title: 'PROGRESIÓN LINEAL',
       description: 'Aumentar series/reps/carga progresivamente',
       subtext: 'Ideal para: Programas de fuerza, hipertrofia',
@@ -26,7 +27,7 @@ export const StepSelection: React.FC<StepSelectionProps> = ({ onSelect, selected
     },
     {
       id: 'template',
-      icon: '🎯',
+      icon: <Target size={24} />,
       title: 'APLICAR PLANTILLA',
       description: 'Aplicar una estructura de plantilla a múltiples semanas',
       subtext: 'Ideal para: Crear mesociclos rápidamente',
@@ -34,7 +35,7 @@ export const StepSelection: React.FC<StepSelectionProps> = ({ onSelect, selected
     },
     {
       id: 'adjust',
-      icon: '📊',
+      icon: <SlidersHorizontal size={24} />,
       title: 'AJUSTE MASIVO',
       description: 'Cambiar RPE, duración, o tags en múltiples días',
       subtext: 'Ideal para: Ajustes rápidos de intensidad',
@@ -42,7 +43,7 @@ export const StepSelection: React.FC<StepSelectionProps> = ({ onSelect, selected
     },
     {
       id: 'reorganize',
-      icon: '🔀',
+      icon: <CalendarRange size={24} />,
       title: 'REORGANIZAR DÍAS',
       description: 'Mover días entre semanas o cambiar orden',
       subtext: 'Ideal para: Ajustar calendario del cliente',
@@ -63,7 +64,7 @@ export const StepSelection: React.FC<StepSelectionProps> = ({ onSelect, selected
             padding="md"
           >
             <div className="flex items-start space-x-4">
-              <div className={`text-2xl p-3 rounded-full ${selectedOption === option.id ? 'bg-blue-100 dark:bg-blue-800' : 'bg-gray-100 dark:bg-gray-800'}`}>
+              <div className={`p-3 rounded-full ${selectedOption === option.id ? 'bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-100' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}`}>
                 {option.icon}
               </div>
               <div className="flex-1 text-left">
@@ -71,8 +72,8 @@ export const StepSelection: React.FC<StepSelectionProps> = ({ onSelect, selected
                 <p className="text-gray-600 dark:text-gray-300 mt-1 text-sm">{option.description}</p>
                 <div className="flex items-center mt-2 text-xs text-gray-500 dark:text-gray-400 space-x-4">
                   <span>{option.subtext}</span>
-                  <span className="flex items-center text-gray-400">
-                    <span className="mr-1">⏱️</span> {option.time}
+                  <span className="flex items-center text-gray-400 gap-1">
+                    <Timer size={14} /> {option.time}
                   </span>
                 </div>
               </div>

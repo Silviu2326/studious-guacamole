@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Clock, Flame, Package, Plus, MoreHorizontal, Zap, Copy, Clipboard, Trash2, ArrowRight, Lock, Star, MessageSquare, AlertCircle, ThumbsUp, Activity, TrendingUp } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Clock, Flame, Package, Plus, MoreHorizontal, Zap, Copy, Clipboard, Trash2, ArrowRight, Lock, Star, MessageSquare, AlertCircle, ThumbsUp, Activity, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react';
 import { useDroppable } from '@dnd-kit/core';
 import { Day, Tag, Block } from '../../types/training';
 import { TrainingBlock } from './TrainingBlock';
@@ -22,6 +22,7 @@ export interface DayCardProps {
   isLockedBy?: Collaborator | null;
   onCopyFromMonday?: () => void;
   onUseAI?: () => void;
+  isSimpleMode?: boolean;
 }
 
 export const DayCard: React.FC<DayCardProps> = ({
@@ -32,7 +33,8 @@ export const DayCard: React.FC<DayCardProps> = ({
   isDimmed = false,
   isLockedBy: propIsLockedBy,
   onCopyFromMonday,
-  onUseAI
+  onUseAI,
+  isSimpleMode = false
 }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: `day-${day.id}`,
@@ -199,6 +201,10 @@ export const DayCard: React.FC<DayCardProps> = ({
     }
   ];
 
+  const totalDuration = useMemo(() => {
+    return day.blocks.reduce((total, block) => total + (block.duration || 0), 0);
+  }, [day.blocks]);
+
   const cardClasses = `day-card group bg-white shadow-sm rounded-xl ${isCompact ? 'p-2' : 'p-4'} flex flex-col h-full transition-all duration-300 ease-in-out relative border ${isOver
     ? 'border-blue-500 border-dashed bg-blue-50 ring-2 ring-blue-200'
     : 'border-transparent hover:border-gray-200'
@@ -252,26 +258,78 @@ export const DayCard: React.FC<DayCardProps> = ({
 
         {/* Header with Context Menu Trigger */}
         <div
-          className={`flex justify-between items-center mb-2 ${!isLockedBy ? 'cursor-context-menu' : ''}`}
+          className={`mb-2 ${!isLockedBy ? 'cursor-context-menu' : ''}`}
           onContextMenu={handleContextMenu}
         >
-          <div className="flex items-center gap-2">
-            <h3 className={`font-bold ${isCompact ? 'text-xs' : 'text-sm'} text-gray-800`}>{day.name}</h3>
-            {hasAlerts && (
-              <div
-                className="cursor-pointer text-yellow-500 hover:text-yellow-600 animate-pulse"
+          <div className="flex justify-between items-center gap-2">
+            <div className="flex items-center gap-2">
+              <h3 className={`font-bold ${isCompact ? 'text-xs' : 'text-sm'} text-gray-800`}>{day.name}</h3>
+              {hasAlerts && (
+                <div
+                  className="cursor-pointer text-yellow-500 hover:text-yellow-600 animate-pulse"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openFitCoach('Alertas');
+                  }}
+                  title={alerts.map(a => a.message).join('\n')}
+                >
+                  <AlertCircle size={16} />
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                className="p-1 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
                 onClick={(e) => {
                   e.stopPropagation();
-                  openFitCoach('Alertas');
+                  onToggleExpand();
                 }}
-                title={alerts.map(a => a.message).join('\n')}
+                aria-label={isExpanded ? 'Colapsar día' : 'Expandir día'}
               >
-                <AlertCircle size={16} />
+                {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </button>
+              <div
+                ref={menuRef}
+                className="relative flex items-center gap-1 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-full px-2 py-0.5"
+              >
+                <span className="font-semibold text-gray-600">{totalDuration}min</span>
+                <button
+                  disabled={!!isLockedBy}
+                  className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none disabled:opacity-50"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isLockedBy) return;
+                    setIsMenuOpen(!isMenuOpen);
+                  }}
+                  aria-label="Opciones del día"
+                  aria-haspopup="true"
+                  aria-expanded={isMenuOpen}
+                >
+                  <MoreHorizontal size={14} aria-hidden="true" />
+                </button>
+
+                {isMenuOpen && !isLockedBy && (
+                  <div className="absolute right-0 top-8 w-40 bg-white rounded-md shadow-lg border border-gray-100 z-10 overflow-hidden">
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+                      onClick={() => {
+                        setIsSmartFillOpen(true);
+                        setIsMenuOpen(false);
+                      }}
+                      aria-label="Smart Fill: Rellenar entrenamiento automáticamente"
+                    >
+                      <Zap size={14} className="text-yellow-500" aria-hidden="true" />
+                      Smart Fill
+                    </button>
+                    {/* Future menu options */}
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
-          {isEditingTags && !isLockedBy ? (
-            <div className="max-w-[180px]">
+
+          <div className="mt-2">
+            {isEditingTags && !isLockedBy ? (
               <TagInput
                 tags={day.tags}
                 onAddTag={handleTagAdd}
@@ -279,43 +337,42 @@ export const DayCard: React.FC<DayCardProps> = ({
                 autoFocus
                 onBlur={() => setIsEditingTags(false)}
               />
-            </div>
-          ) : (
-            <div
-              className={`flex gap-1 rounded px-1 -mx-1 py-0.5 transition-colors min-h-[24px] items-center ${!isLockedBy ? 'cursor-pointer hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none' : ''}`}
-              role="button"
-              tabIndex={isLockedBy ? -1 : 0}
-              aria-label="Editar etiquetas"
-              onClick={(e) => {
-                if (isLockedBy) return;
-                e.stopPropagation();
-                setIsEditingTags(true);
-              }}
-              onKeyDown={(e) => {
-                if (isLockedBy) return;
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
+            ) : (
+              <div
+                className={`flex flex-wrap gap-1 rounded px-1 py-0.5 transition-colors min-h-[24px] items-center ${
+                  !isLockedBy ? 'cursor-pointer hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none' : ''
+                }`}
+                role="button"
+                tabIndex={isLockedBy ? -1 : 0}
+                aria-label="Editar etiquetas"
+                onClick={(e) => {
+                  if (isLockedBy) return;
                   e.stopPropagation();
                   setIsEditingTags(true);
-                }
-              }}
-            >
-              {day.tags.length > 0 ? (
-                <>
-                  {day.tags.slice(0, 2).map((tag, index) => (
-                    <span key={tag.id || index} className="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">
-                      #{tag.label}
-                    </span>
-                  ))}
-                  {day.tags.length > 2 && (
-                    <span className="text-xs text-gray-400">
-                      +{day.tags.length - 2}
-                    </span>
-                  )}
-                </>
-              ) : null}
-            </div>
-          )}
+                }}
+                onKeyDown={(e) => {
+                  if (isLockedBy) return;
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsEditingTags(true);
+                  }
+                }}
+              >
+                {day.tags.length > 0 ? (
+                  <>
+                    {day.tags.map((tag, index) => (
+                      <span key={tag.id || index} className="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">
+                        #{tag.label}
+                      </span>
+                    ))}
+                  </>
+                ) : (
+                  <span className="text-xs text-gray-400">{!isLockedBy ? 'Añadir etiquetas' : ''}</span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Content: Blocks or Empty State */}
@@ -335,52 +392,15 @@ export const DayCard: React.FC<DayCardProps> = ({
                   isLockedBy={isLockedBy}
                   onDuplicate={() => handleDuplicateBlock(block.id)}
                   onRemove={() => handleRemoveBlock(block.id)}
+                  isSimpleMode={isSimpleMode}
                 />
               ))}
             </div>
           )}
         </div>
 
-        {/* Footer */}
-      <div className="flex justify-between items-center mt-auto pt-2 border-t border-transparent relative no-print">
-        <button
-          className="text-sm text-blue-600 font-medium hover:text-blue-800 flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none rounded px-1"
-          onClick={onToggleExpand}
-          aria-label={isExpanded ? "Colapsar detalles del día" : "Ver más información del día"}
-        >
-          {isExpanded ? 'Colapsar' : '+ Info'}
-        </button>
-
-        <div ref={menuRef} className="relative">
-          <button
-            disabled={!!isLockedBy}
-            className="text-gray-400 hover:text-gray-700 p-1 rounded-md hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none disabled:opacity-50"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label="Opciones del día"
-            aria-haspopup="true"
-            aria-expanded={isMenuOpen}
-          >
-            <MoreHorizontal size={16} aria-hidden="true" />
-          </button>
-
-          {isMenuOpen && !isLockedBy && (
-            <div className="absolute right-0 bottom-full mb-2 w-40 bg-white rounded-md shadow-lg border border-gray-100 z-10 overflow-hidden">
-              <button
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
-                onClick={() => {
-                  setIsSmartFillOpen(true);
-                  setIsMenuOpen(false);
-                }}
-                aria-label="Smart Fill: Rellenar entrenamiento automáticamente"
-              >
-                <Zap size={14} className="text-yellow-500" aria-hidden="true" />
-                Smart Fill
-              </button>
-              {/* Add more options here later */}
-            </div>
-          )}
-        </div>
-      </div>
+        {/* Footer placeholder for future actions */}
+      <div className="flex justify-end items-center mt-auto pt-2 border-t border-transparent relative no-print"></div>
     </div >
 
       <SmartFillModal

@@ -10,28 +10,41 @@ export interface ClientStatus {
   leadsPendientes: number;
 }
 
+let clientStatusData = {
+  entrenador: {
+    total: 24,
+    activos: 20,
+    nuevos: 3,
+    inactivos: 1,
+    leadsPendientes: 5,
+  },
+  gimnasio: {
+    total: 450,
+    activos: 380,
+    nuevos: 25,
+    inactivos: 45,
+    leadsPendientes: 42,
+  },
+};
+
 export async function getClientStatus(role: 'entrenador' | 'gimnasio', userId?: string): Promise<ClientStatus> {
   // Simulación de API - reemplazar con llamada real
   return new Promise((resolve) => {
     setTimeout(() => {
-      if (role === 'entrenador') {
-        resolve({
-          total: 24,
-          activos: 20,
-          nuevos: 3,
-          inactivos: 1,
-          leadsPendientes: 5,
-        });
-      } else {
-        resolve({
-          total: 450,
-          activos: 380,
-          nuevos: 25,
-          inactivos: 45,
-          leadsPendientes: 42,
-        });
-      }
+      resolve(clientStatusData[role]);
     }, 350);
+  });
+}
+
+export async function updateClientStatus(role: 'entrenador' | 'gimnasio', data: Partial<ClientStatus>): Promise<ClientStatus> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      clientStatusData[role] = {
+        ...clientStatusData[role],
+        ...data,
+      };
+      resolve(clientStatusData[role]);
+    }, 300);
   });
 }
 

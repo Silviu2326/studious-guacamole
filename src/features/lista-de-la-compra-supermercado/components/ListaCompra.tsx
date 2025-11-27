@@ -36,11 +36,16 @@ export const ListaCompra: React.FC<ListaCompraProps> = ({
     cargarListas();
   }, [clienteId]);
 
+  const normalizarIngredientes = (lista: ListaCompra) => ({
+    ...lista,
+    ingredientes: Array.isArray(lista.ingredientes) ? lista.ingredientes : [],
+  });
+
   const cargarListas = async () => {
     setCargando(true);
     try {
       const data = await getListasCompra(clienteId);
-      setListas(data);
+      setListas((data ?? []).map(normalizarIngredientes));
     } catch (error) {
       console.error('Error cargando listas:', error);
     } finally {
@@ -52,7 +57,7 @@ export const ListaCompra: React.FC<ListaCompraProps> = ({
     const lista = listas.find((l) => l.id === listaId);
     if (!lista) return;
 
-    const nuevosIngredientes = lista.ingredientes.map((ing) =>
+    const nuevosIngredientes = (lista.ingredientes ?? []).map((ing) =>
       ing.id === ingredienteId ? { ...ing, marcado: !ing.marcado } : ing
     );
 
@@ -82,7 +87,7 @@ export const ListaCompra: React.FC<ListaCompraProps> = ({
       label: 'Ingredientes',
       render: (lista: ListaCompra) => (
         <Badge variant="blue">
-          {lista.ingredientes.length} items
+          {(lista.ingredientes ?? []).length} items
         </Badge>
       ),
     },

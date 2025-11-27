@@ -10,7 +10,7 @@ import * as programasApi from '../api/programas';
 import * as categoriasApi from '../api/categorias';
 import { useAuth } from '../../../context/AuthContext';
 
-export function ProgramasList() {
+export function ProgramasList({ hideCreateButton = false }: { hideCreateButton?: boolean }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isEntrenador = user?.role === 'entrenador';
@@ -69,9 +69,24 @@ export function ProgramasList() {
       },
       { key: 'tipo', label: 'Tipo', render: (_value: unknown, row: programasApi.Programa) => tipoBadge(row.tipo) },
       {
-        key: 'ejercicios',
-        label: 'Ejercicios',
-        render: (_value: unknown, row: programasApi.Programa) => `${row.ejercicios?.length || 0} ejercicios`,
+        key: 'cliente',
+        label: 'Cliente',
+        render: (_value: unknown, row: programasApi.Programa) => {
+          // Dato falso determinista para demo
+          const fakeNames = ['Juan Pérez', 'Ana García', 'Carlos López', 'María Rodríguez', 'Luis Martínez', 'Laura González', 'Pedro Sánchez', 'Sofía Ramírez'];
+          const seed = (row.id.charCodeAt(0) + (row.nombre?.length || 0));
+          const index = seed % fakeNames.length;
+          const selectedName = fakeNames[index];
+          
+          return (
+            <div className="flex items-center gap-2">
+               <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-medium">
+                  {selectedName.charAt(0)}
+               </div>
+               <span className="text-sm text-gray-700">{selectedName}</span>
+            </div>
+          );
+        },
       },
       {
         key: 'duracion',
@@ -124,11 +139,13 @@ export function ProgramasList() {
   return (
     <div className="space-y-6">
       {/* Toolbar superior */}
-      <div className="flex items-center justify-end">
-        <Button onClick={() => navigate('/programas-de-entreno/editor')} leftIcon={<Plus className="h-4 w-4" />}>
-          Nuevo Programa
-        </Button>
-      </div>
+      {!hideCreateButton && (
+        <div className="flex items-center justify-end">
+          <Button onClick={() => navigate('/editor-definitivo')} leftIcon={<Plus className="h-4 w-4" />}>
+            Nuevo Programa
+          </Button>
+        </div>
+      )}
 
       {/* Sistema de Filtros */}
       <Card className="mb-6 bg-white shadow-sm">
@@ -218,7 +235,7 @@ export function ProgramasList() {
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => navigate(`/programas-de-entreno/editor?id=${row.id}`)}
+              onClick={() => navigate(`/editor-definitivo?id=${row.id}`)}
               leftIcon={<Edit3 className="h-4 w-4" />}
             >
               Editar

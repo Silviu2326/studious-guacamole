@@ -69,8 +69,12 @@ export const FitCoachPanel: React.FC = () => {
   const weeks = program?.weeks || [];
 
   useEffect(() => {
-    if (isFitCoachOpen && window.innerWidth < 768) {
-      setIsMobilePanelOpen(true);
+    if (isFitCoachOpen) {
+      if (window.innerWidth < 768) {
+        setIsMobilePanelOpen(true);
+      }
+    } else {
+      setIsMobilePanelOpen(false);
     }
   }, [isFitCoachOpen]);
 
@@ -197,10 +201,6 @@ export const FitCoachPanel: React.FC = () => {
     }
   };
 
-  if (!isFitCoachOpen && !isMobilePanelOpen) {
-    return null;
-  }
-
   return (
     <>
       {isMobilePanelOpen && (
@@ -217,7 +217,7 @@ export const FitCoachPanel: React.FC = () => {
       aria-label="FitCoach Panel"
       className={`
         fixed inset-y-0 right-0 z-50 w-full // Base width for drawer
-        flex flex-col h-full bg-white border-l border-gray-200 shadow-lg // Common styles
+        ${(!isFitCoachOpen && !isMobilePanelOpen) ? 'hidden' : 'flex'} flex-col h-full bg-white border-l border-gray-200 shadow-lg // Common styles
         transform transition-transform duration-300 ease-in-out
         ${isMobilePanelOpen ? 'translate-x-0' : 'translate-x-full'} // Slide-in/out for mobile/tablet
         md:relative md:translate-x-0 md:shadow-none // Desktop overrides for positioning

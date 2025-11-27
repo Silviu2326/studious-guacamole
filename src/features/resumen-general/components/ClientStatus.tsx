@@ -1,21 +1,45 @@
-import React from 'react';
-import { Card, Button } from '../../../components/componentsreutilizables';
+import React, { useState } from 'react';
+import { Card, Button, Modal, Input } from '../../../components/componentsreutilizables';
 import { useNavigate } from 'react-router-dom';
-import { Users, UserPlus, UserMinus, UserCheck } from 'lucide-react';
-import { ClientStatus as ClientStatusType } from '../api/client-status';
+import { Users, UserPlus, UserMinus, UserCheck, Edit2 } from 'lucide-react';
+import { ClientStatus as ClientStatusType, updateClientStatus } from '../api/client-status';
 
 interface ClientStatusProps {
   data: ClientStatusType;
   role: 'entrenador' | 'gimnasio';
   loading?: boolean;
+  onUpdate?: () => void;
 }
 
 export const ClientStatus: React.FC<ClientStatusProps> = ({
   data,
   role,
   loading = false,
+  onUpdate,
 }) => {
   const navigate = useNavigate();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState<ClientStatusType | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const handleEdit = () => {
+    setEditData({ ...data });
+    setIsEditing(true);
+  };
+
+  const handleSave = async () => {
+    if (!editData) return;
+    setSaving(true);
+    try {
+      await updateClientStatus(role, editData);
+      setIsEditing(false);
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      console.error('Error updating client status:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -29,86 +53,154 @@ export const ClientStatus: React.FC<ClientStatusProps> = ({
   }
 
   return (
-    <Card className="p-4 bg-white shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            {role === 'entrenador' ? 'Estado de Clientes' : 'Estado de Socios'}
-          </h3>
-          <p className="text-gray-600 text-sm mt-1">
-            Total: {data.total} {role === 'entrenador' ? 'clientes' : 'socios'}
-          </p>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate('/gestión-de-clientes')}
-        >
-          Ver todos
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="p-4 rounded-lg bg-green-100 ring-1 ring-green-200">
-          <div className="flex items-center gap-2 mb-2">
-            <UserCheck className="w-5 h-5 text-green-600" />
-            <span className="text-sm font-medium text-green-700">
-              Activos
-            </span>
+    <>
+      <Card className="p-4 bg-white shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-gray-900">
+                {role === 'entrenador' ? 'Estado de Clientes' : 'Estado de Socios'}
+              </h3>
+              {role === 'gimnasio' && (
+                <button
+                  onClick={handleEdit}
+                  className="p-1 rounded-full text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                  title="Editar datos"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <p className="text-gray-600 text-sm mt-1">
+              Total: {data.total} {role === 'entrenador' ? 'clientes' : 'socios'}
+            </p>
           </div>
-          <p className="text-2xl font-bold text-green-700">
-            {data.activos}
-          </p>
-        </div>
-
-        <div className="p-4 rounded-lg bg-blue-100 ring-1 ring-blue-200">
-          <div className="flex items-center gap-2 mb-2">
-            <UserPlus className="w-5 h-5 text-blue-600" />
-            <span className="text-sm font-medium text-blue-700">
-              Nuevos
-            </span>
-          </div>
-          <p className="text-2xl font-bold text-blue-700">
-            {data.nuevos}
-          </p>
-        </div>
-
-        <div className="p-4 rounded-lg bg-yellow-100 ring-1 ring-yellow-200">
-          <div className="flex items-center gap-2 mb-2">
-            <UserMinus className="w-5 h-5 text-yellow-600" />
-            <span className="text-sm font-medium text-yellow-700">
-              Inactivos
-            </span>
-          </div>
-          <p className="text-2xl font-bold text-yellow-700">
-            {data.inactivos}
-          </p>
-        </div>
-
-        <div className="p-4 rounded-lg bg-indigo-100 ring-1 ring-indigo-200">
-          <div className="flex items-center gap-2 mb-2">
-            <Users className="w-5 h-5 text-indigo-600" />
-            <span className="text-sm font-medium text-indigo-700">
-              Leads
-            </span>
-          </div>
-          <p className="text-2xl font-bold text-indigo-700">
-            {data.leadsPendientes}
-          </p>
-        </div>
-      </div>
-
-      {data.leadsPendientes > 0 && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
           <Button
-            variant="primary"
-            fullWidth
-            onClick={() => navigate('/leads')}
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/gestión-de-clientes')}
           >
-            Gestionar {data.leadsPendientes} {data.leadsPendientes === 1 ? 'lead pendiente' : 'leads pendientes'}
+            Ver todos
           </Button>
         </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="p-4 rounded-lg bg-green-100 ring-1 ring-green-200">
+            <div className="flex items-center gap-2 mb-2">
+              <UserCheck className="w-5 h-5 text-green-600" />
+              <span className="text-sm font-medium text-green-700">
+                Activos
+              </span>
+            </div>
+            <p className="text-2xl font-bold text-green-700">
+              {data.activos}
+            </p>
+          </div>
+
+          <div className="p-4 rounded-lg bg-blue-100 ring-1 ring-blue-200">
+            <div className="flex items-center gap-2 mb-2">
+              <UserPlus className="w-5 h-5 text-blue-600" />
+              <span className="text-sm font-medium text-blue-700">
+                Nuevos
+              </span>
+            </div>
+            <p className="text-2xl font-bold text-blue-700">
+              {data.nuevos}
+            </p>
+          </div>
+
+          <div className="p-4 rounded-lg bg-yellow-100 ring-1 ring-yellow-200">
+            <div className="flex items-center gap-2 mb-2">
+              <UserMinus className="w-5 h-5 text-yellow-600" />
+              <span className="text-sm font-medium text-yellow-700">
+                Inactivos
+              </span>
+            </div>
+            <p className="text-2xl font-bold text-yellow-700">
+              {data.inactivos}
+            </p>
+          </div>
+
+          <div className="p-4 rounded-lg bg-indigo-100 ring-1 ring-indigo-200">
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="w-5 h-5 text-indigo-600" />
+              <span className="text-sm font-medium text-indigo-700">
+                Leads
+              </span>
+            </div>
+            <p className="text-2xl font-bold text-indigo-700">
+              {data.leadsPendientes}
+            </p>
+          </div>
+        </div>
+
+        {data.leadsPendientes > 0 && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={() => navigate('/leads')}
+            >
+              Gestionar {data.leadsPendientes} {data.leadsPendientes === 1 ? 'lead pendiente' : 'leads pendientes'}
+            </Button>
+          </div>
+        )}
+      </Card>
+
+      {isEditing && editData && (
+        <Modal
+          isOpen={isEditing}
+          onClose={() => setIsEditing(false)}
+          title="Editar Estado de Socios"
+          footer={
+            <div className="flex justify-end gap-3">
+              <Button variant="secondary" onClick={() => setIsEditing(false)}>
+                Cancelar
+              </Button>
+              <Button variant="primary" onClick={handleSave} disabled={saving}>
+                {saving ? 'Guardando...' : 'Guardar'}
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-4">
+            <Input
+              label="Total Socios"
+              type="number"
+              value={editData.total}
+              onChange={(e) => setEditData({ ...editData, total: parseInt(e.target.value) || 0 })}
+            />
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Activos"
+                type="number"
+                value={editData.activos}
+                onChange={(e) => setEditData({ ...editData, activos: parseInt(e.target.value) || 0 })}
+              />
+              <Input
+                label="Nuevos"
+                type="number"
+                value={editData.nuevos}
+                onChange={(e) => setEditData({ ...editData, nuevos: parseInt(e.target.value) || 0 })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Inactivos"
+                type="number"
+                value={editData.inactivos}
+                onChange={(e) => setEditData({ ...editData, inactivos: parseInt(e.target.value) || 0 })}
+              />
+              <Input
+                label="Leads Pendientes"
+                type="number"
+                value={editData.leadsPendientes}
+                onChange={(e) => setEditData({ ...editData, leadsPendientes: parseInt(e.target.value) || 0 })}
+              />
+            </div>
+          </div>
+        </Modal>
       )}
-    </Card>
+    </>
   );
 };

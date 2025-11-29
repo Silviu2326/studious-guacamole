@@ -1,0 +1,40 @@
+{
+  "user_stories": [
+    {
+      "feature": "src/features/adherencia-cumplimiento-de-entreno",
+      "persona": "Entrenador Personal",
+      "description": "Como entrenador personal quiero configurar mis propios umbrales de adherencia y banderas de riesgo dentro de la pestaña Resumen para que el tablero destaque automáticamente a los clientes críticos según mi metodología de trabajo."
+    },
+    {
+      "feature": "src/features/adherencia-cumplimiento-de-entreno",
+      "persona": "Coordinador de Entrenadores",
+      "description": "Como coordinador de entrenadores quiero seleccionar dos rangos de fechas personalizados en la pestaña Métricas y ver la comparación lado a lado para evaluar si las acciones tomadas mejoran realmente la adherencia frente a períodos anteriores."
+    },
+    {
+      "feature": "src/features/adherencia-cumplimiento-de-entreno",
+      "persona": "Entrenador Personal",
+      "description": "Como entrenador personal quiero añadir anotaciones sobre el gráfico del Analizador de Tendencias para contextualizar cambios bruscos en la adherencia y compartir esa información con mi equipo."
+    },
+    {
+      "feature": "src/features/adherencia-cumplimiento-de-entreno",
+      "persona": "Entrenador Personal",
+      "description": "Como entrenador personal quiero convertir una recomendación del Optimizador de Adherencia en un ajuste real del plan con un solo clic, por ejemplo reprogramar sesiones o cambiar objetivos, para aplicar acciones sugeridas sin navegar a otros módulos."
+    },
+    {
+      "feature": "src/features/adherencia-cumplimiento-de-entreno",
+      "persona": "Entrenador Personal",
+      "description": "Como entrenador personal quiero guardar notas rápidas o compromisos acordados durante una revisión en la pestaña Cumplimiento Individual para mantener historial cualitativo junto a los datos cuantitativos de adherencia."
+    },
+    {
+      "feature": "src/features/adherencia-cumplimiento-de-entreno",
+      "persona": "Entrenador Personal",
+      "description": "Como entrenador personal quiero programar un resumen semanal automático con los cambios de adherencia y las alertas más críticas para revisarlo desde el correo sin tener que entrar diariamente al panel."
+    },
+    {
+      "feature": "src/features/adherencia-cumplimiento-de-entreno",
+      "persona": "Entrenador Personal",
+      "description": "Como entrenador personal quiero sincronizar la adherencia con datos de frecuencia cardíaca y recuperación procedentes de wearables en la pestaña Métricas para correlacionar el esfuerzo real con el cumplimiento de entrenamientos y detectar sobrecargas."
+    }
+  ]
+}
+

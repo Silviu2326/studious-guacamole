@@ -1,0 +1,585 @@
+La página Membresías & Planes tiene que ser el sitio donde decides cómo entra el dinero recurrente y qué obtiene cada socio sin volverte loco.
+
+Tiene que ser:
+
+Catálogo de planes + Control de membresías activas + Reglas inteligentes + Upsell + Congelaciones + Corporate + futuro escalable.
+
+Te lo diseño como módulo definitivo para /membresias-planes.
+
+1. Objetivo del módulo
+
+Desde Membresías & Planes se debe poder:
+
+Definir todos los planes (gama baja → alta, PT, online, corporativo, etc.).
+
+Ver quién tiene qué plan, cuándo renueva y cuánto deja de dinero.
+
+Cambiar, pausar, cancelar, renovar y hacer upsell en 2 clics.
+
+Definir reglas: acceso, límites, reservas, invitados, cuotas extra.
+
+Jugar con precios sin romper nada (versiones, pruebas).
+
+Conectarse 100% con Finanzas, Control de acceso, Agenda, Clientes 360.
+
+Si algo no ayuda a esto, sobra.
+
+2. Layout general
+
+Una sola página con 3–5 tabs internos:
+
+Catálogo de Planes
+
+Membresías Activas
+
+Reglas & Condiciones
+
+Add-ons, Packs & Extras
+
+(Opcional Pro) Planes Corporate & Multisede
+
+Top bar común + KPIs, como siempre.
+
+3. Top bar global
+
+Filtros rápidos:
+
+Sede
+
+Tipo de plan:
+
+Cuota general
+
+PT / coaching
+
+Online / híbrido
+
+Day pass / bonos
+
+Corporate
+
+Juvenil / Senior / Especial
+
+Estado:
+
+Activo
+
+Oculto (no público)
+
+Archivado
+
+Mostrar:
+
+Solo planes con muchas altas
+
+Solo planes con bajas altas
+
+Solo planes antiguos
+
+KPIs arriba (cards clicables):
+
+Nº total de miembros activos.
+
+MRR generado por membresías.
+
+Nº renovaciones próximas 30 días.
+
+Churn por plan (últimos 30/90 días).
+
+Top 5 planes por facturación.
+
+% clientes con upgrade potencial.
+
+Botones globales clave:
+
++ Crear nuevo plan
+
++ Asignar membresía a cliente
+
+Simular cambios de precio
+
+Ver matriz de planes (comparativa)
+
+Configurar políticas globales
+
+4. Tab 1 — Catálogo de Planes
+
+Es la tabla periódica de tus productos core. Tiene que ser muy clara.
+
+Lista de planes (cards o tabla):
+
+Para cada plan:
+
+Nombre del plan (ej: “Full Access 24/7”, “Basic Mañanas”, “Premium + PT”).
+
+Precio (mensual / anual / por periodo).
+
+Tipo:
+
+Recurrente / prepago / bonos.
+
+Duración mínima:
+
+Sin permanencia / X meses.
+
+Acceso incluido:
+
+Horario (24/7, solo mañanas…)
+
+Acceso zonas (sala, piscina, spa, clases colectivas, box, etc.)
+
+Reservas:
+
+Nº máximo de reservas activas
+
+No-shows permitidos
+
+Si incluye:
+
+PT mensual
+
+Plan nutricional
+
+Invitados
+
+Servicios online
+
+Nº de clientes activos en ese plan.
+
+Ingresos mensuales generados.
+
+Estado: Activo / Oculto / Archivado.
+
+Acciones por plan:
+
+Ver detalles
+
+Editar
+
+Duplicar (crear variante)
+
+Ocultar de venta (deja de ofrecer pero mantiene activos)
+
+Archivar (no se puede usar más)
+
+Ver clientes en este plan
+
+Simular cambio de precio
+
+Marcar como plan destacado
+
+Dentro del detalle de un plan
+
+Sección de configuración completa:
+
+Datos básicos
+
+Nombre, descripción comercial, etiquetas.
+
+Tipo de plan (individual, familiar, corporate, juvenil, etc.).
+
+Precios & Ciclo
+
+Precio estándar.
+
+Modalidades: mensual, trimestral, anual.
+
+Descuentos por permanencia.
+
+Cuota de inscripción.
+
+Cuota de reactivación (opcional).
+
+Política de prorrateo:
+
+Alta a mitad de mes → cómo se cobra.
+
+Acceso & Uso
+
+Rangos horarios permitidos.
+
+Zonas/servicios incluidos.
+
+Nº máximo de reservas simultáneas.
+
+Lista espera permitida sí/no.
+
+Políticas no-show:
+
+Penalizaciones, bloqueos de reserva.
+
+Beneficios incluidos
+
+X sesiones PT al mes.
+
+Evaluación inicial incluida.
+
+Plan de entrenamiento personalizado.
+
+Plan nutricional.
+
+Invitados al mes.
+
+Acceso app, vídeos, comunidad, etc.
+
+Restricciones
+
+Edad mínima.
+
+Requisitos (empresa, carnet, etc.).
+
+No compatible con otros planes.
+
+Visibilidad & Canales
+
+Disponible en:
+
+Web
+
+App
+
+Solo recepción
+
+Solo empresas
+
+Orden de aparición.
+
+Automatizaciones
+
+Al alta:
+
+Enviar email/WhatsApp de bienvenida.
+
+Crear cita inicial con entrenador.
+
+Antes de vencimiento:
+
+X días antes → recordatorio.
+
+Al baja:
+
+Encuesta + oferta recuperación.
+
+Botones clave en detalle:
+
+Guardar
+
+Duplicar como nuevo plan
+
+Probar en simulador
+
+Ver impacto en ingresos
+
+Desactivar/ocultar
+
+5. Tab 2 — Membresías Activas
+
+Aquí se gestiona la vida del cliente con su plan.
+
+Tabla principal:
+
+Columnas mínimas:
+
+Cliente
+
+Plan
+
+Precio actual
+
+Método de pago
+
+Estado:
+
+Activa
+
+En prueba
+
+Pausada
+
+Pendiente pago
+
+Próxima baja
+
+Fecha de inicio
+
+Próxima renovación / cargo
+
+Sede
+
+Origen (online, recepción, promo, corporate)
+
+Flags:
+
+Riesgo de fuga
+
+Moroso
+
+Alto valor
+
+Filtros:
+
+Por plan
+
+Por estado
+
+Por sede
+
+Por riesgo
+
+Por método de pago
+
+Acciones por fila:
+
+Ver en Clientes 360
+
+Cambiar plan
+
+Pausar membresía
+
+Cancelar
+
+Renovar ahora
+
+Cambiar precio (caso particular)
+
+Cambiar método pago
+
+Aplicar promo
+
+Enviar enlace renovación
+
+Acciones masivas:
+
+Subir precio X% a selección
+
+Mandar campaña renovación
+
+Migrar de un plan antiguo a uno nuevo
+
+Activar política de upgrade automático
+
+6. Tab 3 — Reglas & Condiciones (el cerebro)
+
+Este tab es lo que casi ningún ERP tiene bien.
+
+Aquí defines políticas globales que luego afectan a todos los planes:
+
+Políticas de cancelación
+
+Aviso mínimo.
+
+Penalización sí/no.
+
+Devolución parcial.
+
+Políticas de pausa
+
+Máx. meses al año.
+
+Coste de pausa.
+
+Motivos aceptados.
+
+No-shows & reservas
+
+X no-shows → bloqueos automáticos.
+
+Cómo afectan por plan.
+
+Renovaciones
+
+Auto-renovación on/off.
+
+Recordatorios configurables.
+
+Cambio automático si plan deja de existir (mapear a plan nuevo).
+
+Upgrades/Downgrades
+
+Qué movimientos se permiten.
+
+Si son inmediatos o a siguiente ciclo.
+
+Si hay prorrateo.
+
+Botones:
+
++ Nueva regla
+
+Activar / desactivar regla
+
+Aplicar a: [planes seleccionados]
+
+Testear reglas (ver qué pasaría con X clientes)
+
+7. Tab 4 — Add-ons, Packs & Extras
+
+Aquí defines lo que se suma a los planes.
+
+Tipos:
+
+Add-ons recurrentes:
+
+Taquilla fija
+
+Parking
+
+Toalla
+
+Sauna ilimitada
+
+Packs:
+
+5 sesiones PT
+
+10 clases premium
+
+Servicios únicos:
+
+Evaluación biomecánica
+
+Sesión nutricional
+
+Para cada add-on:
+
+Nombre
+
+Tipo (recurrente / paquete / único)
+
+Precio
+
+Condiciones
+
+Compatible con qué planes
+
+Acciones:
+
++ Crear add-on
+
+Asignar a clientes
+
+Ver clientes con este add-on
+
+Activar/desactivar
+
+Incluir en combos de venta
+
+Esto te abre mucho juego de ARPU sin cambiar membresía base.
+
+8. Tab 5 — Planes Corporate & Multisede (si aplica)
+
+Si el gym trabaja con empresas o franquicias:
+
+Planes específicos:
+
+Por nº empleados
+
+Por sede
+
+Por uso.
+
+Condiciones:
+
+Precio por volumen.
+
+Acceso multi-sede.
+
+Reporte mensual.
+
+Funciones clave:
+
++ Crear plan corporate
+
+Vincular empresa
+
+Ver empleados activos
+
+Ver facturación empresa
+
+Configurar acceso multi-sede
+
+9. Extras “tocho” para ser el mejor del mercado
+
+Si quieres humillar a la competencia, añade:
+
+Simulador de cambios
+
+“Si subo 5€ este plan” → impacto estimado.
+
+“Si muevo X clientes al plan Y”.
+
+Recomendador de upgrades
+
+Detecta:
+
+Clientes que usan muchos servicios sueltos → proponer plan superior.
+
+Clientes infrautilizando su plan → sugerir algo más barato (genera confianza).
+
+Heatmap de rendimiento por plan
+
+Ingresos vs bajas.
+
+Satisfacción media por plan.
+
+Asistencia media.
+
+Versionado de planes
+
+Plan “Premium v1”, “v2”… manteniendo históricos.
+
+Sin romper condiciones de antiguos.
+
+10. Botones imprescindibles (resumen)
+
+Global:
+
++ Crear nuevo plan
+
++ Asignar membresía
+
+Simular cambios
+
+Configurar políticas
+
+En catálogo:
+
+Editar
+
+Duplicar
+
+Ocultar
+
+Ver clientes de este plan
+
+En membresías activas:
+
+Cambiar plan
+
+Pausar
+
+Cancelar
+
+Renovar
+
+Cambiar método pago
+
+Enviar link de pago
+
+Ver en Clientes 360
+
+En reglas:
+
++ Añadir regla
+
+Activar / desactivar
+
+Aplicar a planes
+
+En add-ons:
+
++ Crear add-on
+
+Asignar
+
+Activar / desactivar

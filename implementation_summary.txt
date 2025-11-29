@@ -1,0 +1,9 @@
+Sistema de comentarios contextuales implementado exitosamente.
+1.  **Backend/Estado**: Se actualizó `CollaborationContext` para manejar un estado de comentarios (`comments`) anclado a IDs de ejercicios.
+2.  **UI Componente**: Se creó `CommentThread.tsx` para mostrar el hilo de conversación, avatares de usuarios y entrada de texto.
+3.  **Integración**: Se modificó `ExerciseRow.tsx` para incluir:
+    *   Indicador visual (burbuja de chat) si hay comentarios.
+    *   Opción en el menú contextual (click derecho) para "Añadir comentario".
+    *   Lógica para desplegar el hilo de comentarios.
+
+También se corrigió un error de anidación de providers en `EditorLayout.tsx` que impedía la compilación.

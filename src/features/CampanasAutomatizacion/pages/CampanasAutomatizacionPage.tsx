@@ -1,0 +1,1277 @@
+import { ComponentType, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Calendar,
+  Clock,
+  DollarSign,
+  Download,
+  FileText,
+  LayoutDashboard,
+  Layers3,
+  Plus,
+  RefreshCcw,
+  Rocket,
+  ShieldCheck,
+  Target,
+  Upload,
+  Workflow,
+} from 'lucide-react';
+import { useAuth } from '../../../context/AuthContext';
+import { Badge, Button, Card, MetricCards } from '../../../components/componentsreutilizables';
+import type { MetricCardData } from '../../../components/componentsreutilizables';
+import { MarketingOverviewService } from '../../OverviewMarketing/services/marketingOverviewService';
+import type { StrategicProfile } from '../../OverviewMarketing/types';
+import {
+  AbsenceAutomations,
+  AfterHoursAutoReplyComponent,
+  AutomationRoadmap,
+  ChannelHealth,
+  ClientSegmentation,
+  EmailPrograms,
+  ImportantDateAutomations,
+  InactivityAutomations,
+  LifecycleSequences,
+  MessageStatisticsDashboard as MessageStatisticsDashboardComponent,
+  MessageTemplatesLibrary,
+  MessagingAutomations,
+  MultiChannelCampaigns,
+  NewsletterEditor,
+  PaymentReminderAutomations,
+  PromotionalCampaigns,
+  ScheduledMessages,
+  SessionReminders,
+  SummaryGrid,
+  WelcomeSequences,
+  ReservationsIntegration as ReservationsIntegrationComponent,
+  AutomationsCentralPanel,
+  MessageAlerts,
+  PreferredSendingSchedules,
+  MultiStepSequenceBuilder,
+  ReportExporter,
+  CampaignObjectiveSelector,
+  Campaign360AIGenerator,
+  ClientActionTriggers,
+  AIReminderAutomationComponent,
+  MessageSaturationDetector,
+  AIMessageLibrary,
+  WeeklyHighlightsNewsletterGenerator,
+  QuickWhatsAppPrompts,
+  AIHeatMapSendingSchedules,
+  ActionableKPIs,
+  ExperimentsDashboard,
+  WeeklyAIInsights,
+  TeamTaskAssignment,
+  AIPlaybookExporter,
+  MobileCampaignApproval,
+  SuccessfulCampaignsRecommender,
+  JourneyGapDetector,
+  ChannelRecommendations,
+} from '../components';
+import { CampanasAutomatizacionService } from '../services/campanasAutomatizacionService';
+import type {
+  AbsenceAutomation,
+  AfterHoursAutoReply,
+  AutomationRoadmapItem,
+  BulkMessage,
+  ChannelHealthMetric,
+  ClientReminderSettings,
+  ClientSegment,
+  EmailProgram,
+  ImportantDateAutomation,
+  InactivityAutomation,
+  LifecycleSequence,
+  MessageStatisticsDashboard,
+  MessageTemplate,
+  MessagingAutomation,
+  MissionControlSummary,
+  MultiChannelCampaign,
+  Newsletter,
+  NewsletterTemplate,
+  PaymentReminderAutomation,
+  PromotionalCampaign,
+  ScheduledMessage,
+  SessionReminder,
+  SessionReminderTemplate,
+  WelcomeSequence,
+  ReservationsIntegration,
+  CentralAutomationsPanel,
+  MessageAlertsDashboard,
+  PreferredSendingSchedulesDashboard,
+  MultiStepSequence,
+  ExportReport,
+  CampaignObjectiveSuggestions,
+  Campaign360Review,
+  SpecializedTemplate,
+  PostLeadMagnetSequence,
+  LeadMagnetFunnel,
+  ClientActionTriggersDashboard,
+  AIReminderAutomationDashboard,
+  MessageSaturationDashboard,
+  AIMessageLibrary as AIMessageLibraryType,
+  WeeklyHighlightsNewsletterGenerator as WeeklyHighlightsNewsletterGeneratorType,
+  QuickWhatsAppPromptsLibrary,
+  AIHeatMapSendingSchedulesDashboard,
+  ActionableKPIDashboard,
+  ExperimentsDashboard as ExperimentsDashboardType,
+  WeeklyAIInsightsDashboard,
+  TeamTask,
+  AIPlaybook,
+  PlaybookExport,
+  MobileCampaignApprovalDashboard,
+  SuccessfulCampaignsRecommenderDashboard,
+  CampaignApproval,
+  CampaignRecommendation,
+  JourneyGapDetectorDashboard,
+  ChannelRecommendationsDashboard,
+} from '../types';
+
+type TabId =
+  | 'mission-overview'
+  | 'campaigns-broadcasts'
+  | 'journeys-automations'
+  | 'reminders-alerts'
+  | 'content-assets'
+  | 'audience-personalization'
+  | 'operations-insights'
+  | 'integrations-admin';
+
+interface TabItem {
+  id: TabId;
+  label: string;
+  icon: ComponentType<{ className?: string; size?: number | string }>;
+}
+
+export default function CampanasAutomatizacionPage() {
+  const { user } = useAuth();
+
+  const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState<MissionControlSummary[]>([]);
+  const [campaigns, setCampaigns] = useState<MultiChannelCampaign[]>([]);
+  const [emails, setEmails] = useState<EmailProgram[]>([]);
+  const [sequences, setSequences] = useState<LifecycleSequence[]>([]);
+  const [automations, setAutomations] = useState<MessagingAutomation[]>([]);
+  const [health, setHealth] = useState<ChannelHealthMetric[]>([]);
+  const [roadmap, setRoadmap] = useState<AutomationRoadmapItem[]>([]);
+  const [reminderTemplates, setReminderTemplates] = useState<SessionReminderTemplate[]>([]);
+  const [clientReminderSettings, setClientReminderSettings] = useState<ClientReminderSettings[]>([]);
+  const [upcomingReminders, setUpcomingReminders] = useState<SessionReminder[]>([]);
+  const [welcomeSequences, setWelcomeSequences] = useState<WelcomeSequence[]>([]);
+  const [absenceAutomations, setAbsenceAutomations] = useState<AbsenceAutomation[]>([]);
+  const [messageTemplates, setMessageTemplates] = useState<MessageTemplate[]>([]);
+  const [scheduledMessages, setScheduledMessages] = useState<ScheduledMessage[]>([]);
+  const [inactivityAutomations, setInactivityAutomations] = useState<InactivityAutomation[]>([]);
+  const [importantDateAutomations, setImportantDateAutomations] = useState<ImportantDateAutomation[]>([]);
+  const [paymentReminderAutomations, setPaymentReminderAutomations] = useState<PaymentReminderAutomation[]>([]);
+  const [messageStatisticsDashboard, setMessageStatisticsDashboard] =
+    useState<MessageStatisticsDashboard | null>(null);
+  const [clientSegments, setClientSegments] = useState<ClientSegment[]>([]);
+  const [bulkMessages, setBulkMessages] = useState<BulkMessage[]>([]);
+  const [newsletters, setNewsletters] = useState<Newsletter[]>([]);
+  const [newsletterTemplates, setNewsletterTemplates] = useState<NewsletterTemplate[]>([]);
+  const [afterHoursAutoReplies, setAfterHoursAutoReplies] = useState<AfterHoursAutoReply[]>([]);
+  const [promotionalCampaigns, setPromotionalCampaigns] = useState<PromotionalCampaign[]>([]);
+  const [reservationsIntegration, setReservationsIntegration] = useState<ReservationsIntegration | undefined>(
+    undefined,
+  );
+  const [centralAutomationsPanel, setCentralAutomationsPanel] = useState<CentralAutomationsPanel | undefined>(undefined);
+  const [messageAlertsDashboard, setMessageAlertsDashboard] = useState<MessageAlertsDashboard | undefined>(undefined);
+  const [preferredSendingSchedulesDashboard, setPreferredSendingSchedulesDashboard] = useState<PreferredSendingSchedulesDashboard | undefined>(undefined);
+  const [multiStepSequences, setMultiStepSequences] = useState<MultiStepSequence[]>([]);
+  const [exportReports, setExportReports] = useState<ExportReport[]>([]);
+  const [specializedTemplates, setSpecializedTemplates] = useState<SpecializedTemplate[]>([]);
+  const [postLeadMagnetSequences, setPostLeadMagnetSequences] = useState<PostLeadMagnetSequence[]>([]);
+  const [leadMagnetFunnels, setLeadMagnetFunnels] = useState<LeadMagnetFunnel[]>([]);
+  const [clientActionTriggers, setClientActionTriggers] = useState<ClientActionTriggersDashboard | undefined>(undefined);
+  const [aiReminderAutomation, setAiReminderAutomation] = useState<AIReminderAutomationDashboard | undefined>(undefined);
+  const [messageSaturationDashboard, setMessageSaturationDashboard] = useState<MessageSaturationDashboard | undefined>(undefined);
+  const [aiMessageLibrary, setAiMessageLibrary] = useState<AIMessageLibraryType | undefined>(undefined);
+  const [weeklyHighlightsNewsletterGenerator, setWeeklyHighlightsNewsletterGenerator] = useState<WeeklyHighlightsNewsletterGeneratorType | undefined>(undefined);
+  const [quickWhatsAppPromptsLibrary, setQuickWhatsAppPromptsLibrary] = useState<QuickWhatsAppPromptsLibrary | undefined>(undefined);
+  const [aiHeatMapSendingSchedules, setAiHeatMapSendingSchedules] = useState<AIHeatMapSendingSchedulesDashboard | undefined>(undefined);
+  const [actionableKPIs, setActionableKPIs] = useState<ActionableKPIDashboard | undefined>(undefined);
+  const [experimentsDashboard, setExperimentsDashboard] = useState<ExperimentsDashboardType | undefined>(undefined);
+  const [weeklyAIInsights, setWeeklyAIInsights] = useState<WeeklyAIInsightsDashboard | undefined>(undefined);
+  const [teamTasks, setTeamTasks] = useState<TeamTask[]>([]);
+  const [aiPlaybooks, setAiPlaybooks] = useState<AIPlaybook[]>([]);
+  const [playbookExports, setPlaybookExports] = useState<PlaybookExport[]>([]);
+  const [mobileCampaignApprovalDashboard, setMobileCampaignApprovalDashboard] = useState<MobileCampaignApprovalDashboard | undefined>(undefined);
+  const [successfulCampaignsRecommenderDashboard, setSuccessfulCampaignsRecommenderDashboard] = useState<SuccessfulCampaignsRecommenderDashboard | undefined>(undefined);
+  const [journeyGapDetectorDashboard, setJourneyGapDetectorDashboard] = useState<JourneyGapDetectorDashboard | undefined>(undefined);
+  const [channelRecommendationsDashboard, setChannelRecommendationsDashboard] = useState<ChannelRecommendationsDashboard | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState<TabId>('mission-overview');
+  const [isCampaign360ModalOpen, setIsCampaign360ModalOpen] = useState(false);
+
+  const tabItems: TabItem[] = useMemo(
+    () => [
+      { id: 'mission-overview', label: 'Mission Overview', icon: LayoutDashboard },
+      { id: 'campaigns-broadcasts', label: 'Campaigns & Broadcasts', icon: Layers3 },
+      { id: 'journeys-automations', label: 'Journeys & Automations', icon: Workflow },
+      { id: 'reminders-alerts', label: 'Reminders & Alerts', icon: Clock },
+      { id: 'content-assets', label: 'Content & Assets', icon: FileText },
+      { id: 'audience-personalization', label: 'Audience & Personalization', icon: Target },
+      { id: 'operations-insights', label: 'Operations & Insights', icon: ShieldCheck },
+      { id: 'integrations-admin', label: 'Integrations & Admin', icon: Calendar },
+    ],
+    [],
+  );
+
+  const loadSnapshot = useCallback(async () => {
+    setLoading(true);
+    try {
+      const snapshot = await CampanasAutomatizacionService.getSnapshot();
+      setSummary(snapshot.summary);
+      setCampaigns(snapshot.campaigns);
+      setEmails(snapshot.emailPrograms);
+      setSequences(snapshot.lifecycleSequences);
+      setAutomations(snapshot.messagingAutomations);
+      setHealth(snapshot.channelHealth);
+      setRoadmap(snapshot.roadmap);
+      setReminderTemplates(snapshot.sessionReminderTemplates || []);
+      setClientReminderSettings(snapshot.clientReminderSettings || []);
+      setUpcomingReminders(snapshot.upcomingReminders || []);
+      setWelcomeSequences(snapshot.welcomeSequences || []);
+      setAbsenceAutomations(snapshot.absenceAutomations || []);
+      setMessageTemplates(snapshot.messageTemplates || []);
+      setScheduledMessages(snapshot.scheduledMessages || []);
+      setInactivityAutomations(snapshot.inactivityAutomations || []);
+      setImportantDateAutomations(snapshot.importantDateAutomations || []);
+      setPaymentReminderAutomations(snapshot.paymentReminderAutomations || []);
+      setMessageStatisticsDashboard(snapshot.messageStatisticsDashboard || null);
+      setClientSegments(snapshot.clientSegments || []);
+      setBulkMessages(snapshot.bulkMessages || []);
+      setNewsletters(snapshot.newsletters || []);
+      setNewsletterTemplates(snapshot.newsletterTemplates || []);
+      setAfterHoursAutoReplies(snapshot.afterHoursAutoReplies || []);
+      setPromotionalCampaigns(snapshot.promotionalCampaigns || []);
+      setReservationsIntegration(snapshot.reservationsIntegration);
+      setCentralAutomationsPanel(snapshot.centralAutomationsPanel);
+      setMessageAlertsDashboard(snapshot.messageAlertsDashboard);
+      setPreferredSendingSchedulesDashboard(snapshot.preferredSendingSchedulesDashboard);
+      setMultiStepSequences(snapshot.multiStepSequences || []);
+      setExportReports(snapshot.exportReports || []);
+      setSpecializedTemplates(snapshot.specializedTemplates || []);
+      setPostLeadMagnetSequences(snapshot.postLeadMagnetSequences || []);
+      setLeadMagnetFunnels(snapshot.leadMagnetFunnels || []);
+      setClientActionTriggers(snapshot.clientActionTriggers);
+      setAiReminderAutomation(snapshot.aiReminderAutomation);
+      setMessageSaturationDashboard(snapshot.messageSaturationDashboard);
+      setAiMessageLibrary(snapshot.aiMessageLibrary);
+      setWeeklyHighlightsNewsletterGenerator(snapshot.weeklyHighlightsNewsletterGenerator);
+      setQuickWhatsAppPromptsLibrary(snapshot.quickWhatsAppPromptsLibrary);
+      setAiHeatMapSendingSchedules(snapshot.aiHeatMapSendingSchedules);
+      setActionableKPIs(snapshot.actionableKPIs);
+      setExperimentsDashboard(snapshot.experimentsDashboard);
+      setWeeklyAIInsights(snapshot.weeklyAIInsights);
+      setMobileCampaignApprovalDashboard(snapshot.mobileCampaignApprovalDashboard);
+      setSuccessfulCampaignsRecommenderDashboard(snapshot.successfulCampaignsRecommenderDashboard);
+      setJourneyGapDetectorDashboard(snapshot.journeyGapDetectorDashboard);
+      setChannelRecommendationsDashboard(snapshot.channelRecommendationsDashboard);
+    } catch (error) {
+      console.error('[CampanasAutomatizacion] Error cargando snapshot', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // const loadStrategicProfile = useCallback(async () => {
+  //   setLoadingProfile(true);
+  //   try {
+  //     const profile = await MarketingOverviewService.getStrategicProfile();
+  //     setStrategicProfile(profile);
+  //   } catch (error) {
+  //     console.error('[CampanasAutomatizacion] Error cargando perfil estratégico:', error);
+  //   } finally {
+  //     setLoadingProfile(false);
+  //   }
+  // }, []);
+
+  useEffect(() => {
+    loadSnapshot();
+    // loadStrategicProfile();
+  }, [loadSnapshot]);
+
+  const missionTagline = useMemo(
+    () =>
+      user?.name
+        ? `Coordinando automatizaciones para ${user.name.split(' ')[0]}`
+        : 'Mission Control de campañas & automatización',
+    [user],
+  );
+
+  const metricCardsData = useMemo<MetricCardData[]>(() => {
+    const iconMapper: Record<string, ReactNode> = {
+      target: <Target className="w-5 h-5 text-white" />,
+      workflow: <Workflow className="w-5 h-5 text-white" />,
+      clock: <Clock className="w-5 h-5 text-white" />,
+      currency: <DollarSign className="w-5 h-5 text-white" />,
+    };
+
+    if (loading && summary.length === 0) {
+      return Array.from({ length: 4 }).map((_, index) => ({
+        id: `loading-${index}`,
+        title: 'Cargando',
+        value: '...',
+        loading: true,
+      }));
+    }
+
+    return summary.map((item) => ({
+      id: item.id,
+      title: item.label,
+      value:
+        item.id === 'client-response-rate'
+          ? `${item.value}%`
+          : item.id === 'messages-sent' || item.id === 'active-reminders' || item.id === 'pending-communication'
+          ? item.value.toString()
+          : item.value,
+      subtitle: item.description,
+      icon: iconMapper[item.icon] ?? iconMapper.target,
+      color: item.trend === 'down' ? 'error' : item.trend === 'up' ? 'success' : 'info',
+      trend: {
+        value: Math.abs(item.changePercentage),
+        direction: item.trend,
+        label: 'vs. periodo anterior',
+      },
+    }));
+  }, [loading, summary]);
+
+  const showMetricCards = metricCardsData.length > 0;
+
+  const missionCta = (
+    <section className="rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-500 text-white p-6 shadow-lg flex flex-wrap items-center justify-between gap-4">
+      <div className="flex items-center gap-3">
+        <Rocket className="w-6 h-6" />
+        <div>
+          <p className="text-sm font-medium uppercase tracking-[0.3em] opacity-70">Modo pro</p>
+          <h3 className="text-lg font-semibold">
+            Activa el Playbook “Churn Shield” en 3 clics y sincroniza mensajes en email + WhatsApp automáticamente.
+          </h3>
+        </div>
+      </div>
+      <Button variant="ghost" className="bg-white/15 hover:bg-white/25 text-white border border-white/20">
+        Ver playbooks recomendados
+      </Button>
+    </section>
+  );
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'campaigns-broadcasts':
+        return (
+          <div className="space-y-6">
+            <CampaignObjectiveSelector
+              onSuggestionsGenerated={(suggestions) => {
+                console.log('Sugerencias generadas:', suggestions);
+              }}
+              className="w-full"
+            />
+            {mobileCampaignApprovalDashboard && (
+              <MobileCampaignApproval
+                dashboard={mobileCampaignApprovalDashboard}
+                loading={loading}
+                className="w-full"
+                onApprovalApprove={(approvalId, notes) => {
+                  console.log('Aprobar campaña:', approvalId, notes);
+                  setMobileCampaignApprovalDashboard((prev) => {
+                    if (!prev) return prev;
+                    return {
+                      ...prev,
+                      pendingApprovals: prev.pendingApprovals.map((approval) =>
+                        approval.id === approvalId
+                          ? { ...approval, status: 'approved' as const, reviewedAt: new Date().toISOString() }
+                          : approval
+                      ),
+                      totalPending: prev.pendingApprovals.filter((a) => a.id !== approvalId && a.status === 'pending').length,
+                    };
+                  });
+                }}
+                onApprovalReject={(approvalId, reason) => {
+                  console.log('Rechazar campaña:', approvalId, reason);
+                  setMobileCampaignApprovalDashboard((prev) => {
+                    if (!prev) return prev;
+                    return {
+                      ...prev,
+                      pendingApprovals: prev.pendingApprovals.map((approval) =>
+                        approval.id === approvalId
+                          ? { ...approval, status: 'rejected' as const, rejectionReason: reason, reviewedAt: new Date().toISOString() }
+                          : approval
+                      ),
+                      totalPending: prev.pendingApprovals.filter((a) => a.id !== approvalId && a.status === 'pending').length,
+                    };
+                  });
+                }}
+                onApprovalRequestChanges={(approvalId, changes) => {
+                  console.log('Solicitar cambios:', approvalId, changes);
+                  setMobileCampaignApprovalDashboard((prev) => {
+                    if (!prev) return prev;
+                    return {
+                      ...prev,
+                      pendingApprovals: prev.pendingApprovals.map((approval) =>
+                        approval.id === approvalId
+                          ? { ...approval, status: 'needs-changes' as const, requestedChanges: changes, reviewedAt: new Date().toISOString() }
+                          : approval
+                      ),
+                      totalPending: prev.pendingApprovals.filter((a) => a.id !== approvalId && a.status === 'pending').length,
+                    };
+                  });
+                }}
+                onApprovalView={(approval) => {
+                  console.log('Ver aprobación:', approval);
+                }}
+              />
+            )}
+            {successfulCampaignsRecommenderDashboard && (
+              <SuccessfulCampaignsRecommender
+                dashboard={successfulCampaignsRecommenderDashboard}
+                loading={loading}
+                className="w-full"
+                onRecommendationAccept={(recommendationId) => {
+                  console.log('Aceptar recomendación:', recommendationId);
+                  setSuccessfulCampaignsRecommenderDashboard((prev) => {
+                    if (!prev) return prev;
+                    return {
+                      ...prev,
+                      recommendations: prev.recommendations.map((rec) =>
+                        rec.id === recommendationId ? { ...rec, status: 'accepted' as const } : rec
+                      ),
+                      learningProgress: {
+                        ...prev.learningProgress,
+                        recommendationsAccepted: prev.learningProgress.recommendationsAccepted + 1,
+                      },
+                    };
+                  });
+                }}
+                onRecommendationReject={(recommendationId) => {
+                  console.log('Rechazar recomendación:', recommendationId);
+                  setSuccessfulCampaignsRecommenderDashboard((prev) => {
+                    if (!prev) return prev;
+                    return {
+                      ...prev,
+                      recommendations: prev.recommendations.map((rec) =>
+                        rec.id === recommendationId ? { ...rec, status: 'rejected' as const } : rec
+                      ),
+                    };
+                  });
+                }}
+                onRecommendationClone={(recommendationId) => {
+                  console.log('Clonar recomendación:', recommendationId);
+                }}
+                onRecommendationRepeat={(recommendationId) => {
+                  console.log('Repetir recomendación:', recommendationId);
+                  setSuccessfulCampaignsRecommenderDashboard((prev) => {
+                    if (!prev) return prev;
+                    return {
+                      ...prev,
+                      recommendations: prev.recommendations.map((rec) =>
+                        rec.id === recommendationId ? { ...rec, status: 'scheduled' as const } : rec
+                      ),
+                    };
+                  });
+                }}
+                onRecommendationAdapt={(recommendationId, changes) => {
+                  console.log('Adaptar recomendación:', recommendationId, changes);
+                }}
+                onRecommendationView={(recommendation) => {
+                  console.log('Ver recomendación:', recommendation);
+                }}
+                onViewCampaignDetails={(campaignId) => {
+                  console.log('Ver detalles de campaña:', campaignId);
+                }}
+              />
+            )}
+            <MultiChannelCampaigns campaigns={campaigns} loading={loading} className="w-full" />
+            {campaigns.length > 0 && (
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                {campaigns.slice(0, 2).map((campaign) => (
+                  <TeamTaskAssignment
+                    key={campaign.id}
+                    campaign={campaign}
+                    tasks={teamTasks.filter((task) => task.campaignId === campaign.id)}
+                    loading={loading}
+                    className="w-full"
+                    onTaskCreate={(task) => {
+                      console.log('Crear tarea:', task);
+                      // Aquí se integraría con el servicio para crear la tarea
+                      const newTask: TeamTask = {
+                        ...task,
+                        id: `task-${Date.now()}`,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                      };
+                      setTeamTasks((prev) => [...prev, newTask]);
+                    }}
+                    onTaskUpdate={(taskId, updates) => {
+                      console.log('Actualizar tarea:', taskId, updates);
+                      setTeamTasks((prev) =>
+                        prev.map((task) => (task.id === taskId ? { ...task, ...updates, updatedAt: new Date().toISOString() } : task))
+                      );
+                    }}
+                    onTaskDelete={(taskId) => {
+                      console.log('Eliminar tarea:', taskId);
+                      setTeamTasks((prev) => prev.filter((task) => task.id !== taskId));
+                    }}
+                    onTaskStatusChange={(taskId, status) => {
+                      console.log('Cambiar estado de tarea:', taskId, status);
+                      setTeamTasks((prev) =>
+                        prev.map((task) =>
+                          task.id === taskId ? { ...task, status, updatedAt: new Date().toISOString() } : task
+                        )
+                      );
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+            <AIPlaybookExporter
+              playbooks={aiPlaybooks}
+              campaigns={campaigns}
+              campaign360s={[]}
+              templates={specializedTemplates}
+              sequences={[...sequences, ...postLeadMagnetSequences]}
+              loading={loading}
+              className="w-full"
+              onPlaybookCreate={(playbook) => {
+                console.log('Crear playbook:', playbook);
+                // Aquí se integraría con el servicio para crear el playbook
+                const newPlaybook: AIPlaybook = {
+                  ...playbook,
+                  id: `playbook-${Date.now()}`,
+                  metadata: {
+                    ...playbook.metadata,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                  },
+                };
+                setAiPlaybooks((prev) => [...prev, newPlaybook]);
+              }}
+              onPlaybookExport={(playbookId, config) => {
+                console.log('Exportar playbook:', playbookId, config);
+                // Aquí se integraría con el servicio para exportar el playbook
+                const newExport: PlaybookExport = {
+                  id: `export-${Date.now()}`,
+                  playbookId,
+                  playbookName: aiPlaybooks.find((p) => p.id === playbookId)?.name || '',
+                  format: config.format,
+                  config,
+                  status: 'generating',
+                  exportedAt: new Date().toISOString(),
+                  exportedBy: 'current-user-id',
+                };
+                setPlaybookExports((prev) => [...prev, newExport]);
+                // Simular generación exitosa después de 2 segundos
+                setTimeout(() => {
+                  setPlaybookExports((prev) =>
+                    prev.map((exp) =>
+                      exp.id === newExport.id
+                        ? { ...exp, status: 'completed' as const, fileUrl: '/exports/playbook.pdf', fileSize: 1024000 }
+                        : exp
+                    )
+                  );
+                }, 2000);
+              }}
+              onPlaybookDownload={(exportId) => {
+                console.log('Descargar playbook:', exportId);
+                const exportItem = playbookExports.find((exp) => exp.id === exportId);
+                if (exportItem && exportItem.fileUrl) {
+                  window.open(exportItem.fileUrl, '_blank');
+                }
+              }}
+              onPlaybookShare={(playbookId, partnerId, accessLevel) => {
+                console.log('Compartir playbook:', playbookId, partnerId, accessLevel);
+                // Aquí se integraría con el servicio para compartir el playbook
+              }}
+            />
+            <PromotionalCampaigns
+              campaigns={promotionalCampaigns}
+              specializedTemplates={specializedTemplates}
+              loading={loading}
+              className="w-full"
+              onCampaignCreate={() => console.log('Crear campaña promocional')}
+              onCampaignEdit={(campaign) => console.log('Editar campaña promocional', campaign)}
+              onCampaignDelete={(campaignId) => console.log('Eliminar campaña promocional', campaignId)}
+              onCampaignSend={(campaignId) => console.log('Enviar campaña promocional', campaignId)}
+              onCampaignSchedule={(campaignId) => console.log('Programar campaña promocional', campaignId)}
+              onViewResults={(campaignId) => console.log('Ver resultados campaña promocional', campaignId)}
+              onTemplateUse={(template) => console.log('Usar plantilla especializada', template)}
+              onTemplatePreview={(template) => console.log('Vista previa plantilla', template)}
+            />
+            <ScheduledMessages
+              messages={scheduledMessages}
+              loading={loading}
+              className="w-full"
+              onMessageCreate={() => console.log('Crear mensaje programado')}
+              onMessageEdit={(message) => console.log('Editar mensaje', message)}
+              onMessageDelete={(messageId) => console.log('Eliminar mensaje', messageId)}
+              onMessageToggle={(messageId, isActive) => console.log('Toggle mensaje', messageId, isActive)}
+            />
+            {quickWhatsAppPromptsLibrary && (
+              <QuickWhatsAppPrompts
+                library={quickWhatsAppPromptsLibrary}
+                loading={loading}
+                className="w-full"
+                onPromptCreate={() => console.log('Crear prompt WhatsApp')}
+                onPromptEdit={(prompt) => console.log('Editar prompt WhatsApp', prompt)}
+                onPromptDelete={(promptId) => console.log('Eliminar prompt WhatsApp', promptId)}
+                onPromptUse={(prompt) => console.log('Usar prompt WhatsApp', prompt)}
+                onPromptCopy={(prompt) => console.log('Copiar prompt WhatsApp', prompt)}
+                onPromptToggleFavorite={(promptId, isFavorite) => console.log('Toggle favorito prompt', promptId, isFavorite)}
+                onVoiceNoteGenerate={(prompt) => console.log('Generar nota de voz', prompt)}
+                onSettingsEdit={() => console.log('Editar configuración prompts WhatsApp')}
+              />
+            )}
+            {missionCta}
+          </div>
+        );
+      case 'journeys-automations':
+        return (
+          <div className="space-y-6">
+            {journeyGapDetectorDashboard && (
+              <JourneyGapDetector
+                dashboard={journeyGapDetectorDashboard}
+                loading={loading}
+                className="w-full"
+                onGapAccept={(gapId) => {
+                  console.log('Aceptar gap', gapId);
+                  // Aquí se integraría con el servicio para aceptar el gap
+                }}
+                onGapReject={(gapId) => {
+                  console.log('Rechazar gap', gapId);
+                  // Aquí se integraría con el servicio para rechazar el gap
+                }}
+                onGapAutoFill={(gapId) => {
+                  console.log('Completar gap automáticamente', gapId);
+                  // Aquí se integraría con el servicio para completar el gap automáticamente
+                }}
+                onGapDismiss={(gapId) => {
+                  console.log('Descartar gap', gapId);
+                  // Aquí se integraría con el servicio para descartar el gap
+                }}
+                onViewGap={(gap) => {
+                  console.log('Ver gap', gap);
+                  // Aquí se mostrarían los detalles del gap
+                }}
+                onSettingsEdit={() => {
+                  console.log('Editar configuración de detección de gaps');
+                  // Aquí se abriría la configuración
+                }}
+              />
+            )}
+            <ClientActionTriggers
+              dashboard={clientActionTriggers}
+              loading={loading}
+              className="w-full"
+              onTriggerCreate={() => console.log('Crear trigger')}
+              onTriggerEdit={(trigger) => console.log('Editar trigger', trigger)}
+              onTriggerDelete={(triggerId) => console.log('Eliminar trigger', triggerId)}
+              onTriggerToggle={(triggerId, isActive) => console.log('Toggle trigger', triggerId, isActive)}
+              onViewEvent={(event) => console.log('Ver evento', event)}
+            />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <WelcomeSequences sequences={welcomeSequences} loading={loading} className="w-full" />
+              <LifecycleSequences 
+                sequences={sequences} 
+                postLeadMagnetSequences={postLeadMagnetSequences}
+                leadMagnetFunnels={leadMagnetFunnels}
+                loading={loading} 
+                className="w-full"
+                onGeneratePostLeadMagnetSequence={(funnelId) => console.log('Generar secuencia post lead magnet', funnelId)}
+                onEditPostLeadMagnetSequence={(sequence) => console.log('Editar secuencia post lead magnet', sequence)}
+                onViewPostLeadMagnetSequence={(sequenceId) => console.log('Ver secuencia post lead magnet', sequenceId)}
+              />
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <MessagingAutomations automations={automations} loading={loading} className="w-full" />
+              <MultiStepSequenceBuilder
+                sequences={multiStepSequences}
+                loading={loading}
+                className="w-full"
+                onCreateNew={() => console.log('Crear nueva secuencia multi-paso')}
+                onEdit={(sequenceId) => console.log('Editar secuencia', sequenceId)}
+                onPause={(sequenceId) => console.log('Pausar secuencia', sequenceId)}
+                onResume={(sequenceId) => console.log('Reanudar secuencia', sequenceId)}
+              />
+            </div>
+            {channelRecommendationsDashboard && (
+              <ChannelRecommendations
+                dashboard={channelRecommendationsDashboard}
+                loading={loading}
+                className="w-full"
+                onRecommendationAccept={(recommendationId) => {
+                  console.log('Aceptar recomendación', recommendationId);
+                  // Aquí se integraría con el servicio para aceptar la recomendación
+                }}
+                onRecommendationReject={(recommendationId) => {
+                  console.log('Rechazar recomendación', recommendationId);
+                  // Aquí se integraría con el servicio para rechazar la recomendación
+                }}
+                onRecommendationDismiss={(recommendationId) => {
+                  console.log('Descartar recomendación', recommendationId);
+                  // Aquí se integraría con el servicio para descartar la recomendación
+                }}
+                onViewRecommendation={(recommendation) => {
+                  console.log('Ver recomendación', recommendation);
+                  // Aquí se mostrarían los detalles de la recomendación
+                }}
+                onStartImplementation={(recommendationId) => {
+                  console.log('Iniciar implementación', recommendationId);
+                  // Aquí se iniciaría el proceso de implementación
+                }}
+                onSettingsEdit={() => {
+                  console.log('Editar configuración de recomendaciones');
+                  // Aquí se abriría la configuración
+                }}
+              />
+            )}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              <InactivityAutomations automations={inactivityAutomations} loading={loading} className="w-full" />
+              <AbsenceAutomations automations={absenceAutomations} loading={loading} className="w-full" />
+              <AfterHoursAutoReplyComponent
+                autoReplies={afterHoursAutoReplies}
+                loading={loading}
+                className="w-full"
+                onAutoReplyCreate={() => console.log('Crear respuesta automática')}
+                onAutoReplyEdit={(autoReply) => console.log('Editar respuesta automática', autoReply)}
+                onAutoReplyDelete={(autoReplyId) => console.log('Eliminar respuesta automática', autoReplyId)}
+                onAutoReplyToggle={(autoReplyId, isActive) => console.log('Toggle respuesta automática', autoReplyId, isActive)}
+              />
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              <AutomationRoadmap items={roadmap} loading={loading} className="w-full" />
+              <ChannelHealth metrics={health} loading={loading} className="w-full" />
+              <ImportantDateAutomations automations={importantDateAutomations} loading={loading} className="w-full" />
+            </div>
+          </div>
+        );
+      case 'reminders-alerts':
+        return (
+          <div className="space-y-6">
+            <AIReminderAutomationComponent
+              dashboard={aiReminderAutomation}
+              loading={loading}
+              className="w-full"
+              onAutomationCreate={() => console.log('Crear automatización con IA')}
+              onAutomationEdit={(automation) => console.log('Editar automatización', automation)}
+              onAutomationDelete={(automationId) => console.log('Eliminar automatización', automationId)}
+              onAutomationToggle={(automationId, isActive) => console.log('Toggle automatización', automationId, isActive)}
+              onViewReminder={(reminder) => console.log('Ver recordatorio', reminder)}
+            />
+            <SessionReminders
+              templates={reminderTemplates}
+              clientSettings={clientReminderSettings}
+              upcomingReminders={upcomingReminders}
+              loading={loading}
+              className="w-full"
+              onTemplateCreate={() => console.log('Crear plantilla')}
+              onTemplateEdit={(template) => console.log('Editar plantilla', template)}
+              onTemplateDelete={(templateId) => console.log('Eliminar plantilla', templateId)}
+              onTemplateToggle={(templateId, isActive) => console.log('Toggle plantilla', templateId, isActive)}
+              onClientToggle={(clientId, templateId, isEnabled) => console.log('Toggle cliente', clientId, templateId, isEnabled)}
+            />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <PaymentReminderAutomations automations={paymentReminderAutomations} loading={loading} className="w-full" />
+              {messageAlertsDashboard ? (
+                <MessageAlerts
+                  dashboard={messageAlertsDashboard}
+                  loading={loading}
+                  className="w-full"
+                  onAlertAcknowledge={(alertId) => console.log('Reconocer alerta', alertId)}
+                  onAlertResolve={(alertId) => console.log('Resolver alerta', alertId)}
+                  onAlertDismiss={(alertId) => console.log('Descartar alerta', alertId)}
+                  onAlertView={(alert) => console.log('Ver alerta', alert)}
+                  onSettingsEdit={() => console.log('Editar configuración de alertas')}
+                />
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-slate-500 dark:text-slate-400">No hay datos de alertas disponibles</p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      case 'content-assets':
+        return (
+          <div className="space-y-6">
+            <EmailPrograms programs={emails} loading={loading} className="w-full" />
+            {weeklyHighlightsNewsletterGenerator && (
+              <WeeklyHighlightsNewsletterGenerator
+                generator={weeklyHighlightsNewsletterGenerator}
+                loading={loading}
+                className="w-full"
+                onGenerateNewsletter={(highlights) => console.log('Generar newsletter con highlights', highlights)}
+                onEditNewsletter={(newsletter) => console.log('Editar newsletter generado', newsletter)}
+                onDeleteNewsletter={(newsletterId) => console.log('Eliminar newsletter generado', newsletterId)}
+                onSendNewsletter={(newsletterId) => console.log('Enviar newsletter generado', newsletterId)}
+                onViewNewsletter={(newsletter) => console.log('Ver newsletter generado', newsletter)}
+                onSettingsEdit={() => console.log('Editar configuración newsletter generator')}
+              />
+            )}
+            <NewsletterEditor
+              newsletters={newsletters}
+              templates={newsletterTemplates}
+              loading={loading}
+              className="w-full"
+              onNewsletterCreate={() => console.log('Crear newsletter')}
+              onNewsletterEdit={(newsletter) => console.log('Editar newsletter', newsletter)}
+              onNewsletterDelete={(newsletterId) => console.log('Eliminar newsletter', newsletterId)}
+              onNewsletterSend={(newsletterId) => console.log('Enviar newsletter', newsletterId)}
+              onNewsletterSchedule={(newsletterId) => console.log('Programar newsletter', newsletterId)}
+              onNewsletterPause={(newsletterId) => console.log('Pausar newsletter', newsletterId)}
+              onNewsletterResume={(newsletterId) => console.log('Reanudar newsletter', newsletterId)}
+              onTemplateCreate={() => console.log('Crear plantilla newsletter')}
+              onTemplateEdit={(template) => console.log('Editar plantilla newsletter', template)}
+              onTemplateDelete={(templateId) => console.log('Eliminar plantilla newsletter', templateId)}
+              onViewTracking={(newsletterId) => console.log('Ver tracking newsletter', newsletterId)}
+            />
+            <MessageTemplatesLibrary
+              templates={messageTemplates}
+              loading={loading}
+              className="w-full"
+              onTemplateCreate={() => console.log('Crear plantilla')}
+              onTemplateEdit={(template) => console.log('Editar plantilla', template)}
+              onTemplateDelete={(templateId) => console.log('Eliminar plantilla', templateId)}
+              onTemplateUse={(template) => console.log('Usar plantilla', template)}
+              onTemplateSendBulk={(template) => console.log('Enviar en masa', template)}
+              onTemplateToggleFavorite={(templateId, isFavorite) => console.log('Toggle favorito', templateId, isFavorite)}
+            />
+            {aiMessageLibrary && (
+              <AIMessageLibrary
+                library={aiMessageLibrary}
+                loading={loading}
+                className="w-full"
+                onTemplateCreate={() => console.log('Crear plantilla IA')}
+                onTemplateEdit={(template) => console.log('Editar plantilla IA', template)}
+                onTemplateDelete={(templateId) => console.log('Eliminar plantilla IA', templateId)}
+                onTemplateUse={(template) => console.log('Usar plantilla IA', template)}
+                onTemplateSendBulk={(template) => console.log('Enviar en masa plantilla IA', template)}
+                onTemplateToggleFavorite={(templateId, isFavorite) => console.log('Toggle favorito IA', templateId, isFavorite)}
+                onGenerateWithAI={(objective) => console.log('Generar con IA', objective)}
+                onSyncWithProfile={() => console.log('Sincronizar con perfil estratégico')}
+                onSettingsEdit={() => console.log('Editar configuración biblioteca IA')}
+              />
+            )}
+            {quickWhatsAppPromptsLibrary && (
+              <QuickWhatsAppPrompts
+                library={quickWhatsAppPromptsLibrary}
+                loading={loading}
+                className="w-full"
+                onPromptCreate={() => console.log('Crear prompt WhatsApp')}
+                onPromptEdit={(prompt) => console.log('Editar prompt WhatsApp', prompt)}
+                onPromptDelete={(promptId) => console.log('Eliminar prompt WhatsApp', promptId)}
+                onPromptUse={(prompt) => console.log('Usar prompt WhatsApp', prompt)}
+                onPromptCopy={(prompt) => console.log('Copiar prompt WhatsApp', prompt)}
+                onPromptToggleFavorite={(promptId, isFavorite) => console.log('Toggle favorito prompt', promptId, isFavorite)}
+                onVoiceNoteGenerate={(prompt) => console.log('Generar nota de voz', prompt)}
+                onSettingsEdit={() => console.log('Editar configuración prompts WhatsApp')}
+              />
+            )}
+            {missionCta}
+          </div>
+        );
+      case 'audience-personalization':
+        return (
+          <div className="space-y-6">
+            <ClientSegmentation
+              segments={clientSegments}
+              bulkMessages={bulkMessages}
+              loading={loading}
+              className="w-full"
+              onSegmentCreate={() => console.log('Crear segmento')}
+              onSegmentEdit={(segment) => console.log('Editar segmento', segment)}
+              onSegmentDelete={(segmentId) => console.log('Eliminar segmento', segmentId)}
+              onSegmentRefresh={(segmentId) => console.log('Actualizar segmento', segmentId)}
+              onBulkMessageCreate={(segmentId) => console.log('Crear mensaje masivo', segmentId)}
+              onBulkMessageEdit={(message) => console.log('Editar mensaje masivo', message)}
+              onBulkMessageDelete={(messageId) => console.log('Eliminar mensaje masivo', messageId)}
+              onBulkMessageSend={(messageId) => console.log('Enviar mensaje masivo', messageId)}
+            />
+            {aiHeatMapSendingSchedules ? (
+              <AIHeatMapSendingSchedules
+                dashboard={aiHeatMapSendingSchedules}
+                loading={loading}
+                className="w-full"
+                onPeriodChange={(period) => console.log('Cambiar período', period)}
+                onApplyRecommendations={() => console.log('Aplicar recomendaciones')}
+              />
+            ) : null}
+            {preferredSendingSchedulesDashboard ? (
+              <PreferredSendingSchedules
+                dashboard={preferredSendingSchedulesDashboard}
+                loading={loading}
+                className="w-full"
+                onClientScheduleCreate={() => console.log('Crear horario de cliente')}
+                onClientScheduleEdit={(schedule) => console.log('Editar horario de cliente', schedule)}
+                onClientScheduleDelete={(scheduleId) => console.log('Eliminar horario de cliente', scheduleId)}
+                onGroupScheduleCreate={() => console.log('Crear horario de grupo')}
+                onGroupScheduleEdit={(schedule) => console.log('Editar horario de grupo', schedule)}
+                onGroupScheduleDelete={(scheduleId) => console.log('Eliminar horario de grupo', scheduleId)}
+                onRuleCreate={() => console.log('Crear regla de horario')}
+                onRuleEdit={(rule) => console.log('Editar regla', rule)}
+                onRuleDelete={(ruleId) => console.log('Eliminar regla', ruleId)}
+                onRuleToggle={(ruleId, isActive) => console.log('Toggle regla', ruleId, isActive)}
+              />
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-slate-500 dark:text-slate-400">No hay datos de horarios preferidos disponibles</p>
+              </div>
+            )}
+            <ImportantDateAutomations automations={importantDateAutomations} loading={loading} className="w-full" />
+          </div>
+        );
+      case 'operations-insights':
+        return (
+          <div className="space-y-6">
+            {weeklyAIInsights && (
+              <WeeklyAIInsights
+                dashboard={weeklyAIInsights}
+                loading={loading}
+                className="w-full"
+                onImprovementApply={(improvementId) => console.log('Aplicar mejora', improvementId)}
+                onImprovementDismiss={(improvementId) => console.log('Descartar mejora', improvementId)}
+                onImprovementView={(improvementId) => console.log('Ver mejora', improvementId)}
+                onGenerateInsights={() => console.log('Generar insights semanales')}
+              />
+            )}
+            {experimentsDashboard && (
+              <ExperimentsDashboard
+                dashboard={experimentsDashboard}
+                loading={loading}
+                className="w-full"
+                onExperimentCreate={() => console.log('Crear experimento')}
+                onExperimentEdit={(experiment) => console.log('Editar experimento', experiment)}
+                onExperimentView={(experimentId) => console.log('Ver experimento', experimentId)}
+                onExperimentToggle={(experimentId, status) => console.log('Toggle experimento', experimentId, status)}
+              />
+            )}
+            {actionableKPIs ? (
+              <ActionableKPIs
+                dashboard={actionableKPIs}
+                loading={loading}
+                className="w-full"
+                onPeriodChange={(period) => console.log('Cambiar período', period)}
+                onViewDetails={(messageId) => console.log('Ver detalles mensaje', messageId)}
+                onViewCampaign={(campaignId) => console.log('Ver detalles campaña', campaignId)}
+              />
+            ) : null}
+            <SummaryGrid summary={summary} loading={loading} />
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              <ChannelHealth metrics={health} loading={loading} className="w-full" />
+              <AutomationRoadmap items={roadmap} loading={loading} className="w-full" />
+              {messageStatisticsDashboard ? (
+                <MessageStatisticsDashboardComponent
+                  dashboard={messageStatisticsDashboard}
+                  loading={loading}
+                  className="w-full"
+                />
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-slate-500 dark:text-slate-400">No hay estadísticas disponibles</p>
+                </div>
+              )}
+            </div>
+            <AutomationsCentralPanel
+              panel={centralAutomationsPanel}
+              loading={loading}
+              className="w-full"
+              onAutomationPause={(automationId) => console.log('Pausar automatización', automationId)}
+              onAutomationResume={(automationId) => console.log('Reanudar automatización', automationId)}
+              onAutomationEdit={(automation) => console.log('Editar automatización', automation)}
+              onAutomationDelete={(automationId) => console.log('Eliminar automatización', automationId)}
+              onViewDetails={(automationId) => console.log('Ver detalles', automationId)}
+            />
+            {messageSaturationDashboard && (
+              <MessageSaturationDetector
+                dashboard={messageSaturationDashboard}
+                loading={loading}
+                className="w-full"
+                onApplyPause={(alertId) => console.log('Aplicar pausa automática', alertId)}
+                onDismissAlert={(alertId) => console.log('Descartar alerta', alertId)}
+                onSettingsEdit={() => console.log('Editar configuración de saturación')}
+              />
+            )}
+            <ReportExporter
+              reports={exportReports}
+              loading={loading}
+              className="w-full"
+              onGenerateReport={(config) => console.log('Generar reporte', config)}
+              onDownload={(reportId) => console.log('Descargar reporte', reportId)}
+            />
+          </div>
+        );
+      case 'integrations-admin':
+        return (
+          <div className="space-y-6">
+            <ReservationsIntegrationComponent
+              integration={reservationsIntegration}
+              loading={loading}
+              className="w-full"
+              onRuleCreate={() => console.log('Crear regla de integración')}
+              onRuleEdit={(rule) => console.log('Editar regla', rule)}
+              onRuleDelete={(ruleId) => console.log('Eliminar regla', ruleId)}
+              onRuleToggle={(ruleId, isActive) => console.log('Toggle regla', ruleId, isActive)}
+              onIntegrationToggle={(isEnabled) => console.log('Toggle integración', isEnabled)}
+              onSync={() => console.log('Sincronizar con reservas')}
+            />
+          </div>
+        );
+      case 'mission-overview':
+      default:
+        return (
+          <div className="space-y-8">
+            <CampaignObjectiveSelector
+              onSuggestionsGenerated={(suggestions) => {
+                console.log('Sugerencias generadas:', suggestions);
+              }}
+              className="w-full"
+            />
+            <SummaryGrid summary={summary} loading={loading} />
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+              <MultiChannelCampaigns campaigns={campaigns} loading={loading} className="xl:col-span-2" />
+              <EmailPrograms programs={emails} loading={loading} className="xl:col-span-2" />
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <WelcomeSequences sequences={welcomeSequences} loading={loading} className="w-full" />
+              <AbsenceAutomations automations={absenceAutomations} loading={loading} className="w-full" />
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <InactivityAutomations automations={inactivityAutomations} loading={loading} className="w-full" />
+              <ImportantDateAutomations automations={importantDateAutomations} loading={loading} className="w-full" />
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <PaymentReminderAutomations automations={paymentReminderAutomations} loading={loading} className="w-full" />
+              {messageStatisticsDashboard && (
+                <MessageStatisticsDashboardComponent
+                  dashboard={messageStatisticsDashboard}
+                  loading={loading}
+                  className="w-full"
+                />
+              )}
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <AfterHoursAutoReplyComponent
+                autoReplies={afterHoursAutoReplies}
+                loading={loading}
+                className="w-full"
+                onAutoReplyCreate={() => console.log('Crear respuesta automática')}
+                onAutoReplyEdit={(autoReply) => console.log('Editar respuesta automática', autoReply)}
+                onAutoReplyDelete={(autoReplyId) => console.log('Eliminar respuesta automática', autoReplyId)}
+                onAutoReplyToggle={(autoReplyId, isActive) => console.log('Toggle respuesta automática', autoReplyId, isActive)}
+              />
+              <PromotionalCampaigns
+                campaigns={promotionalCampaigns}
+                specializedTemplates={specializedTemplates}
+                loading={loading}
+                className="w-full"
+                onCampaignCreate={() => console.log('Crear campaña promocional')}
+                onCampaignEdit={(campaign) => console.log('Editar campaña promocional', campaign)}
+                onCampaignDelete={(campaignId) => console.log('Eliminar campaña promocional', campaignId)}
+                onCampaignSend={(campaignId) => console.log('Enviar campaña promocional', campaignId)}
+                onCampaignSchedule={(campaignId) => console.log('Programar campaña promocional', campaignId)}
+                onViewResults={(campaignId) => console.log('Ver resultados campaña promocional', campaignId)}
+                onTemplateUse={(template) => console.log('Usar plantilla especializada', template)}
+                onTemplatePreview={(template) => console.log('Vista previa plantilla', template)}
+              />
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <ClientSegmentation
+                segments={clientSegments}
+                bulkMessages={bulkMessages}
+                loading={loading}
+                className="w-full"
+                onSegmentCreate={() => console.log('Crear segmento')}
+                onSegmentEdit={(segment) => console.log('Editar segmento', segment)}
+                onSegmentDelete={(segmentId) => console.log('Eliminar segmento', segmentId)}
+                onSegmentRefresh={(segmentId) => console.log('Actualizar segmento', segmentId)}
+                onBulkMessageCreate={(segmentId) => console.log('Crear mensaje masivo', segmentId)}
+                onBulkMessageEdit={(message) => console.log('Editar mensaje masivo', message)}
+                onBulkMessageDelete={(messageId) => console.log('Eliminar mensaje masivo', messageId)}
+                onBulkMessageSend={(messageId) => console.log('Enviar mensaje masivo', messageId)}
+              />
+              <NewsletterEditor
+                newsletters={newsletters}
+                templates={newsletterTemplates}
+                loading={loading}
+                className="w-full"
+                onNewsletterCreate={() => console.log('Crear newsletter')}
+                onNewsletterEdit={(newsletter) => console.log('Editar newsletter', newsletter)}
+                onNewsletterDelete={(newsletterId) => console.log('Eliminar newsletter', newsletterId)}
+                onNewsletterSend={(newsletterId) => console.log('Enviar newsletter', newsletterId)}
+                onNewsletterSchedule={(newsletterId) => console.log('Programar newsletter', newsletterId)}
+                onNewsletterPause={(newsletterId) => console.log('Pausar newsletter', newsletterId)}
+                onNewsletterResume={(newsletterId) => console.log('Reanudar newsletter', newsletterId)}
+                onTemplateCreate={() => console.log('Crear plantilla newsletter')}
+                onTemplateEdit={(template) => console.log('Editar plantilla newsletter', template)}
+                onTemplateDelete={(templateId) => console.log('Eliminar plantilla newsletter', templateId)}
+                onViewTracking={(newsletterId) => console.log('Ver tracking newsletter', newsletterId)}
+              />
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <MessageTemplatesLibrary
+                templates={messageTemplates}
+                loading={loading}
+                className="w-full"
+                onTemplateCreate={() => console.log('Crear plantilla')}
+                onTemplateEdit={(template) => console.log('Editar plantilla', template)}
+                onTemplateDelete={(templateId) => console.log('Eliminar plantilla', templateId)}
+                onTemplateUse={(template) => console.log('Usar plantilla', template)}
+                onTemplateSendBulk={(template) => console.log('Enviar en masa', template)}
+                onTemplateToggleFavorite={(templateId, isFavorite) => console.log('Toggle favorito', templateId, isFavorite)}
+              />
+              <ScheduledMessages
+                messages={scheduledMessages}
+                loading={loading}
+                className="w-full"
+                onMessageCreate={() => console.log('Crear mensaje programado')}
+                onMessageEdit={(message) => console.log('Editar mensaje', message)}
+                onMessageDelete={(messageId) => console.log('Eliminar mensaje', messageId)}
+                onMessageToggle={(messageId, isActive) => console.log('Toggle mensaje', messageId, isActive)}
+              />
+            </div>
+            {aiMessageLibrary && (
+              <AIMessageLibrary
+                library={aiMessageLibrary}
+                loading={loading}
+                className="w-full"
+                onTemplateCreate={() => console.log('Crear plantilla IA')}
+                onTemplateEdit={(template) => console.log('Editar plantilla IA', template)}
+                onTemplateDelete={(templateId) => console.log('Eliminar plantilla IA', templateId)}
+                onTemplateUse={(template) => console.log('Usar plantilla IA', template)}
+                onTemplateSendBulk={(template) => console.log('Enviar en masa plantilla IA', template)}
+                onTemplateToggleFavorite={(templateId, isFavorite) => console.log('Toggle favorito IA', templateId, isFavorite)}
+                onGenerateWithAI={(objective) => console.log('Generar con IA', objective)}
+                onSyncWithProfile={() => console.log('Sincronizar con perfil estratégico')}
+                onSettingsEdit={() => console.log('Editar configuración biblioteca IA')}
+              />
+            )}
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+              <LifecycleSequences 
+                sequences={sequences} 
+                postLeadMagnetSequences={postLeadMagnetSequences}
+                leadMagnetFunnels={leadMagnetFunnels}
+                loading={loading} 
+                className="xl:col-span-2"
+                onGeneratePostLeadMagnetSequence={(funnelId) => console.log('Generar secuencia post lead magnet', funnelId)}
+                onEditPostLeadMagnetSequence={(sequence) => console.log('Editar secuencia post lead magnet', sequence)}
+                onViewPostLeadMagnetSequence={(sequenceId) => console.log('Ver secuencia post lead magnet', sequenceId)}
+              />
+              <MessagingAutomations automations={automations} loading={loading} className="xl:col-span-2" />
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              <ChannelHealth metrics={health} loading={loading} className="xl:col-span-2" />
+              <AutomationRoadmap items={roadmap} loading={loading} className="xl:col-span-1" />
+            </div>
+            {missionCta}
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-[#050b16] dark:via-[#091020] dark:to-[#030712]">
+      <header className="border-b border-slate-200/70 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:border-slate-800/60 dark:bg-[#050b16]/80">
+        <div className="w-full px-4 sm:px-6">
+          <div className="py-6">
+            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-indigo-200 via-purple-200 to-sky-200 dark:from-indigo-900/50 dark:via-purple-900/40 dark:to-sky-900/30 shadow-inner">
+                  <Workflow className="w-7 h-7 text-indigo-700 dark:text-indigo-200" />
+                </div>
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+                      Campañas & Automatización
+                    </h1>
+                    <Badge variant="purple" size="md">
+                      {missionTagline}
+                    </Badge>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-400 max-w-2xl">
+                    Mission Control para todo lo que dispara mensajes: campañas multicanal, email marketing, secuencias de
+                    lifecycle y automatizaciones de SMS/WhatsApp en un único panel operativo.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  size="sm"
+                  leftIcon={<Plus size={16} />}
+                  onClick={() => setIsCampaign360ModalOpen(true)}
+                >
+                  Generar campaña 360 con IA
+                </Button>
+                <Button size="sm" variant="secondary" leftIcon={<Plus size={16} />}>
+                  Nueva campaña
+                </Button>
+                <Button size="sm" variant="secondary" leftIcon={<Download size={16} />}>
+                  Exportar reportes
+                </Button>
+                <Button size="sm" variant="ghost" leftIcon={<Upload size={16} />}>
+                  Importar flujos
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  leftIcon={<RefreshCcw size={16} className={loading ? 'animate-spin' : ''} />}
+                  onClick={loadSnapshot}
+                  disabled={loading}
+                >
+                  Actualizar datos
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="w-full px-4 sm:px-6 py-8 space-y-8">
+        {showMetricCards && <MetricCards data={metricCardsData} columns={4} />}
+
+        <Card padding="none" className="bg-white/90 shadow-sm dark:bg-[#050b16]/80">
+          <div className="px-4 py-3">
+            <div
+              role="tablist"
+              aria-label="Secciones campañas y automatización"
+              className="flex flex-wrap items-center gap-2 rounded-2xl bg-slate-100 p-1 dark:bg-slate-800/50"
+            >
+              {tabItems.map(({ id, label, icon: Icon }) => {
+                const active = activeTab === id;
+                return (
+                  <button
+                    key={id}
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setActiveTab(id)}
+                    className={[
+                      'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all',
+                      active
+                        ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200 dark:bg-[#0f172a] dark:text-white dark:ring-slate-700'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/70 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-700/60',
+                    ].join(' ')}
+                  >
+                    <Icon
+                      size={18}
+                      className={active ? 'opacity-100' : 'opacity-70'}
+                    />
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </Card>
+
+        <div className="space-y-8">{renderTabContent()}</div>
+      </main>
+
+      <Campaign360AIGenerator
+        isOpen={isCampaign360ModalOpen}
+        onClose={() => setIsCampaign360ModalOpen(false)}
+        onCampaignGenerated={(campaign) => {
+          console.log('Campaña 360 generada:', campaign);
+          // Aquí se podría agregar la lógica para guardar la campaña
+          setIsCampaign360ModalOpen(false);
+        }}
+      />
+    </div>
+  );
+}
+
+

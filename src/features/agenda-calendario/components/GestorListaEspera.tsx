@@ -1,25 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Clock, 
-  Users, 
-  Bell, 
-  Plus, 
-  X, 
-  CheckCircle, 
+import {
+  Clock,
+  Users,
+  Bell,
+  Plus,
+  X,
+  CheckCircle,
   AlertCircle,
   Calendar,
   Settings,
   TrendingUp,
   UserPlus,
 } from 'lucide-react';
-import { 
-  Card, 
-  Table, 
-  Button, 
-  Input, 
-  Select, 
-  Badge, 
-  Modal, 
+import {
+  Card,
+  Table,
+  Button,
+  Input,
+  Select,
+  Badge,
+  Modal,
   MetricCards,
   Switch,
 } from '../../../components/componentsreutilizables';
@@ -30,6 +30,7 @@ import {
   NotificacionSlotLiberado,
   ConfiguracionListaEspera,
   ResumenListaEspera,
+  TipoCita,
 } from '../types';
 import {
   getListaEspera,
@@ -56,14 +57,13 @@ export const GestorListaEspera: React.FC = () => {
   const [mostrarModalAgregar, setMostrarModalAgregar] = useState(false);
   const [mostrarModalConfig, setMostrarModalConfig] = useState(false);
   const [filtroEstado, setFiltroEstado] = useState<EstadoListaEspera | undefined>(undefined);
-  
+
   // Formulario para agregar cliente
   const [nuevoCliente, setNuevoCliente] = useState({
     clienteId: '',
     clienteNombre: '',
-    diaSemana: 1,
-    horaInicio: '10:00',
-    horaFin: '11:00',
+    tipoSesion: 'sesion-1-1' as TipoCita,
+    fechaDeseada: '',
   });
 
   useEffect(() => {
@@ -74,11 +74,13 @@ export const GestorListaEspera: React.FC = () => {
 
   const cargarDatos = async () => {
     if (!user?.id) return;
-    
+
     setLoading(true);
     try {
       const [listaData, horariosData, resumenData, configData, notifData] = await Promise.all([
-        getListaEspera(user.id, filtroEstado),
+        getListaEspera({ entrenadorId: user.id, role: 'entrenador' }).then(lista =>
+          filtroEstado ? lista.filter(le => le.estado === filtroEstado) : lista
+        ),
         getHorariosPopulares(user.id),
         getResumenListaEspera(user.id),
         getConfiguracionListaEspera(user.id),
@@ -101,22 +103,24 @@ export const GestorListaEspera: React.FC = () => {
     if (!user?.id || !nuevoCliente.clienteId) return;
 
     try {
+      const fechaDeseada = nuevoCliente.fechaDeseada
+        ? new Date(nuevoCliente.fechaDeseada)
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Por defecto en 7 días
+
       await agregarClienteListaEspera({
         entrenadorId: user.id,
         clienteId: nuevoCliente.clienteId,
         clienteNombre: nuevoCliente.clienteNombre,
-        diaSemana: nuevoCliente.diaSemana,
-        horaInicio: nuevoCliente.horaInicio,
-        horaFin: nuevoCliente.horaFin,
+        tipoSesion: nuevoCliente.tipoSesion,
+        fechaDeseada,
       });
-      
+
       setMostrarModalAgregar(false);
       setNuevoCliente({
         clienteId: '',
         clienteNombre: '',
-        diaSemana: 1,
-        horaInicio: '10:00',
-        horaFin: '11:00',
+        tipoSesion: 'sesion-1-1',
+        fechaDeseada: '',
       });
       cargarDatos();
     } catch (error: any) {
@@ -126,7 +130,7 @@ export const GestorListaEspera: React.FC = () => {
 
   const handleEliminarCliente = async (entradaId: string) => {
     if (!user?.id) return;
-    
+
     if (!confirm('¿Estás seguro de eliminar este cliente de la lista de espera?')) {
       return;
     }
@@ -215,38 +219,58 @@ export const GestorListaEspera: React.FC = () => {
     {
       key: 'prioridad',
       label: 'Prioridad',
-      render: (entrada: EntradaListaEspera) => (
-        <Badge variant="secondary">#{entrada.prioridad}</Badge>
-      ),
+      render: (entrada: EntradaListaEspera) => {
+        if (!entrada) return <Badge variant="secondary">-</Badge>;
+        return <Badge variant="secondary">#{entrada.prioridad}</Badge>;
+      },
     },
     {
       key: 'clienteNombre',
       label: 'Cliente',
-      render: (entrada: EntradaListaEspera) => entrada.clienteNombre,
-    },
-    {
-      key: 'diaSemana',
-      label: 'Día',
       render: (entrada: EntradaListaEspera) => {
-        const dia = diasSemana.find(d => d.value === entrada.diaSemana);
-        return dia?.label || 'N/A';
+        if (!entrada) return 'N/A';
+        return entrada.cliente?.nombre || 'N/A';
       },
     },
     {
-      key: 'horario',
-      label: 'Horario',
-      render: (entrada: EntradaListaEspera) => `${entrada.horaInicio} - ${entrada.horaFin}`,
+      key: 'tipoSesion',
+      label: 'Tipo de Sesión',
+      render: (entrada: EntradaListaEspera) => {
+        if (!entrada) return 'N/A';
+        const tipos: Record<string, string> = {
+          'sesion-1-1': 'Sesión 1:1',
+          'videollamada': 'Videollamada',
+          'evaluacion': 'Evaluación',
+          'clase-colectiva': 'Clase Colectiva',
+        };
+        return tipos[entrada.tipoSesion] || entrada.tipoSesion;
+      },
+    },
+    {
+      key: 'fechaDeseada',
+      label: 'Fecha Deseada',
+      render: (entrada: EntradaListaEspera) => {
+        if (!entrada || !entrada.fechaDeseada) return 'N/A';
+        return new Date(entrada.fechaDeseada).toLocaleDateString('es-ES', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        });
+      },
     },
     {
       key: 'fechaSolicitud',
       label: 'Fecha Solicitud',
-      render: (entrada: EntradaListaEspera) => 
-        new Date(entrada.fechaSolicitud).toLocaleDateString('es-ES'),
+      render: (entrada: EntradaListaEspera) => {
+        if (!entrada || !entrada.createdAt) return 'N/A';
+        return new Date(entrada.createdAt).toLocaleDateString('es-ES');
+      },
     },
     {
       key: 'estado',
       label: 'Estado',
       render: (entrada: EntradaListaEspera) => {
+        if (!entrada) return <Badge variant="secondary">N/A</Badge>;
         const estados = {
           activa: { label: 'Activa', variant: 'primary' as const },
           notificada: { label: 'Notificada', variant: 'warning' as const },
@@ -254,26 +278,40 @@ export const GestorListaEspera: React.FC = () => {
           cancelada: { label: 'Cancelada', variant: 'secondary' as const },
           expirada: { label: 'Expirada', variant: 'error' as const },
         };
-        const estado = estados[entrada.estado];
+        const estado = estados[entrada.estado] || { label: 'Desconocido', variant: 'secondary' as const };
         return <Badge variant={estado.variant}>{estado.label}</Badge>;
       },
     },
     {
       key: 'acciones',
       label: 'Acciones',
-      render: (entrada: EntradaListaEspera) => (
-        <div className="flex gap-2">
-          {entrada.estado === 'activa' && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => handleEliminarCliente(entrada.id)}
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          )}
-        </div>
-      ),
+      render: (entrada: EntradaListaEspera) => {
+        if (!entrada) return null;
+        return (
+          <div className="flex gap-2">
+            {entrada.estado === 'activa' && (
+              <>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => handleAsignarSlot(entrada.id, entrada.fechaDeseada)}
+                  title="Asignar hueco disponible"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => handleEliminarCliente(entrada.id)}
+                  title="Eliminar de la lista"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
@@ -306,8 +344,8 @@ export const GestorListaEspera: React.FC = () => {
     {
       key: 'ultimaAsignacion',
       label: 'Última Asignación',
-      render: (horario: HorarioPopular) => 
-        horario.ultimaAsignacion 
+      render: (horario: HorarioPopular) =>
+        horario.ultimaAsignacion
           ? new Date(horario.ultimaAsignacion).toLocaleDateString('es-ES')
           : 'Nunca',
     },
@@ -322,7 +360,7 @@ export const GestorListaEspera: React.FC = () => {
     {
       key: 'fechaSlot',
       label: 'Fecha Slot',
-      render: (notif: NotificacionSlotLiberado) => 
+      render: (notif: NotificacionSlotLiberado) =>
         new Date(notif.fechaSlot).toLocaleDateString('es-ES'),
     },
     {
@@ -333,7 +371,7 @@ export const GestorListaEspera: React.FC = () => {
     {
       key: 'fechaEnvio',
       label: 'Enviada',
-      render: (notif: NotificacionSlotLiberado) => 
+      render: (notif: NotificacionSlotLiberado) =>
         notif.fechaEnvio ? new Date(notif.fechaEnvio).toLocaleDateString('es-ES') : 'No',
     },
     {
@@ -348,7 +386,7 @@ export const GestorListaEspera: React.FC = () => {
     {
       key: 'fechaExpiracion',
       label: 'Expira',
-      render: (notif: NotificacionSlotLiberado) => 
+      render: (notif: NotificacionSlotLiberado) =>
         new Date(notif.fechaExpiracion).toLocaleDateString('es-ES'),
     },
   ];
@@ -490,38 +528,28 @@ export const GestorListaEspera: React.FC = () => {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Día de la Semana
+              Tipo de Sesión
             </label>
             <Select
-              value={nuevoCliente.diaSemana.toString()}
-              onChange={(e) => setNuevoCliente({ ...nuevoCliente, diaSemana: parseInt(e.target.value) })}
-              options={diasSemana.map(dia => ({
-                value: dia.value.toString(),
-                label: dia.label,
-              }))}
+              value={nuevoCliente.tipoSesion}
+              onChange={(e) => setNuevoCliente({ ...nuevoCliente, tipoSesion: e.target.value as TipoCita })}
+              options={[
+                { value: 'sesion-1-1', label: 'Sesión 1:1' },
+                { value: 'videollamada', label: 'Videollamada' },
+                { value: 'evaluacion', label: 'Evaluación' },
+              ]}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Hora Inicio
-              </label>
-              <Input
-                type="time"
-                value={nuevoCliente.horaInicio}
-                onChange={(e) => setNuevoCliente({ ...nuevoCliente, horaInicio: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Hora Fin
-              </label>
-              <Input
-                type="time"
-                value={nuevoCliente.horaFin}
-                onChange={(e) => setNuevoCliente({ ...nuevoCliente, horaFin: e.target.value })}
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Fecha Deseada
+            </label>
+            <Input
+              type="date"
+              value={nuevoCliente.fechaDeseada}
+              onChange={(e) => setNuevoCliente({ ...nuevoCliente, fechaDeseada: e.target.value })}
+              min={new Date().toISOString().split('T')[0]}
+            />
           </div>
         </div>
       </Modal>
@@ -576,9 +604,9 @@ export const GestorListaEspera: React.FC = () => {
               <Input
                 type="number"
                 value={configuracion.tiempoRespuestaHoras}
-                onChange={(e) => setConfiguracion({ 
-                  ...configuracion, 
-                  tiempoRespuestaHoras: parseInt(e.target.value) 
+                onChange={(e) => setConfiguracion({
+                  ...configuracion,
+                  tiempoRespuestaHoras: parseInt(e.target.value)
                 })}
               />
             </div>
@@ -588,9 +616,9 @@ export const GestorListaEspera: React.FC = () => {
               </label>
               <Select
                 value={configuracion.metodoNotificacion}
-                onChange={(e) => setConfiguracion({ 
-                  ...configuracion, 
-                  metodoNotificacion: e.target.value as any 
+                onChange={(e) => setConfiguracion({
+                  ...configuracion,
+                  metodoNotificacion: e.target.value as any
                 })}
                 options={[
                   { value: 'email', label: 'Email' },
@@ -607,9 +635,9 @@ export const GestorListaEspera: React.FC = () => {
               <Input
                 type="number"
                 value={configuracion.maxEntradasPorCliente}
-                onChange={(e) => setConfiguracion({ 
-                  ...configuracion, 
-                  maxEntradasPorCliente: parseInt(e.target.value) 
+                onChange={(e) => setConfiguracion({
+                  ...configuracion,
+                  maxEntradasPorCliente: parseInt(e.target.value)
                 })}
               />
             </div>
@@ -620,9 +648,9 @@ export const GestorListaEspera: React.FC = () => {
               <Input
                 type="number"
                 value={configuracion.diasValidez}
-                onChange={(e) => setConfiguracion({ 
-                  ...configuracion, 
-                  diasValidez: parseInt(e.target.value) 
+                onChange={(e) => setConfiguracion({
+                  ...configuracion,
+                  diasValidez: parseInt(e.target.value)
                 })}
               />
             </div>

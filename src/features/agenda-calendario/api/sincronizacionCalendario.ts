@@ -1,4 +1,13 @@
-import { ConexionCalendario, EventoCalendarioExterno, ConfiguracionSincronizacion, TipoCalendarioExterno, BloqueoAgenda } from '../types';
+import { 
+  ConexionCalendario, 
+  EventoCalendarioExterno, 
+  ConfiguracionSincronizacion, 
+  TipoCalendarioExterno, 
+  BloqueoAgenda,
+  ProveedorCalendario,
+  CalendarioExterno,
+  ContextoSincronizacion
+} from '../types';
 
 // Mock API - En producción, esto haría llamadas reales a la API
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1/agenda';
@@ -412,5 +421,247 @@ export const eliminarCitaAutomaticamente = async (
     console.error('Error eliminando cita automáticamente:', error);
     return false;
   }
+};
+
+// ============================================================================
+// FUNCIONES MOCK PARA INTEGRACIÓN CON CALENDARIOS EXTERNOS
+// ============================================================================
+// NOTA: Estas funciones son STUB/MOCK para desarrollo.
+// En producción, estas funciones se implementarían usando:
+// - OAuth 2.0 para autenticación con Google Calendar y Outlook Calendar
+// - Webhooks para sincronización en tiempo real
+// - APIs oficiales:
+//   - Google Calendar API: https://developers.google.com/calendar
+//   - Microsoft Graph API (Outlook): https://docs.microsoft.com/en-us/graph/api/resources/calendar
+//
+// USO FUTURO:
+// Estas funciones están diseñadas para ser utilizadas desde:
+// - La pestaña "Automatizaciones" en la página de Agenda/Calendario
+// - La pestaña "Calendario" cuando se añada UI específica para gestión de integraciones
+// ============================================================================
+
+/**
+ * Obtiene todas las integraciones de calendarios externos conectadas para un usuario
+ * 
+ * MOCK/STUB: En producción, esto consultaría la base de datos para obtener
+ * todas las conexiones activas del usuario.
+ * 
+ * @param contexto - Contexto de sincronización con información del usuario
+ * @returns Lista de calendarios externos conectados
+ * 
+ * @example
+ * ```typescript
+ * const integraciones = await getIntegracionesCalendario({
+ *   userId: 'user-123',
+ *   role: 'entrenador'
+ * });
+ * ```
+ */
+export const getIntegracionesCalendario = async (
+  contexto: ContextoSincronizacion
+): Promise<CalendarioExterno[]> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      // MOCK DATA - En producción, esto consultaría la base de datos
+      // usando contexto.userId para filtrar las conexiones del usuario
+      const integraciones: CalendarioExterno[] = [
+        // Ejemplo de integración Google Calendar (comentado para simular lista vacía por defecto)
+        // {
+        //   id: 'integracion-google-1',
+        //   userId: contexto.userId || '1',
+        //   tipo: 'google',
+        //   nombreCalendario: 'Calendario Principal',
+        //   calendarioId: 'primary',
+        //   estado: 'conectado',
+        //   sincronizacionBidireccional: true,
+        //   bloquearAutomaticamente: true,
+        //   ultimaSincronizacion: new Date(),
+        //   createdAt: new Date('2024-01-15'),
+        //   updatedAt: new Date(),
+        // },
+        // Ejemplo de integración Outlook Calendar (comentado para simular lista vacía por defecto)
+        // {
+        //   id: 'integracion-outlook-1',
+        //   userId: contexto.userId || '1',
+        //   tipo: 'outlook',
+        //   nombreCalendario: 'Calendario de Trabajo',
+        //   calendarioId: 'work-calendar-id',
+        //   estado: 'conectado',
+        //   sincronizacionBidireccional: false,
+        //   bloquearAutomaticamente: true,
+        //   ultimaSincronizacion: new Date(),
+        //   createdAt: new Date('2024-01-20'),
+        //   updatedAt: new Date(),
+        // },
+      ];
+      resolve(integraciones);
+    }, 300);
+  });
+};
+
+/**
+ * Conecta un calendario externo (Google o Outlook)
+ * 
+ * MOCK/STUB: En producción, esto:
+ * 1. Iniciaría el flujo OAuth 2.0 del proveedor correspondiente
+ * 2. Almacenaría los tokens de acceso/refresh de forma segura
+ * 3. Crearía un registro de conexión en la base de datos
+ * 4. Configuraría webhooks para sincronización en tiempo real
+ * 
+ * @param proveedor - Proveedor de calendario a conectar ('google' | 'outlook')
+ * @param contexto - Contexto de sincronización con información del usuario (opcional)
+ * @returns URL de autenticación OAuth y ID de conexión (si ya existe)
+ * 
+ * @example
+ * ```typescript
+ * const resultado = await conectarCalendarioExterno('google', {
+ *   userId: 'user-123',
+ *   role: 'entrenador'
+ * });
+ * // Redirigir al usuario a resultado.authUrl para completar OAuth
+ * ```
+ */
+export const conectarCalendarioExterno = async (
+  proveedor: ProveedorCalendario,
+  contexto?: ContextoSincronizacion
+): Promise<{ authUrl: string; conexionId?: string; estado: 'pendiente' | 'conectado' }> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      // MOCK: En producción, esto generaría una URL OAuth real basada en el proveedor
+      let authUrl = '';
+      
+      if (proveedor === 'google') {
+        // En producción: URL OAuth 2.0 de Google Calendar
+        // authUrl = generarUrlOAuthGoogle(contexto);
+        authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
+          'client_id=MOCK_CLIENT_ID&' +
+          'redirect_uri=https://app.example.com/oauth/callback&' +
+          'scope=https://www.googleapis.com/auth/calendar&' +
+          'response_type=code&' +
+          'access_type=offline&' +
+          'prompt=consent';
+      } else if (proveedor === 'outlook') {
+        // En producción: URL OAuth 2.0 de Microsoft Graph
+        // authUrl = generarUrlOAuthOutlook(contexto);
+        authUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize?' +
+          'client_id=MOCK_CLIENT_ID&' +
+          'redirect_uri=https://app.example.com/oauth/callback&' +
+          'scope=https://graph.microsoft.com/Calendars.ReadWrite offline_access&' +
+          'response_type=code&' +
+          'response_mode=query';
+      }
+
+      // MOCK: En producción, se verificaría si ya existe una conexión pendiente
+      // y se retornaría su ID, o se crearía una nueva conexión con estado 'pendiente'
+      const conexionId = `integracion-${proveedor}-${Date.now()}`;
+
+      resolve({
+        authUrl,
+        conexionId,
+        estado: 'pendiente', // Cambiará a 'conectado' después de completar OAuth
+      });
+    }, 300);
+  });
+};
+
+/**
+ * Desconecta una integración de calendario externo
+ * 
+ * MOCK/STUB: En producción, esto:
+ * 1. Revocaría los tokens OAuth en el proveedor (Google/Outlook)
+ * 2. Eliminaría los webhooks configurados
+ * 3. Marcaría la conexión como desconectada en la base de datos
+ * 4. Limpiaría eventos sincronizados si es necesario
+ * 
+ * @param idIntegracion - ID de la integración a desconectar
+ * @returns Promise que se resuelve cuando la desconexión se completa
+ * 
+ * @example
+ * ```typescript
+ * await desconectarCalendarioExterno('integracion-google-1');
+ * ```
+ */
+export const desconectarCalendarioExterno = async (
+  idIntegracion: string
+): Promise<void> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      // MOCK: En producción, esto:
+      // 1. Obtendría la conexión de la base de datos
+      // 2. Revocaría el token en el proveedor (Google/Outlook API)
+      // 3. Eliminaría webhooks si están configurados
+      // 4. Actualizaría el estado a 'desconectado' en la base de datos
+      // 5. Opcionalmente, limpiaría eventos sincronizados
+      
+      console.log(`[MOCK] Desconectando integración: ${idIntegracion}`);
+      console.log('[MOCK] En producción, esto revocaría tokens OAuth y eliminaría webhooks');
+      
+      resolve();
+    }, 300);
+  });
+};
+
+/**
+ * Sincroniza manualmente los eventos de un calendario externo
+ * 
+ * MOCK/STUB: En producción, esto:
+ * 1. Obtendría los eventos del calendario externo usando la API del proveedor
+ * 2. Compararía con eventos locales para detectar cambios
+ * 3. Actualizaría/crearía eventos en la base de datos local
+ * 4. Si la sincronización es bidireccional, también enviaría cambios locales al externo
+ * 5. Actualizaría la fecha de última sincronización
+ * 
+ * @param idIntegracion - ID de la integración a sincronizar
+ * @returns Resultado de la sincronización con estadísticas
+ * 
+ * @example
+ * ```typescript
+ * const resultado = await sincronizarAhora('integracion-google-1');
+ * console.log(`Sincronizados ${resultado.eventosSincronizados} eventos`);
+ * ```
+ */
+export const sincronizarAhora = async (
+  idIntegracion: string
+): Promise<{
+  exito: boolean;
+  eventosSincronizados: number;
+  eventosCreados: number;
+  eventosActualizados: number;
+  eventosEliminados: number;
+  errores?: string[];
+  ultimaSincronizacion: Date;
+}> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      // MOCK: En producción, esto realizaría:
+      // 1. Obtener la conexión de la base de datos
+      // 2. Validar que el token OAuth sigue siendo válido (renovar si es necesario)
+      // 3. Obtener eventos del calendario externo (últimos 30 días o rango configurado)
+      // 4. Comparar con eventos locales y aplicar cambios
+      // 5. Si es bidireccional, también enviar cambios locales al externo
+      // 6. Actualizar ultimaSincronizacion en la conexión
+      
+      console.log(`[MOCK] Sincronizando integración: ${idIntegracion}`);
+      console.log('[MOCK] En producción, esto consultaría la API de Google/Outlook');
+      
+      // Simular sincronización exitosa con datos mock
+      const fechaInicio = new Date();
+      fechaInicio.setDate(fechaInicio.getDate() - 7); // Últimos 7 días
+      const fechaFin = new Date();
+      fechaFin.setDate(fechaFin.getDate() + 7); // Próximos 7 días
+      
+      // En producción, se llamaría a sincronizarEventos() con el idIntegracion
+      // const eventos = await sincronizarEventos(idIntegracion, fechaInicio, fechaFin);
+      
+      resolve({
+        exito: true,
+        eventosSincronizados: 0, // Mock: 0 eventos por defecto
+        eventosCreados: 0,
+        eventosActualizados: 0,
+        eventosEliminados: 0,
+        ultimaSincronizacion: new Date(),
+      });
+    }, 800); // Simular tiempo de sincronización
+  });
 };
 

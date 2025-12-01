@@ -9,7 +9,7 @@ import {
   ClienteInactivo,
   CanalOferta,
 } from '../api/ofertasEspeciales';
-import { Gift, Send, Settings, Users, Clock, Calendar, TrendingDown, CheckCircle } from 'lucide-react';
+import { Gift, Send, Settings, Users, Clock, Calendar, TrendingDown, CheckCircle, Search, Filter } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 
 interface GestorOfertasEspecialesProps {
@@ -29,6 +29,7 @@ export const GestorOfertasEspeciales: React.FC<GestorOfertasEspecialesProps> = (
   const [mostrarConfiguracion, setMostrarConfiguracion] = useState(false);
   const [historialOfertas, setHistorialOfertas] = useState<OfertaEspecialEnviada[]>([]);
   const [mostrarHistorial, setMostrarHistorial] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
 
   useEffect(() => {
     cargarClientesInactivos();
@@ -83,8 +84,13 @@ export const GestorOfertasEspeciales: React.FC<GestorOfertasEspecialesProps> = (
     }).format(cantidad);
   };
 
-  const totalClientesInactivos = clientesInactivos.length;
-  const totalGastadoInactivos = clientesInactivos.reduce((sum, cliente) => sum + cliente.totalGastado, 0);
+  const clientesFiltrados = clientesInactivos.filter((cliente) =>
+    cliente.clienteNombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+    cliente.clienteEmail.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
+  const totalClientesInactivos = clientesFiltrados.length;
+  const totalGastadoInactivos = clientesFiltrados.reduce((sum, cliente) => sum + cliente.totalGastado, 0);
 
   const columnas = [
     {
@@ -171,24 +177,38 @@ export const GestorOfertasEspeciales: React.FC<GestorOfertasEspecialesProps> = (
           </div>
         </div>
 
-        <div className="mb-4 flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Switch
-              checked={configuracion.activo}
-              onChange={(checked) => setConfiguracion({ ...configuracion, activo: checked })}
-            />
-            <span className="text-sm font-medium text-gray-700">
-              Ofertas Automáticas {configuracion.activo ? 'Activadas' : 'Desactivadas'}
-            </span>
+        <div className="mb-4 space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={configuracion.activo}
+                onChange={(checked) => setConfiguracion({ ...configuracion, activo: checked })}
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Ofertas Automáticas {configuracion.activo ? 'Activadas' : 'Desactivadas'}
+              </span>
+            </div>
+            {configuracion.activo && totalClientesInactivos > 0 && (
+              <div className="flex gap-4">
+                <Badge variant="warning">
+                  {totalClientesInactivos} {totalClientesInactivos === 1 ? 'cliente inactivo' : 'clientes inactivos'}
+                </Badge>
+                <Badge variant="info">
+                  {formatoMoneda(totalGastadoInactivos)} en riesgo
+                </Badge>
+              </div>
+            )}
           </div>
-          {configuracion.activo && totalClientesInactivos > 0 && (
-            <div className="flex gap-4">
-              <Badge variant="warning">
-                {totalClientesInactivos} {totalClientesInactivos === 1 ? 'cliente inactivo' : 'clientes inactivos'}
-              </Badge>
-              <Badge variant="info">
-                {formatoMoneda(totalGastadoInactivos)} en riesgo
-              </Badge>
+          
+          {configuracion.activo && clientesInactivos.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Search size={18} className="text-gray-400" />
+              <Input
+                placeholder="Buscar por nombre o email del cliente..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                className="flex-1"
+              />
             </div>
           )}
         </div>
@@ -201,7 +221,7 @@ export const GestorOfertasEspeciales: React.FC<GestorOfertasEspecialesProps> = (
           </div>
         ) : cargando ? (
           <div className="text-center py-12 text-gray-500">Cargando...</div>
-        ) : clientesInactivos.length === 0 ? (
+        ) : clientesFiltrados.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             <CheckCircle className="w-12 h-12 mx-auto mb-4 text-green-300" />
             <p>No hay clientes inactivos en este momento</p>
@@ -240,7 +260,7 @@ export const GestorOfertasEspeciales: React.FC<GestorOfertasEspecialesProps> = (
             </div>
 
             <Table
-              data={clientesInactivos}
+              data={clientesFiltrados}
               columns={columnas}
             />
           </div>

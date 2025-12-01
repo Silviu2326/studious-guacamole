@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '../../../components/componentsreutilizables';
-import { 
-  CheckCircle, 
-  Clock, 
-  AlertCircle, 
+import {
+  CheckCircle,
+  Clock,
+  AlertCircle,
   Save,
   Info
 } from 'lucide-react';
-import { 
-  getConfiguracionAprobacion, 
-  actualizarConfiguracionAprobacion 
+import {
+  getConfiguracionAprobacion,
+  actualizarConfiguracionAprobacion
 } from '../api/configuracionAprobacion';
 import type { ConfiguracionAprobacionReservas as ConfiguracionAprobacionReservasData } from '../types';
 
@@ -17,8 +17,8 @@ interface ConfiguracionAprobacionReservasProps {
   entrenadorId: string;
 }
 
-export const ConfiguracionAprobacionReservas: React.FC<ConfiguracionAprobacionReservasProps> = ({ 
-  entrenadorId 
+export const ConfiguracionAprobacionReservas: React.FC<ConfiguracionAprobacionReservasProps> = ({
+  entrenadorId
 }) => {
   const [configuracion, setConfiguracion] = useState<ConfiguracionAprobacionReservasData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,55 +91,64 @@ export const ConfiguracionAprobacionReservas: React.FC<ConfiguracionAprobacionRe
           </div>
         )}
 
-        <div className="space-y-4">
-          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="radio"
-                name="aprobacion"
-                checked={aprobacionAutomatica}
-                onChange={() => setAprobacionAutomatica(true)}
-                className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <span className="text-base font-semibold text-gray-900">
-                    Aprobación Automática
-                  </span>
+        {/* Bloque: Configuración de Aprobación */}
+        <div className="mb-6">
+          <h4 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Modo de Aprobación</h4>
+          <div className="space-y-4">
+            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="aprobacion"
+                  checked={aprobacionAutomatica}
+                  onChange={() => setAprobacionAutomatica(true)}
+                  className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <span className="text-base font-semibold text-gray-900">
+                      Aprobación Automática
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Las reservas se confirmarán automáticamente cuando los clientes las realicen.
+                    Ideal para agilizar el proceso y permitir reservas 24/7.
+                  </p>
                 </div>
-                <p className="text-sm text-gray-600">
-                  Las reservas se confirmarán automáticamente cuando los clientes las realicen. 
-                  Ideal para agilizar el proceso y permitir reservas 24/7.
-                </p>
-              </div>
-            </label>
-          </div>
+              </label>
+            </div>
 
-          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="radio"
-                name="aprobacion"
-                checked={!aprobacionAutomatica}
-                onChange={() => setAprobacionAutomatica(false)}
-                className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <Clock className="w-5 h-5 text-orange-600" />
-                  <span className="text-base font-semibold text-gray-900">
-                    Aprobación Manual
-                  </span>
+            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="aprobacion"
+                  checked={!aprobacionAutomatica}
+                  onChange={() => setAprobacionAutomatica(false)}
+                  className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="w-5 h-5 text-orange-600" />
+                    <span className="text-base font-semibold text-gray-900">
+                      Aprobación Manual
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Las reservas quedarán en estado "pendiente" y deberás aprobarlas manualmente.
+                    Te da mayor control sobre tu agenda.
+                  </p>
                 </div>
-                <p className="text-sm text-gray-600">
-                  Las reservas quedarán en estado "pendiente" y deberás aprobarlas manualmente. 
-                  Te da mayor control sobre tu agenda.
-                </p>
-              </div>
-            </label>
-          </div>
+              </label>
+            </div>
 
+          </div>
+        </div>
+
+        {/* Bloque: Información y Impacto */}
+        <div className="mb-6">
+          <h4 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Impacto de la Configuración</h4>
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-start gap-2">
               <Info className="w-5 h-5 text-blue-600 mt-0.5" />
@@ -151,6 +160,7 @@ export const ConfiguracionAprobacionReservas: React.FC<ConfiguracionAprobacionRe
                       <li>Los clientes pueden reservar y la sesión se confirma inmediatamente</li>
                       <li>Recibirás una notificación cuando se realice una reserva</li>
                       <li>Las reservas aparecerán directamente en tu agenda como "confirmadas"</li>
+                      <li>Ideal para agilizar el proceso y permitir reservas 24/7</li>
                     </>
                   ) : (
                     <>
@@ -158,27 +168,32 @@ export const ConfiguracionAprobacionReservas: React.FC<ConfiguracionAprobacionRe
                       <li>Recibirás una notificación para revisar y aprobar la reserva</li>
                       <li>Debes aprobar o rechazar cada reserva desde la sección de reservas</li>
                       <li>El cliente recibirá un email cuando apruebes o rechaces su reserva</li>
+                      <li>Te da mayor control sobre tu agenda y quién puede reservar</li>
                     </>
                   )}
                 </ul>
               </div>
             </div>
           </div>
+        </div>
 
-          {haCambiado && (
+        {/* Botón de guardar */}
+        {haCambiado && (
+          <div className="pt-4 border-t border-gray-200">
             <Button
               variant="primary"
               onClick={guardarConfiguracion}
               disabled={guardando}
               loading={guardando}
-              iconLeft={Save}
+              leftIcon={<Save size={18} />}
               fullWidth
             >
               Guardar Configuración
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
+
     </Card>
   );
 };

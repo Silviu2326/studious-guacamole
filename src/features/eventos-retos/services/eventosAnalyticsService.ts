@@ -2,6 +2,8 @@
 
 import { Evento, TipoEvento } from '../api/events';
 import { calcularEstadisticasFeedback, obtenerEncuestaPorEvento } from './feedbackService';
+import { EventInsight, InsightType, AnalyticsFilters } from '../types';
+import { cargarEventos } from '../api/events';
 
 export interface RankingEvento {
   eventoId: string;
@@ -216,9 +218,9 @@ export const compararTiposEvento = (eventos: Evento[]): ComparativaTipoEvento[] 
 };
 
 /**
- * Analiza los mejores horarios y días para eventos
+ * Analiza los mejores horarios y días para eventos (función interna)
  */
-export const analizarMejoresHorarios = (eventos: Evento[]): AnalisisHorarios => {
+const analizarMejoresHorariosInterno = (eventos: Evento[]): AnalisisHorarios => {
   const eventosFinalizados = eventos.filter(e => e.estado === 'finalizado');
 
   if (eventosFinalizados.length === 0) {
@@ -457,13 +459,250 @@ export const analizarMejoresHorarios = (eventos: Evento[]): AnalisisHorarios => 
   };
 };
 
+// ============================================================================
+// NUEVAS FUNCIONES PARA SERVICIO MOCK
+// ============================================================================
+
+/**
+ * Obtiene rankings de eventos según diferentes métricas
+ * 
+ * Consumido desde:
+ * - EventAnalyticsModal.tsx para mostrar ranking de eventos
+ * - DashboardMetricasGenerales.tsx para eventos destacados
+ * 
+ * @param filtros Filtros para aplicar al ranking
+ * @returns Array de eventos rankeados
+ */
+export const obtenerRankingsEventos = (
+  filtros?: AnalyticsFilters
+): RankingEvento[] => {
+  let eventos = cargarEventos();
+
+  // Aplicar filtros
+  if (filtros) {
+    if (filtros.fechaDesde) {
+      eventos = eventos.filter(e => e.fechaInicio >= filtros.fechaDesde!);
+    }
+    if (filtros.fechaHasta) {
+      eventos = eventos.filter(e => e.fechaInicio <= filtros.fechaHasta!);
+    }
+    if (filtros.tipo) {
+      const tipos = Array.isArray(filtros.tipo) ? filtros.tipo : [filtros.tipo];
+      eventos = eventos.filter(e => tipos.includes(e.tipo));
+    }
+    if (filtros.estado) {
+      const estados = Array.isArray(filtros.estado) ? filtros.estado : [filtros.estado];
+      eventos = eventos.filter(e => estados.includes(e.estado));
+    }
+    if (filtros.creadoPor) {
+      eventos = eventos.filter(e => e.creadoPor === filtros.creadoPor);
+    }
+    if (filtros.textoBusqueda) {
+      const busqueda = filtros.textoBusqueda.toLowerCase();
+      eventos = eventos.filter(e =>
+        e.nombre.toLowerCase().includes(busqueda) ||
+        e.descripcion?.toLowerCase().includes(busqueda)
+      );
+    }
+  }
+
+  const ordenPor = filtros?.ordenPor || 'valoracion';
+  return calcularRankingEventos(eventos, ordenPor);
+};
+
+/**
+ * Compara eventos por tipo (presenciales vs virtuales vs retos)
+ * 
+ * Consumido desde:
+ * - EventAnalyticsModal.tsx para mostrar comparativa por tipo
+ * - DashboardMetricasGenerales.tsx para análisis de tipos
+ * 
+ * @param filtros Filtros para aplicar a la comparativa
+ * @returns Array con comparativa por tipo de evento
+ */
+export const compararEventosPorTipo = (
+  filtros?: AnalyticsFilters
+): ComparativaTipoEvento[] => {
+  let eventos = cargarEventos();
+
+  // Aplicar filtros
+  if (filtros) {
+    if (filtros.fechaDesde) {
+      eventos = eventos.filter(e => e.fechaInicio >= filtros.fechaDesde!);
+    }
+    if (filtros.fechaHasta) {
+      eventos = eventos.filter(e => e.fechaInicio <= filtros.fechaHasta!);
+    }
+    if (filtros.estado) {
+      const estados = Array.isArray(filtros.estado) ? filtros.estado : [filtros.estado];
+      eventos = eventos.filter(e => estados.includes(e.estado));
+    }
+    if (filtros.creadoPor) {
+      eventos = eventos.filter(e => e.creadoPor === filtros.creadoPor);
+    }
+  }
+
+  return compararTiposEvento(eventos);
+};
+
+/**
+ * Analiza los mejores horarios y franjas horarias para eventos
+ * 
+ * Consumido desde:
+ * - EventAnalyticsModal.tsx para mostrar análisis de horarios
+ * - DashboardMetricasGenerales.tsx para recomendaciones
+ * 
+ * @param filtros Filtros para aplicar al análisis
+ * @returns Análisis de horarios con mejores días y horas
+ */
+export const analizarMejoresHorarios = (
+  filtros?: AnalyticsFilters
+): AnalisisHorarios => {
+  let eventos = cargarEventos();
+
+  // Aplicar filtros
+  if (filtros) {
+    if (filtros.fechaDesde) {
+      eventos = eventos.filter(e => e.fechaInicio >= filtros.fechaDesde!);
+    }
+    if (filtros.fechaHasta) {
+      eventos = eventos.filter(e => e.fechaInicio <= filtros.fechaHasta!);
+    }
+    if (filtros.tipo) {
+      const tipos = Array.isArray(filtros.tipo) ? filtros.tipo : [filtros.tipo];
+      eventos = eventos.filter(e => tipos.includes(e.tipo));
+    }
+    if (filtros.estado) {
+      const estados = Array.isArray(filtros.estado) ? filtros.estado : [filtros.estado];
+      eventos = eventos.filter(e => estados.includes(e.estado));
+    }
+    if (filtros.creadoPor) {
+      eventos = eventos.filter(e => e.creadoPor === filtros.creadoPor);
+    }
+  }
+
+  // Llamar a la función interna de análisis
+  return analizarMejoresHorariosInterno(eventos);
+};
+
+/**
+ * Función interna para analizar horarios y días para eventos
+ */
+const analizarMejoresHorariosInterno = (eventos: Evento[]): AnalisisHorarios => {
+
+/**
+ * Obtiene insights y análisis derivados de métricas de eventos
+ * 
+ * Consumido desde:
+ * - EventAnalyticsModal.tsx para mostrar insights y recomendaciones
+ * - DashboardMetricasGenerales.tsx para alertas y recomendaciones
+ * 
+ * @param filtros Filtros para aplicar al análisis
+ * @returns Lista de insights de eventos
+ */
+export const obtenerInsightsEventos = (
+  filtros?: AnalyticsFilters
+): EventInsight[] => {
+  let eventos = cargarEventos();
+
+  // Aplicar filtros
+  if (filtros) {
+    if (filtros.fechaDesde) {
+      eventos = eventos.filter(e => e.fechaInicio >= filtros.fechaDesde!);
+    }
+    if (filtros.fechaHasta) {
+      eventos = eventos.filter(e => e.fechaInicio <= filtros.fechaHasta!);
+    }
+    if (filtros.tipo) {
+      const tipos = Array.isArray(filtros.tipo) ? filtros.tipo : [filtros.tipo];
+      eventos = eventos.filter(e => tipos.includes(e.tipo));
+    }
+    if (filtros.estado) {
+      const estados = Array.isArray(filtros.estado) ? filtros.estado : [filtros.estado];
+      eventos = eventos.filter(e => estados.includes(e.estado));
+    }
+    if (filtros.creadoPor) {
+      eventos = eventos.filter(e => e.creadoPor === filtros.creadoPor);
+    }
+  }
+
+  const insights: EventInsight[] = [];
+  const insightsData = generarInsightsEventos(eventos);
+
+  // Insight de tipo de evento más popular
+  insights.push({
+    tipoInsight: 'participacion',
+    descripcion: `El tipo de evento más popular es: ${insightsData.tipoEventoMasPopular}`,
+    valor: insightsData.tipoEventoMasPopular,
+    fechaCalculo: new Date(),
+  });
+
+  // Insight de mejor momento
+  if (insightsData.mejorMomentoParaEventos.dia !== 'N/A') {
+    insights.push({
+      tipoInsight: 'participacion',
+      descripcion: `El mejor momento para eventos es: ${insightsData.mejorMomentoParaEventos.dia} a las ${insightsData.mejorMomentoParaEventos.hora}:00`,
+      valor: `${insightsData.mejorMomentoParaEventos.dia} ${insightsData.mejorMomentoParaEventos.hora}:00`,
+      fechaCalculo: new Date(),
+    });
+  }
+
+  // Insights de tendencias
+  insights.push({
+    tipoInsight: 'participacion',
+    descripcion: `Tendencia de participación: ${insightsData.tendencias.participacion}`,
+    valor: insightsData.tendencias.participacion,
+    fechaCalculo: new Date(),
+  });
+
+  insights.push({
+    tipoInsight: 'asistencia',
+    descripcion: `Tendencia de asistencia: ${insightsData.tendencias.asistencia}`,
+    valor: insightsData.tendencias.asistencia,
+    fechaCalculo: new Date(),
+  });
+
+  insights.push({
+    tipoInsight: 'satisfaccion',
+    descripcion: `Tendencia de valoración: ${insightsData.tendencias.valoracion}`,
+    valor: insightsData.tendencias.valoracion,
+    fechaCalculo: new Date(),
+  });
+
+  // Insights de eventos más exitosos
+  if (insightsData.eventosMasExitosos.length > 0) {
+    const eventoTop = insightsData.eventosMasExitosos[0];
+    insights.push({
+      tipoInsight: 'satisfaccion',
+      descripcion: `Evento más exitoso: ${eventoTop.eventoNombre} con valoración ${eventoTop.valoracionPromedio.toFixed(1)}/5`,
+      valor: eventoTop.valoracionPromedio,
+      fechaCalculo: new Date(),
+    });
+  }
+
+  // Insights de comparativa por tipo
+  const comparativas = compararEventosPorTipo(filtros);
+  comparativas.forEach(comp => {
+    if (comp.totalEventos > 0) {
+      insights.push({
+        tipoInsight: 'satisfaccion',
+        descripcion: `Eventos ${comp.tipo}: promedio de valoración ${comp.promedioValoracion.toFixed(1)}/5`,
+        valor: comp.promedioValoracion,
+        fechaCalculo: new Date(),
+      });
+    }
+  });
+
+  return insights;
+};
+
 /**
  * Genera insights y recomendaciones basados en los eventos
  */
 export const generarInsightsEventos = (eventos: Evento[]): InsightsEventos => {
   const rankings = calcularRankingEventos(eventos, 'valoracion');
   const comparativas = compararTiposEvento(eventos);
-  const analisisHorarios = analizarMejoresHorarios(eventos);
+  const analisisHorarios = analizarMejoresHorariosInterno(eventos);
 
   // Eventos más exitosos (top 5)
   const eventosMasExitosos = rankings

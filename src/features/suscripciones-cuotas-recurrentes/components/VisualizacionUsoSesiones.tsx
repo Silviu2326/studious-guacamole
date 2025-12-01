@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
-import { Suscripcion } from '../types';
+import { Suscripcion, SesionIncluida } from '../types';
 import { Card, Badge, Button } from '../../../components/componentsreutilizables';
+import { obtenerSesionesIncluidas } from '../api/suscripciones';
 import { 
   TrendingDown, 
   AlertCircle, 
@@ -15,7 +16,80 @@ import {
 interface VisualizacionUsoSesionesProps {
   suscripciones: Suscripcion[];
   onContactar?: (suscripcion: Suscripcion) => void;
+  vista?: 'por-cliente' | 'por-periodo'; // Nueva prop para cambiar la vista
 }
+
+// Componente gráfico reutilizable para mostrar uso de sesiones
+interface BarraProgresoSesionesProps {
+  total: number;
+  consumidas: number;
+  disponibles: number;
+  porcentaje: number;
+  showLabels?: boolean;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+export const BarraProgresoSesiones: React.FC<BarraProgresoSesionesProps> = ({
+  total,
+  consumidas,
+  disponibles,
+  porcentaje,
+  showLabels = true,
+  size = 'md',
+  className = '',
+}) => {
+  const heightClass = {
+    sm: 'h-2',
+    md: 'h-4',
+    lg: 'h-6',
+  }[size];
+
+  const getColor = (porcentaje: number) => {
+    if (porcentaje >= 80) return 'bg-green-500';
+    if (porcentaje >= 50) return 'bg-yellow-500';
+    if (porcentaje >= 25) return 'bg-orange-500';
+    return 'bg-red-500';
+  };
+
+  return (
+    <div className={`w-full ${className}`}>
+      {showLabels && (
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-4 text-sm">
+            <span className="text-gray-700">
+              <strong>{consumidas}</strong> / {total} consumidas
+            </span>
+            <span className="text-green-600 font-semibold">
+              {disponibles} disponibles
+            </span>
+          </div>
+          <span className={`text-sm font-semibold ${
+            porcentaje >= 80 ? 'text-green-600' : 
+            porcentaje >= 50 ? 'text-yellow-600' : 
+            'text-red-600'
+          }`}>
+            {porcentaje}%
+          </span>
+        </div>
+      )}
+      <div className={`w-full bg-gray-200 rounded-full overflow-hidden ${heightClass}`}>
+        <div
+          className={`h-full transition-all duration-500 ${getColor(porcentaje)}`}
+          style={{ width: `${Math.min(100, porcentaje)}%` }}
+        >
+          {porcentaje > 15 && size !== 'sm' && (
+            <div className="h-full flex items-center justify-end pr-2">
+              <span className="text-xs font-semibold text-white">
+                {porcentaje}%
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface ClienteUsoSesiones {
   suscripcion: Suscripcion;
@@ -29,7 +103,35 @@ interface ClienteUsoSesiones {
 export const VisualizacionUsoSesiones: React.FC<VisualizacionUsoSesionesProps> = ({
   suscripciones,
   onContactar,
+  vista = 'por-cliente',
 }) => {
+  const [sesionesIncluidas, setSesionesIncluidas] = React.useState<Map<string, SesionIncluida[]>>(new Map());
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    loadSesionesIncluidas();
+  }, [suscripciones]);
+
+  const loadSesionesIncluidas = async () => {
+    setLoading(true);
+    try {
+      const sesionesMap = new Map<string, SesionIncluida[]>();
+      for (const suscripcion of suscripciones) {
+        if (suscripcion.tipo === 'pt-mensual' && suscripcion.estado === 'activa') {
+          const sesiones = await obtenerSesionesIncluidas({
+            suscripcionId: suscripcion.id,
+            incluirCaducadas: false,
+          });
+          sesionesMap.set(suscripcion.id, sesiones);
+        }
+      }
+      setSesionesIncluidas(sesionesMap);
+    } catch (error) {
+      console.error('Error cargando sesiones incluidas:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
   // Filtrar solo suscripciones PT activas
   const suscripcionesPT = suscripciones.filter(
     s => s.tipo === 'pt-mensual' && s.estado === 'activa' && s.sesionesIncluidas
@@ -302,38 +404,50 @@ export const VisualizacionUsoSesiones: React.FC<VisualizacionUsoSesionesProps> =
                     </div>
                   </div>
 
-                  {/* Barra de progreso visual */}
+                  {/* Barra de progreso visual - usando componente reutilizable */}
                   <div className="mb-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm font-medium text-gray-700">
-                          Sesiones usadas: <span className="font-bold">{sesionesUsadas}</span> / {sesionesIncluidas}
-                        </span>
-                        <span className={`text-sm font-semibold ${getColorPorcentaje(porcentajeUso)}`}>
-                          {porcentajeUso}%
-                        </span>
-                      </div>
-                      <span className="text-sm text-gray-600">
-                        {sesionesRestantes} disponibles
-                      </span>
-                    </div>
-                    
-                    {/* Barra de progreso */}
-                    <div className="w-full bg-gray-200 rounded-full h-6 overflow-hidden">
-                      <div
-                        className={`h-full transition-all duration-500 ${getBgColorPorcentaje(porcentajeUso)}`}
-                        style={{ width: `${Math.min(100, porcentajeUso)}%` }}
-                      >
-                        <div className="h-full flex items-center justify-end pr-2">
-                          {porcentajeUso > 15 && (
-                            <span className="text-xs font-semibold text-gray-700">
-                              {porcentajeUso}%
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                    <BarraProgresoSesiones
+                      total={sesionesIncluidas}
+                      consumidas={sesionesUsadas}
+                      disponibles={sesionesRestantes}
+                      porcentaje={porcentajeUso}
+                      size="md"
+                    />
                   </div>
+                  
+                  {/* Vista por período si hay sesiones incluidas */}
+                  {sesionesIncluidas.get(suscripcion.id) && sesionesIncluidas.get(suscripcion.id)!.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <p className="text-xs font-semibold text-gray-600 mb-2">Uso por Período:</p>
+                      <div className="space-y-2">
+                        {sesionesIncluidas.get(suscripcion.id)!.map((sesion) => {
+                          const porcentajeSesion = sesion.totalSesiones > 0
+                            ? Math.round((sesion.consumidas / sesion.totalSesiones) * 100)
+                            : 0;
+                          return (
+                            <div key={sesion.id} className="text-xs">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-gray-600">
+                                  {sesion.periodo || 'Sin período'} ({sesion.tipoSesion})
+                                </span>
+                                <span className="text-gray-900 font-semibold">
+                                  {sesion.consumidas}/{sesion.totalSesiones}
+                                </span>
+                              </div>
+                              <BarraProgresoSesiones
+                                total={sesion.totalSesiones}
+                                consumidas={sesion.consumidas}
+                                disponibles={sesion.totalSesiones - sesion.consumidas}
+                                porcentaje={porcentajeSesion}
+                                showLabels={false}
+                                size="sm"
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Mensaje de alerta si necesita atención */}
                   {necesitaAtencion && (

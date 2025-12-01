@@ -13,8 +13,8 @@ import {
 } from 'lucide-react';
 import { getReservas } from '../api/reservas';
 import { actualizarReserva, cancelarReserva } from '../api/reservas';
-import { obtenerTokenConfirmacion, marcarTokenComoUsado, esTokenValido } from '../api/tokensConfirmacion';
-import { Reserva, TokenConfirmacionReserva } from '../types';
+import { validarTokenConfirmacion, marcarTokenComoUsado } from '../api/tokensConfirmacion';
+import { Reserva, InfoReservaToken } from '../types';
 
 export default function ConfirmarReservaPage() {
   const { token } = useParams<{ token: string }>();
@@ -23,7 +23,7 @@ export default function ConfirmarReservaPage() {
   const accion = (searchParams.get('accion') || 'confirmar') as 'confirmar' | 'cancelar';
   
   const [reserva, setReserva] = useState<Reserva | null>(null);
-  const [tokenConfirmacion, setTokenConfirmacion] = useState<TokenConfirmacionReserva | null>(null);
+  const [infoReserva, setInfoReserva] = useState<InfoReservaToken | null>(null);
   const [loading, setLoading] = useState(true);
   const [procesando, setProcesando] = useState(false);
   const [exito, setExito] = useState(false);
@@ -43,38 +43,47 @@ export default function ConfirmarReservaPage() {
     }
 
     try {
-      // Obtener token de confirmación
-      const tokenData = await obtenerTokenConfirmacion(token);
-      if (!tokenData) {
-        setError('Token de confirmación no válido');
+      // Validar token y obtener información de la reserva
+      const info = await validarTokenConfirmacion(token);
+      
+      if (!info) {
+        setError('Token de confirmación no válido o expirado');
         setLoading(false);
         return;
       }
 
-      // Verificar si el token es válido
-      if (!esTokenValido(tokenData)) {
-        setError(tokenData.usado 
-          ? 'Este enlace ya ha sido utilizado' 
-          : 'Este enlace ha expirado');
-        setLoading(false);
-        return;
-      }
+      setInfoReserva(info);
 
-      setTokenConfirmacion(tokenData);
-
-      // Obtener reserva
+      // Obtener reserva completa para mostrar todos los detalles
       const ahora = new Date();
       const fechaFin = new Date(ahora.getTime() + 30 * 24 * 60 * 60 * 1000);
-      const reservas = await getReservas(ahora, fechaFin, 'entrenador');
-      const reservaEncontrada = reservas.find(r => r.id === tokenData.reservaId);
+      const reservas = await getReservas({ fechaInicio: ahora, fechaFin }, 'entrenador');
+      const reservaEncontrada = reservas.find(r => r.id === info.reservaId);
 
-      if (!reservaEncontrada) {
-        setError('Reserva no encontrada');
-        setLoading(false);
-        return;
+      if (reservaEncontrada) {
+        setReserva(reservaEncontrada);
+      } else {
+        // Si no encontramos la reserva completa, crear un objeto básico desde la info del token
+        const reservaBasica: Reserva = {
+          id: info.reservaId,
+          clienteId: info.clienteId,
+          entrenadorId: info.entrenadorId,
+          clienteNombre: info.clienteNombre,
+          fecha: info.fechaInicio,
+          fechaInicio: info.fechaInicio,
+          fechaFin: info.fechaFin,
+          horaInicio: info.fechaInicio.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+          horaFin: info.fechaFin.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+          estado: info.estado,
+          tipoSesion: info.tipoSesion,
+          precio: info.precio,
+          origen: 'enlacePublico',
+          esOnline: info.tipoSesion === 'videollamada',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        setReserva(reservaBasica);
       }
-
-      setReserva(reservaEncontrada);
     } catch (error) {
       console.error('Error cargando datos:', error);
       setError('Error al cargar la información de la reserva');
@@ -143,7 +152,7 @@ export default function ConfirmarReservaPage() {
     );
   }
 
-  if (error || !reserva || !tokenConfirmacion) {
+  if (error || !reserva || !infoReserva) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex items-center justify-center p-4">
         <Card className="p-8 max-w-md w-full">
@@ -151,11 +160,9 @@ export default function ConfirmarReservaPage() {
             <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Error</h2>
             <p className="text-gray-600 mb-4">{error || 'No se pudo cargar la información de la reserva'}</p>
-            {tokenConfirmacion?.usado && (
-              <p className="text-sm text-gray-500 mb-4">
-                Este enlace ya ha sido utilizado anteriormente.
-              </p>
-            )}
+            <p className="text-sm text-gray-500 mb-4">
+              Este enlace puede haber expirado o ya haber sido utilizado.
+            </p>
           </div>
         </Card>
       </div>
@@ -178,8 +185,8 @@ export default function ConfirmarReservaPage() {
           </h2>
           <p className="text-gray-600 mb-6">
             {accion === 'confirmar'
-              ? 'Tu asistencia ha sido confirmada. ¡Te esperamos!'
-              : 'Tu sesión ha sido cancelada. Si necesitas reprogramar, por favor contacta con nosotros.'}
+              ? 'Perfecto, tu asistencia ha sido confirmada. Te esperamos en la fecha y hora acordadas. Recibirás un recordatorio antes de la sesión.'
+              : 'Tu sesión ha sido cancelada correctamente. Si necesitas reprogramar o tienes alguna pregunta, no dudes en contactarnos.'}
           </p>
           <div className="p-4 bg-gray-50 rounded-lg mb-4 text-left">
             <p className="text-sm text-gray-600 mb-1">Reserva</p>
@@ -213,12 +220,12 @@ export default function ConfirmarReservaPage() {
         <div className="space-y-6">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              {accion === 'confirmar' ? 'Confirmar Asistencia' : 'Cancelar Sesión'}
+              {accion === 'confirmar' ? 'Confirmar tu Asistencia' : 'Cancelar tu Sesión'}
             </h2>
             <p className="text-gray-600">
               {accion === 'confirmar'
-                ? 'Confirma que asistirás a esta sesión'
-                : '¿No puedes asistir a esta sesión?'}
+                ? 'Por favor, confirma que asistirás a esta sesión. Esto nos ayuda a prepararnos mejor.'
+                : '¿No puedes asistir a esta sesión? Puedes cancelarla aquí.'}
             </p>
           </div>
 

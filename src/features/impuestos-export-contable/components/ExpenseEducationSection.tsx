@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Button, Badge } from '../../../components/componentsreutilizables';
 import { CATEGORIAS_GASTO, CategoriaGasto } from '../types/expenses';
+import { getGuiaGastosDeducibles, GuiaGastosDeducibles } from '../api/api';
 import { 
   BookOpen, 
   CheckCircle2, 
@@ -9,28 +10,98 @@ import {
   DollarSign,
   Lightbulb,
   AlertCircle,
-  Info
+  Info,
+  Loader2,
+  Shield,
+  TrendingUp,
+  HelpCircle
 } from 'lucide-react';
 
 /**
- * Componente educativo que muestra gastos típicamente deducibles
- * para entrenadores personales con ejemplos concretos y checklist mensual
+ * Componente educativo tipo centro de ayuda que muestra información sobre
+ * gastos deducibles y buenas prácticas fiscales para entrenadores personales.
+ * 
+ * Características:
+ * - Guías cortas sobre qué es un gasto deducible
+ * - Listado de categorías típicas y qué se puede deducir en cada una
+ * - Advertencias de límites comunes (viajes, dietas, vehículo, etc.)
+ * - Buenas prácticas fiscales
+ * - Contenido dinámico desde la API (simulado)
  */
 export const ExpenseEducationSection: React.FC = () => {
-  const [expandedCategories, setExpandedCategories] = useState<Set<CategoriaGasto>>(new Set());
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [showChecklist, setShowChecklist] = useState(false);
+  const [showIntroduccion, setShowIntroduccion] = useState(true);
+  const [showLimites, setShowLimites] = useState(false);
+  const [showBuenasPracticas, setShowBuenasPracticas] = useState(false);
+  const [guia, setGuia] = useState<GuiaGastosDeducibles | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const toggleCategory = (categoria: CategoriaGasto) => {
+  // Cargar guía al montar el componente
+  useEffect(() => {
+    const cargarGuia = async () => {
+      try {
+        setLoading(true);
+        const datos = await getGuiaGastosDeducibles();
+        setGuia(datos);
+      } catch (error) {
+        console.error('Error al cargar la guía educativa:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    cargarGuia();
+  }, []);
+
+  const toggleCategory = (categoriaId: string) => {
     const newExpanded = new Set(expandedCategories);
-    if (newExpanded.has(categoria)) {
-      newExpanded.delete(categoria);
+    if (newExpanded.has(categoriaId)) {
+      newExpanded.delete(categoriaId);
     } else {
-      newExpanded.add(categoria);
+      newExpanded.add(categoriaId);
     }
     setExpandedCategories(newExpanded);
   };
 
-  // Ejemplos concretos de gastos deducibles por categoría
+  // Si está cargando, mostrar estado de carga
+  if (loading) {
+    return (
+      <Card className="bg-white shadow-sm">
+        <div className="p-12 text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Cargando guía educativa...</p>
+        </div>
+      </Card>
+    );
+  }
+
+  // Si no hay datos, mostrar mensaje
+  if (!guia) {
+    return (
+      <Card className="bg-white shadow-sm">
+        <div className="p-12 text-center">
+          <AlertCircle className="w-8 h-8 text-orange-500 mx-auto mb-4" />
+          <p className="text-gray-600">No se pudo cargar la guía educativa.</p>
+        </div>
+      </Card>
+    );
+  }
+
+  // Función helper para obtener color según importancia
+  const getImportanceColor = (importancia: 'alta' | 'media' | 'baja') => {
+    switch (importancia) {
+      case 'alta':
+        return 'bg-red-50 border-red-200 text-red-900';
+      case 'media':
+        return 'bg-amber-50 border-amber-200 text-amber-900';
+      case 'baja':
+        return 'bg-blue-50 border-blue-200 text-blue-900';
+      default:
+        return 'bg-gray-50 border-gray-200 text-gray-900';
+    }
+  };
+
+  // Datos legacy para mantener compatibilidad mientras se migra
   const ejemplosGastos: Record<CategoriaGasto, {
     ejemplos: string[];
     tips: string[];
@@ -310,8 +381,8 @@ export const ExpenseEducationSection: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Header de la sección educativa */}
+    <div id="educacion-gastos-deducibles" className="space-y-6">
+      {/* Header de la sección educativa - Tipo Centro de Ayuda */}
       <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
         <div className="p-6">
           <div className="flex items-start gap-4">
@@ -320,18 +391,15 @@ export const ExpenseEducationSection: React.FC = () => {
             </div>
             <div className="flex-1">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Guía de Gastos Deducibles para Entrenadores Personales
+                {guia.introduccion.titulo}
               </h2>
               <p className="text-gray-700 mb-4">
-                Descubre qué gastos puedes deducir según tu actividad profesional y asegúrate de no perder 
-                oportunidades de deducción fiscal. Esta guía incluye ejemplos concretos y consejos prácticos 
-                para cada categoría de gasto.
+                {guia.introduccion.descripcion}
               </p>
               <div className="flex items-center gap-2 text-sm text-blue-700 bg-blue-100 px-3 py-2 rounded-lg">
-                <Info className="w-4 h-4" />
+                <Info className="w-4 h-4 flex-shrink-0" />
                 <span>
-                  <strong>Importante:</strong> Consulta siempre con tu gestor o asesor fiscal para casos específicos. 
-                  La normativa puede variar según tu situación fiscal.
+                  <strong>Importante:</strong> {guia.introduccion.advertencia}
                 </span>
               </div>
             </div>
@@ -339,7 +407,63 @@ export const ExpenseEducationSection: React.FC = () => {
         </div>
       </Card>
 
-      {/* Categorías de gastos con ejemplos */}
+      {/* Bloque: ¿Qué es un Gasto Deducible? */}
+      <Card className="bg-white shadow-sm">
+        <div className="p-6">
+          <button
+            onClick={() => setShowIntroduccion(!showIntroduccion)}
+            className="w-full flex items-center justify-between text-left mb-4"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-100 rounded-lg">
+                <HelpCircle className="w-5 h-5 text-indigo-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">
+                {guia.queEsDeducible.titulo}
+              </h3>
+            </div>
+            {showIntroduccion ? (
+              <ChevronUp className="w-5 h-5 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-400" />
+            )}
+          </button>
+          
+          {showIntroduccion && (
+            <div className="space-y-4 pl-12">
+              <p className="text-gray-700 leading-relaxed">
+                {guia.queEsDeducible.definicion}
+              </p>
+              
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  Criterios para que un gasto sea deducible:
+                </h4>
+                <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 ml-4">
+                  {guia.queEsDeducible.criterios.map((criterio, index) => (
+                    <li key={index}>{criterio}</li>
+                  ))}
+                </ul>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4 text-amber-500" />
+                  Ejemplos de gastos deducibles:
+                </h4>
+                <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 ml-4">
+                  {guia.queEsDeducible.ejemplos.map((ejemplo, index) => (
+                    <li key={index}>{ejemplo}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* Categorías de gastos con ejemplos - Usando datos de la API */}
       <Card className="bg-white shadow-sm">
         <div className="p-6">
           <div className="flex items-center gap-3 mb-6">
@@ -350,17 +474,21 @@ export const ExpenseEducationSection: React.FC = () => {
           </div>
           
           <div className="space-y-3">
-            {Object.values(CATEGORIAS_GASTO).map((categoria) => {
-              const isExpanded = expandedCategories.has(categoria.id);
-              const ejemplos = ejemplosGastos[categoria.id];
+            {guia.categorias.map((categoriaEducativa) => {
+              const categoriaInfo = CATEGORIAS_GASTO[categoriaEducativa.categoriaId as CategoriaGasto];
+              const isExpanded = expandedCategories.has(categoriaEducativa.categoriaId);
+              
+              // Si no existe la categoría en CATEGORIAS_GASTO, usar datos de la API
+              const categoriaNombre = categoriaInfo?.nombre || categoriaEducativa.nombre;
+              const categoriaDescripcion = categoriaInfo?.descripcion || categoriaEducativa.descripcion;
               
               return (
                 <div
-                  key={categoria.id}
+                  key={categoriaEducativa.categoriaId}
                   className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
                 >
                   <button
-                    onClick={() => toggleCategory(categoria.id)}
+                    onClick={() => toggleCategory(categoriaEducativa.categoriaId)}
                     className="w-full px-4 py-4 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                   >
                     <div className="flex items-center gap-3">
@@ -368,14 +496,14 @@ export const ExpenseEducationSection: React.FC = () => {
                         <DollarSign className="w-4 h-4 text-blue-600" />
                       </div>
                       <div className="text-left">
-                        <div className="font-semibold text-gray-900">{categoria.nombre}</div>
-                        <div className="text-sm text-gray-600">{categoria.descripcion}</div>
+                        <div className="font-semibold text-gray-900">{categoriaNombre}</div>
+                        <div className="text-sm text-gray-600">{categoriaDescripcion}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      {ejemplos.porcentajeDeducible && (
+                      {categoriaEducativa.porcentajeDeducible && (
                         <Badge variant="success" className="hidden sm:inline-flex">
-                          {ejemplos.porcentajeDeducible} deducible
+                          {categoriaEducativa.porcentajeDeducible} deducible
                         </Badge>
                       )}
                       {isExpanded ? (
@@ -396,7 +524,7 @@ export const ExpenseEducationSection: React.FC = () => {
                             Ejemplos de gastos deducibles:
                           </h4>
                           <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 ml-4">
-                            {ejemplos.ejemplos.map((ejemplo, index) => (
+                            {categoriaEducativa.ejemplos.map((ejemplo, index) => (
                               <li key={index}>{ejemplo}</li>
                             ))}
                           </ul>
@@ -409,11 +537,46 @@ export const ExpenseEducationSection: React.FC = () => {
                             Consejos importantes:
                           </h4>
                           <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 ml-4">
-                            {ejemplos.tips.map((tip, index) => (
+                            {categoriaEducativa.tips.map((tip, index) => (
                               <li key={index}>{tip}</li>
                             ))}
                           </ul>
                         </div>
+                        
+                        {/* Límites específicos de la categoría */}
+                        {categoriaEducativa.limites && categoriaEducativa.limites.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                              <Shield className="w-4 h-4 text-red-600" />
+                              Límites y advertencias:
+                            </h4>
+                            <ul className="space-y-2">
+                              {categoriaEducativa.limites.map((limite, index) => (
+                                <li
+                                  key={index}
+                                  className={`p-3 rounded-lg border ${
+                                    limite.importante
+                                      ? 'bg-red-50 border-red-200'
+                                      : 'bg-yellow-50 border-yellow-200'
+                                  }`}
+                                >
+                                  <div className="font-semibold text-sm mb-1">
+                                    {limite.concepto}
+                                  </div>
+                                  {(limite.limite || limite.porcentaje) && (
+                                    <div className="text-xs text-gray-600 mb-1">
+                                      {limite.limite && `Límite: ${limite.limite}`}
+                                      {limite.porcentaje && `Porcentaje: ${limite.porcentaje}`}
+                                    </div>
+                                  )}
+                                  <div className="text-xs text-gray-700">
+                                    {limite.descripcion}
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -421,6 +584,124 @@ export const ExpenseEducationSection: React.FC = () => {
               );
             })}
           </div>
+        </div>
+      </Card>
+
+      {/* Bloque: Límites Comunes */}
+      <Card className="bg-white shadow-sm border-amber-200">
+        <div className="p-6">
+          <button
+            onClick={() => setShowLimites(!showLimites)}
+            className="w-full flex items-center justify-between text-left mb-4"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-100 rounded-lg">
+                <Shield className="w-5 h-5 text-amber-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">
+                {guia.limitesComunes.titulo}
+              </h3>
+            </div>
+            {showLimites ? (
+              <ChevronUp className="w-5 h-5 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-400" />
+            )}
+          </button>
+          
+          {showLimites && (
+            <div className="space-y-4 pl-12">
+              <div className="space-y-3">
+                {guia.limitesComunes.limites.map((limite, index) => (
+                  <div
+                    key={index}
+                    className={`p-4 rounded-lg border ${
+                      limite.importante
+                        ? 'bg-red-50 border-red-200'
+                        : 'bg-amber-50 border-amber-200'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {limite.importante && (
+                        <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                      )}
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-2">
+                          {limite.concepto}
+                        </h4>
+                        {(limite.limite || limite.porcentaje) && (
+                          <div className="text-sm text-gray-700 mb-2">
+                            {limite.limite && <span className="font-medium">Límite: </span>}
+                            {limite.limite && limite.limite}
+                            {limite.porcentaje && <span className="font-medium">Porcentaje: </span>}
+                            {limite.porcentaje && limite.porcentaje}
+                          </div>
+                        )}
+                        <p className="text-sm text-gray-700">
+                          {limite.descripcion}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-900">
+                  <strong>Nota importante:</strong> {guia.limitesComunes.notaImportante}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* Bloque: Buenas Prácticas Fiscales */}
+      <Card className="bg-white shadow-sm border-green-200">
+        <div className="p-6">
+          <button
+            onClick={() => setShowBuenasPracticas(!showBuenasPracticas)}
+            className="w-full flex items-center justify-between text-left mb-4"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-green-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">
+                {guia.buenasPracticas.titulo}
+              </h3>
+            </div>
+            {showBuenasPracticas ? (
+              <ChevronUp className="w-5 h-5 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-400" />
+            )}
+          </button>
+          
+          {showBuenasPracticas && (
+            <div className="space-y-4 pl-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {guia.buenasPracticas.practicas.map((practica, index) => (
+                  <div
+                    key={index}
+                    className={`p-4 rounded-lg border ${getImportanceColor(practica.importancia)}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="font-semibold mb-2">
+                          {practica.titulo}
+                        </h4>
+                        <p className="text-sm leading-relaxed">
+                          {practica.descripcion}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </Card>
 

@@ -1,31 +1,47 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Badge, Select } from '../../../components/componentsreutilizables';
-import { Task, TaskFilters, TaskStatus } from '../types';
-import { getTasks, getPriorityColor, getPriorityLabel } from '../api';
-import { CheckCircle2, Calendar, Clock } from 'lucide-react';
+import { Card, Table, Badge } from '../../../components/componentsreutilizables';
+import { Task, TaskFilters, TaskStatus, TaskHistoryStats } from '../types';
+import { getTasks, getPriorityColor, getPriorityLabel, getTaskHistoryStats } from '../api';
+import { CheckCircle2, Calendar, TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
 
 interface TaskHistoryProps {
   role: 'entrenador' | 'gimnasio';
 }
 
+/**
+ * Componente de Historial de Tareas
+ * Muestra tareas completadas y canceladas ordenadas cronológicamente
+ * 
+ * FASE FUTURA - Estadísticas de Productividad:
+ * Este componente se expandirá para incluir:
+ * - Métricas de productividad: tareas completadas por día/semana/mes
+ * - Tiempo promedio de completación por prioridad
+ * - Gráficos de tendencias de productividad
+ * - Análisis de patrones: días más productivos, horas pico, etc.
+ * - Comparativas de rendimiento entre períodos
+ * - Exportación de reportes de productividad
+ */
 export const TaskHistory: React.FC<TaskHistoryProps> = ({ role }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<TaskStatus>('completada');
+  const [stats, setStats] = useState<TaskHistoryStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     loadTasks();
-  }, [statusFilter, role]);
+    loadStats();
+  }, [role]);
 
   const loadTasks = async () => {
     setLoading(true);
     try {
+      // Mostrar tareas completadas y canceladas juntas
       const filters: TaskFilters = {
         role,
-        status: [statusFilter],
+        status: ['completada', 'cancelada'],
       };
       const data = await getTasks(filters);
-      // Ordenar por fecha de completado o actualización
+      // Ordenar por fecha de completado o actualización (más recientes primero)
       const sorted = data.sort((a, b) => {
         const dateA = a.completedAt || a.updatedAt;
         const dateB = b.completedAt || b.updatedAt;
@@ -39,12 +55,18 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({ role }) => {
     }
   };
 
-  const statusOptions = [
-    { value: 'completada', label: 'Completadas' },
-    { value: 'cancelada', label: 'Canceladas' },
-    { value: 'pendiente', label: 'Pendientes' },
-    { value: 'en-progreso', label: 'En Progreso' },
-  ];
+  const loadStats = async () => {
+    setStatsLoading(true);
+    try {
+      const statistics = await getTaskHistoryStats(role);
+      setStats(statistics);
+    } catch (error) {
+      console.error('Error cargando estadísticas:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
 
   const columns = [
     {
@@ -118,54 +140,107 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({ role }) => {
     },
   ];
 
-  const completedCount = tasks.filter(t => t.status === 'completada').length;
-  const cancelledCount = tasks.filter(t => t.status === 'cancelada').length;
+  const weekComparison = stats 
+    ? stats.completedThisWeek - stats.completedPreviousWeek 
+    : 0;
+  const weekTrend = weekComparison > 0 ? 'up' : weekComparison < 0 ? 'down' : 'neutral';
 
   return (
     <Card className="bg-white shadow-sm">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">
-            Historial de Tareas
-          </h2>
-          <p className="text-gray-600">
-            Registro de todas las tareas realizadas
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="text-center">
-            <p className="text-2xl font-bold text-gray-900">
-              {completedCount}
-            </p>
-            <p className="text-xs text-gray-600">
-              Completadas
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-gray-900">
-              {cancelledCount}
-            </p>
-            <p className="text-xs text-gray-600">
-              Canceladas
-            </p>
-          </div>
-        </div>
+      <div className="mb-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-2">
+          Historial de Tareas
+        </h2>
+        <p className="text-gray-600">
+          Registro de todas las tareas y alertas resueltas
+        </p>
       </div>
 
-      <div className="mb-4">
-        <Select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as TaskStatus)}
-          options={statusOptions}
-          className="w-48"
-        />
-      </div>
+      {/* Bloque de Estadísticas */}
+      {!statsLoading && stats && (
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            {/* Estadísticas semanales */}
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-600">
+                  Esta semana
+                </span>
+                {weekTrend === 'up' && (
+                  <TrendingUp className="w-4 h-4 text-green-600" />
+                )}
+                {weekTrend === 'down' && (
+                  <TrendingDown className="w-4 h-4 text-red-600" />
+                )}
+              </div>
+              <p className="text-2xl font-bold text-gray-900">
+                {stats.completedThisWeek}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                vs {stats.completedPreviousWeek} semana anterior
+              </p>
+            </div>
 
+            {/* Porcentaje completadas */}
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <span className="text-sm font-medium text-gray-600 block mb-2">
+                Completadas
+              </span>
+              <p className="text-2xl font-bold text-green-600">
+                {stats.completedPercentage}%
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {stats.completedCount} tareas
+              </p>
+            </div>
+
+            {/* Porcentaje canceladas */}
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <span className="text-sm font-medium text-gray-600 block mb-2">
+                Canceladas
+              </span>
+              <p className="text-2xl font-bold text-gray-600">
+                {stats.cancelledPercentage}%
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {stats.cancelledCount} tareas
+              </p>
+            </div>
+          </div>
+
+          {/* Placeholder para gráfico futuro */}
+          <div className="bg-white p-6 rounded-lg border border-gray-200 border-dashed">
+            <div className="flex items-center justify-center gap-2 text-gray-400">
+              <BarChart3 className="w-5 h-5" />
+              <span className="text-sm font-medium">
+                Gráfico de productividad por día (próximamente)
+              </span>
+            </div>
+            <p className="text-xs text-gray-400 text-center mt-2">
+              Aquí se mostrará un gráfico simple con la evolución diaria de tareas completadas
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Listado de tareas */}
       <Table
         data={tasks}
         columns={columns}
         loading={loading}
-        emptyMessage="No hay tareas en el historial"
+        emptyMessage={
+          <div className="text-center py-12">
+            <CheckCircle2 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-600 font-medium mb-2">
+              No hay tareas resueltas aún
+            </p>
+            <p className="text-sm text-gray-500 max-w-md mx-auto">
+              Aquí aparecerán las tareas y alertas que hayas completado o cancelado, 
+              ordenadas de más reciente a más antigua. Una vez que resuelvas algunas tareas, 
+              podrás ver tu historial y estadísticas de productividad aquí.
+            </p>
+          </div>
+        }
       />
     </Card>
   );

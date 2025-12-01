@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '../../../components/componentsreutilizables';
 import { Input } from '../../../components/componentsreutilizables/Input';
-import { Calendar, X, Plus, Save, AlertCircle, CheckCircle, Trash2 } from 'lucide-react';
+import { Calendar, X, Plus, Save, AlertCircle, CheckCircle, Trash2, Info } from 'lucide-react';
 import {
   getFechasNoDisponibles,
   marcarFechaNoDisponible,
@@ -119,6 +119,22 @@ export const GestionFechasNoDisponibles: React.FC<GestionFechasNoDisponiblesProp
           >
             Agregar Fecha
           </Button>
+        </div>
+
+        {/* Información sobre el impacto */}
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-start gap-2">
+            <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-blue-800">
+              <p className="font-medium mb-1">¿Cómo funcionan las fechas no disponibles?</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Las fechas marcadas como no disponibles bloquearán todas las reservas para ese día</li>
+                <li>Útil para vacaciones, días festivos, o días en los que no estarás disponible</li>
+                <li>Los clientes no podrán ver ni reservar sesiones en estas fechas</li>
+                <li>Puedes agregar un motivo para recordar por qué está bloqueada la fecha</li>
+              </ul>
+            </div>
+          </div>
         </div>
 
         {mensajeExito && (

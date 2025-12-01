@@ -1,4 +1,4 @@
-export type EstadoSuscripcion = 'activa' | 'pausada' | 'cancelada' | 'vencida' | 'pendiente';
+export type EstadoSuscripcion = 'activa' | 'pausada' | 'congelada' | 'cancelada' | 'vencida' | 'prueba' | 'pendiente';
 export type TipoSuscripcion = 'pt-mensual' | 'membresia-gimnasio' | 'servicio' | 'contenido' | 'evento' | 'hibrida';
 export type FrecuenciaPago = 'mensual' | 'trimestral' | 'semestral' | 'anual';
 
@@ -163,13 +163,23 @@ export interface PagoRecurrente {
 export interface Cuota {
   id: string;
   suscripcionId: string;
-  monto: number;
+  clienteId: string;
+  importe: number;
   fechaVencimiento: string;
-  fechaPago?: string;
+  fechaPagoOpcional?: string;
   estado: 'pendiente' | 'pagada' | 'vencida' | 'fallida';
   metodoPago?: string;
   referencia?: string;
   notas?: string;
+  // Campos legacy para compatibilidad
+  monto?: number; // Deprecated: usar importe
+  fechaPago?: string; // Deprecated: usar fechaPagoOpcional
+  // Información de reintentos para pagos fallidos
+  numeroIntentos?: number; // Número de intentos de pago realizados
+  ultimaFechaIntento?: string; // Última fecha en que se intentó el pago
+  proximaFechaReintento?: string; // Próxima fecha sugerida para reintentar
+  motivoFallo?: string; // Motivo del fallo del pago
+  irrecuperable?: boolean; // Si la cuota ha sido marcada como irrecuperable
 }
 
 export interface UpgradeDowngrade {
@@ -189,6 +199,7 @@ export interface FreezeRequest {
   fechaInicio: string;
   fechaFin: string;
   motivo?: string;
+  notasInternas?: string;
   diasTotales: number;
 }
 
@@ -342,27 +353,33 @@ export interface RecordatorioRenovacion {
   id: string;
   suscripcionId: string;
   clienteId: string;
-  clienteNombre: string;
-  clienteEmail: string;
+  clienteNombre?: string; // Opcional para compatibilidad
+  clienteEmail?: string; // Opcional para compatibilidad
   clienteTelefono?: string;
-  fechaRenovacion: string;
-  diasAnticipacion: number; // Días antes de la renovación que se envía el recordatorio
-  monto: number;
+  fechaRenovacion?: string; // Opcional para compatibilidad
+  diasAntes: number; // Días antes de la renovación (campo principal)
+  diasAnticipacion?: number; // Alias para compatibilidad
+  canal: 'email' | 'sms' | 'whatsapp'; // Canal principal del recordatorio
+  canalesEnvio?: ('email' | 'sms' | 'whatsapp')[]; // Array para compatibilidad
+  plantillaId?: string; // ID de la plantilla usada
+  ultimoEnvio?: string; // Fecha del último envío
+  fechaEnvio?: string; // Alias para compatibilidad
   estado: 'pendiente' | 'enviado' | 'fallido';
-  fechaEnvio?: string;
-  canalesEnvio: ('email' | 'sms' | 'whatsapp')[];
+  monto?: number; // Opcional para compatibilidad
   entrenadorId?: string;
-  fechaCreacion: string;
+  fechaCreacion?: string; // Opcional para compatibilidad
 }
 
 export interface ConfiguracionRecordatorios {
-  suscripcionId: string;
+  suscripcionId?: string; // Opcional para configuración global
+  planId?: string; // ID del plan para configuración por nivel
   activo: boolean;
   diasAnticipacion: number[]; // Array de días antes de la renovación (ej: [7, 3, 1])
   canalesEnvio: ('email' | 'sms' | 'whatsapp')[];
   plantillaEmail?: string;
   plantillaSMS?: string;
   plantillaWhatsApp?: string;
+  plantillaId?: string; // ID de plantilla genérica
 }
 
 export interface EnviarRecordatorioRequest {
@@ -381,6 +398,76 @@ export interface DescuentoSuscripcion {
   fechaFin?: string; // Si no se especifica, el descuento es permanente hasta que se elimine
   aplicadoPor?: string; // ID del entrenador que aplicó el descuento
   aplicadoPorNombre?: string;
+}
+
+// Tipo mejorado para descuentos con más información
+export interface Descuento {
+  id: string;
+  tipo: 'porcentaje' | 'fijo';
+  valor: number; // Porcentaje (0-100) o cantidad fija en euros
+  motivo?: string; // Razón del descuento: 'cliente-clave', 'promocion', 'fidelidad', 'volumen', etc.
+  fechaInicio: string;
+  fechaFin?: string; // Fecha de expiración (opcional)
+  vigencia?: {
+    fechaInicio: string;
+    fechaFin?: string;
+    activo: boolean;
+  };
+  aplicadoA: 'cliente' | 'grupo' | 'plan'; // A qué se aplica el descuento
+  clienteId?: string; // Si aplicadoA === 'cliente'
+  grupoId?: string; // Si aplicadoA === 'grupo'
+  planId?: string; // Si aplicadoA === 'plan'
+  suscripcionId?: string; // ID de la suscripción asociada
+  aplicadoPor?: string; // ID del entrenador que aplicó el descuento
+  aplicadoPorNombre?: string;
+  fechaCreacion: string;
+  fechaActualizacion: string;
+}
+
+// Tipo mejorado para suscripciones grupales con más información
+export interface SuscripcionGrupal {
+  id: string;
+  grupoId: string;
+  nombreGrupo: string;
+  clientePrincipalId: string;
+  clientePrincipalNombre: string;
+  clientePrincipalEmail: string;
+  miembros: MiembroGrupo[];
+  precioTotal: number;
+  precioOriginal: number; // Precio sin descuentos
+  descuentoGrupo?: DescuentoGrupo;
+  descuentosPersonalizados?: Descuento[]; // Descuentos adicionales aplicados al grupo
+  frecuenciaPago: FrecuenciaPago;
+  fechaInicio: string;
+  fechaVencimiento: string;
+  estado: EstadoSuscripcion;
+  // Uso total del grupo
+  usoTotal?: {
+    sesionesIncluidas: number;
+    sesionesUsadas: number;
+    sesionesDisponibles: number;
+    porcentajeUso: number;
+  };
+  // Uso por miembro
+  usoPorMiembro?: Array<{
+    miembroId: string;
+    clienteId: string;
+    clienteNombre: string;
+    sesionesIncluidas: number;
+    sesionesUsadas: number;
+    sesionesDisponibles: number;
+    porcentajeUso: number;
+  }>;
+  // Información de prorrateo si aplica
+  prorrateo?: {
+    aplicado: boolean;
+    motivo?: string;
+    fechaAplicacion?: string;
+    montoProrrateado?: number;
+  };
+  entrenadorId?: string;
+  fechaCreacion: string;
+  fechaActualizacion: string;
 }
 
 export interface HistorialDescuento {
@@ -407,6 +494,33 @@ export interface AplicarDescuentoRequest {
 export interface EliminarDescuentoRequest {
   suscripcionId: string;
   motivo?: string;
+}
+
+// Request mejorado para aplicar descuentos a clientes, grupos o planes
+export interface AplicarDescuentoSuscripcionRequest {
+  tipo: 'porcentaje' | 'fijo';
+  valor: number;
+  motivo?: string;
+  fechaInicio: string;
+  fechaFin?: string; // Opcional: fecha de expiración
+  aplicadoA: 'cliente' | 'grupo' | 'plan';
+  clienteId?: string; // Si aplicadoA === 'cliente'
+  grupoId?: string; // Si aplicadoA === 'grupo'
+  planId?: string; // Si aplicadoA === 'plan'
+  suscripcionId?: string; // ID de la suscripción específica (opcional)
+}
+
+// Request para obtener descuentos de un cliente
+export interface ObtenerDescuentosClienteRequest {
+  clienteId: string;
+  incluirExpirados?: boolean;
+  incluirGrupos?: boolean; // Incluir descuentos de grupos a los que pertenece
+}
+
+// Request para obtener descuentos de un grupo
+export interface ObtenerDescuentosGrupoRequest {
+  grupoId: string;
+  incluirExpirados?: boolean;
 }
 
 // User Story 1: Historial de cambios de suscripción
@@ -449,6 +563,7 @@ export interface CancelarSuscripcionRequest {
   suscripcionId: string;
   motivo: string; // Motivo de cancelación (requerido)
   comentariosAdicionales?: string; // Comentarios opcionales adicionales
+  cancelacionInmediata?: boolean; // true = inmediata, false = al final del período actual
 }
 
 // User Story 1: Métricas de compromiso y riesgo de cancelación
@@ -745,11 +860,16 @@ export interface ProyeccionesYRetencionResponse {
     clientesTotales: number;
     clientesEnRiesgo: number;
     valorVidaClientePromedio: number;
+    // Métricas de MRR con descuentos
+    mrr: number; // Monthly Recurring Revenue (con descuentos aplicados)
+    mrrSinDescuentos?: number; // MRR sin descuentos (opcional)
+    impactoDescuentosMRR?: number; // Impacto de descuentos en MRR (opcional)
   };
 }
 
 // User Story 2: Exportación de datos de suscripciones y pagos
 export type FormatoExportacion = 'csv' | 'excel' | 'pdf' | 'json';
+export type TipoDatoExportacion = 'suscripciones' | 'cuotas' | 'metricas';
 
 export interface ExportarDatosRequest {
   entrenadorId?: string;
@@ -761,6 +881,37 @@ export interface ExportarDatosRequest {
   incluirCanceladas?: boolean; // Incluir suscripciones canceladas
   incluirPausadas?: boolean; // Incluir suscripciones pausadas
   campos?: string[]; // Campos específicos a incluir (opcional)
+}
+
+// Nuevos tipos para exportación separada
+export interface ExportarSuscripcionesRequest {
+  entrenadorId?: string;
+  formato: 'csv' | 'excel';
+  fechaInicio?: string;
+  fechaFin?: string;
+  planId?: string; // Filtro por plan específico
+}
+
+export interface ExportarCuotasRequest {
+  entrenadorId?: string;
+  formato: 'csv' | 'excel';
+  fechaInicio?: string;
+  fechaFin?: string;
+  planId?: string; // Filtro por plan específico
+}
+
+export interface ExportarMetricasRequest {
+  entrenadorId?: string;
+  formato: 'csv' | 'excel';
+  fechaInicio?: string;
+  fechaFin?: string;
+  planId?: string; // Filtro por plan específico
+}
+
+export interface ExportacionResponse {
+  url?: string; // URL de descarga (mock)
+  blob?: Blob; // Blob para descarga directa
+  nombreArchivo: string;
 }
 
 export interface DatosExportacion {
@@ -803,5 +954,233 @@ export interface DatosExportacion {
     totalPagos?: number;
     ingresosTotales?: number;
   };
+}
+
+// Filtros para el listado de suscripciones
+export interface SuscripcionFilters {
+  estado?: EstadoSuscripcion[];
+  planId?: string[];
+  tipoCliente?: 'pt-mensual' | 'membresia-gimnasio' | 'servicio' | 'contenido' | 'evento' | 'hibrida';
+  fechaInicioDesde?: string;
+  fechaInicioHasta?: string;
+  search?: string; // Búsqueda por nombre de cliente
+  entrenadorId?: string; // Para filtrar por entrenador
+}
+
+// Tipos para comparación de planes y upgrades/downgrades
+export type TipoPlan = 'basico' | 'premium' | 'vip' | 'pt-4' | 'pt-8' | 'pt-12' | 'pt-custom';
+
+export interface PlanSuscripcion {
+  id: string;
+  nombre: string;
+  tipo: TipoPlan;
+  nivel: number; // 1 = básico, 2 = premium, 3 = VIP, etc.
+  precio: number;
+  precioMensual?: number; // Precio mensualizado para comparación
+  sesionesIncluidas?: number; // Para planes PT
+  frecuenciaPago: FrecuenciaPago;
+  beneficios: string[]; // Lista de beneficios del plan
+  descripcion?: string;
+  activo: boolean;
+  permiteFreeze?: boolean;
+  permiteMultisesion?: boolean;
+  serviciosAcceso?: string[]; // Para gimnasios
+}
+
+export interface ComparacionPlanes {
+  planOrigen: PlanSuscripcion;
+  planDestino: PlanSuscripcion;
+  diferenciaPrecio: number;
+  diferenciaPrecioMensual: number; // Diferencia mensualizada
+  diferenciaSesiones?: number;
+  esUpgrade: boolean;
+  esDowngrade: boolean;
+  beneficiosGanados: string[];
+  beneficiosPerdidos: string[];
+  beneficiosMantenidos: string[];
+}
+
+export interface CalculoProrrateo {
+  fechaCambio: string;
+  fechaInicioPeriodo: string;
+  fechaFinPeriodo: string;
+  diasUsados: number;
+  diasRestantes: number;
+  diasTotales: number;
+  precioPeriodoActual: number;
+  precioPeriodoNuevo: number;
+  creditoPeriodoActual: number; // Crédito por días no usados del plan actual
+  cargoPeriodoNuevo: number; // Cargo por días restantes del nuevo plan
+  diferenciaProrrateada: number; // Diferencia final a cobrar/devolver
+  aplicarInmediatamente: boolean;
+}
+
+export interface ImpactoMRR {
+  mrrActual: number;
+  mrrNuevo: number;
+  diferenciaMRR: number;
+  porcentajeCambio: number;
+  impactoAnual: number; // Impacto proyectado en 12 meses
+}
+
+export interface CambioPlanRequest {
+  suscripcionId: string;
+  nuevoPlanId: string;
+  aplicarInmediatamente: boolean;
+  fechaCambio?: string; // Si no se especifica, se usa la fecha actual
+  motivo?: string;
+  mantenerSesionesProgramadas?: boolean; // Para cambios de PT
+  reasignarSesiones?: boolean; // Para cambios de PT
+}
+
+export interface CambioEntrenadorRequest {
+  suscripcionId: string;
+  nuevoEntrenadorId: string;
+  nuevoEntrenadorNombre?: string;
+  fechaCambio: string;
+  mantenerSesionesProgramadas: boolean;
+  reasignarSesiones: boolean;
+  motivo?: string;
+}
+
+// Gestión de sesiones incluidas en planes de suscripción
+export interface SesionIncluida {
+  id: string;
+  suscripcionId: string;
+  clienteId: string;
+  totalSesiones: number; // Total de sesiones incluidas en este período
+  consumidas: number; // Sesiones ya consumidas
+  fechaCaducidad: string; // Fecha de caducidad de estas sesiones
+  tipoSesion: 'pt' | 'grupal' | 'multisesion' | 'bonus' | 'transferida'; // Tipo de sesión
+  periodo?: string; // Período al que pertenecen (ej: "2024-10")
+  fechaCreacion: string;
+  fechaActualizacion: string;
+  notas?: string;
+}
+
+export interface RegistrarConsumoSesionRequest {
+  sesionIncluidaId: string;
+  cantidad: number; // Cantidad de sesiones a consumir (normalmente 1)
+  fechaConsumo: string; // Fecha en que se consumen
+  motivo?: string;
+}
+
+export interface ObtenerSesionesIncluidasRequest {
+  suscripcionId?: string;
+  clienteId?: string;
+  periodo?: string;
+  incluirCaducadas?: boolean;
+}
+
+// Tipo para eventos de suscripciones (historial consolidado)
+export type TipoEventoSuscripcion = 
+  | 'alta' 
+  | 'upgrade' 
+  | 'downgrade'
+  | 'congelacion' 
+  | 'descongelacion'
+  | 'pago_fallido' 
+  | 'cancelacion'
+  | 'renovacion'
+  | 'cambio_plan'
+  | 'aplicacion_descuento'
+  | 'eliminacion_descuento'
+  | 'ajuste_sesiones'
+  | 'bonus_sesiones';
+
+export interface EventoSuscripcion {
+  id: string;
+  suscripcionId: string;
+  clienteId: string;
+  clienteNombre: string;
+  clienteEmail?: string;
+  tipoEvento: TipoEventoSuscripcion;
+  fecha: string;
+  descripcion: string;
+  detalles?: {
+    campo?: string;
+    valorAnterior?: any;
+    valorNuevo?: any;
+  }[];
+  realizadoPor?: string;
+  realizadoPorNombre?: string;
+  motivo?: string;
+  metadata?: Record<string, any>;
+}
+
+// Request para obtener actividad reciente de suscripciones
+export interface GetActividadSuscripcionesRecienteRequest {
+  entrenadorId?: string;
+  fechaInicio?: string;
+  fechaFin?: string;
+  tiposEvento?: TipoEventoSuscripcion[];
+  limite?: number;
+}
+
+// Response con actividad reciente
+export interface ActividadSuscripcionesReciente {
+  eventos: EventoSuscripcion[];
+  resumen: {
+    nuevasSuscripciones7Dias: number;
+    nuevasSuscripciones30Dias: number;
+    renovacionesRealizadas: number;
+    cancelaciones: number;
+    churn: number; // Tasa de cancelación
+    cambiosPlan: number;
+    congelaciones: number;
+    pagosFallidos: number;
+  };
+  periodo: {
+    fechaInicio: string;
+    fechaFin: string;
+  };
+}
+
+// Tipos para Analytics de Suscripciones
+export interface MetricasSuscripcion {
+  mrr: number; // Monthly Recurring Revenue
+  numeroSuscripcionesActivas: number;
+  churnMensual: number; // Porcentaje de churn mensual
+  ltvMedio: number; // Lifetime Value medio
+  retencion: number; // Tasa de retención
+  evolucionMRR: Array<{
+    mes: string;
+    mrr: number;
+    numeroSuscripciones: number;
+  }>;
+  distribucionPorPlan: Array<{
+    planNombre: string;
+    numeroSuscripciones: number;
+    porcentaje: number;
+    mrr: number;
+  }>;
+}
+
+// Tipos para Proyecciones de Retención con Escenarios
+export type EscenarioProyeccion = 'optimista' | 'realista' | 'pesimista';
+
+export interface ProyeccionRetencion {
+  escenario: EscenarioProyeccion;
+  meses: Array<{
+    mes: string;
+    fechaInicio: string;
+    fechaFin: string;
+    ingresos: number;
+    numeroSuscripciones: number;
+    churnEsperado: number;
+    crecimientoEsperado: number; // Nuevas suscripciones
+  }>;
+  parametros: {
+    churnBase: number; // Churn base para el escenario
+    crecimientoBase: number; // Crecimiento base de nuevas suscripciones
+    factorOptimista?: number; // Factor multiplicador para escenario optimista
+    factorPesimista?: number; // Factor multiplicador para escenario pesimista
+  };
+}
+
+export interface ParametrosProyeccion {
+  churnEsperado: number; // Porcentaje de churn esperado
+  crecimientoAltas: number; // Número de nuevas suscripciones esperadas por mes
+  mesesProyeccion: number; // Número de meses a proyectar (6-12)
 }
 

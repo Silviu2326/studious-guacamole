@@ -31,12 +31,6 @@ export { VisualStyleLearning } from './VisualStyleLearning';
 export { SaturatedTopicsDetector } from './SaturatedTopicsDetector';
 export { PostCampaignInsights } from './PostCampaignInsights';
 export { ICON_MAP } from './iconMap';
-
-
-
-
-
-
-
-
-
+export { CategoryCard } from './CategoryCard';
+export { ScrollAnchorTabs } from './ScrollAnchorTabs';
+export { BackToTopButton } from './BackToTopButton';

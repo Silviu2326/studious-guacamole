@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button, Select } from '../../../components/componentsreutilizables';
 import { Badge } from '../../../components/componentsreutilizables/Badge';
 import { Reserva } from '../types';
-import { Bell, Mail, Phone, Smartphone, MessageCircle, Send, Clock, Calendar, User, Video, Link2, ExternalLink, CheckCircle, AlertCircle } from 'lucide-react';
+import { Bell, Mail, Phone, Smartphone, MessageCircle, Send, Clock, Calendar, User, Video, Link2, ExternalLink, CheckCircle, AlertCircle, PhoneCall, MessageSquare, TrendingUp, Target } from 'lucide-react';
 import { enviarRecordatorioEntrenador, getReservasDelDiaEntrenador } from '../api/notificacionesReserva';
 import { useAuth } from '../../../context/AuthContext';
+import { getNotasPorCliente } from '../api/notasSesion';
 
 interface RecordatoriosEntrenadorProps {
   entrenadorId: string;
@@ -19,6 +20,17 @@ interface RecordatorioEnviado {
   canal: 'email' | 'sms' | 'push' | 'whatsapp' | 'todos';
 }
 
+interface TareaSeguimiento {
+  id: string;
+  tipo: 'llamada' | 'seguimiento' | 'nota-pendiente';
+  clienteId: string;
+  clienteNombre: string;
+  reservaId?: string;
+  prioridad: 'alta' | 'media' | 'baja';
+  descripcion: string;
+  fechaLimite?: Date;
+}
+
 export const RecordatoriosEntrenador: React.FC<RecordatoriosEntrenadorProps> = ({
   entrenadorId,
 }) => {
@@ -30,6 +42,8 @@ export const RecordatoriosEntrenador: React.FC<RecordatoriosEntrenadorProps> = (
   const [canalSeleccionado, setCanalSeleccionado] = useState<'email' | 'sms' | 'push' | 'whatsapp' | 'todos'>('email');
   const [recordatoriosEnviados, setRecordatoriosEnviados] = useState<RecordatorioEnviado[]>([]);
   const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date());
+  const [tareasSeguimiento, setTareasSeguimiento] = useState<TareaSeguimiento[]>([]);
+  const [cargandoTareas, setCargandoTareas] = useState(true);
 
   useEffect(() => {
     const cargarReservas = async () => {
@@ -59,6 +73,97 @@ export const RecordatoriosEntrenador: React.FC<RecordatoriosEntrenadorProps> = (
     const interval = setInterval(cargarReservas, 60 * 60 * 1000);
     return () => clearInterval(interval);
   }, [entrenadorId]);
+
+  // Cargar tareas de seguimiento basadas en reservas
+  useEffect(() => {
+    const cargarTareasSeguimiento = async () => {
+      if (reservasHoy.length === 0) {
+        setTareasSeguimiento([]);
+        setCargandoTareas(false);
+        return;
+      }
+
+      setCargandoTareas(true);
+      try {
+        const tareas: TareaSeguimiento[] = [];
+        
+        // Analizar reservas de hoy para generar tareas
+        const reservasCompletadasHoy = reservasHoy.filter(r => r.estado === 'completada');
+        const reservasPendientesHoy = reservasHoy.filter(r => r.estado === 'pendiente');
+        
+        // Tareas: Notas pendientes para sesiones completadas
+        for (const reserva of reservasCompletadasHoy) {
+          try {
+            const notas = await getNotasPorCliente(reserva.clienteId, entrenadorId);
+            const tieneNota = notas.some(n => n.reservaId === reserva.id);
+            
+            if (!tieneNota) {
+              tareas.push({
+                id: `nota-${reserva.id}`,
+                tipo: 'nota-pendiente',
+                clienteId: reserva.clienteId,
+                clienteNombre: reserva.clienteNombre || 'Cliente',
+                reservaId: reserva.id,
+                prioridad: 'alta',
+                descripcion: `Agregar nota de sesión completada`,
+                fechaLimite: new Date(),
+              });
+            }
+          } catch (error) {
+            console.error('Error verificando notas:', error);
+          }
+        }
+        
+        // Tareas: Seguimiento para clientes con reservas pendientes
+        for (const reserva of reservasPendientesHoy) {
+          tareas.push({
+            id: `seguimiento-${reserva.id}`,
+            tipo: 'seguimiento',
+            clienteId: reserva.clienteId,
+            clienteNombre: reserva.clienteNombre || 'Cliente',
+            reservaId: reserva.id,
+            prioridad: 'media',
+            descripcion: `Seguimiento post-sesión`,
+            fechaLimite: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 horas después
+          });
+        }
+        
+        // Tareas: Llamadas para clientes que no han confirmado
+        const ahora = new Date();
+        const reservasSinConfirmar = reservasHoy.filter(r => {
+          if (r.estado !== 'pendiente') return false;
+          const fechaReserva = new Date(r.fecha);
+          const fechaHoraReserva = new Date(fechaReserva);
+          const [hora, minuto] = (r.horaInicio || '00:00').split(':').map(Number);
+          fechaHoraReserva.setHours(hora, minuto, 0, 0);
+          const diffHoras = (fechaHoraReserva.getTime() - ahora.getTime()) / (1000 * 60 * 60);
+          return diffHoras > 0 && diffHoras <= 2; // Próximas 2 horas
+        });
+        
+        for (const reserva of reservasSinConfirmar) {
+          tareas.push({
+            id: `llamada-${reserva.id}`,
+            tipo: 'llamada',
+            clienteId: reserva.clienteId,
+            clienteNombre: reserva.clienteNombre || 'Cliente',
+            reservaId: reserva.id,
+            prioridad: 'alta',
+            descripcion: `Llamar para confirmar asistencia`,
+            fechaLimite: new Date(reserva.fecha),
+          });
+        }
+        
+        setTareasSeguimiento(tareas);
+      } catch (error) {
+        console.error('Error cargando tareas de seguimiento:', error);
+        setTareasSeguimiento([]);
+      } finally {
+        setCargandoTareas(false);
+      }
+    };
+    
+    cargarTareasSeguimiento();
+  }, [reservasHoy, entrenadorId]);
 
   const handleEnviarRecordatorio = async (fecha: Date, tipo: 'hoy' | 'manana') => {
     const reservas = tipo === 'hoy' ? reservasHoy : reservasManana;
@@ -263,6 +368,58 @@ export const RecordatoriosEntrenador: React.FC<RecordatoriosEntrenadorProps> = (
           </div>
         ) : (
           <>
+            {/* Sección: Qué hacer hoy */}
+            {tareasSeguimiento.length > 0 && (
+              <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <Target className="w-5 h-5 text-blue-600" />
+                  <h4 className="text-lg font-semibold text-gray-900">Qué hacer hoy</h4>
+                  <Badge variant="blue">{tareasSeguimiento.length} tarea{tareasSeguimiento.length !== 1 ? 's' : ''}</Badge>
+                </div>
+                <div className="space-y-2">
+                  {tareasSeguimiento
+                    .sort((a, b) => {
+                      const prioridadOrder = { alta: 0, media: 1, baja: 2 };
+                      return prioridadOrder[a.prioridad] - prioridadOrder[b.prioridad];
+                    })
+                    .map(tarea => (
+                      <div
+                        key={tarea.id}
+                        className={`flex items-center justify-between p-3 bg-white rounded-lg border ${
+                          tarea.prioridad === 'alta' ? 'border-red-200 bg-red-50' :
+                          tarea.prioridad === 'media' ? 'border-yellow-200 bg-yellow-50' :
+                          'border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          {tarea.tipo === 'llamada' && <PhoneCall className="w-4 h-4 text-blue-600" />}
+                          {tarea.tipo === 'seguimiento' && <MessageSquare className="w-4 h-4 text-green-600" />}
+                          {tarea.tipo === 'nota-pendiente' && <TrendingUp className="w-4 h-4 text-orange-600" />}
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900">{tarea.clienteNombre}</p>
+                            <p className="text-sm text-gray-600">{tarea.descripcion}</p>
+                            {tarea.fechaLimite && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                {tarea.fechaLimite.toLocaleDateString('es-ES')} {tarea.fechaLimite.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            )}
+                          </div>
+                          <Badge
+                            variant={
+                              tarea.prioridad === 'alta' ? 'red' :
+                              tarea.prioridad === 'media' ? 'yellow' :
+                              'gray'
+                            }
+                          >
+                            {tarea.prioridad}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
             {renderReservasDelDia(reservasHoy, new Date(), 'hoy')}
             {renderReservasDelDia(reservasManana, (() => {
               const manana = new Date();

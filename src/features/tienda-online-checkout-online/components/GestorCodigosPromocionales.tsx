@@ -7,7 +7,7 @@ import {
   actualizarCodigoPromocional,
   eliminarCodigoPromocional,
 } from '../api/codigosPromocionales';
-import { Tag, Plus, Edit, Trash2, Copy, Check, Calendar, Users, DollarSign, Percent } from 'lucide-react';
+import { Tag, Plus, Edit, Trash2, Copy, Check, Calendar, Users, DollarSign, Percent, Search, Filter } from 'lucide-react';
 
 interface GestorCodigosPromocionalesProps {
   entrenadorId?: string;
@@ -21,6 +21,8 @@ export const GestorCodigosPromocionales: React.FC<GestorCodigosPromocionalesProp
   const [mostrarModal, setMostrarModal] = useState(false);
   const [codigoEditando, setCodigoEditando] = useState<CodigoPromocional | null>(null);
   const [copiado, setCopiado] = useState<string | null>(null);
+  const [busqueda, setBusqueda] = useState('');
+  const [filtroActivo, setFiltroActivo] = useState<string>('todos');
 
   // Formulario
   const [codigo, setCodigo] = useState('');
@@ -206,6 +208,25 @@ export const GestorCodigosPromocionales: React.FC<GestorCodigosPromocionalesProp
     );
   };
 
+  const codigosFiltrados = codigos.filter((codigo) => {
+    const coincideBusqueda =
+      codigo.codigo.toLowerCase().includes(busqueda.toLowerCase()) ||
+      (codigo.descripcion && codigo.descripcion.toLowerCase().includes(busqueda.toLowerCase()));
+
+    if (filtroActivo === 'todos') {
+      return coincideBusqueda;
+    }
+
+    const estaVigenteCodigo = estaVigente(codigo);
+    if (filtroActivo === 'vigente') {
+      return coincideBusqueda && estaVigenteCodigo;
+    }
+    if (filtroActivo === 'inactivo') {
+      return coincideBusqueda && !estaVigenteCodigo;
+    }
+    return coincideBusqueda;
+  });
+
   return (
     <div className="space-y-6">
       <Card className="p-6 bg-white shadow-sm">
@@ -220,6 +241,32 @@ export const GestorCodigosPromocionales: React.FC<GestorCodigosPromocionalesProp
             <Plus size={18} className="mr-2" />
             Crear Código
           </Button>
+        </div>
+
+        {/* Filtros */}
+        <div className="mb-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <Search size={18} className="text-gray-400" />
+            <Input
+              placeholder="Buscar por código o descripción..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              className="flex-1"
+            />
+          </div>
+          <div className="flex items-center gap-4">
+            <Filter size={18} className="text-gray-400" />
+            <label className="text-sm font-medium text-gray-700">Estado:</label>
+            <Select
+              value={filtroActivo}
+              onChange={(e) => setFiltroActivo(e.target.value)}
+              options={[
+                { value: 'todos', label: 'Todos' },
+                { value: 'vigente', label: 'Vigentes' },
+                { value: 'inactivo', label: 'Inactivos' },
+              ]}
+            />
+          </div>
         </div>
 
         {cargando ? (
@@ -239,6 +286,17 @@ export const GestorCodigosPromocionales: React.FC<GestorCodigosPromocionalesProp
               Crear Primer Código
             </Button>
           </Card>
+        ) : codigosFiltrados.length === 0 ? (
+          <Card className="p-12 text-center bg-gray-50">
+            <Tag size={48} className="mx-auto text-gray-400 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No se encontraron códigos</h3>
+            <p className="text-gray-600 mb-4">
+              No hay códigos que coincidan con los filtros seleccionados
+            </p>
+            <Button variant="secondary" onClick={() => { setBusqueda(''); setFiltroActivo('todos'); }}>
+              Limpiar filtros
+            </Button>
+          </Card>
         ) : (
           <div className="overflow-x-auto">
             <Table
@@ -251,7 +309,7 @@ export const GestorCodigosPromocionales: React.FC<GestorCodigosPromocionalesProp
                 { key: 'estado', header: 'Estado' },
                 { key: 'acciones', header: 'Acciones' },
               ]}
-              data={codigos.map((c) => ({
+              data={codigosFiltrados.map((c) => ({
                 codigo: (
                   <div className="flex items-center gap-2">
                     <code className="px-2 py-1 bg-gray-100 rounded text-sm font-mono">

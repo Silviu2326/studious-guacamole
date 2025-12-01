@@ -10,521 +10,370 @@ import {
   Calendar,
   Users,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  X,
+  TrendingDown,
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 import { Card, MetricCards, Table, Button, Input, Select, Badge, Modal } from '../../../components/componentsreutilizables';
 import {
-  ResumenFinanciero,
-  ProyeccionFinanciera,
-  AlertaPagoPendiente,
-  PagoSesion,
-  FiltrosFinancieros,
-  EstadisticasFinancierasCliente,
-  EstadoPago,
+  DashboardFinancieroAgenda,
+  RangoFechas,
+  ContextoMetricas,
   TipoCita,
 } from '../types';
-import {
-  getResumenFinanciero,
-  getProyeccionFinanciera,
-  getAlertasPagosPendientes,
-  getPagosSesiones,
-  getEstadisticasFinancierasCliente,
-  marcarPagoComoPagado,
-} from '../api/finanzas';
-import { ClienteAutocomplete } from './ClienteAutocomplete';
+import { getDashboardFinancieroAgenda } from '../api/analytics';
 import { useAuth } from '../../../context/AuthContext';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-export const DashboardFinanciero: React.FC = () => {
+interface DashboardFinancieroProps {
+  rangoFechas?: RangoFechas;
+  contexto?: ContextoMetricas;
+}
+
+export const DashboardFinanciero: React.FC<DashboardFinancieroProps> = ({ 
+  rangoFechas: rangoFechasProp, 
+  contexto: contextoProp 
+}) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [resumen, setResumen] = useState<ResumenFinanciero | null>(null);
-  const [proyeccion, setProyeccion] = useState<ProyeccionFinanciera | null>(null);
-  const [alertas, setAlertas] = useState<AlertaPagoPendiente[]>([]);
-  const [pagos, setPagos] = useState<PagoSesion[]>([]);
-  const [estadisticasClientes, setEstadisticasClientes] = useState<EstadisticasFinancierasCliente[]>([]);
-  const [filtros, setFiltros] = useState<FiltrosFinancieros>({});
-  const [mostrarFiltros, setMostrarFiltros] = useState(false);
-  const [mostrarModalPago, setMostrarModalPago] = useState(false);
-  const [pagoSeleccionado, setPagoSeleccionado] = useState<PagoSesion | null>(null);
-  const [metodoPago, setMetodoPago] = useState<'efectivo' | 'tarjeta' | 'transferencia' | 'otro'>('efectivo');
-  const [notasPago, setNotasPago] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [dashboard, setDashboard] = useState<DashboardFinancieroAgenda | null>(null);
 
   useEffect(() => {
     cargarDatos();
-  }, [filtros]);
+  }, [rangoFechasProp, contextoProp, user?.id]);
 
   const cargarDatos = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const [resumenData, proyeccionData, alertasData, pagosData, estadisticasData] = await Promise.all([
-        getResumenFinanciero(undefined, undefined, user?.id),
-        getProyeccionFinanciera(user?.id),
-        getAlertasPagosPendientes(user?.id),
-        getPagosSesiones(filtros, user?.id),
-        getEstadisticasFinancierasCliente(filtros.clienteId, user?.id),
-      ]);
+      // Determinar rango de fechas
+      let fechaInicio: Date;
+      let fechaFin: Date;
+      
+      if (rangoFechasProp) {
+        fechaInicio = rangoFechasProp.fechaInicio;
+        fechaFin = rangoFechasProp.fechaFin;
+      } else {
+        // Por defecto: mes actual
+        const fechaActual = new Date();
+        fechaInicio = new Date(fechaActual.getFullYear(), fechaActual.getMonth(), 1);
+        fechaFin = new Date(fechaActual.getFullYear(), fechaActual.getMonth() + 1, 0);
+        fechaFin.setHours(23, 59, 59, 999);
+      }
+      
+      const contexto: ContextoMetricas = contextoProp || {
+        userId: user?.id,
+        role: user?.role as 'entrenador' | 'gimnasio',
+      };
+      
+      const dashboardData = await getDashboardFinancieroAgenda(
+        { fechaInicio, fechaFin },
+        contexto
+      );
 
-      setResumen(resumenData);
-      setProyeccion(proyeccionData);
-      setAlertas(alertasData);
-      setPagos(pagosData);
-      setEstadisticasClientes(estadisticasData);
+      setDashboard(dashboardData);
     } catch (error) {
-      console.error('Error cargando datos financieros:', error);
+      console.error('Error cargando dashboard financiero:', error);
+      setError('No se pudieron cargar los datos financieros. Por favor, intenta de nuevo.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleMarcarPago = async () => {
-    if (!pagoSeleccionado) return;
+  // Manejo de errores parciales - no rompe toda la página
+  if (error && !dashboard) {
+    return (
+      <Card className="bg-white shadow-sm border-red-200">
+        <div className="p-6">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-semibold text-red-900 mb-1">
+                Error al cargar datos financieros
+              </h3>
+              <p className="text-sm text-red-700 mb-4">
+                {error}
+              </p>
+              <Button 
+                variant="secondary" 
+                size="sm"
+                onClick={cargarDatos}
+                className="border-red-300 text-red-700 hover:bg-red-50"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Reintentar
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
+    );
+  }
 
-    try {
-      await marcarPagoComoPagado(pagoSeleccionado.id, metodoPago, notasPago, user?.id);
-      setMostrarModalPago(false);
-      setPagoSeleccionado(null);
-      setMetodoPago('efectivo');
-      setNotasPago('');
-      cargarDatos();
-    } catch (error) {
-      console.error('Error marcando pago:', error);
-    }
-  };
+  if (loading && !dashboard && !error) {
+    return (
+      <Card className="bg-white shadow-sm">
+        <div className="p-6">
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-sm text-gray-600">Cargando dashboard financiero...</p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  if (!dashboard && !loading && !error) {
+    return (
+      <Card className="bg-white shadow-sm">
+        <div className="p-6">
+          <div className="text-center py-8">
+            <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-sm font-medium text-gray-600 mb-1">No hay datos financieros disponibles</p>
+            <p className="text-xs text-gray-500">Los datos aparecerán aquí cuando haya sesiones registradas.</p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  // Calcular impacto económico de cancelaciones y no-shows
+  const impactoCancelaciones = dashboard.sesionesCanceladas * dashboard.ticketMedio;
+  const impactoNoShows = dashboard.noShows * dashboard.ticketMedio;
+  const impactoTotal = impactoCancelaciones + impactoNoShows;
 
   const metricasData = [
     {
       id: 'ingresos',
-      title: 'Ingresos del Mes',
-      value: resumen ? `€${resumen.ingresosTotales.toFixed(2)}` : '€0.00',
-      subtitle: resumen?.ingresosPendientes ? `€${resumen.ingresosPendientes.toFixed(2)} pendientes` : '',
-      trend: resumen?.crecimientoPorcentaje ? {
-        value: Math.abs(resumen.crecimientoPorcentaje),
-        direction: resumen.crecimientoPorcentaje > 0 ? 'up' : 'down',
-        label: `vs mes anterior`,
+      title: 'Ingresos Totales',
+      value: `€${dashboard.ingresosTotales.toFixed(2)}`,
+      subtitle: `€${dashboard.ingresosPendientes.toFixed(2)} pendientes`,
+      trend: dashboard.crecimientoIngresos ? {
+        value: Math.abs(dashboard.crecimientoIngresos),
+        direction: dashboard.crecimientoIngresos > 0 ? 'up' : 'down',
+        label: `vs período anterior`,
       } : undefined,
       icon: <DollarSign className="w-6 h-6" />,
       color: 'success' as const,
       loading,
     },
     {
-      id: 'sesiones-cobradas',
-      title: 'Sesiones Cobradas',
-      value: resumen?.sesionesCobradas || 0,
-      subtitle: `${resumen?.sesionesPendientes || 0} pendientes`,
-      icon: <CheckCircle className="w-6 h-6" />,
-      color: 'success' as const,
-      loading,
-    },
-    {
-      id: 'proyeccion',
-      title: 'Proyección Mensual',
-      value: proyeccion ? `€${proyeccion.ingresosProyectados.toFixed(2)}` : '€0.00',
-      subtitle: `${proyeccion?.diasRestantes || 0} días restantes`,
-      trend: proyeccion ? {
-        value: 0,
-        direction: proyeccion.tendencia === 'subiendo' ? 'up' : proyeccion.tendencia === 'bajando' ? 'down' : 'neutral',
-        label: proyeccion.tendencia,
-      } : undefined,
+      id: 'ticket-medio',
+      title: 'Ticket Medio',
+      value: `€${dashboard.ticketMedio.toFixed(2)}`,
+      subtitle: `${dashboard.sesionesCompletadas} sesiones completadas`,
       icon: <TrendingUp className="w-6 h-6" />,
       color: 'info' as const,
       loading,
     },
     {
-      id: 'alertas',
-      title: 'Pagos Pendientes',
-      value: alertas.length,
-      subtitle: `${alertas.filter(a => a.prioridad === 'critica').length} críticos`,
+      id: 'cancelaciones',
+      title: 'Cancelaciones',
+      value: dashboard.sesionesCanceladas,
+      subtitle: `Impacto: €${impactoCancelaciones.toFixed(2)}`,
+      icon: <XCircle className="w-6 h-6" />,
+      color: dashboard.tasaCancelacion > 10 ? 'error' as const : 'warning' as const,
+      loading,
+    },
+    {
+      id: 'no-shows',
+      title: 'No Shows',
+      value: dashboard.noShows,
+      subtitle: `Impacto: €${impactoNoShows.toFixed(2)}`,
       icon: <AlertTriangle className="w-6 h-6" />,
-      color: alertas.length > 0 ? 'error' as const : 'success' as const,
+      color: dashboard.tasaNoShow > 5 ? 'error' as const : 'warning' as const,
       loading,
     },
   ];
 
-  const columnasPagos = [
-    {
-      key: 'fechaSesion',
-      label: 'Fecha Sesión',
-      render: (pago: PagoSesion) => new Date(pago.fechaSesion).toLocaleDateString('es-ES'),
-    },
-    {
-      key: 'clienteNombre',
-      label: 'Cliente',
-      render: (pago: PagoSesion) => pago.clienteNombre,
-    },
-    {
-      key: 'tipoSesion',
-      label: 'Tipo',
-      render: (pago: PagoSesion) => (
-        <Badge variant="secondary">{pago.tipoSesion}</Badge>
-      ),
-    },
-    {
-      key: 'monto',
-      label: 'Monto',
-      render: (pago: PagoSesion) => `€${pago.monto.toFixed(2)}`,
-    },
-    {
-      key: 'estado',
-      label: 'Estado',
-      render: (pago: PagoSesion) => {
-        const estados = {
-          pagado: { label: 'Pagado', variant: 'success' as const },
-          pendiente: { label: 'Pendiente', variant: 'warning' as const },
-          vencido: { label: 'Vencido', variant: 'error' as const },
-          cancelado: { label: 'Cancelado', variant: 'secondary' as const },
-        };
-        const estado = estados[pago.estado];
-        return <Badge variant={estado.variant}>{estado.label}</Badge>;
-      },
-    },
-    {
-      key: 'fechaPago',
-      label: 'Fecha Pago',
-      render: (pago: PagoSesion) => 
-        pago.fechaPago ? new Date(pago.fechaPago).toLocaleDateString('es-ES') : '-',
-    },
-    {
-      key: 'acciones',
-      label: 'Acciones',
-      render: (pago: PagoSesion) => (
-        pago.estado !== 'pagado' && pago.estado !== 'cancelado' ? (
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => {
-              setPagoSeleccionado(pago);
-              setMostrarModalPago(true);
-            }}
-          >
-            Marcar Pagado
-          </Button>
-        ) : null
-      ),
-    },
-  ];
+  // Preparar datos para gráficos
+  const datosIngresosPorTipo = dashboard.ingresosPorTipoSesion.map(item => ({
+    tipo: item.tipo,
+    ingresos: item.ingresos,
+    cantidad: item.cantidad,
+    porcentaje: item.porcentaje,
+  }));
 
-  const columnasAlertas = [
-    {
-      key: 'clienteNombre',
-      label: 'Cliente',
-      render: (alerta: AlertaPagoPendiente) => alerta.clienteNombre,
-    },
-    {
-      key: 'fechaSesion',
-      label: 'Fecha Sesión',
-      render: (alerta: AlertaPagoPendiente) => new Date(alerta.fechaSesion).toLocaleDateString('es-ES'),
-    },
-    {
-      key: 'monto',
-      label: 'Monto',
-      render: (alerta: AlertaPagoPendiente) => `€${alerta.monto.toFixed(2)}`,
-    },
-    {
-      key: 'diasVencido',
-      label: 'Días Vencido',
-      render: (alerta: AlertaPagoPendiente) => alerta.diasVencido,
-    },
-    {
-      key: 'prioridad',
-      label: 'Prioridad',
-      render: (alerta: AlertaPagoPendiente) => {
-        const prioridades = {
-          critica: { label: 'Crítica', variant: 'error' as const },
-          alta: { label: 'Alta', variant: 'error' as const },
-          media: { label: 'Media', variant: 'warning' as const },
-          baja: { label: 'Baja', variant: 'secondary' as const },
-        };
-        const prioridad = prioridades[alerta.prioridad];
-        return <Badge variant={prioridad.variant}>{prioridad.label}</Badge>;
-      },
-    },
-    {
-      key: 'acciones',
-      label: 'Acciones',
-      render: (alerta: AlertaPagoPendiente) => (
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => {
-            const pago = pagos.find(p => p.id === alerta.id);
-            if (pago) {
-              setPagoSeleccionado(pago);
-              setMostrarModalPago(true);
-            }
-          }}
-        >
-          Marcar Pagado
-        </Button>
-      ),
-    },
-  ];
-
-  const columnasEstadisticas = [
-    {
-      key: 'clienteNombre',
-      label: 'Cliente',
-      render: (est: EstadisticasFinancierasCliente) => est.clienteNombre,
-    },
-    {
-      key: 'totalIngresos',
-      label: 'Total Ingresos',
-      render: (est: EstadisticasFinancierasCliente) => `€${est.totalIngresos.toFixed(2)}`,
-    },
-    {
-      key: 'sesionesPagadas',
-      label: 'Sesiones Pagadas',
-      render: (est: EstadisticasFinancierasCliente) => est.sesionesPagadas,
-    },
-    {
-      key: 'sesionesPendientes',
-      label: 'Sesiones Pendientes',
-      render: (est: EstadisticasFinancierasCliente) => est.sesionesPendientes,
-    },
-    {
-      key: 'montoPendiente',
-      label: 'Monto Pendiente',
-      render: (est: EstadisticasFinancierasCliente) => `€${est.montoPendiente.toFixed(2)}`,
-    },
-    {
-      key: 'promedioSesion',
-      label: 'Promedio/Sesión',
-      render: (est: EstadisticasFinancierasCliente) => `€${est.promedioSesion.toFixed(2)}`,
-    },
-  ];
+  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
   return (
     <div className="space-y-6">
       {/* Métricas Principales */}
       <MetricCards data={metricasData} columns={4} />
 
-      {/* Proyección Mensual */}
-      {proyeccion && (
+      {/* Resumen de Impacto Económico */}
+      <Card className="bg-white shadow-sm">
+        <div className="p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Impacto Económico de Cancelaciones y No-Shows</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+              <div className="text-sm text-gray-600 mb-1">Cancelaciones</div>
+              <div className="text-2xl font-bold text-red-600">{dashboard.sesionesCanceladas}</div>
+              <div className="text-sm text-red-700 mt-1">
+                Tasa: {dashboard.tasaCancelacion}% | Impacto: €{impactoCancelaciones.toFixed(2)}
+              </div>
+            </div>
+            <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+              <div className="text-sm text-gray-600 mb-1">No Shows</div>
+              <div className="text-2xl font-bold text-orange-600">{dashboard.noShows}</div>
+              <div className="text-sm text-orange-700 mt-1">
+                Tasa: {dashboard.tasaNoShow}% | Impacto: €{impactoNoShows.toFixed(2)}
+              </div>
+            </div>
+            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="text-sm text-gray-600 mb-1">Impacto Total</div>
+              <div className="text-2xl font-bold text-gray-900">€{impactoTotal.toFixed(2)}</div>
+              <div className="text-sm text-gray-700 mt-1">
+                Pérdida potencial de ingresos
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Ingresos por Tipo de Sesión */}
+      {datosIngresosPorTipo.length > 0 && (
+        <Card className="bg-white shadow-sm">
+          <div className="p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Ingresos por Tipo de Sesión</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={datosIngresosPorTipo}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                  <XAxis 
+                    dataKey="tipo" 
+                    tick={{ fill: '#64748B', fontSize: 12 }} 
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis tick={{ fill: '#64748B', fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: '1px solid #E2E8F0',
+                      borderRadius: '8px',
+                      padding: '8px',
+                    }}
+                    formatter={(value: number) => [`€${value.toFixed(2)}`, 'Ingresos']}
+                  />
+                  <Legend />
+                  <Bar dataKey="ingresos" fill="#3B82F6" name="Ingresos (€)" />
+                </BarChart>
+              </ResponsiveContainer>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={datosIngresosPorTipo}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ tipo, porcentaje }) => `${tipo}: ${porcentaje}%`}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="ingresos"
+                  >
+                    {datosIngresosPorTipo.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: '1px solid #E2E8F0',
+                      borderRadius: '8px',
+                      padding: '8px',
+                    }}
+                    formatter={(value: number) => [`€${value.toFixed(2)}`, 'Ingresos']}
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Métricas de Rendimiento */}
+      <Card className="bg-white shadow-sm">
+        <div className="p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Métricas de Rendimiento</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 bg-blue-50 rounded-lg">
+              <div className="text-sm text-gray-600 mb-1">Ocupación Promedio</div>
+              <div className="text-2xl font-bold text-blue-600">{dashboard.ocupacionPromedio}%</div>
+            </div>
+            <div className="p-4 bg-green-50 rounded-lg">
+              <div className="text-sm text-gray-600 mb-1">Horas Trabajadas</div>
+              <div className="text-2xl font-bold text-green-600">{Math.round(dashboard.horasTrabajadas * 10) / 10}h</div>
+            </div>
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="text-sm text-gray-600 mb-1">Horas Disponibles</div>
+              <div className="text-2xl font-bold text-gray-900">{Math.round(dashboard.horasDisponibles * 10) / 10}h</div>
+            </div>
+            <div className="p-4 bg-purple-50 rounded-lg">
+              <div className="text-sm text-gray-600 mb-1">Ingresos por Sesión</div>
+              <div className="text-2xl font-bold text-purple-600">€{dashboard.ingresosPorSesion.toFixed(2)}</div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Comparativa con Período Anterior */}
+      {dashboard.crecimientoIngresos !== undefined && (
         <Card className="bg-white shadow-sm">
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Proyección del Mes</h2>
+              <h2 className="text-xl font-bold text-gray-900">Comparativa con Período Anterior</h2>
               <div className="flex items-center gap-2">
-                {proyeccion.tendencia === 'subiendo' && (
+                {dashboard.tendencia === 'subiendo' && (
                   <ArrowUpRight className="w-5 h-5 text-green-600" />
                 )}
-                {proyeccion.tendencia === 'bajando' && (
+                {dashboard.tendencia === 'bajando' && (
                   <ArrowDownRight className="w-5 h-5 text-red-600" />
                 )}
+                {dashboard.tendencia === 'estable' && (
+                  <TrendingDown className="w-5 h-5 text-gray-600" />
+                )}
                 <span className={`text-sm font-medium ${
-                  proyeccion.tendencia === 'subiendo' ? 'text-green-600' : 
-                  proyeccion.tendencia === 'bajando' ? 'text-red-600' : 
+                  dashboard.tendencia === 'subiendo' ? 'text-green-600' : 
+                  dashboard.tendencia === 'bajando' ? 'text-red-600' : 
                   'text-gray-600'
                 }`}>
-                  {proyeccion.tendencia}
+                  {dashboard.tendencia}
                 </span>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <p className="text-sm text-gray-600">Ingresos Actuales</p>
-                <p className="text-2xl font-bold text-gray-900">€{proyeccion.ingresosActuales.toFixed(2)}</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <div className="text-sm text-gray-600 mb-1">Crecimiento de Ingresos</div>
+                <div className={`text-2xl font-bold ${
+                  dashboard.crecimientoIngresos > 0 ? 'text-green-600' : 
+                  dashboard.crecimientoIngresos < 0 ? 'text-red-600' : 
+                  'text-gray-600'
+                }`}>
+                  {dashboard.crecimientoIngresos > 0 ? '+' : ''}{dashboard.crecimientoIngresos}%
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-gray-600">Proyección Total</p>
-                <p className="text-2xl font-bold text-blue-600">€{proyeccion.ingresosProyectados.toFixed(2)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Sesiones Programadas</p>
-                <p className="text-2xl font-bold text-gray-900">{proyeccion.sesionesProgramadas}</p>
+              <div className="p-4 bg-green-50 rounded-lg">
+                <div className="text-sm text-gray-600 mb-1">Crecimiento de Sesiones</div>
+                <div className={`text-2xl font-bold ${
+                  dashboard.crecimientoSesiones && dashboard.crecimientoSesiones > 0 ? 'text-green-600' : 
+                  dashboard.crecimientoSesiones && dashboard.crecimientoSesiones < 0 ? 'text-red-600' : 
+                  'text-gray-600'
+                }`}>
+                  {dashboard.crecimientoSesiones && dashboard.crecimientoSesiones > 0 ? '+' : ''}{dashboard.crecimientoSesiones || 0}%
+                </div>
               </div>
             </div>
           </div>
         </Card>
       )}
-
-      {/* Filtros */}
-      <Card className="bg-white shadow-sm">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Filtros</h2>
-            <Button
-              variant="secondary"
-              onClick={() => setMostrarFiltros(!mostrarFiltros)}
-            >
-              <Filter className="w-4 h-4 mr-2" />
-              {mostrarFiltros ? 'Ocultar' : 'Mostrar'} Filtros
-            </Button>
-          </div>
-          {mostrarFiltros && (
-            <div className="grid grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cliente
-                </label>
-                <ClienteAutocomplete
-                  value={filtros.clienteId || ''}
-                  onChange={(id) => setFiltros({ ...filtros, clienteId: id || undefined })}
-                  label=""
-                  placeholder="Todos los clientes"
-                  role="entrenador"
-                  userId={user?.id}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Estado de Pago
-                </label>
-                <Select
-                  value={filtros.estadoPago || ''}
-                  onChange={(e) => setFiltros({ 
-                    ...filtros, 
-                    estadoPago: e.target.value ? e.target.value as EstadoPago : undefined 
-                  })}
-                  options={[
-                    { value: '', label: 'Todos' },
-                    { value: 'pagado', label: 'Pagado' },
-                    { value: 'pendiente', label: 'Pendiente' },
-                    { value: 'vencido', label: 'Vencido' },
-                    { value: 'cancelado', label: 'Cancelado' },
-                  ]}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Fecha Inicio
-                </label>
-                <Input
-                  type="date"
-                  value={filtros.fechaInicio ? new Date(filtros.fechaInicio).toISOString().split('T')[0] : ''}
-                  onChange={(e) => setFiltros({ 
-                    ...filtros, 
-                    fechaInicio: e.target.value ? new Date(e.target.value) : undefined 
-                  })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Fecha Fin
-                </label>
-                <Input
-                  type="date"
-                  value={filtros.fechaFin ? new Date(filtros.fechaFin).toISOString().split('T')[0] : ''}
-                  onChange={(e) => setFiltros({ 
-                    ...filtros, 
-                    fechaFin: e.target.value ? new Date(e.target.value) : undefined 
-                  })}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-      </Card>
-
-      {/* Alertas de Pagos Pendientes */}
-      {alertas.length > 0 && (
-        <Card className="bg-white shadow-sm border-l-4 border-red-500">
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900 flex items-center">
-                <AlertTriangle className="w-5 h-5 mr-2 text-red-600" />
-                Alertas de Pagos Pendientes
-              </h2>
-              <Badge variant="error">{alertas.length} alertas</Badge>
-            </div>
-            <Table
-              data={alertas}
-              columns={columnasAlertas}
-            />
-          </div>
-        </Card>
-      )}
-
-      {/* Pagos de Sesiones */}
-      <Card className="bg-white shadow-sm">
-        <div className="p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Pagos de Sesiones</h2>
-          <Table
-            data={pagos}
-            columns={columnasPagos}
-          />
-        </div>
-      </Card>
-
-      {/* Estadísticas por Cliente */}
-      <Card className="bg-white shadow-sm">
-        <div className="p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Estadísticas por Cliente</h2>
-          <Table
-            data={estadisticasClientes}
-            columns={columnasEstadisticas}
-          />
-        </div>
-      </Card>
-
-      {/* Modal para Marcar Pago */}
-      <Modal
-        isOpen={mostrarModalPago}
-        onClose={() => {
-          setMostrarModalPago(false);
-          setPagoSeleccionado(null);
-          setMetodoPago('efectivo');
-          setNotasPago('');
-        }}
-        title="Marcar Pago como Pagado"
-        size="md"
-        footer={
-          <div className="flex space-x-3">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setMostrarModalPago(false);
-                setPagoSeleccionado(null);
-              }}
-            >
-              Cancelar
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleMarcarPago}
-            >
-              Confirmar Pago
-            </Button>
-          </div>
-        }
-      >
-        {pagoSeleccionado && (
-          <div className="space-y-4">
-            <div>
-              <p className="text-sm text-gray-600">Cliente</p>
-              <p className="text-lg font-semibold">{pagoSeleccionado.clienteNombre}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Monto</p>
-              <p className="text-lg font-semibold">€{pagoSeleccionado.monto.toFixed(2)}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Método de Pago
-              </label>
-              <Select
-                value={metodoPago}
-                onChange={(e) => setMetodoPago(e.target.value as any)}
-                options={[
-                  { value: 'efectivo', label: 'Efectivo' },
-                  { value: 'tarjeta', label: 'Tarjeta' },
-                  { value: 'transferencia', label: 'Transferencia' },
-                  { value: 'otro', label: 'Otro' },
-                ]}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Notas (opcional)
-              </label>
-              <Input
-                value={notasPago}
-                onChange={(e) => setNotasPago(e.target.value)}
-                placeholder="Notas adicionales sobre el pago..."
-              />
-            </div>
-          </div>
-        )}
-      </Modal>
     </div>
   );
 };

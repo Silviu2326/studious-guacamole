@@ -4,6 +4,7 @@ import {
   getNumeroNotificacionesNoLeidas,
   marcarNotificacionComoLeida,
   verificarNuevasReservas,
+  subscribeNuevasReservas,
   NotificacionNuevaReserva,
 } from '../api/notificacionesNuevasReservas';
 import { Reserva } from '../types';
@@ -123,18 +124,42 @@ export const useNotificacionesNuevasReservas = (
     cargarNotificaciones();
   }, [cargarNotificaciones]);
 
-  // Verificar nuevas reservas periódicamente
+  // Suscribirse a notificaciones en tiempo real
   useEffect(() => {
     if (!entrenadorId) return;
 
-    // Verificación inicial
-    verificarNuevas();
+    // Suscripción en tiempo real usando el bus de notificaciones
+    const unsubscribe = subscribeNuevasReservas(entrenadorId, (reserva, notificacion) => {
+      // Cuando se recibe una nueva reserva en tiempo real
+      setNuevaReserva(prev => {
+        if (prev?.id === reserva.id) {
+          return prev; // Ya está mostrando esta reserva
+        }
+        return reserva;
+      });
+      
+      setUltimaReservaId(reserva.id);
+      
+      // Recargar notificaciones
+      cargarNotificaciones();
+      
+      // Si autoMarcarComoLeida está activado, marcar después de un tiempo
+      if (autoMarcarComoLeida) {
+        setTimeout(async () => {
+          await marcarNotificacionComoLeida(notificacion.id, entrenadorId);
+          await cargarNotificaciones();
+        }, tiempoMostrarNotificacion);
+      }
+    });
 
-    // Configurar intervalo de verificación
-    const intervalo = setInterval(verificarNuevas, intervaloVerificacion);
+    // También mantener verificación periódica como fallback (opcional, menos frecuente)
+    const intervalo = setInterval(verificarNuevas, intervaloVerificacion * 3); // Menos frecuente ya que tenemos suscripción
 
-    return () => clearInterval(intervalo);
-  }, [entrenadorId, intervaloVerificacion, verificarNuevas]);
+    return () => {
+      unsubscribe();
+      clearInterval(intervalo);
+    };
+  }, [entrenadorId, intervaloVerificacion, autoMarcarComoLeida, tiempoMostrarNotificacion, cargarNotificaciones, verificarNuevas]);
 
   return {
     notificaciones,

@@ -1,53 +1,40 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card } from '../../../components/componentsreutilizables';
 import { useAuth } from '../../../context/AuthContext';
 import {
-  FiscalProfileForm,
   TaxSummaryReport,
   ExportControlsContainer,
   ExportHistory,
   GestorGastosDeducibles,
   TaxCalculator,
-  FiscalCalendarComponent,
-  AnnualSummaryComponent,
+  FiscalCalendar,
+  AnnualSummary,
   TaxReminderBanner,
-  IncomeExpensesChart,
   FinancialDashboard,
-  BankCSVImport,
-  TaxPDFReportGenerator
 } from '../components';
-import { fiscalProfileApi, taxSummaryApi } from '../api';
-import { FiscalProfile, TaxSummary } from '../api/types';
-import { FileText, Building2, Download, History, TrendingDown, Calendar, BarChart3, LayoutDashboard, Upload, FileDown } from 'lucide-react';
+import { taxSummaryApi, getPerfilFiscal } from '../api';
+import { TaxSummary, PerfilFiscal } from '../api/types';
+import { FileText, Download, TrendingDown, Calendar, BarChart3, LayoutDashboard, Calculator } from 'lucide-react';
 import { useTaxReminders } from '../hooks/useTaxReminders';
 
 /**
  * Página principal de Impuestos & Export Contable
  * 
  * Sistema completo de gestión fiscal y exportación contable.
- * 
- * Para Entrenadores Personales:
- * - Exportación simplificada de ingresos y gastos
- * - Ideal para enviar a gestoría
- * - Formato CSV simple
- * 
- * Para Gimnasios:
- * - Informes fiscales avanzados con desglose de IVA
- * - Exportaciones compatibles con software contable (A3, Sage, etc.)
- * - Preparación para modelos fiscales
- * - Gestión de perfil fiscal corporativo
+ * Centro de control para gestionar todos los aspectos fiscales y contables.
  */
 export default function ImpuestosExportContablePage() {
   const { user } = useAuth();
-  const isEntrenador = user?.role === 'entrenador';
+  const [searchParams, setSearchParams] = useSearchParams();
   
-  const [tabActiva, setTabActiva] = useState('dashboard');
-  const [fiscalProfile, setFiscalProfile] = useState<FiscalProfile | null>(null);
+  // Deep linking: leer tab desde query params
+  const tabFromUrl = searchParams.get('tab') || 'dashboard';
+  const [tabActiva, setTabActiva] = useState(tabFromUrl);
   const [taxSummary, setTaxSummary] = useState<TaxSummary | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingSummary, setLoadingSummary] = useState(false);
-  const [saving, setSaving] = useState(false);
-  
+  const [perfilFiscal, setPerfilFiscal] = useState<PerfilFiscal | null>(null);
+
   // Cargar recordatorios de impuestos
   const { reminders: taxReminders } = useTaxReminders(user?.id || '');
 
@@ -60,28 +47,39 @@ export default function ImpuestosExportContablePage() {
 
   // Cargar perfil fiscal al montar
   useEffect(() => {
-    loadFiscalProfile();
+    const loadPerfilFiscal = async () => {
+      try {
+        const perfil = await getPerfilFiscal();
+        setPerfilFiscal(perfil);
+      } catch (error) {
+        console.error('Error loading perfil fiscal:', error);
+      }
+    };
+    loadPerfilFiscal();
   }, []);
+
+  // Sincronizar tab con URL (deep linking)
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab') || 'dashboard';
+    if (tabFromUrl !== tabActiva) {
+      setTabActiva(tabFromUrl);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // Actualizar URL cuando cambia la tab
+  const handleTabChange = (tabId: string) => {
+    setTabActiva(tabId);
+    setSearchParams({ tab: tabId });
+  };
 
   // Cargar resumen fiscal cuando cambie el rango de fechas o la pestaña activa
   useEffect(() => {
-    if (tabActiva === 'export' || tabActiva === 'calculator') {
+    if (tabActiva === 'exportar' || tabActiva === 'reportes') {
       loadTaxSummary();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [summaryDateRange.from?.getTime(), summaryDateRange.to?.getTime(), tabActiva]);
-
-  const loadFiscalProfile = async () => {
-    setLoadingProfile(true);
-    try {
-      const profile = await fiscalProfileApi.getProfile();
-      setFiscalProfile(profile);
-    } catch (error) {
-      console.error('Error loading fiscal profile:', error);
-    } finally {
-      setLoadingProfile(false);
-    }
-  };
 
   const loadTaxSummary = async () => {
     setLoadingSummary(true);
@@ -98,131 +96,55 @@ export default function ImpuestosExportContablePage() {
     }
   };
 
-  const handleProfileUpdate = async (data: FiscalProfile) => {
-    setSaving(true);
-    try {
-      const updated = await fiscalProfileApi.updateProfile(data);
-      setFiscalProfile(updated);
-    } catch (error) {
-      console.error('Error updating profile:', error);
-    } finally {
-      setSaving(false);
-    }
-  };
-
   // Callback para refrescar el resumen cuando cambien los gastos
   const handleExpensesChange = () => {
-    if (tabActiva === 'export' || tabActiva === 'calculator') {
+    if (tabActiva === 'exportar' || tabActiva === 'reportes') {
       loadTaxSummary();
     }
   };
 
-  // Tabs según el tipo de usuario
-  const tabsTrainer = [
+  // Definición de pestañas con descripciones
+  const tabs = [
     {
       id: 'dashboard',
       label: 'Dashboard',
-      icon: <LayoutDashboard size={18} />
-    },
-    {
-      id: 'import',
-      label: 'Importar CSV',
-      icon: <Upload size={18} />
-    },
-    {
-      id: 'pdf-report',
-      label: 'Informe PDF',
-      icon: <FileDown size={18} />
-    },
-    {
-      id: 'calculator',
-      label: 'Calculadora de Impuestos',
-      icon: <FileText size={18} />
-    },
-    {
-      id: 'export',
-      label: 'Exportar Ingresos',
-      icon: <Download size={18} />
-    },
-    {
-      id: 'annual',
-      label: 'Resumen Anual',
-      icon: <BarChart3 size={18} />
-    },
-    {
-      id: 'calendar',
-      label: 'Calendario Fiscal',
-      icon: <Calendar size={18} />
+      icon: <LayoutDashboard size={18} />,
+      description: 'Vista general de tu situación financiera y fiscal. Monitorea ingresos, gastos, impuestos estimados y próximas obligaciones fiscales.'
     },
     {
       id: 'gastos',
-      label: 'Gastos Deducibles',
-      icon: <TrendingDown size={18} />
+      label: 'Gastos',
+      icon: <TrendingDown size={18} />,
+      description: 'Registra y gestiona todos tus gastos deducibles. Organiza por categorías, adjunta facturas y mantén un control completo de tus deducciones fiscales.'
     },
     {
-      id: 'profile',
-      label: 'Datos Fiscales',
-      icon: <Building2 size={18} />
-    }
-  ];
-
-  const tabsGym = [
-    {
-      id: 'dashboard',
-      label: 'Dashboard',
-      icon: <LayoutDashboard size={18} />
+      id: 'calculadora',
+      label: 'Calculadora',
+      icon: <Calculator size={18} />,
+      description: 'Calcula tus impuestos estimados (IRPF e IVA) para cualquier período. Simula diferentes escenarios y planifica tus obligaciones fiscales.'
     },
     {
-      id: 'import',
-      label: 'Importar CSV',
-      icon: <Upload size={18} />
-    },
-    {
-      id: 'pdf-report',
-      label: 'Informe PDF',
-      icon: <FileDown size={18} />
-    },
-    {
-      id: 'calculator',
-      label: 'Calculadora de Impuestos',
-      icon: <FileText size={18} />
-    },
-    {
-      id: 'export',
+      id: 'exportar',
       label: 'Exportar',
-      icon: <Download size={18} />
+      icon: <Download size={18} />,
+      description: 'Exporta tus datos fiscales y contables en múltiples formatos (Excel, CSV, PDF). Compatible con software contable profesional y listo para enviar a tu gestor.'
     },
     {
-      id: 'annual',
-      label: 'Resumen Anual',
-      icon: <BarChart3 size={18} />
+      id: 'reportes',
+      label: 'Reportes',
+      icon: <BarChart3 size={18} />,
+      description: 'Genera informes fiscales detallados y resúmenes anuales. Analiza tu situación fiscal con gráficos y desgloses completos.'
     },
     {
-      id: 'calendar',
-      label: 'Calendario Fiscal',
-      icon: <Calendar size={18} />
-    },
-    {
-      id: 'gastos',
-      label: 'Gastos Deducibles',
-      icon: <TrendingDown size={18} />
-    },
-    {
-      id: 'profile',
-      label: 'Datos Fiscales',
-      icon: <Building2 size={18} />
-    },
-    {
-      id: 'history',
-      label: 'Historial',
-      icon: <History size={18} />
+      id: 'calendario',
+      label: 'Calendario',
+      icon: <Calendar size={18} />,
+      description: 'Visualiza todas tus obligaciones fiscales en un calendario. Recibe recordatorios de fechas importantes y nunca olvides una presentación.'
     }
   ];
-
-  const tabs = isEntrenador ? tabsTrainer : tabsGym;
 
   const handleNavigate = (tab: string) => {
-    setTabActiva(tab);
+    handleTabChange(tab);
   };
 
   return (
@@ -243,10 +165,8 @@ export default function ImpuestosExportContablePage() {
                   Impuestos & Export Contable
                 </h1>
                 <p className="text-gray-600">
-                  {isEntrenador 
-                    ? 'Exporta tus ingresos y gestiona tus datos fiscales de forma simple. Genera informes listos para enviar a tu gestor.'
-                    : 'Sistema completo de gestión fiscal y exportación contable. Genera informes avanzados y exportaciones compatibles con software contable profesional.'
-                  }
+                  Centro de control para gestionar todos los aspectos fiscales y contables. 
+                  Exporta tus datos, calcula impuestos, gestiona gastos y mantén un control completo de tu situación fiscal.
                 </p>
               </div>
             </div>
@@ -261,7 +181,7 @@ export default function ImpuestosExportContablePage() {
           {user?.id && (
             <TaxReminderBanner
               reminders={taxReminders}
-              onViewCalendar={() => setTabActiva('calendar')}
+              onViewCalendar={() => handleTabChange('calendario')}
             />
           )}
           
@@ -271,19 +191,21 @@ export default function ImpuestosExportContablePage() {
               <div
                 role="tablist"
                 aria-label="Secciones"
-                className="flex items-center gap-2 rounded-2xl bg-slate-100 p-1"
+                className="flex items-center gap-2 rounded-2xl bg-slate-100 p-1 overflow-x-auto"
               >
                 {tabs.map((tab) => {
                   const isActive = tabActiva === tab.id;
                   return (
                     <button
                       key={tab.id}
-                      onClick={() => setTabActiva(tab.id)}
-                      className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all ${
+                      onClick={() => handleTabChange(tab.id)}
+                      className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all whitespace-nowrap ${
                         isActive
                           ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
                       }`}
+                      aria-selected={isActive}
+                      role="tab"
                     >
                       <span className={isActive ? 'opacity-100' : 'opacity-70'}>
                         {tab.icon}
@@ -298,103 +220,63 @@ export default function ImpuestosExportContablePage() {
 
           {/* Contenido de la sección activa */}
           <div className="mt-6 space-y-6">
+            {/* Descripción contextual de la pestaña activa */}
+            {tabs.find(t => t.id === tabActiva) && (
+              <Card className="p-4 bg-blue-50/50 border border-blue-100 shadow-sm">
+                <p className="text-sm text-gray-700">
+                  {tabs.find(t => t.id === tabActiva)?.description}
+                </p>
+              </Card>
+            )}
+
             {/* Tab: Dashboard */}
             {tabActiva === 'dashboard' && (
               <FinancialDashboard onNavigate={handleNavigate} />
             )}
 
-            {/* Tab: Importar CSV */}
-            {tabActiva === 'import' && (
-              <BankCSVImport onImportComplete={handleExpensesChange} />
-            )}
-
-            {/* Tab: Informe PDF */}
-            {tabActiva === 'pdf-report' && (
-              <>
-                <ExportControlsContainer 
-                  userType={isEntrenador ? 'trainer' : 'gym'}
-                  onDateRangeChange={setSummaryDateRange}
-                  initialDateRange={summaryDateRange}
-                />
-                <TaxPDFReportGenerator 
-                  dateRange={summaryDateRange}
-                  onGenerateComplete={() => {
-                    // Opcional: recargar datos después de generar el informe
-                  }}
-                />
-              </>
-            )}
-
-            {/* Tab: Calculadora de Impuestos */}
-            {tabActiva === 'calculator' && (
-              <>
-                <ExportControlsContainer 
-                  userType={isEntrenador ? 'trainer' : 'gym'}
-                  onDateRangeChange={setSummaryDateRange}
-                  initialDateRange={summaryDateRange}
-                />
-                {taxSummary && fiscalProfile && (
-                  <TaxCalculator
-                    fiscalProfile={fiscalProfile}
-                    taxSummary={taxSummary}
-                    isLoading={loadingSummary}
-                  />
-                )}
-                {(!taxSummary || !fiscalProfile) && !loadingSummary && (
-                  <Card className="p-6 bg-white shadow-sm">
-                    <div className="text-center text-gray-500">
-                      Carga los datos fiscales y el resumen para ver la calculadora de impuestos
-                    </div>
-                  </Card>
-                )}
-              </>
-            )}
-
-            {/* Tab: Exportar */}
-            {tabActiva === 'export' && (
-              <>
-                {taxSummary && (
-                  <TaxSummaryReport 
-                    summaryData={taxSummary} 
-                    isLoading={loadingSummary}
-                  />
-                )}
-                <ExportControlsContainer 
-                  userType={isEntrenador ? 'trainer' : 'gym'}
-                  onDateRangeChange={setSummaryDateRange}
-                  initialDateRange={summaryDateRange}
-                />
-                <IncomeExpensesChart userId={user?.id} />
-              </>
-            )}
-
-            {/* Tab: Resumen Anual */}
-            {tabActiva === 'annual' && (
-              <AnnualSummaryComponent userId={user?.id} />
-            )}
-
-            {/* Tab: Calendario Fiscal */}
-            {tabActiva === 'calendar' && user?.id && (
-              <FiscalCalendarComponent userId={user.id} />
-            )}
-
-            {/* Tab: Gastos Deducibles */}
+            {/* Tab: Gastos */}
             {tabActiva === 'gastos' && (
               <GestorGastosDeducibles onExpensesChange={handleExpensesChange} />
             )}
 
-            {/* Tab: Datos Fiscales */}
-            {tabActiva === 'profile' && fiscalProfile && (
-              <FiscalProfileForm
-                initialData={fiscalProfile}
-                onSubmit={handleProfileUpdate}
-                isSaving={saving}
-              />
+            {/* Tab: Calculadora */}
+            {tabActiva === 'calculadora' && (
+              <TaxCalculator
+                  fiscalProfile={perfilFiscal}
+                  isLoading={loadingSummary}
+                />
             )}
 
-            {/* Tab: Historial (solo gimnasios) */}
-            {tabActiva === 'history' && !isEntrenador && (
-              <ExportHistory />
+            {/* Tab: Exportar */}
+            {tabActiva === 'exportar' && (
+              <div className="space-y-6">
+                <ExportControlsContainer 
+                  userType={user?.role === 'entrenador' ? 'trainer' : 'gym'}
+                  onDateRangeChange={setSummaryDateRange}
+                  initialDateRange={summaryDateRange}
+                />
+                <ExportHistory />
+              </div>
+            )}
+
+            {/* Tab: Reportes */}
+            {tabActiva === 'reportes' && (
+              <div className="space-y-6">
+                {taxSummary && (
+                  <TaxSummaryReport 
+                    summaryData={taxSummary} 
+                    isLoading={loadingSummary}
+                    dateRange={summaryDateRange}
+                    onDateRangeChange={setSummaryDateRange}
+                  />
+                )}
+                <AnnualSummary userId={user?.id} />
+              </div>
+            )}
+
+            {/* Tab: Calendario */}
+            {tabActiva === 'calendario' && user?.id && (
+              <FiscalCalendar userId={user.id} />
             )}
           </div>
         </div>

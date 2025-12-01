@@ -2,6 +2,14 @@ import { ConfiguracionDiasMaximosReserva } from '../types';
 
 /**
  * Obtiene la configuración de días máximos de reserva de un entrenador
+ * 
+ * @param entrenadorId - ID del entrenador
+ * @returns Configuración de días máximos de reserva
+ * 
+ * @remarks
+ * Esta es una función mock que simplifica la obtención de configuración.
+ * En producción, se conectaría con un backend que maneja configuraciones
+ * por alcance (global, tipo de sesión, entrenador, centro).
  */
 export const getConfiguracionDiasMaximosReserva = async (
   entrenadorId: string
@@ -16,8 +24,8 @@ export const getConfiguracionDiasMaximosReserva = async (
     const config = JSON.parse(configGuardada);
     return {
       ...config,
-      createdAt: new Date(config.createdAt),
-      updatedAt: new Date(config.updatedAt),
+      createdAt: config.createdAt ? new Date(config.createdAt) : new Date(),
+      updatedAt: config.updatedAt ? new Date(config.updatedAt) : new Date(),
     };
   }
   
@@ -26,7 +34,9 @@ export const getConfiguracionDiasMaximosReserva = async (
     id: `configDiasMaximosReserva_${entrenadorId}`,
     entrenadorId,
     activo: true,
-    diasMaximos: 30,
+    maxDiasEnFuturo: 30,
+    diasMaximos: 30, // Alias para compatibilidad
+    aplicaA: 'global',
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -38,6 +48,14 @@ export const getConfiguracionDiasMaximosReserva = async (
 
 /**
  * Actualiza la configuración de días máximos de reserva
+ * 
+ * @param entrenadorId - ID del entrenador
+ * @param configuracion - Configuración parcial a actualizar
+ * @returns Configuración actualizada
+ * 
+ * @remarks
+ * Esta es una función mock que simplifica el guardado de configuración.
+ * En producción, se conectaría con un backend que valida y persiste los datos.
  */
 export const actualizarConfiguracionDiasMaximosReserva = async (
   entrenadorId: string,
@@ -47,14 +65,36 @@ export const actualizarConfiguracionDiasMaximosReserva = async (
   
   const config = await getConfiguracionDiasMaximosReserva(entrenadorId);
   
+  // Sincronizar maxDiasEnFuturo con diasMaximos si se actualiza uno u otro
+  const maxDias = configuracion.maxDiasEnFuturo ?? configuracion.diasMaximos ?? config.maxDiasEnFuturo;
+  const diasMaximos = configuracion.diasMaximos ?? maxDias;
+  
   const configActualizada: ConfiguracionDiasMaximosReserva = {
     ...config,
     ...configuracion,
+    maxDiasEnFuturo: maxDias,
+    diasMaximos: diasMaximos, // Mantener alias para compatibilidad
     updatedAt: new Date(),
   };
   
   localStorage.setItem(`configDiasMaximosReserva_${entrenadorId}`, JSON.stringify(configActualizada));
   return configActualizada;
+};
+
+/**
+ * Guarda la configuración de días máximos de reserva (alias de actualizarConfiguracionDiasMaximosReserva)
+ * 
+ * @param data - Configuración completa de días máximos de reserva
+ * @returns Configuración guardada
+ */
+export const saveConfiguracionDiasMaximosReserva = async (
+  data: ConfiguracionDiasMaximosReserva
+): Promise<ConfiguracionDiasMaximosReserva> => {
+  if (!data.entrenadorId) {
+    throw new Error('entrenadorId es requerido');
+  }
+  
+  return await actualizarConfiguracionDiasMaximosReserva(data.entrenadorId, data);
 };
 
 

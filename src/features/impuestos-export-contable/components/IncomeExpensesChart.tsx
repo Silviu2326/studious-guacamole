@@ -134,8 +134,8 @@ export const IncomeExpensesChart: React.FC<IncomeExpensesChartProps> = ({ userId
   ];
 
   return (
-    <div className="space-y-6">
-      <Card className="p-0 bg-white shadow-sm">
+    <div className="space-y-6 print:space-y-4">
+      <Card className="p-0 bg-white shadow-sm print:shadow-none print:border print:border-gray-300">
         <div className="space-y-6 p-4">
           {/* Header */}
           <div className="flex items-center gap-3 pb-4 border-b border-gray-200">

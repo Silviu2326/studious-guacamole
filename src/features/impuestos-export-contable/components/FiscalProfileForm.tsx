@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Input, Tooltip } from '../../../components/componentsreutilizables';
-import { FiscalProfile } from '../api/types';
+import { PerfilFiscal, RegimenFiscal, TipoActividad, TipoIVAFiscal } from '../api/types';
 import { Save, Building2, Info, HelpCircle } from 'lucide-react';
 
 interface FiscalProfileFormProps {
-  initialData: FiscalProfile;
-  onSubmit: (data: FiscalProfile) => void;
+  initialData: PerfilFiscal;
+  onSubmit: (data: PerfilFiscal) => void;
   isSaving?: boolean;
 }
 
@@ -14,17 +14,20 @@ export const FiscalProfileForm: React.FC<FiscalProfileFormProps> = ({
   onSubmit,
   isSaving = false
 }) => {
-  const [formData, setFormData] = useState<FiscalProfile>(initialData);
-  const [errors, setErrors] = useState<Partial<Record<keyof FiscalProfile, string>>>({});
+  const [formData, setFormData] = useState<PerfilFiscal>(initialData);
+  const [errors, setErrors] = useState<Partial<Record<keyof PerfilFiscal, string>>>({});
 
   useEffect(() => {
     setFormData(initialData);
   }, [initialData]);
 
-  const handleChange = (field: keyof FiscalProfile) => (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  const handleChange = (field: keyof PerfilFiscal) => (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
-    setFormData(prev => ({ ...prev, [field]: e.target.value }));
+    const value = e.target.type === 'number' 
+      ? parseFloat(e.target.value) || 0 
+      : e.target.value;
+    setFormData(prev => ({ ...prev, [field]: value }));
     // Limpiar error del campo
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
@@ -32,22 +35,26 @@ export const FiscalProfileForm: React.FC<FiscalProfileFormProps> = ({
   };
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<Record<keyof FiscalProfile, string>> = {};
+    const newErrors: Partial<Record<keyof PerfilFiscal, string>> = {};
 
-    if (!formData.legalName.trim()) {
-      newErrors.legalName = 'El nombre fiscal es requerido';
+    if (!formData.regimenFiscal) {
+      newErrors.regimenFiscal = 'El régimen fiscal es requerido';
     }
 
-    if (!formData.taxId.trim()) {
-      newErrors.taxId = 'El CIF/NIF es requerido';
+    if (!formData.tipoActividad) {
+      newErrors.tipoActividad = 'El tipo de actividad es requerido';
     }
 
-    if (!formData.address.trim()) {
-      newErrors.address = 'La dirección fiscal es requerida';
+    if (!formData.tipoIVA) {
+      newErrors.tipoIVA = 'El tipo de IVA es requerido';
     }
 
-    if (!formData.country.trim()) {
-      newErrors.country = 'El país es requerido';
+    if (formData.retencionIRPF < 0 || formData.retencionIRPF > 100) {
+      newErrors.retencionIRPF = 'La retención IRPF debe estar entre 0 y 100';
+    }
+
+    if (!formData.pais.trim()) {
+      newErrors.pais = 'El país es requerido';
     }
 
     setErrors(newErrors);
@@ -84,157 +91,6 @@ export const FiscalProfileForm: React.FC<FiscalProfileFormProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
-              <span>Nombre Fiscal</span>
-              <Tooltip 
-                content={
-                  <div className="max-w-xs">
-                    <p className="font-semibold mb-2">Nombre Fiscal:</p>
-                    <p className="text-xs mb-2">Nombre completo que aparece en tus documentos fiscales y facturas. Debe coincidir exactamente con el que está registrado en Hacienda.</p>
-                    <p className="text-xs font-semibold mt-2">Para empresas:</p>
-                    <ul className="text-xs space-y-1 list-disc list-inside">
-                      <li>Nombre completo de la sociedad (S.L., S.A., etc.)</li>
-                      <li>Ejemplo: "Fit Center S.L." o "Gimnasio El Deporte S.A."</li>
-                    </ul>
-                    <p className="text-xs font-semibold mt-2">Para autónomos:</p>
-                    <ul className="text-xs space-y-1 list-disc list-inside">
-                      <li>Tu nombre completo tal como aparece en el DNI</li>
-                      <li>Ejemplo: "Juan Pérez García"</li>
-                    </ul>
-                    <p className="text-xs mt-2 italic">Este nombre aparecerá en todas tus facturas y documentos fiscales.</p>
-                  </div>
-                }
-                position="right"
-                delay={100}
-              >
-                <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
-              </Tooltip>
-            </label>
-            <Input
-              label=""
-              value={formData.legalName}
-              onChange={handleChange('legalName')}
-              error={errors.legalName}
-              placeholder="Ej: Fit Center S.L. o Tu Nombre"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
-              <span>Número de Identificación Fiscal</span>
-              <Tooltip 
-                content={
-                  <div className="max-w-xs">
-                    <p className="font-semibold mb-2">CIF/NIF (Número de Identificación Fiscal):</p>
-                    <p className="text-xs mb-2">Número único que identifica tu actividad fiscal ante Hacienda. Es obligatorio para todas las empresas y autónomos.</p>
-                    <p className="text-xs font-semibold mt-2">Para empresas (CIF):</p>
-                    <ul className="text-xs space-y-1 list-disc list-inside">
-                      <li>Formato: Letra + 8 dígitos + letra de control</li>
-                      <li>Ejemplos: "B12345678", "A87654321", "G12345678"</li>
-                      <li>La letra inicial indica el tipo de sociedad (B=S.L., A=S.A., etc.)</li>
-                    </ul>
-                    <p className="text-xs font-semibold mt-2">Para autónomos (NIF):</p>
-                    <ul className="text-xs space-y-1 list-disc list-inside">
-                      <li>Formato: 8 dígitos + letra de control</li>
-                      <li>Ejemplo: "12345678A"</li>
-                      <li>Es el mismo número que aparece en tu DNI</li>
-                    </ul>
-                    <p className="text-xs mt-2 italic">Este número debe aparecer en todas tus facturas y documentos fiscales.</p>
-                  </div>
-                }
-                position="right"
-                delay={100}
-              >
-                <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
-              </Tooltip>
-            </label>
-            <Input
-              label=""
-              value={formData.taxId}
-              onChange={handleChange('taxId')}
-              error={errors.taxId}
-              placeholder="Ej: B12345678 o 12345678A"
-              required
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
-              <span>Dirección Fiscal</span>
-              <Tooltip 
-                content={
-                  <div className="max-w-xs">
-                    <p className="font-semibold mb-2">Dirección Fiscal:</p>
-                    <p className="text-xs mb-2">Dirección completa donde está registrada tu actividad fiscal. Esta dirección debe coincidir exactamente con la que aparece en tu alta de Hacienda.</p>
-                    <p className="text-xs font-semibold mt-2">Información a incluir:</p>
-                    <ul className="text-xs space-y-1 list-disc list-inside">
-                      <li>Calle y número</li>
-                      <li>Código postal</li>
-                      <li>Ciudad</li>
-                      <li>Provincia (si aplica)</li>
-                    </ul>
-                    <p className="text-xs font-semibold mt-2">Ejemplos:</p>
-                    <ul className="text-xs space-y-1 list-disc list-inside">
-                      <li>"Calle Mayor 123, 28013 Madrid"</li>
-                      <li>"Avenida del Ejemplo 45, 08001 Barcelona"</li>
-                      <li>"Plaza Central 7, 41001 Sevilla"</li>
-                    </ul>
-                    <p className="text-xs mt-2 italic">Esta dirección aparecerá en tus facturas y documentos fiscales. Debe ser una dirección física válida donde puedas recibir notificaciones oficiales.</p>
-                  </div>
-                }
-                position="right"
-                delay={100}
-              >
-                <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
-              </Tooltip>
-            </label>
-            <Input
-              label=""
-              value={formData.address}
-              onChange={handleChange('address')}
-              error={errors.address}
-              placeholder="Ej: Calle Falsa 123, 28080 Madrid"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
-              <span>País</span>
-              <Tooltip 
-                content={
-                  <div className="max-w-xs">
-                    <p className="font-semibold mb-2">País:</p>
-                    <p className="text-xs mb-2">País donde está registrada tu actividad fiscal. Debe ser el mismo país donde realizas tu actividad económica principal.</p>
-                    <p className="text-xs font-semibold mt-2">Código ISO de dos letras:</p>
-                    <ul className="text-xs space-y-1 list-disc list-inside">
-                      <li><strong>ES:</strong> España</li>
-                      <li><strong>CO:</strong> Colombia</li>
-                      <li><strong>MX:</strong> México</li>
-                      <li><strong>AR:</strong> Argentina</li>
-                      <li>Y otros códigos ISO estándar</li>
-                    </ul>
-                    <p className="text-xs mt-2 italic">Este código se usa en documentos fiscales internacionales y facturas. Si tu actividad está en España, usa "ES".</p>
-                  </div>
-                }
-                position="right"
-                delay={100}
-              >
-                <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
-              </Tooltip>
-            </label>
-            <Input
-              label=""
-              value={formData.country}
-              onChange={handleChange('country')}
-              error={errors.country}
-              placeholder="Ej: ES"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
               <span>Régimen Fiscal</span>
               <Tooltip 
                 content={
@@ -245,21 +101,20 @@ export const FiscalProfileForm: React.FC<FiscalProfileFormProps> = ({
                       <div>
                         <p className="font-semibold">Régimen General:</p>
                         <p className="text-xs">Pagas impuestos sobre tus beneficios reales (ingresos menos gastos deducibles).</p>
-                        <p className="text-xs italic mt-1">Ideal para: Empresas con muchos gastos deducibles que quieren maximizar deducciones.</p>
                       </div>
                       <div>
                         <p className="font-semibold">Régimen Simplificado:</p>
                         <p className="text-xs">Aplicas coeficientes reductores a tus ingresos según el tipo de actividad.</p>
-                        <p className="text-xs italic mt-1">Ideal para: Actividades con pocos gastos o que quieren simplificar la contabilidad.</p>
+                      </div>
+                      <div>
+                        <p className="font-semibold">Estimación Objetiva:</p>
+                        <p className="text-xs">Se usa un módulo base según el tipo de actividad.</p>
                       </div>
                       <div>
                         <p className="font-semibold">Exento:</p>
-                        <p className="text-xs">No estás sujeto a estos impuestos (situaciones especiales o actividades exentas).</p>
-                        <p className="text-xs italic mt-1">Solo en casos muy específicos. Consulta con tu gestor.</p>
+                        <p className="text-xs">No estás sujeto a estos impuestos (situaciones especiales).</p>
                       </div>
                     </div>
-                    <p className="text-xs mt-2 font-semibold">⚠️ Importante:</p>
-                    <p className="text-xs">Si no estás seguro, consulta con tu gestor o asesor fiscal. El régimen fiscal puede afectar significativamente tus impuestos.</p>
                   </div>
                 } 
                 position="right"
@@ -269,14 +124,201 @@ export const FiscalProfileForm: React.FC<FiscalProfileFormProps> = ({
               </Tooltip>
             </label>
             <select
-              value={formData.taxRegime}
-              onChange={handleChange('taxRegime')}
+              value={formData.regimenFiscal}
+              onChange={handleChange('regimenFiscal')}
               className="w-full rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5 text-sm"
             >
-              <option value="General">General (Impuestos sobre beneficios reales)</option>
-              <option value="Simplificado">Simplificado (Con coeficientes reductores)</option>
-              <option value="Exento">Exento (No sujeto a estos impuestos)</option>
+              <option value="general">General</option>
+              <option value="simplificado">Simplificado</option>
+              <option value="estimacion_objetiva">Estimación Objetiva</option>
+              <option value="exento">Exento</option>
             </select>
+            {errors.regimenFiscal && (
+              <p className="text-xs text-red-600 mt-1">{errors.regimenFiscal}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+              <span>Tipo de Actividad</span>
+              <Tooltip 
+                content={
+                  <div className="max-w-xs text-xs">
+                    <p className="font-semibold mb-2">Tipo de Actividad:</p>
+                    <p className="mb-2">Selecciona el tipo de actividad económica que mejor describe tu situación fiscal.</p>
+                    <ul className="space-y-1 list-disc list-inside">
+                      <li><strong>Autónomo:</strong> Trabajador por cuenta propia</li>
+                      <li><strong>Sociedad Limitada:</strong> S.L.</li>
+                      <li><strong>Sociedad Anónima:</strong> S.A.</li>
+                      <li><strong>Comunidad de Bienes:</strong> C.B.</li>
+                      <li><strong>Sociedad Civil:</strong> S.C.</li>
+                    </ul>
+                  </div>
+                }
+                position="right"
+                delay={100}
+              >
+                <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
+              </Tooltip>
+            </label>
+            <select
+              value={formData.tipoActividad}
+              onChange={handleChange('tipoActividad')}
+              className="w-full rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5 text-sm"
+            >
+              <option value="autonomo">Autónomo</option>
+              <option value="sociedad_limitada">Sociedad Limitada (S.L.)</option>
+              <option value="sociedad_anonima">Sociedad Anónima (S.A.)</option>
+              <option value="comunidad_bienes">Comunidad de Bienes (C.B.)</option>
+              <option value="sociedad_civil">Sociedad Civil (S.C.)</option>
+            </select>
+            {errors.tipoActividad && (
+              <p className="text-xs text-red-600 mt-1">{errors.tipoActividad}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+              <span>Tipo de IVA</span>
+              <Tooltip 
+                content={
+                  <div className="max-w-xs text-xs">
+                    <p className="font-semibold mb-2">Tipo de IVA:</p>
+                    <p className="mb-2">Selecciona el tipo de IVA que aplica a tu actividad.</p>
+                    <ul className="space-y-1 list-disc list-inside">
+                      <li><strong>General:</strong> 21% (tipo estándar)</li>
+                      <li><strong>Reducido:</strong> 10% (algunos servicios)</li>
+                      <li><strong>Superreducido:</strong> 4% (casos especiales)</li>
+                      <li><strong>Exento:</strong> No sujeto a IVA</li>
+                      <li><strong>No Sujeto:</strong> No aplica IVA</li>
+                    </ul>
+                  </div>
+                }
+                position="right"
+                delay={100}
+              >
+                <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
+              </Tooltip>
+            </label>
+            <select
+              value={formData.tipoIVA}
+              onChange={handleChange('tipoIVA')}
+              className="w-full rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5 text-sm"
+            >
+              <option value="general">General (21%)</option>
+              <option value="reducido">Reducido (10%)</option>
+              <option value="superreducido">Superreducido (4%)</option>
+              <option value="exento">Exento</option>
+              <option value="no_sujeto">No Sujeto</option>
+            </select>
+            {errors.tipoIVA && (
+              <p className="text-xs text-red-600 mt-1">{errors.tipoIVA}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+              <span>Retención IRPF (%)</span>
+              <Tooltip 
+                content={
+                  <div className="max-w-xs text-xs">
+                    <p className="font-semibold mb-2">Retención IRPF:</p>
+                    <p className="mb-2">Porcentaje de retención de IRPF que se aplica sobre tus ingresos. Suele estar entre 15% y 30% para autónomos.</p>
+                    <p className="text-xs italic">Ejemplo: Si ingresas 15, significa que se retiene el 15% de tus ingresos.</p>
+                  </div>
+                }
+                position="right"
+                delay={100}
+              >
+                <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
+              </Tooltip>
+            </label>
+            <Input
+              label=""
+              type="number"
+              value={formData.retencionIRPF}
+              onChange={handleChange('retencionIRPF')}
+              error={errors.retencionIRPF}
+              placeholder="Ej: 15"
+              min="0"
+              max="100"
+              step="0.1"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+              <span>País</span>
+              <Tooltip 
+                content={
+                  <div className="max-w-xs text-xs">
+                    <p className="font-semibold mb-2">País:</p>
+                    <p className="mb-2">País donde está registrada tu actividad fiscal.</p>
+                  </div>
+                }
+                position="right"
+                delay={100}
+              >
+                <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
+              </Tooltip>
+            </label>
+            <Input
+              label=""
+              value={formData.pais}
+              onChange={handleChange('pais')}
+              error={errors.pais}
+              placeholder="Ej: España"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+              <span>Comunidad Autónoma (Opcional)</span>
+              <Tooltip 
+                content={
+                  <div className="max-w-xs text-xs">
+                    <p className="font-semibold mb-2">Comunidad Autónoma:</p>
+                    <p className="mb-2">Solo aplica si tu actividad está en España. Puede afectar a algunos impuestos autonómicos.</p>
+                  </div>
+                }
+                position="right"
+                delay={100}
+              >
+                <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
+              </Tooltip>
+            </label>
+            <Input
+              label=""
+              value={formData.comunidadAutonomaOpcional || ''}
+              onChange={handleChange('comunidadAutonomaOpcional')}
+              placeholder="Ej: Madrid, Cataluña, etc."
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+              <span>Observaciones (Opcional)</span>
+              <Tooltip 
+                content={
+                  <div className="max-w-xs text-xs">
+                    <p className="font-semibold mb-2">Observaciones:</p>
+                    <p className="mb-2">Notas adicionales sobre tu perfil fiscal que puedan ser relevantes para los cálculos.</p>
+                  </div>
+                }
+                position="right"
+                delay={100}
+              >
+                <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
+              </Tooltip>
+            </label>
+            <textarea
+              value={formData.observaciones || ''}
+              onChange={handleChange('observaciones')}
+              className="w-full rounded-xl bg-white text-slate-900 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 px-3 py-2.5 text-sm min-h-[80px]"
+              placeholder="Notas adicionales sobre tu perfil fiscal..."
+            />
           </div>
         </div>
 

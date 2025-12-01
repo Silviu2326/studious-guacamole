@@ -99,7 +99,7 @@ export const IntelligenceHeader: React.FC<IntelligenceHeaderProps> = ({
               console.log('View experiment:', experimentId);
             }}
           />
-          
+
           {/* Header Actions Row */}
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
             {overview?.topCampaigns && overview.topCampaigns.length > 0 && (

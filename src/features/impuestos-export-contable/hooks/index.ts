@@ -1,4 +1,8 @@
+// Accounting and Export Hooks
 export { useAccountingExport } from './useAccountingExport';
-export { useTaxReminders } from './useTaxReminders';
-export { useExpenseAlerts } from './useExpenseAlerts';
 
+// Tax Management Hooks
+export { useTaxReminders } from './useTaxReminders';
+
+// Expense Management Hooks
+export { useExpenseAlerts } from './useExpenseAlerts';

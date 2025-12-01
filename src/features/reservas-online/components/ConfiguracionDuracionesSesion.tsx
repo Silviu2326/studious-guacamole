@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '../../../components/componentsreutilizables';
 import { Input } from '../../../components/componentsreutilizables/Input';
-import { Clock, Plus, Trash2, Save, AlertCircle, CheckCircle, MoveUp, MoveDown } from 'lucide-react';
+import { Clock, Plus, Trash2, Save, AlertCircle, CheckCircle, MoveUp, MoveDown, Info } from 'lucide-react';
 import {
   getDuracionesSesion,
   guardarDuracionesSesion,
@@ -171,12 +171,28 @@ export const ConfiguracionDuracionesSesion: React.FC<ConfiguracionDuracionesSesi
             <Button
               variant="primary"
               onClick={handleGuardar}
-              disabled={guardando}
+              disabled={guardando || duraciones.length === 0}
               loading={guardando}
               iconLeft={Save}
             >
               Guardar
             </Button>
+          </div>
+        </div>
+
+        {/* Información sobre el impacto */}
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-start gap-2">
+            <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-blue-800">
+              <p className="font-medium mb-1">¿Cómo funcionan las duraciones de sesión?</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Las duraciones configuradas aparecerán como opciones cuando los clientes reserven sesiones</li>
+                <li>El orden de las duraciones determina cómo se muestran en el formulario de reserva</li>
+                <li>Puedes activar o desactivar duraciones sin eliminarlas para ocultarlas temporalmente</li>
+                <li>El precio configurado se usará como precio base, pero puede ajustarse por sesión</li>
+              </ul>
+            </div>
           </div>
         </div>
 
@@ -197,42 +213,59 @@ export const ConfiguracionDuracionesSesion: React.FC<ConfiguracionDuracionesSesi
         {mostrarFormulario && (
           <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <h4 className="text-lg font-semibold text-gray-900 mb-4">Agregar Duración</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="Nombre"
-                value={nuevaDuracion.nombre}
-                onChange={(e) => setNuevaDuracion({ ...nuevaDuracion, nombre: e.target.value })}
-                placeholder="Ej: 1 hora"
-                required
-              />
-              <Input
-                label="Duración (minutos)"
-                type="number"
-                value={nuevaDuracion.duracionMinutos.toString()}
-                onChange={(e) =>
-                  setNuevaDuracion({ ...nuevaDuracion, duracionMinutos: parseInt(e.target.value) || 0 })
-                }
-                min="15"
-                step="15"
-                required
-              />
-              <Input
-                label="Descripción (opcional)"
-                value={nuevaDuracion.descripcion}
-                onChange={(e) => setNuevaDuracion({ ...nuevaDuracion, descripcion: e.target.value })}
-                placeholder="Ej: Sesión completa"
-              />
-              <Input
-                label="Precio (€)"
-                type="number"
-                value={nuevaDuracion.precio?.toString() || ''}
-                onChange={(e) =>
-                  setNuevaDuracion({ ...nuevaDuracion, precio: parseFloat(e.target.value) || 0 })
-                }
-                min="0"
-                step="0.01"
-              />
+            
+            {/* Información básica */}
+            <div className="mb-4">
+              <h5 className="text-sm font-medium text-gray-700 mb-3">Información Básica</h5>
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Nombre"
+                  value={nuevaDuracion.nombre}
+                  onChange={(e) => setNuevaDuracion({ ...nuevaDuracion, nombre: e.target.value })}
+                  placeholder="Ej: 1 hora"
+                  required
+                />
+                <Input
+                  label="Duración (minutos)"
+                  type="number"
+                  value={nuevaDuracion.duracionMinutos.toString()}
+                  onChange={(e) =>
+                    setNuevaDuracion({ ...nuevaDuracion, duracionMinutos: parseInt(e.target.value) || 0 })
+                  }
+                  min="15"
+                  step="15"
+                  required
+                />
+                <Input
+                  label="Descripción (opcional)"
+                  value={nuevaDuracion.descripcion}
+                  onChange={(e) => setNuevaDuracion({ ...nuevaDuracion, descripcion: e.target.value })}
+                  placeholder="Ej: Sesión completa"
+                  className="col-span-2"
+                />
+              </div>
             </div>
+
+            {/* Precio */}
+            <div className="mb-4">
+              <h5 className="text-sm font-medium text-gray-700 mb-3">Precio</h5>
+              <div className="grid grid-cols-1 gap-4">
+                <Input
+                  label="Precio (€)"
+                  type="number"
+                  value={nuevaDuracion.precio?.toString() || ''}
+                  onChange={(e) =>
+                    setNuevaDuracion({ ...nuevaDuracion, precio: parseFloat(e.target.value) || 0 })
+                  }
+                  min="0"
+                  step="0.01"
+                />
+                <p className="text-xs text-gray-500">
+                  Precio base que se mostrará a los clientes. Puedes ajustarlo individualmente por reserva si es necesario.
+                </p>
+              </div>
+            </div>
+
             <div className="flex gap-3 mt-4">
               <Button variant="primary" onClick={handleAgregarDuracion}>
                 Agregar

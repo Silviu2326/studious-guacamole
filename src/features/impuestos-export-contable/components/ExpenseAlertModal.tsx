@@ -41,14 +41,84 @@ export const ExpenseAlertModal: React.FC<ExpenseAlertModalProps> = ({
     }).format(fecha);
   };
 
-  const porcentajeExceso = ((alert.porcentajeSobreMedia - 1) * 100).toFixed(0);
-  const diferencia = alert.gasto.importe - alert.promedioCategoria;
+  const getAlertConfig = () => {
+    switch (alert.tipo) {
+      case 'exceso_media':
+        return {
+          title: 'Gasto superior a la media histórica',
+          bgColor: 'bg-amber-50',
+          borderColor: 'border-amber-200',
+          iconBg: 'bg-amber-100',
+          iconColor: 'text-amber-600',
+          textColor: 'text-amber-900',
+          textColorLight: 'text-amber-800'
+        };
+      case 'no_deducible_marcado_deducible':
+        return {
+          title: 'Gasto posiblemente no deducible',
+          bgColor: 'bg-red-50',
+          borderColor: 'border-red-200',
+          iconBg: 'bg-red-100',
+          iconColor: 'text-red-600',
+          textColor: 'text-red-900',
+          textColorLight: 'text-red-800'
+        };
+      case 'gasto_sin_adjunto':
+        return {
+          title: 'Gasto sin archivo adjunto',
+          bgColor: 'bg-blue-50',
+          borderColor: 'border-blue-200',
+          iconBg: 'bg-blue-100',
+          iconColor: 'text-blue-600',
+          textColor: 'text-blue-900',
+          textColorLight: 'text-blue-800'
+        };
+      case 'gasto_duplicado':
+        return {
+          title: 'Posible gasto duplicado',
+          bgColor: 'bg-yellow-50',
+          borderColor: 'border-yellow-200',
+          iconBg: 'bg-yellow-100',
+          iconColor: 'text-yellow-600',
+          textColor: 'text-yellow-900',
+          textColorLight: 'text-yellow-800'
+        };
+      case 'categoria_exceso_gasto':
+        return {
+          title: 'Categoría con exceso de gasto',
+          bgColor: 'bg-orange-50',
+          borderColor: 'border-orange-200',
+          iconBg: 'bg-orange-100',
+          iconColor: 'text-orange-600',
+          textColor: 'text-orange-900',
+          textColorLight: 'text-orange-800'
+        };
+      default:
+        return {
+          title: 'Alerta de gasto',
+          bgColor: 'bg-gray-50',
+          borderColor: 'border-gray-200',
+          iconBg: 'bg-gray-100',
+          iconColor: 'text-gray-600',
+          textColor: 'text-gray-900',
+          textColorLight: 'text-gray-800'
+        };
+    }
+  };
+
+  const config = getAlertConfig();
+  const porcentajeExceso = alert.porcentajeSobreMedia 
+    ? ((alert.porcentajeSobreMedia - 1) * 100).toFixed(0) 
+    : null;
+  const diferencia = alert.promedioCategoria 
+    ? alert.gasto.importe - alert.promedioCategoria 
+    : null;
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onCancel}
-      title="Alerta de Gasto Anómalo"
+      title={`Alerta de Gasto - ${config.title}`}
       size="md"
       footer={
         <div className="flex gap-3 justify-end">
@@ -68,16 +138,16 @@ export const ExpenseAlertModal: React.FC<ExpenseAlertModalProps> = ({
     >
       <div className="space-y-4">
         {/* Alerta principal */}
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <div className={`${config.bgColor} border ${config.borderColor} rounded-lg p-4`}>
           <div className="flex items-start gap-3">
-            <div className="p-2 bg-amber-100 rounded-lg">
-              <AlertTriangle className="w-5 h-5 text-amber-600" />
+            <div className={`p-2 ${config.iconBg} rounded-lg`}>
+              <AlertTriangle className={`w-5 h-5 ${config.iconColor}`} />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-amber-900 mb-2">
-                Gasto superior a la media histórica
+              <h3 className={`font-semibold ${config.textColor} mb-2`}>
+                {config.title}
               </h3>
-              <p className="text-sm text-amber-800">
+              <p className={`text-sm ${config.textColorLight}`}>
                 {alert.mensaje}
               </p>
             </div>
@@ -112,36 +182,38 @@ export const ExpenseAlertModal: React.FC<ExpenseAlertModalProps> = ({
           </div>
         </div>
 
-        {/* Comparación con la media */}
-        <div className="border border-gray-200 rounded-lg p-4">
-          <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-blue-600" />
-            Comparación con tu media histórica:
-          </h4>
-          
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-              <span className="text-sm text-gray-700">Media histórica de la categoría:</span>
-              <span className="font-semibold text-blue-900">
-                {formatearMoneda(alert.promedioCategoria)}
-              </span>
-            </div>
+        {/* Comparación con la media - Solo para alertas de exceso */}
+        {alert.tipo === 'exceso_media' && alert.promedioCategoria && diferencia !== null && porcentajeExceso && (
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-blue-600" />
+              Comparación con tu media histórica:
+            </h4>
             
-            <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-              <span className="text-sm text-gray-700">Importe del gasto actual:</span>
-              <span className="font-semibold text-red-900">
-                {formatearMoneda(alert.gasto.importe)}
-              </span>
-            </div>
-            
-            <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-200">
-              <span className="text-sm font-semibold text-amber-900">Diferencia:</span>
-              <span className="font-bold text-amber-900">
-                +{formatearMoneda(diferencia)} ({porcentajeExceso}% más)
-              </span>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <span className="text-sm text-gray-700">Media histórica de la categoría:</span>
+                <span className="font-semibold text-blue-900">
+                  {formatearMoneda(alert.promedioCategoria)}
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                <span className="text-sm text-gray-700">Importe del gasto actual:</span>
+                <span className="font-semibold text-red-900">
+                  {formatearMoneda(alert.gasto.importe)}
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <span className="text-sm font-semibold text-amber-900">Diferencia:</span>
+                <span className="font-bold text-amber-900">
+                  +{formatearMoneda(diferencia)} ({porcentajeExceso}% más)
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Mensaje de ayuda */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

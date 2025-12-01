@@ -1,5 +1,6 @@
 import {
   Suscripcion,
+  EstadoSuscripcion,
   CreateSuscripcionRequest,
   UpdateSuscripcionRequest,
   UpgradeDowngrade,
@@ -33,6 +34,19 @@ import {
   ResumenActividadSuscripciones,
   GenerarResumenRequest,
   ConfiguracionResumenActividad,
+  SuscripcionFilters,
+  CambioPlanRequest,
+  CambioEntrenadorRequest,
+  SesionIncluida,
+  RegistrarConsumoSesionRequest,
+  ObtenerSesionesIncluidasRequest,
+  AplicarDescuentoSuscripcionRequest,
+  ObtenerDescuentosClienteRequest,
+  Descuento,
+  GetActividadSuscripcionesRecienteRequest,
+  ActividadSuscripcionesReciente,
+  EventoSuscripcion,
+  TipoEventoSuscripcion,
 } from '../types';
 
 // Helper function para registrar cambios en el historial
@@ -1481,21 +1495,63 @@ mockSuscripciones.splice(0, mockSuscripciones.length, ...enrichedMockSuscripcion
 
 export const getSuscripciones = async (
   role: 'entrenador' | 'gimnasio',
-  userId?: string
+  userId?: string,
+  filters?: SuscripcionFilters
 ): Promise<Suscripcion[]> => {
   await new Promise(resolve => setTimeout(resolve, 400));
 
+  let filtered = [...mockSuscripciones];
+
+  // Filtro por rol
   if (role === 'entrenador') {
-    // Para entrenadores: solo suscripciones PT
-    return mockSuscripciones.filter(
-      s =>
-        s.tipo === 'pt-mensual' &&
-        (!userId || s.entrenadorId === userId)
+    filtered = filtered.filter(
+      s => s.tipo === 'pt-mensual' && (!userId || s.entrenadorId === userId)
     );
   } else {
-    // Para gimnasios: solo membresías de gimnasio
-    return mockSuscripciones.filter(s => s.tipo === 'membresia-gimnasio');
+    filtered = filtered.filter(s => s.tipo === 'membresia-gimnasio');
   }
+
+  // Aplicar filtros adicionales si se proporcionan
+  if (filters) {
+    // Filtro por estado
+    if (filters.estado && filters.estado.length > 0) {
+      filtered = filtered.filter(s => filters.estado!.includes(s.estado));
+    }
+
+    // Filtro por plan
+    if (filters.planId && filters.planId.length > 0) {
+      filtered = filtered.filter(s => filters.planId!.includes(s.planId));
+    }
+
+    // Filtro por tipo de cliente
+    if (filters.tipoCliente) {
+      filtered = filtered.filter(s => s.tipo === filters.tipoCliente);
+    }
+
+    // Filtro por rango de fechas de inicio
+    if (filters.fechaInicioDesde) {
+      filtered = filtered.filter(s => s.fechaInicio >= filters.fechaInicioDesde!);
+    }
+    if (filters.fechaInicioHasta) {
+      filtered = filtered.filter(s => s.fechaInicio <= filters.fechaInicioHasta!);
+    }
+
+    // Búsqueda por nombre de cliente
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filtered = filtered.filter(s =>
+        s.clienteNombre.toLowerCase().includes(searchLower) ||
+        s.clienteEmail.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Filtro por entrenador
+    if (filters.entrenadorId) {
+      filtered = filtered.filter(s => s.entrenadorId === filters.entrenadorId);
+    }
+  }
+
+  return filtered;
 };
 
 export const getSuscripcionById = async (id: string): Promise<Suscripcion> => {
@@ -1507,6 +1563,75 @@ export const getSuscripcionById = async (id: string): Promise<Suscripcion> => {
   }
   
   return suscripcion;
+};
+
+// Función específica para actualizar solo el estado de una suscripción
+export const updateEstadoSuscripcion = async (
+  id: string,
+  nuevoEstado: EstadoSuscripcion,
+  motivo?: string
+): Promise<Suscripcion> => {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  const suscripcion = mockSuscripciones.find(s => s.id === id);
+  if (!suscripcion) {
+    throw new Error('Suscripción no encontrada');
+  }
+
+  // Usar updateSuscripcion para mantener consistencia con el historial
+  return await updateSuscripcion(id, {
+    estado: nuevoEstado,
+    notas: motivo ? `Cambio de estado: ${motivo}` : undefined,
+  });
+};
+
+// Pausar o limitar acceso a servicios por pagos fallidos
+export const pausarAccesoPorPagoFallido = async (
+  suscripcionId: string,
+  motivo?: string
+): Promise<Suscripcion> => {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  const suscripcion = mockSuscripciones.find(s => s.id === suscripcionId);
+  if (!suscripcion) {
+    throw new Error('Suscripción no encontrada');
+  }
+
+  // Pausar la suscripción
+  return await updateSuscripcion(suscripcionId, {
+    estado: 'pausada',
+    notas: motivo || `Acceso pausado por pago fallido - ${new Date().toISOString().split('T')[0]}`,
+  });
+};
+
+// Limitar acceso a servicios (suspensión parcial)
+export const limitarAccesoPorPagoFallido = async (
+  suscripcionId: string,
+  limitaciones: {
+    bloquearNuevasSesiones?: boolean;
+    mantenerSesionesProgramadas?: boolean;
+    motivo?: string;
+  }
+): Promise<Suscripcion> => {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  const suscripcion = mockSuscripciones.find(s => s.id === suscripcionId);
+  if (!suscripcion) {
+    throw new Error('Suscripción no encontrada');
+  }
+
+  // Si se bloquean nuevas sesiones, pausar la suscripción
+  if (limitaciones.bloquearNuevasSesiones) {
+    return await updateSuscripcion(suscripcionId, {
+      estado: 'pausada',
+      notas: limitaciones.motivo || `Acceso limitado por pago fallido - ${new Date().toISOString().split('T')[0]}`,
+    });
+  }
+
+  // Si solo se mantienen sesiones programadas, actualizar notas
+  return await updateSuscripcion(suscripcionId, {
+    notas: limitaciones.motivo || `Acceso limitado - solo sesiones programadas - ${new Date().toISOString().split('T')[0]}`,
+  });
 };
 
 export const createSuscripcion = async (
@@ -1659,12 +1784,20 @@ export const cancelarSuscripcion = async (
   }
   
   const fechaCancelacion = new Date().toISOString().split('T')[0];
+  const cancelacionInmediata = data.cancelacionInmediata ?? false;
+  
+  // Si es cancelación inmediata, la fecha de vencimiento se actualiza a hoy
+  // Si no, se mantiene la fecha de vencimiento original
+  const nuevaFechaVencimiento = cancelacionInmediata 
+    ? fechaCancelacion 
+    : suscripcion.fechaVencimiento;
   
   const suscripcionCancelada = {
     ...suscripcion,
     estado: 'cancelada' as const,
     motivoCancelacion: data.motivo,
     fechaCancelacion,
+    fechaVencimiento: nuevaFechaVencimiento,
     fechaActualizacion: fechaCancelacion,
     historialCambios: suscripcion.historialCambios || [],
     pagoRecurrente: suscripcion.pagoRecurrente ? {
@@ -1673,17 +1806,34 @@ export const cancelarSuscripcion = async (
     } : undefined,
   };
   
+  // Calcular impacto para el historial
+  const sesionesRestantes = suscripcion.sesionesDisponibles || 0;
+  const diasRestantes = cancelacionInmediata 
+    ? 0 
+    : Math.ceil((new Date(suscripcion.fechaVencimiento).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+  
   // Registrar cancelación en el historial
   registrarCambio(
     suscripcionCancelada,
     'cancelacion',
-    `Suscripción cancelada - Motivo: ${data.motivo}`,
+    `Suscripción cancelada ${cancelacionInmediata ? 'inmediatamente' : 'al final del período'} - Motivo: ${data.motivo}`,
     [
       { campo: 'estado', valorAnterior: suscripcion.estado, valorNuevo: 'cancelada' },
       { campo: 'motivoCancelacion', valorNuevo: data.motivo },
       { campo: 'fechaCancelacion', valorNuevo: fechaCancelacion },
+      ...(cancelacionInmediata ? [
+        { campo: 'fechaVencimiento', valorAnterior: suscripcion.fechaVencimiento, valorNuevo: nuevaFechaVencimiento }
+      ] : []),
     ],
-    data.comentariosAdicionales || data.motivo
+    data.comentariosAdicionales || data.motivo,
+    undefined,
+    undefined,
+    {
+      cancelacionInmediata,
+      sesionesRestantes,
+      diasRestantes: Math.max(0, diasRestantes),
+      comentariosAdicionales: data.comentariosAdicionales,
+    }
   );
   
   // Actualizar en el array
@@ -1749,7 +1899,7 @@ export const freezeSuscripcion = async (
   
   const suscripcionActualizada = {
     ...suscripcion,
-    estado: 'pausada',
+    estado: 'congelada' as const,
     freezeActivo: true,
     fechaFreezeInicio: data.fechaInicio,
     fechaFreezeFin: data.fechaFin,
@@ -1764,21 +1914,31 @@ export const freezeSuscripcion = async (
     } : undefined,
     fechaActualizacion: new Date().toISOString().split('T')[0],
     historialCambios: suscripcion.historialCambios || [],
+    notas: data.notasInternas ? 
+      (suscripcion.notas ? `${suscripcion.notas}\n\n[Freeze] ${data.notasInternas}` : `[Freeze] ${data.notasInternas}`) 
+      : suscripcion.notas,
   };
   
   // Registrar freeze en el historial
   registrarCambio(
     suscripcionActualizada,
     'freeze',
-    `Suscripción pausada (Freeze) por ${data.diasTotales} días`,
+    `Suscripción congelada (Freeze) por ${data.diasTotales} días - Nueva fecha de vencimiento: ${nuevaFechaVencimiento.toISOString().split('T')[0]}`,
     [
-      { campo: 'estado', valorAnterior: suscripcion.estado, valorNuevo: 'pausada' },
+      { campo: 'estado', valorAnterior: suscripcion.estado, valorNuevo: 'congelada' },
       { campo: 'freezeActivo', valorAnterior: false, valorNuevo: true },
       { campo: 'fechaFreezeInicio', valorNuevo: data.fechaInicio },
       { campo: 'fechaFreezeFin', valorNuevo: data.fechaFin },
       { campo: 'fechaVencimiento', valorAnterior: suscripcion.fechaVencimiento, valorNuevo: nuevaFechaVencimiento.toISOString().split('T')[0] },
     ],
-    data.motivo
+    data.motivo || 'Congelación de suscripción',
+    undefined,
+    undefined,
+    {
+      diasTotales: data.diasTotales,
+      notasInternas: data.notasInternas,
+      extensionAutomatica: true,
+    }
   );
   
   // Actualizar en el array
@@ -2015,6 +2175,175 @@ export const cambiarPlanPT = async (
   return suscripcionActualizada;
 };
 
+// Cambiar plan de suscripción (para gimnasios y general)
+export const cambiarPlanSuscripcion = async (
+  data: CambioPlanRequest
+): Promise<Suscripcion> => {
+  await new Promise(resolve => setTimeout(resolve, 400));
+  
+  const suscripcion = mockSuscripciones.find(s => s.id === data.suscripcionId);
+  if (!suscripcion) {
+    throw new Error('Suscripción no encontrada');
+  }
+  
+  // Mapeo de planes disponibles (en producción vendría de una API)
+  const planesMap: Record<string, { nombre: string; precio: number; nivel: string }> = {
+    'basico': { nombre: 'Membresía Básica', precio: 35, nivel: 'basico' },
+    'premium': { nombre: 'Membresía Premium', precio: 55, nivel: 'premium' },
+    'vip': { nombre: 'Membresía VIP', precio: 95, nivel: 'vip' },
+  };
+  
+  const nuevoPlan = planesMap[data.nuevoPlanId];
+  if (!nuevoPlan) {
+    throw new Error('Plan no encontrado');
+  }
+  
+  const fechaCambio = data.fechaCambio || new Date().toISOString().split('T')[0];
+  const fechaCambioDate = new Date(fechaCambio);
+  const fechaInicioPeriodo = new Date(suscripcion.fechaInicio);
+  const fechaFinPeriodo = new Date(suscripcion.fechaVencimiento);
+  
+  // Calcular prorrateo si se aplica inmediatamente
+  let nuevoPrecio = nuevoPlan.precio;
+  let nuevaFechaVencimiento = suscripcion.fechaVencimiento;
+  
+  if (data.aplicarInmediatamente) {
+    // Calcular días restantes del período actual
+    const diasTotales = Math.ceil(
+      (fechaFinPeriodo.getTime() - fechaInicioPeriodo.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const diasUsados = Math.ceil(
+      (fechaCambioDate.getTime() - fechaInicioPeriodo.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const diasRestantes = diasTotales - diasUsados;
+    
+    // Calcular precio mensualizado
+    const calcularPrecioMensual = (precio: number, frecuencia: string): number => {
+      switch (frecuencia) {
+        case 'mensual': return precio;
+        case 'trimestral': return precio / 3;
+        case 'semestral': return precio / 6;
+        case 'anual': return precio / 12;
+        default: return precio;
+      }
+    };
+    
+    const precioMensualActual = calcularPrecioMensual(suscripcion.precio, suscripcion.frecuenciaPago);
+    const precioMensualNuevo = calcularPrecioMensual(nuevoPlan.precio, suscripcion.frecuenciaPago);
+    
+    // Crédito por período actual no usado
+    const creditoPeriodoActual = (precioMensualActual * diasRestantes) / 30;
+    // Cargo por nuevo plan para días restantes
+    const cargoPeriodoNuevo = (precioMensualNuevo * diasRestantes) / 30;
+    const diferenciaProrrateada = cargoPeriodoNuevo - creditoPeriodoActual;
+    
+    // Ajustar precio según prorrateo (esto se aplicaría en la próxima cuota)
+    // Por ahora, simplemente actualizamos el precio base
+    nuevoPrecio = nuevoPlan.precio;
+  }
+  
+  const suscripcionActualizada = {
+    ...suscripcion,
+    planId: data.nuevoPlanId,
+    planNombre: nuevoPlan.nombre,
+    precio: nuevoPrecio,
+    nivelPlan: nuevoPlan.nivel as 'basico' | 'premium' | 'vip',
+    fechaActualizacion: new Date().toISOString().split('T')[0],
+    historialCambios: suscripcion.historialCambios || [],
+    notas: data.motivo 
+      ? `${suscripcion.notas || ''}\n[${new Date().toLocaleDateString('es-ES')}] Cambio de plan: ${data.motivo}`.trim()
+      : suscripcion.notas,
+  };
+  
+  // Registrar cambio de plan en el historial
+  registrarCambio(
+    suscripcionActualizada,
+    'cambio_plan',
+    `Cambio de plan de "${suscripcion.planNombre}" a "${nuevoPlan.nombre}"`,
+    [
+      { campo: 'planId', valorAnterior: suscripcion.planId, valorNuevo: data.nuevoPlanId },
+      { campo: 'planNombre', valorAnterior: suscripcion.planNombre, valorNuevo: nuevoPlan.nombre },
+      { campo: 'precio', valorAnterior: suscripcion.precio, valorNuevo: nuevoPrecio },
+      { campo: 'nivelPlan', valorAnterior: suscripcion.nivelPlan, valorNuevo: nuevoPlan.nivel },
+    ],
+    data.motivo,
+    undefined,
+    undefined,
+    {
+      aplicarInmediatamente: data.aplicarInmediatamente,
+      fechaCambio: fechaCambio,
+    }
+  );
+  
+  // Actualizar la suscripción en el array mock
+  const indice = mockSuscripciones.findIndex(s => s.id === data.suscripcionId);
+  if (indice !== -1) {
+    mockSuscripciones[indice] = suscripcionActualizada;
+  }
+  
+  return suscripcionActualizada;
+};
+
+// Cambiar entrenador personal de una suscripción
+export const cambiarEntrenadorSuscripcion = async (
+  data: CambioEntrenadorRequest
+): Promise<Suscripcion> => {
+  await new Promise(resolve => setTimeout(resolve, 400));
+  
+  const suscripcion = mockSuscripciones.find(s => s.id === data.suscripcionId);
+  if (!suscripcion) {
+    throw new Error('Suscripción no encontrada');
+  }
+  
+  if (suscripcion.tipo !== 'pt-mensual') {
+    throw new Error('Esta función solo es válida para suscripciones PT');
+  }
+  
+  const entrenadorAnterior = suscripcion.entrenadorId;
+  
+  const suscripcionActualizada = {
+    ...suscripcion,
+    entrenadorId: data.nuevoEntrenadorId,
+    fechaActualizacion: new Date().toISOString().split('T')[0],
+    historialCambios: suscripcion.historialCambios || [],
+    notas: data.motivo 
+      ? `${suscripcion.notas || ''}\n[${new Date().toLocaleDateString('es-ES')}] Cambio de entrenador: ${data.motivo}`.trim()
+      : suscripcion.notas,
+  };
+  
+  // Registrar cambio de entrenador en el historial
+  registrarCambio(
+    suscripcionActualizada,
+    'cambio_plan', // Usamos cambio_plan como tipo genérico de cambio
+    `Cambio de entrenador de "${entrenadorAnterior}" a "${data.nuevoEntrenadorNombre || data.nuevoEntrenadorId}"`,
+    [
+      { campo: 'entrenadorId', valorAnterior: entrenadorAnterior, valorNuevo: data.nuevoEntrenadorId },
+    ],
+    data.motivo,
+    undefined,
+    undefined,
+    {
+      fechaCambio: data.fechaCambio,
+      mantenerSesionesProgramadas: data.mantenerSesionesProgramadas,
+      reasignarSesiones: data.reasignarSesiones,
+      nuevoEntrenadorNombre: data.nuevoEntrenadorNombre,
+    }
+  );
+  
+  // Actualizar la suscripción en el array mock
+  const indice = mockSuscripciones.findIndex(s => s.id === data.suscripcionId);
+  if (indice !== -1) {
+    mockSuscripciones[indice] = suscripcionActualizada;
+  }
+  
+  // Aquí se implementaría la lógica para:
+  // - Mantener o reasignar sesiones programadas según las opciones seleccionadas
+  // - Notificar al cliente y a los entrenadores
+  // - Actualizar el calendario con las nuevas asignaciones
+  
+  return suscripcionActualizada;
+};
+
 // User Story 1: Crear suscripción de prueba
 export const createTrialSuscripcion = async (
   data: CreateTrialSuscripcionRequest
@@ -2023,8 +2352,9 @@ export const createTrialSuscripcion = async (
   
   const fechaVencimiento = calcularFechaVencimientoTrial(data.fechaInicio, data.trialDuration);
   
+  const suscripcionId = `sub-trial-${Date.now()}`;
   const nuevaSuscripcion: Suscripcion = {
-    id: `sub-trial-${Date.now()}`,
+    id: suscripcionId,
     clienteId: data.clienteId,
     clienteNombre: data.clienteNombre || 'Cliente Nuevo',
     clienteEmail: data.clienteEmail || 'cliente@example.com',
@@ -2037,19 +2367,20 @@ export const createTrialSuscripcion = async (
     fechaInicio: data.fechaInicio,
     fechaVencimiento,
     proximaRenovacion: fechaVencimiento,
-    estado: 'activa',
+    estado: 'prueba' as const,
     sesionesIncluidas: data.trialSessions,
     sesionesUsadas: 0,
     sesionesDisponibles: data.trialSessions,
     pagoRecurrente: data.pagoRecurrente ? {
       id: `pr-trial-${Date.now()}`,
-      suscripcionId: `sub-trial-${Date.now()}`,
+      suscripcionId,
       metodoPago: data.pagoRecurrente.metodoPago,
       activo: true,
       fechaProximoCargo: fechaVencimiento,
       frecuencia: 'mensual',
     } : undefined,
     historialCuotas: [],
+    historialCambios: [],
     entrenadorId: data.entrenadorId,
     fechaCreacion: new Date().toISOString().split('T')[0],
     fechaActualizacion: new Date().toISOString().split('T')[0],
@@ -2061,6 +2392,30 @@ export const createTrialSuscripcion = async (
     trialDuration: data.trialDuration,
     trialEndDate: fechaVencimiento,
   };
+  
+  // Registrar creación de suscripción de prueba en el historial
+  registrarCambio(
+    nuevaSuscripcion,
+    'creacion',
+    `Suscripción de prueba creada - ${data.trialSessions} sesiones por ${data.trialPrice}€ durante ${data.trialDuration} días`,
+    [
+      { campo: 'estado', valorNuevo: 'prueba' },
+      { campo: 'isTrial', valorNuevo: true },
+      { campo: 'trialSessions', valorNuevo: data.trialSessions },
+      { campo: 'trialPrice', valorNuevo: data.trialPrice },
+      { campo: 'trialDuration', valorNuevo: data.trialDuration },
+      { campo: 'fechaVencimiento', valorNuevo: fechaVencimiento },
+    ],
+    'Creación de suscripción de prueba',
+    undefined,
+    undefined,
+    {
+      tipoSuscripcion: 'prueba',
+      duracionDias: data.trialDuration,
+      sesionesIncluidas: data.trialSessions,
+      precioPrueba: data.trialPrice,
+    }
+  );
   
   mockSuscripciones.push(nuevaSuscripcion);
   return nuevaSuscripcion;
@@ -2327,6 +2682,179 @@ export const verificarDescuentosExpirados = async (): Promise<Suscripcion[]> => 
   }
   
   return suscripcionesConDescuentoExpirado;
+};
+
+// Mock data para descuentos
+const mockDescuentos: Descuento[] = [];
+
+// Aplicar descuento a suscripción (cliente, grupo o plan)
+export const aplicarDescuentoSuscripcion = async (
+  data: AplicarDescuentoSuscripcionRequest
+): Promise<Descuento> => {
+  await new Promise(resolve => setTimeout(resolve, 400));
+
+  const descuento: Descuento = {
+    id: `desc-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    tipo: data.tipo,
+    valor: data.valor,
+    motivo: data.motivo,
+    fechaInicio: data.fechaInicio,
+    fechaFin: data.fechaFin,
+    vigencia: {
+      fechaInicio: data.fechaInicio,
+      fechaFin: data.fechaFin,
+      activo: true,
+    },
+    aplicadoA: data.aplicadoA,
+    clienteId: data.clienteId,
+    grupoId: data.grupoId,
+    planId: data.planId,
+    suscripcionId: data.suscripcionId,
+    fechaCreacion: new Date().toISOString().split('T')[0],
+    fechaActualizacion: new Date().toISOString().split('T')[0],
+  };
+
+  // Aplicar descuento a las suscripciones correspondientes
+  if (data.aplicadoA === 'cliente' && data.clienteId) {
+    const suscripcionesCliente = mockSuscripciones.filter(s => s.clienteId === data.clienteId);
+    for (const suscripcion of suscripcionesCliente) {
+      const precioOriginal = suscripcion.precioOriginal || suscripcion.precio;
+      let nuevoPrecio: number;
+      
+      if (data.tipo === 'porcentaje') {
+        nuevoPrecio = precioOriginal * (1 - data.valor / 100);
+      } else {
+        nuevoPrecio = Math.max(0, precioOriginal - data.valor);
+      }
+      
+      nuevoPrecio = Math.round(nuevoPrecio * 100) / 100;
+      
+      const indice = mockSuscripciones.findIndex(s => s.id === suscripcion.id);
+      if (indice !== -1) {
+        const descuentoSuscripcion: DescuentoSuscripcion = {
+          id: descuento.id,
+          tipo: data.tipo,
+          valor: data.valor,
+          motivo: data.motivo,
+          fechaInicio: data.fechaInicio,
+          fechaFin: data.fechaFin,
+        };
+        
+        mockSuscripciones[indice] = {
+          ...suscripcion,
+          precio: nuevoPrecio,
+          precioOriginal,
+          descuento: descuentoSuscripcion,
+          fechaActualizacion: new Date().toISOString().split('T')[0],
+        };
+      }
+    }
+  } else if (data.aplicadoA === 'grupo' && data.grupoId) {
+    const suscripcionesGrupo = mockSuscripciones.filter(s => s.grupoId === data.grupoId);
+    for (const suscripcion of suscripcionesGrupo) {
+      const precioOriginal = suscripcion.precioOriginal || suscripcion.precio;
+      let nuevoPrecio: number;
+      
+      if (data.tipo === 'porcentaje') {
+        nuevoPrecio = precioOriginal * (1 - data.valor / 100);
+      } else {
+        nuevoPrecio = Math.max(0, precioOriginal - data.valor);
+      }
+      
+      nuevoPrecio = Math.round(nuevoPrecio * 100) / 100;
+      
+      const indice = mockSuscripciones.findIndex(s => s.id === suscripcion.id);
+      if (indice !== -1) {
+        const descuentoSuscripcion: DescuentoSuscripcion = {
+          id: descuento.id,
+          tipo: data.tipo,
+          valor: data.valor,
+          motivo: data.motivo,
+          fechaInicio: data.fechaInicio,
+          fechaFin: data.fechaFin,
+        };
+        
+        mockSuscripciones[indice] = {
+          ...suscripcion,
+          precio: nuevoPrecio,
+          precioOriginal,
+          descuento: descuentoSuscripcion,
+          fechaActualizacion: new Date().toISOString().split('T')[0],
+        };
+      }
+    }
+  }
+
+  mockDescuentos.push(descuento);
+  return descuento;
+};
+
+// Obtener descuentos de un cliente
+export const obtenerDescuentosCliente = async (
+  data: ObtenerDescuentosClienteRequest
+): Promise<Descuento[]> => {
+  await new Promise(resolve => setTimeout(resolve, 300));
+
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  let descuentos = mockDescuentos.filter(d => {
+    if (d.aplicadoA === 'cliente' && d.clienteId === data.clienteId) {
+      if (!data.incluirExpirados && d.fechaFin) {
+        const fechaFin = new Date(d.fechaFin);
+        fechaFin.setHours(0, 0, 0, 0);
+        return fechaFin >= hoy;
+      }
+      return true;
+    }
+    
+    if (data.incluirGrupos && d.aplicadoA === 'grupo') {
+      // Verificar si el cliente pertenece a algún grupo con descuento
+      const suscripcionesCliente = mockSuscripciones.filter(s => s.clienteId === data.clienteId);
+      const perteneceAGrupo = suscripcionesCliente.some(s => s.grupoId === d.grupoId);
+      if (perteneceAGrupo) {
+        if (!data.incluirExpirados && d.fechaFin) {
+          const fechaFin = new Date(d.fechaFin);
+          fechaFin.setHours(0, 0, 0, 0);
+          return fechaFin >= hoy;
+        }
+        return true;
+      }
+    }
+    
+    return false;
+  });
+
+  return descuentos;
+};
+
+// Asociar descuentos con cuotas generadas (se llama automáticamente al generar cuotas)
+export const asociarDescuentosConCuotas = (suscripcion: Suscripcion, cuota: any) => {
+  if (suscripcion.descuento) {
+    // Aplicar descuento a la cuota
+    const precioOriginal = suscripcion.precioOriginal || suscripcion.precio;
+    let importeConDescuento = precioOriginal;
+    
+    if (suscripcion.descuento.tipo === 'porcentaje') {
+      importeConDescuento = precioOriginal * (1 - suscripcion.descuento.valor / 100);
+    } else {
+      importeConDescuento = Math.max(0, precioOriginal - suscripcion.descuento.valor);
+    }
+    
+    importeConDescuento = Math.round(importeConDescuento * 100) / 100;
+    
+    // Actualizar cuota con descuento aplicado
+    cuota.importe = importeConDescuento;
+    cuota.descuentoAplicado = {
+      id: suscripcion.descuento.id,
+      tipo: suscripcion.descuento.tipo,
+      valor: suscripcion.descuento.valor,
+      motivo: suscripcion.descuento.motivo,
+    };
+    cuota.precioOriginal = precioOriginal;
+  }
+  
+  return cuota;
 };
 
 // User Story 1: Obtener métricas de compromiso
@@ -3375,5 +3903,335 @@ export const actualizarConfiguracionResumenActividad = async (
   
   // En producción, esto guardaría la configuración en la base de datos
   return config;
+};
+
+// ============================================================================
+// Gestión de Sesiones Incluidas
+// ============================================================================
+
+// Mock data para sesiones incluidas
+const mockSesionesIncluidas: SesionIncluida[] = [
+  {
+    id: 'sesion-1',
+    suscripcionId: 'sub1',
+    clienteId: 'c1',
+    totalSesiones: 8,
+    consumidas: 4,
+    fechaCaducidad: addDays(9),
+    tipoSesion: 'pt',
+    periodo: monthPeriod(0),
+    fechaCreacion: addMonths(-1),
+    fechaActualizacion: addDays(-2),
+  },
+  {
+    id: 'sesion-2',
+    suscripcionId: 'sub2',
+    clienteId: 'c2',
+    totalSesiones: 12,
+    consumidas: 8,
+    fechaCaducidad: addDays(15),
+    tipoSesion: 'pt',
+    periodo: monthPeriod(0),
+    fechaCreacion: addMonths(-1),
+    fechaActualizacion: addDays(-1),
+  },
+  {
+    id: 'sesion-3',
+    suscripcionId: 'sub3',
+    clienteId: 'c3',
+    totalSesiones: 4,
+    consumidas: 0,
+    fechaCaducidad: addDays(3),
+    tipoSesion: 'pt',
+    periodo: monthPeriod(0),
+    fechaCreacion: addMonths(-1),
+    fechaActualizacion: addMonths(-1),
+  },
+  {
+    id: 'sesion-4',
+    suscripcionId: 'sub4',
+    clienteId: 'c4',
+    totalSesiones: 6,
+    consumidas: 2,
+    fechaCaducidad: addDays(20),
+    tipoSesion: 'grupal',
+    periodo: monthPeriod(0),
+    fechaCreacion: addMonths(-1),
+    fechaActualizacion: addDays(-5),
+  },
+];
+
+// Obtener sesiones incluidas
+export const obtenerSesionesIncluidas = async (
+  filters?: ObtenerSesionesIncluidasRequest
+): Promise<SesionIncluida[]> => {
+  await new Promise(resolve => setTimeout(resolve, 200));
+  
+  let filtered = [...mockSesionesIncluidas];
+  
+  if (filters) {
+    if (filters.suscripcionId) {
+      filtered = filtered.filter(s => s.suscripcionId === filters.suscripcionId);
+    }
+    
+    if (filters.clienteId) {
+      filtered = filtered.filter(s => s.clienteId === filters.clienteId);
+    }
+    
+    if (filters.periodo) {
+      filtered = filtered.filter(s => s.periodo === filters.periodo);
+    }
+    
+    if (filters.incluirCaducadas === false) {
+      const hoy = new Date();
+      filtered = filtered.filter(s => new Date(s.fechaCaducidad) >= hoy);
+    }
+  }
+  
+  return filtered;
+};
+
+// Obtener una sesión incluida por ID
+export const obtenerSesionIncluidaPorId = async (id: string): Promise<SesionIncluida> => {
+  await new Promise(resolve => setTimeout(resolve, 200));
+  
+  const sesion = mockSesionesIncluidas.find(s => s.id === id);
+  if (!sesion) {
+    throw new Error('Sesión incluida no encontrada');
+  }
+  
+  return sesion;
+};
+
+// Registrar consumo de sesiones
+export const registrarConsumoSesion = async (
+  request: RegistrarConsumoSesionRequest
+): Promise<SesionIncluida> => {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  const sesionIndex = mockSesionesIncluidas.findIndex(s => s.id === request.sesionIncluidaId);
+  if (sesionIndex === -1) {
+    throw new Error('Sesión incluida no encontrada');
+  }
+  
+  const sesion = mockSesionesIncluidas[sesionIndex];
+  
+  // Validar que hay sesiones disponibles
+  const disponibles = sesion.totalSesiones - sesion.consumidas;
+  if (request.cantidad > disponibles) {
+    throw new Error(`No hay suficientes sesiones disponibles. Disponibles: ${disponibles}, Solicitadas: ${request.cantidad}`);
+  }
+  
+  // Actualizar sesión
+  sesion.consumidas += request.cantidad;
+  sesion.fechaActualizacion = new Date().toISOString();
+  
+  // Actualizar también la suscripción relacionada
+  const suscripcion = enrichedMockSuscripciones.find(s => s.id === sesion.suscripcionId);
+  if (suscripcion) {
+    suscripcion.sesionesUsadas = (suscripcion.sesionesUsadas || 0) + request.cantidad;
+    suscripcion.sesionesDisponibles = (suscripcion.sesionesDisponibles || 0) - request.cantidad;
+    suscripcion.fechaActualizacion = new Date().toISOString();
+  }
+  
+  return sesion;
+};
+
+// Actualizar sesión incluida
+export const actualizarSesionIncluida = async (
+  id: string,
+  updates: Partial<SesionIncluida>
+): Promise<SesionIncluida> => {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  const sesionIndex = mockSesionesIncluidas.findIndex(s => s.id === id);
+  if (sesionIndex === -1) {
+    throw new Error('Sesión incluida no encontrada');
+  }
+  
+  const sesion = mockSesionesIncluidas[sesionIndex];
+  const sesionActualizada = {
+    ...sesion,
+    ...updates,
+    fechaActualizacion: new Date().toISOString(),
+  };
+  
+  mockSesionesIncluidas[sesionIndex] = sesionActualizada;
+  
+  return sesionActualizada;
+};
+
+// Crear nueva sesión incluida
+export const crearSesionIncluida = async (
+  sesion: Omit<SesionIncluida, 'id' | 'fechaCreacion' | 'fechaActualizacion'>
+): Promise<SesionIncluida> => {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  const nuevaSesion: SesionIncluida = {
+    ...sesion,
+    id: `sesion-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    fechaCreacion: new Date().toISOString(),
+    fechaActualizacion: new Date().toISOString(),
+  };
+  
+  mockSesionesIncluidas.push(nuevaSesion);
+  
+  return nuevaSesion;
+};
+
+// Función para obtener actividad reciente de suscripciones
+export const getActividadSuscripcionesReciente = async (
+  request: GetActividadSuscripcionesRecienteRequest
+): Promise<ActividadSuscripcionesReciente> => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  const hoy = new Date();
+  const fechaInicio = request.fechaInicio ? new Date(request.fechaInicio) : new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const fechaFin = request.fechaFin ? new Date(request.fechaFin) : hoy;
+  
+  // Filtrar suscripciones del entrenador
+  let suscripciones = mockSuscripciones.filter(s => {
+    if (request.entrenadorId && s.entrenadorId !== request.entrenadorId) return false;
+    return true;
+  });
+  
+  // Convertir historial de cambios a eventos
+  const eventos: EventoSuscripcion[] = [];
+  
+  suscripciones.forEach(suscripcion => {
+    const historial = suscripcion.historialCambios || [];
+    
+    // Agregar evento de creación si está en el rango
+    const fechaCreacion = new Date(suscripcion.fechaCreacion);
+    if (fechaCreacion >= fechaInicio && fechaCreacion <= fechaFin) {
+      eventos.push({
+        id: `evento-creacion-${suscripcion.id}`,
+        suscripcionId: suscripcion.id,
+        clienteId: suscripcion.clienteId,
+        clienteNombre: suscripcion.clienteNombre,
+        clienteEmail: suscripcion.clienteEmail,
+        tipoEvento: 'alta',
+        fecha: suscripcion.fechaCreacion,
+        descripcion: `Suscripción creada - Plan: ${suscripcion.planNombre}`,
+        detalles: [
+          { campo: 'estado', valorNuevo: suscripcion.estado },
+          { campo: 'precio', valorNuevo: suscripcion.precio },
+          { campo: 'plan', valorNuevo: suscripcion.planNombre },
+        ],
+      });
+    }
+    
+    // Procesar historial de cambios
+    historial.forEach(cambio => {
+      const fechaCambio = new Date(cambio.fechaCambio);
+      if (fechaCambio >= fechaInicio && fechaCambio <= fechaFin) {
+        // Mapear TipoCambio a TipoEventoSuscripcion
+        let tipoEvento: TipoEventoSuscripcion = 'cambio_plan';
+        if (cambio.tipoCambio === 'creacion') tipoEvento = 'alta';
+        else if (cambio.tipoCambio === 'freeze') tipoEvento = 'congelacion';
+        else if (cambio.tipoCambio === 'unfreeze') tipoEvento = 'descongelacion';
+        else if (cambio.tipoCambio === 'cancelacion') tipoEvento = 'cancelacion';
+        else if (cambio.tipoCambio === 'aplicacion_descuento') tipoEvento = 'aplicacion_descuento';
+        else if (cambio.tipoCambio === 'eliminacion_descuento') tipoEvento = 'eliminacion_descuento';
+        else if (cambio.tipoCambio === 'ajuste_sesiones') tipoEvento = 'ajuste_sesiones';
+        else if (cambio.tipoCambio === 'bonus_sesiones') tipoEvento = 'bonus_sesiones';
+        else if (cambio.tipoCambio === 'cambio_plan') tipoEvento = 'cambio_plan';
+        
+        eventos.push({
+          id: cambio.id,
+          suscripcionId: cambio.suscripcionId,
+          clienteId: suscripcion.clienteId,
+          clienteNombre: suscripcion.clienteNombre,
+          clienteEmail: suscripcion.clienteEmail,
+          tipoEvento,
+          fecha: cambio.fechaCambio,
+          descripcion: cambio.descripcion,
+          detalles: cambio.cambios,
+          realizadoPor: cambio.realizadoPor,
+          realizadoPorNombre: cambio.realizadoPorNombre,
+          motivo: cambio.motivo,
+          metadata: cambio.metadata,
+        });
+      }
+    });
+    
+    // Agregar eventos de pagos fallidos desde historial de cuotas
+    suscripcion.historialCuotas?.forEach(cuota => {
+      if (cuota.estado === 'fallida') {
+        const fechaVencimiento = new Date(cuota.fechaVencimiento);
+        if (fechaVencimiento >= fechaInicio && fechaVencimiento <= fechaFin) {
+          eventos.push({
+            id: `evento-pago-fallido-${cuota.id}`,
+            suscripcionId: suscripcion.id,
+            clienteId: suscripcion.clienteId,
+            clienteNombre: suscripcion.clienteNombre,
+            clienteEmail: suscripcion.clienteEmail,
+            tipoEvento: 'pago_fallido',
+            fecha: cuota.fechaVencimiento,
+            descripcion: `Pago fallido - Cuota de ${cuota.importe}€`,
+            detalles: [
+              { campo: 'importe', valorNuevo: cuota.importe },
+              { campo: 'estado', valorNuevo: cuota.estado },
+            ],
+            motivo: cuota.motivoFallo,
+          });
+        }
+      }
+    });
+  });
+  
+  // Filtrar por tipos de evento si se especifica
+  let eventosFiltrados = eventos;
+  if (request.tiposEvento && request.tiposEvento.length > 0) {
+    eventosFiltrados = eventos.filter(e => request.tiposEvento!.includes(e.tipoEvento));
+  }
+  
+  // Limitar resultados si se especifica
+  if (request.limite) {
+    eventosFiltrados = eventosFiltrados.slice(0, request.limite);
+  }
+  
+  // Ordenar por fecha descendente
+  eventosFiltrados.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+  
+  // Calcular resumen
+  const hace7Dias = new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const hace30Dias = new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000);
+  
+  const nuevas7Dias = eventosFiltrados.filter(e => 
+    e.tipoEvento === 'alta' && new Date(e.fecha) >= hace7Dias
+  ).length;
+  
+  const nuevas30Dias = eventosFiltrados.filter(e => 
+    e.tipoEvento === 'alta' && new Date(e.fecha) >= hace30Dias
+  ).length;
+  
+  const renovaciones = eventosFiltrados.filter(e => e.tipoEvento === 'renovacion').length;
+  const cancelaciones = eventosFiltrados.filter(e => e.tipoEvento === 'cancelacion').length;
+  const cambiosPlan = eventosFiltrados.filter(e => e.tipoEvento === 'cambio_plan' || e.tipoEvento === 'upgrade' || e.tipoEvento === 'downgrade').length;
+  const congelaciones = eventosFiltrados.filter(e => e.tipoEvento === 'congelacion').length;
+  const pagosFallidos = eventosFiltrados.filter(e => e.tipoEvento === 'pago_fallido').length;
+  
+  // Calcular churn (tasa de cancelación)
+  const totalSuscripciones = suscripciones.length;
+  const churn = totalSuscripciones > 0 ? (cancelaciones / totalSuscripciones) * 100 : 0;
+  
+  return {
+    eventos: eventosFiltrados,
+    resumen: {
+      nuevasSuscripciones7Dias: nuevas7Dias,
+      nuevasSuscripciones30Dias: nuevas30Dias,
+      renovacionesRealizadas: renovaciones,
+      cancelaciones,
+      churn,
+      cambiosPlan,
+      congelaciones,
+      pagosFallidos,
+    },
+    periodo: {
+      fechaInicio: fechaInicio.toISOString().split('T')[0],
+      fechaFin: fechaFin.toISOString().split('T')[0],
+    },
+  };
 };
 

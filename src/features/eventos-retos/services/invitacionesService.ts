@@ -191,4 +191,163 @@ export const obtenerClientesDeGrupo = async (grupoId: string): Promise<Client[]>
   return todosLosClientes.filter(c => segmento.clientIds.includes(c.id));
 };
 
+/**
+ * Plantilla de invitación con asunto y cuerpo
+ */
+export interface PlantillaInvitacion {
+  id: string;
+  nombre: string;
+  asunto: string;
+  cuerpo: string;
+  variables: string[]; // Variables disponibles como {nombre}, {eventoNombre}, etc.
+  creadoPor: string;
+  createdAt: Date;
+}
+
+/**
+ * Plantillas predefinidas de invitación
+ */
+const PLANTILLAS_INVITACION: PlantillaInvitacion[] = [
+  {
+    id: 'plantilla-invitacion-estandar',
+    nombre: 'Invitación Estándar',
+    asunto: 'Invitación al evento: {eventoNombre}',
+    cuerpo: 'Hola {nombre},\n\nTe invitamos cordialmente a participar en nuestro evento "{eventoNombre}" que se realizará el {fecha} a las {hora}.\n\n{eventoDescripcion}\n\nUbicación: {ubicacion}\n\nEsperamos contar con tu presencia.\n\nSaludos,\nEquipo de Entrenamiento',
+    variables: ['nombre', 'eventoNombre', 'eventoDescripcion', 'fecha', 'hora', 'ubicacion'],
+    creadoPor: 'sistema',
+    createdAt: new Date(),
+  },
+  {
+    id: 'plantilla-invitacion-formal',
+    nombre: 'Invitación Formal',
+    asunto: 'Invitación formal: {eventoNombre}',
+    cuerpo: 'Estimado/a {nombre},\n\nNos complace invitarle formalmente al evento "{eventoNombre}" programado para el {fecha} a las {hora}.\n\nDetalles del evento:\n{eventoDescripcion}\n\nLugar: {ubicacion}\n\nAgradecemos su confirmación de asistencia.\n\nAtentamente,\nEquipo de Entrenamiento',
+    variables: ['nombre', 'eventoNombre', 'eventoDescripcion', 'fecha', 'hora', 'ubicacion'],
+    creadoPor: 'sistema',
+    createdAt: new Date(),
+  },
+  {
+    id: 'plantilla-invitacion-casual',
+    nombre: 'Invitación Casual',
+    asunto: '¡Te esperamos en {eventoNombre}!',
+    cuerpo: '¡Hola {nombre}!\n\n¿Qué tal? Te queríamos invitar a "{eventoNombre}" el {fecha} a las {hora}.\n\n{eventoDescripcion}\n\nNos vemos en {ubicacion}.\n\n¡No faltes!\n\nUn saludo,\nEquipo de Entrenamiento',
+    variables: ['nombre', 'eventoNombre', 'eventoDescripcion', 'fecha', 'hora', 'ubicacion'],
+    creadoPor: 'sistema',
+    createdAt: new Date(),
+  },
+];
+
+/**
+ * Envía invitaciones masivas a múltiples destinatarios
+ * 
+ * NOTA: En producción, esto se conectaría a proveedores de email (SendGrid, Mailgun, etc.)
+ * o WhatsApp API (Twilio, WhatsApp Business API) para el envío real de mensajes.
+ * 
+ * @param eventId ID del evento
+ * @param destinatarios Array de destinatarios con id, nombre, email y/o teléfono
+ * @param canal Canal de comunicación: 'email', 'whatsapp' o 'ambos'
+ * @returns Array de invitaciones enviadas
+ */
+export const enviarInvitacionesMasivas = async (
+  eventId: string,
+  destinatarios: Array<{ id: string; nombre: string; email?: string; telefono?: string }>,
+  canal: 'email' | 'whatsapp' | 'ambos'
+): Promise<InvitacionEvento[]> => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  // Obtener el evento
+  const eventosStorage = localStorage.getItem('eventos');
+  if (!eventosStorage) {
+    throw new Error('No se encontraron eventos');
+  }
+
+  const eventos: Evento[] = JSON.parse(eventosStorage).map((e: any) => ({
+    ...e,
+    fechaInicio: new Date(e.fechaInicio),
+    fechaFin: e.fechaFin ? new Date(e.fechaFin) : undefined,
+    createdAt: new Date(e.createdAt),
+  }));
+
+  const evento = eventos.find(e => e.id === eventId);
+  if (!evento) {
+    throw new Error('Evento no encontrado');
+  }
+
+  // Usar plantilla por defecto
+  const plantilla = PLANTILLAS_INVITACION[0];
+  const invitaciones: InvitacionEvento[] = [];
+
+  for (const destinatario of destinatarios) {
+    // Personalizar mensaje
+    const mensajePersonalizado = personalizarPlantillaInvitacion(
+      plantilla.cuerpo,
+      evento,
+      destinatario
+    );
+
+    // Determinar canales de envío
+    const canalesEnvio: ('email' | 'whatsapp')[] = [];
+    if (canal === 'ambos') {
+      if (destinatario.email) canalesEnvio.push('email');
+      if (destinatario.telefono) canalesEnvio.push('whatsapp');
+    } else if (canal === 'email' && destinatario.email) {
+      canalesEnvio.push('email');
+    } else if (canal === 'whatsapp' && destinatario.telefono) {
+      canalesEnvio.push('whatsapp');
+    }
+
+    // Si no hay canales disponibles, usar email como fallback
+    if (canalesEnvio.length === 0) {
+      canalesEnvio.push('email');
+    }
+
+    // Crear invitación por cada canal
+    for (const canalEnvio of canalesEnvio) {
+      const linkInvitacion = generarLinkInvitacion(eventId, destinatario.id);
+      
+      const invitacion: InvitacionEvento = {
+        id: `inv-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        destinatarioId: destinatario.id,
+        destinatarioNombre: destinatario.nombre,
+        destinatarioTipo: 'cliente',
+        email: destinatario.email,
+        telefono: destinatario.telefono,
+        canal: canalesEnvio.length > 1 ? 'ambos' : canalEnvio,
+        plantilla: plantilla.cuerpo,
+        mensajePersonalizado,
+        fechaEnvio: new Date(),
+        estado: 'enviada',
+        abierta: false,
+        linkInvitacion,
+      };
+
+      // Simular envío (en producción, aquí se enviaría el mensaje real)
+      console.log('[InvitacionesService] Enviando invitación masiva:', {
+        destinatario: destinatario.nombre,
+        canal: canalEnvio,
+        asunto: plantilla.asunto.replace(/{eventoNombre}/g, evento.nombre),
+        mensaje: mensajePersonalizado.substring(0, 100) + '...',
+      });
+
+      invitaciones.push(invitacion);
+    }
+  }
+
+  // Guardar invitaciones en el evento
+  evento.invitaciones = [...(evento.invitaciones || []), ...invitaciones];
+  const eventosActualizados = eventos.map(e => (e.id === eventId ? evento : e));
+  localStorage.setItem('eventos', JSON.stringify(eventosActualizados));
+
+  return invitaciones;
+};
+
+/**
+ * Obtiene todas las plantillas de invitación disponibles
+ * 
+ * @returns Array de plantillas de invitación con asunto y cuerpo
+ */
+export const obtenerPlantillasInvitacion = (): PlantillaInvitacion[] => {
+  return PLANTILLAS_INVITACION;
+};
+
 

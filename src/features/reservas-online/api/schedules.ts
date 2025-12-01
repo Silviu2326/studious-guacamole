@@ -205,4 +205,49 @@ export const validarBloquesNoSolapados = (bloques: HorarioDisponible[]): boolean
   return true;
 };
 
+/**
+ * Contexto para obtener horarios
+ * Permite especificar el entrenador o centro para el cual se obtienen los horarios
+ */
+export interface ContextoSchedules {
+  entrenadorId?: string;
+  centroId?: string;
+  role?: 'entrenador' | 'gimnasio';
+}
+
+/**
+ * Obtiene la configuración básica de horarios de trabajo
+ * 
+ * @param contexto - Contexto con entrenadorId o centroId para obtener los horarios
+ * @returns Configuración de horarios semanales
+ * 
+ * @remarks
+ * Esta es una función mock que simplifica la obtención de horarios.
+ * En producción, se conectaría con un backend que maneja múltiples contextos
+ * (entrenadores, centros, tipos de sesión, etc.).
+ */
+export const getSchedules = async (contexto: ContextoSchedules): Promise<HorarioSemanal | null> => {
+  // Si hay entrenadorId, usar la función existente
+  if (contexto.entrenadorId) {
+    return await getHorarioSemanal(contexto.entrenadorId);
+  }
+  
+  // Para otros contextos, retornar null (en producción se implementaría la lógica específica)
+  return null;
+};
+
+/**
+ * Guarda la configuración de horarios
+ * 
+ * @param data - Datos del horario semanal a guardar
+ * @returns Horario semanal guardado
+ * 
+ * @remarks
+ * Esta es una función mock que simplifica el guardado de horarios.
+ * En producción, se conectaría con un backend que valida y persiste los datos.
+ */
+export const saveSchedules = async (data: HorarioSemanal): Promise<HorarioSemanal> => {
+  return await guardarHorarioSemanal(data);
+};
+
 

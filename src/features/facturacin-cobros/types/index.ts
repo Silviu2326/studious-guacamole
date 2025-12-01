@@ -58,6 +58,7 @@ export interface Factura {
   fechaActualizacion: Date;
   linkPagoId?: string; // ID del link de pago asociado
   suscripcionId?: string; // ID de la suscripción si fue generada automáticamente
+  enSeguimiento?: boolean; // Indica si la factura está en seguimiento activo para cobro
 }
 
 export interface Pago {
@@ -266,6 +267,43 @@ export interface ProyeccionFinMes {
   proyeccionFinMes: number; // Proyección basada en tendencia
   diferencia: number; // Diferencia entre esperado y real
   porcentajeCumplimiento: number; // Porcentaje de ingresos reales vs esperados
+}
+
+// Tipos para suscripciones recurrentes de cobros
+export type FrecuenciaCobro = 'mensual' | 'trimestral' | 'anual';
+export type EstadoSuscripcionRecurrente = 'activa' | 'pausada' | 'cancelada';
+export type OrigenSuscripcion = 'cuota' | 'paquete' | 'servicio';
+export type EstadoCobroRecurrente = 'exito' | 'fallo' | 'pendiente';
+
+export interface SuscripcionRecurrente {
+  id: string;
+  clienteId: string;
+  descripcion: string;
+  importe: number;
+  moneda: string;
+  frecuencia: FrecuenciaCobro;
+  siguienteCobro: Date;
+  ultimoCobro?: Date;
+  estado: EstadoSuscripcionRecurrente;
+  origen: OrigenSuscripcion;
+  metodoPagoPreferido: MetodoPago;
+}
+
+export interface CobroRecurrente {
+  id: string;
+  suscripcionId: string;
+  facturaId?: string;
+  fechaCobro: Date;
+  importe: number;
+  estado: EstadoCobroRecurrente;
+  mensajeSistema?: string;
+}
+
+export interface FiltrosSuscripciones {
+  clienteId?: string;
+  estado?: EstadoSuscripcionRecurrente;
+  origen?: OrigenSuscripcion;
+  frecuencia?: FrecuenciaCobro;
 }
 
 // Re-exportar tipos de paquetes y plantillas

@@ -5,24 +5,30 @@ import {
   aplicarDescuento,
   eliminarDescuento,
   verificarDescuentosExpirados,
+  getSuscripcionesGrupales,
+  aplicarDescuentoSuscripcion,
 } from '../api/suscripciones';
-import { Suscripcion, AplicarDescuentoRequest } from '../types';
+import { Suscripcion, AplicarDescuentoRequest, AplicarDescuentoSuscripcionRequest } from '../types';
 import { Percent, Tag, X, Plus, AlertCircle, CheckCircle, Calendar } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 
 export const DescuentosPersonalizados: React.FC = () => {
   const { user } = useAuth();
   const [suscripciones, setSuscripciones] = useState<Suscripcion[]>([]);
+  const [suscripcionesGrupales, setSuscripcionesGrupales] = useState<Suscripcion[]>([]);
   const [loading, setLoading] = useState(true);
   const [suscripcionSeleccionada, setSuscripcionSeleccionada] = useState<Suscripcion | null>(null);
   const [mostrarModal, setMostrarModal] = useState(false);
+  const [tipoAplicacion, setTipoAplicacion] = useState<'cliente' | 'grupo'>('cliente');
   const [tipoDescuento, setTipoDescuento] = useState<'porcentaje' | 'fijo'>('porcentaje');
   const [valorDescuento, setValorDescuento] = useState<string>('');
   const [motivo, setMotivo] = useState<string>('');
+  const [fechaInicio, setFechaInicio] = useState<string>(new Date().toISOString().split('T')[0]);
   const [fechaFin, setFechaFin] = useState<string>('');
 
   useEffect(() => {
     loadSuscripciones();
+    loadSuscripcionesGrupales();
     // Verificar descuentos expirados al cargar
     verificarDescuentosExpirados();
   }, []);
@@ -39,8 +45,25 @@ export const DescuentosPersonalizados: React.FC = () => {
     }
   };
 
+  const loadSuscripcionesGrupales = async () => {
+    try {
+      const data = await getSuscripcionesGrupales(user?.id);
+      setSuscripcionesGrupales(data);
+    } catch (error) {
+      console.error('Error cargando suscripciones grupales:', error);
+    }
+  };
+
   const handleAplicarDescuento = async () => {
-    if (!suscripcionSeleccionada) return;
+    if (tipoAplicacion === 'cliente' && !suscripcionSeleccionada) {
+      alert('Por favor selecciona una suscripción');
+      return;
+    }
+
+    if (tipoAplicacion === 'grupo' && !suscripcionSeleccionada) {
+      alert('Por favor selecciona un grupo');
+      return;
+    }
     
     const valor = parseFloat(valorDescuento);
     if (isNaN(valor) || valor <= 0) {
@@ -53,22 +76,47 @@ export const DescuentosPersonalizados: React.FC = () => {
       return;
     }
 
-    if (tipoDescuento === 'fijo' && valor > (suscripcionSeleccionada.precioOriginal || suscripcionSeleccionada.precio)) {
+    const precioBase = suscripcionSeleccionada ? (suscripcionSeleccionada.precioOriginal || suscripcionSeleccionada.precio) : 0;
+    if (tipoDescuento === 'fijo' && valor > precioBase) {
       alert('El descuento fijo no puede ser mayor al precio original');
       return;
     }
 
-    try {
-      const request: AplicarDescuentoRequest = {
-        suscripcionId: suscripcionSeleccionada.id,
-        tipo: tipoDescuento,
-        valor,
-        motivo: motivo || undefined,
-        fechaFin: fechaFin || undefined,
-      };
+    if (!fechaInicio) {
+      alert('Por favor selecciona una fecha de inicio');
+      return;
+    }
 
-      await aplicarDescuento(request);
+    try {
+      if (tipoAplicacion === 'cliente' && suscripcionSeleccionada) {
+        // Aplicar descuento a suscripción individual
+        const request: AplicarDescuentoRequest = {
+          suscripcionId: suscripcionSeleccionada.id,
+          tipo: tipoDescuento,
+          valor,
+          motivo: motivo || undefined,
+          fechaFin: fechaFin || undefined,
+        };
+
+        await aplicarDescuento(request);
+      } else if (tipoAplicacion === 'grupo' && suscripcionSeleccionada && suscripcionSeleccionada.grupoId) {
+        // Aplicar descuento a grupo
+        const request: AplicarDescuentoSuscripcionRequest = {
+          tipo: tipoDescuento,
+          valor,
+          motivo: motivo || undefined,
+          fechaInicio,
+          fechaFin: fechaFin || undefined,
+          aplicadoA: 'grupo',
+          grupoId: suscripcionSeleccionada.grupoId,
+          suscripcionId: suscripcionSeleccionada.id,
+        };
+
+        await aplicarDescuentoSuscripcion(request);
+      }
+
       await loadSuscripciones();
+      await loadSuscripcionesGrupales();
       setMostrarModal(false);
       resetForm();
       alert('Descuento aplicado correctamente');
@@ -98,9 +146,11 @@ export const DescuentosPersonalizados: React.FC = () => {
 
   const resetForm = () => {
     setSuscripcionSeleccionada(null);
+    setTipoAplicacion('cliente');
     setTipoDescuento('porcentaje');
     setValorDescuento('');
     setMotivo('');
+    setFechaInicio(new Date().toISOString().split('T')[0]);
     setFechaFin('');
   };
 
@@ -351,17 +401,84 @@ export const DescuentosPersonalizados: React.FC = () => {
               Aplicar Descuento Personalizado
             </h3>
             
-            {suscripcionSeleccionada && (
-              <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                <div className="font-medium text-gray-900">{suscripcionSeleccionada.clienteNombre}</div>
-                <div className="text-sm text-gray-600">{suscripcionSeleccionada.planNombre}</div>
-                <div className="text-lg font-semibold text-gray-900 mt-2">
-                  Precio actual: {(suscripcionSeleccionada.precioOriginal || suscripcionSeleccionada.precio).toFixed(2)} €
-                </div>
-              </div>
-            )}
-            
             <div className="space-y-4">
+              {/* Selección de tipo de aplicación */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Aplicar Descuento a
+                </label>
+                <Select
+                  value={tipoAplicacion}
+                  onChange={(e) => {
+                    setTipoAplicacion(e.target.value as 'cliente' | 'grupo');
+                    setSuscripcionSeleccionada(null);
+                  }}
+                >
+                  <option value="cliente">Cliente Individual</option>
+                  <option value="grupo">Grupo/Familia</option>
+                </Select>
+              </div>
+
+              {/* Selección de suscripción o grupo */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {tipoAplicacion === 'cliente' ? 'Seleccionar Cliente' : 'Seleccionar Grupo'}
+                </label>
+                <Select
+                  value={suscripcionSeleccionada?.id || ''}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    if (tipoAplicacion === 'cliente') {
+                      const suscripcion = suscripciones.find(s => s.id === id);
+                      setSuscripcionSeleccionada(suscripcion || null);
+                    } else {
+                      const grupo = suscripcionesGrupales.find(s => s.id === id);
+                      setSuscripcionSeleccionada(grupo || null);
+                    }
+                  }}
+                >
+                  <option value="">Selecciona una opción...</option>
+                  {tipoAplicacion === 'cliente' ? (
+                    suscripciones.filter(s => !s.esGrupal).map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.clienteNombre} - {s.planNombre} ({(s.precioOriginal || s.precio).toFixed(2)} €)
+                      </option>
+                    ))
+                  ) : (
+                    suscripcionesGrupales.map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.planNombre.replace('Suscripción Grupal: ', '')} - {(s.precioOriginal || s.precio).toFixed(2)} €
+                      </option>
+                    ))
+                  )}
+                </Select>
+              </div>
+
+              {suscripcionSeleccionada && (
+                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="font-medium text-gray-900">
+                    {tipoAplicacion === 'cliente' ? suscripcionSeleccionada.clienteNombre : suscripcionSeleccionada.planNombre.replace('Suscripción Grupal: ', '')}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {tipoAplicacion === 'cliente' ? suscripcionSeleccionada.planNombre : `${suscripcionSeleccionada.miembrosGrupo?.filter(m => m.activo).length || 0} miembro(s)`}
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900 mt-2">
+                    Precio actual: {(suscripcionSeleccionada.precioOriginal || suscripcionSeleccionada.precio).toFixed(2)} €
+                  </div>
+                </div>
+              )}
+              
+              {/* Fecha de inicio */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Fecha de Inicio
+                </label>
+                <Input
+                  type="date"
+                  value={fechaInicio}
+                  onChange={(e) => setFechaInicio(e.target.value)}
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Tipo de Descuento
@@ -425,6 +542,7 @@ export const DescuentosPersonalizados: React.FC = () => {
                   type="date"
                   value={fechaFin}
                   onChange={(e) => setFechaFin(e.target.value)}
+                  min={fechaInicio}
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Si no se especifica, el descuento será permanente hasta que se elimine manualmente
@@ -445,7 +563,7 @@ export const DescuentosPersonalizados: React.FC = () => {
               <Button
                 variant="primary"
                 onClick={handleAplicarDescuento}
-                disabled={!valorDescuento || !suscripcionSeleccionada}
+                disabled={!valorDescuento || !suscripcionSeleccionada || !fechaInicio}
               >
                 Aplicar Descuento
               </Button>

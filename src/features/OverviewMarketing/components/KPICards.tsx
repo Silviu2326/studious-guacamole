@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, LineChart, MailOpen, Rocket, Users, Lightbulb, AlertTriangle } from 'lucide-react';
+import { BarChart3, LineChart, MailOpen, Rocket, Users, Lightbulb, AlertTriangle, TrendingUp } from 'lucide-react';
 import { MetricCards, MetricCardData, Badge } from '../../../components/componentsreutilizables';
 import { MarketingKPI } from '../types';
 import { MarketingOverviewService } from '../services/marketingOverviewService';
@@ -22,6 +22,7 @@ const iconMap: Record<string, React.ReactNode> = {
   'email-ctr': <MailOpen className="w-5 h-5" />,
   roas: <Rocket className="w-5 h-5" />,
   'social-growth': <LineChart className="w-5 h-5" />,
+  estimatedROI: <TrendingUp className="w-5 h-5" />,
 };
 
 const trendColorMap: Record<string, MetricCardData['color']> = {
@@ -67,10 +68,27 @@ export const KPICards: React.FC<KPICardsProps> = ({ kpis, loading = false }) => 
     loading: true,
   }));
 
+  // Orden de prioridad para KPIs: métricas de negocio primero, Crecimiento Redes al final
+  const kpiPriorityOrder: Record<string, number> = {
+    'roas': 1,              // ROAS - Primera prioridad
+    'funnel-revenue': 2,     // Ventas/Revenue - Segunda prioridad
+    'estimatedROI': 3,       // ROI Estimado - Tercera prioridad
+    'email-ctr': 4,          // CTR Email - Cuarta prioridad
+    'leads': 5,              // Leads Generados - Quinta prioridad
+    'social-growth': 6,      // Crecimiento Redes - Última prioridad (secundario)
+  };
+
+  // Ordenar KPIs según prioridad de negocio
+  const sortedKpis = [...kpis].sort((a, b) => {
+    const priorityA = kpiPriorityOrder[a.id] ?? 999; // KPIs no definidos al final
+    const priorityB = kpiPriorityOrder[b.id] ?? 999;
+    return priorityA - priorityB;
+  });
+
   const cards: MetricCardData[] =
-    kpis.length === 0 && loading
+    sortedKpis.length === 0 && loading
       ? basePlaceholders
-      : kpis.map((kpi) => {
+      : sortedKpis.map((kpi) => {
           const trend =
             typeof kpi.changePercentage === 'number'
               ? {
@@ -103,12 +121,12 @@ export const KPICards: React.FC<KPICardsProps> = ({ kpis, loading = false }) => 
         });
 
   // If we have contextual narratives, render custom cards with narratives
-  const hasNarratives = kpis.some((kpi) => kpi.contextualNarrative);
+  const hasNarratives = sortedKpis.some((kpi) => kpi.contextualNarrative);
 
   if (hasNarratives && !loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {kpis.map((kpi, index) => {
+        {sortedKpis.map((kpi, index) => {
           const card = cards[index];
           if (!card) return null;
 

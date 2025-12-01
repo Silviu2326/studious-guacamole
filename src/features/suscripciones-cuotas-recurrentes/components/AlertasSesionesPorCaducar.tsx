@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Badge } from '../../../components/componentsreutilizables';
-import { getSesionesPorCaducar } from '../api/suscripciones';
+import { getSesionesPorCaducar, obtenerSesionesIncluidas, getSuscripcionById } from '../api/suscripciones';
 import { createAlert } from '../../../features/tareas-alertas/api/alerts';
-import { SesionPorCaducar } from '../types';
+import { SesionPorCaducar, SesionIncluida, Suscripcion } from '../types';
 import { AlertTriangle, Clock, Mail, Phone, User, Calendar } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 
@@ -30,23 +30,71 @@ export const AlertasSesionesPorCaducar: React.FC<AlertasSesionesPorCaducarProps>
   const loadSesionesPorCaducar = async () => {
     setLoading(true);
     try {
-      const data = await getSesionesPorCaducar(user?.id, diasAnticipacion);
-      setSesionesPorCaducar(data);
+      // Primero obtener sesiones incluidas con fechaCaducidad próxima
+      const hoy = new Date();
+      const fechaLimite = new Date();
+      fechaLimite.setDate(fechaLimite.getDate() + diasAnticipacion);
       
-      // Crear alertas automáticas para nuevas sesiones por caducar
-      for (const sesion of data) {
-        await createAlert({
-          type: 'recordatorio',
-          title: `Sesiones por caducar: ${sesion.clienteNombre}`,
-          message: `${sesion.clienteNombre} tiene ${sesion.sesionesDisponibles} sesiones disponibles que caducan en ${sesion.diasRestantes} día(s). Contacta al cliente para evitar que pierda sesiones pagadas.`,
-          priority: sesion.diasRestantes <= 3 ? 'alta' : 'media',
-          role: 'entrenador',
-          actionUrl: `/suscripciones-cuotas-recurrentes?tab=alertas-sesiones`,
-          relatedEntityId: sesion.suscripcionId,
-          relatedEntityType: 'suscripcion',
-          userId: user?.id,
-        });
+      // Obtener todas las sesiones incluidas
+      const todasLasSesiones = await obtenerSesionesIncluidas({
+        incluirCaducadas: false,
+      });
+      
+      // Filtrar por fechaCaducidad
+      const sesionesProximasACaducar = todasLasSesiones.filter(sesion => {
+        const fechaCad = new Date(sesion.fechaCaducidad);
+        return fechaCad >= hoy && fechaCad <= fechaLimite;
+      });
+      
+      // Obtener información de suscripciones y crear alertas
+      const alertas: SesionPorCaducar[] = [];
+      for (const sesion of sesionesProximasACaducar) {
+        try {
+          const suscripcion = await getSuscripcionById(sesion.suscripcionId);
+          const diasRestantes = Math.ceil((new Date(sesion.fechaCaducidad).getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+          
+          const alerta: SesionPorCaducar = {
+            suscripcionId: sesion.suscripcionId,
+            clienteId: sesion.clienteId,
+            clienteNombre: suscripcion.clienteNombre,
+            clienteEmail: suscripcion.clienteEmail,
+            clienteTelefono: suscripcion.clienteTelefono,
+            sesionesDisponibles: sesion.totalSesiones - sesion.consumidas,
+            sesionesIncluidas: sesion.totalSesiones,
+            fechaVencimiento: sesion.fechaCaducidad,
+            diasRestantes,
+            entrenadorId: suscripcion.entrenadorId,
+          };
+          
+          alertas.push(alerta);
+          
+          // Crear alerta automática
+          await createAlert({
+            type: 'recordatorio',
+            title: `Sesiones por caducar: ${alerta.clienteNombre}`,
+            message: `${alerta.clienteNombre} tiene ${alerta.sesionesDisponibles} sesiones disponibles que caducan en ${alerta.diasRestantes} día(s). Contacta al cliente para evitar que pierda sesiones pagadas.`,
+            priority: alerta.diasRestantes <= 3 ? 'alta' : 'media',
+            role: 'entrenador',
+            actionUrl: `/suscripciones-cuotas-recurrentes?tab=alertas-sesiones`,
+            relatedEntityId: alerta.suscripcionId,
+            relatedEntityType: 'suscripcion',
+            userId: user?.id,
+          });
+        } catch (error) {
+          console.error(`Error procesando sesión ${sesion.id}:`, error);
+        }
       }
+      
+      // También usar la función legacy para compatibilidad
+      const dataLegacy = await getSesionesPorCaducar(user?.id, diasAnticipacion);
+      
+      // Combinar y eliminar duplicados
+      const todasLasAlertas = [...alertas, ...dataLegacy];
+      const alertasUnicas = todasLasAlertas.filter((alerta, index, self) =>
+        index === self.findIndex(a => a.suscripcionId === alerta.suscripcionId)
+      );
+      
+      setSesionesPorCaducar(alertasUnicas);
     } catch (error) {
       console.error('Error cargando sesiones por caducar:', error);
     } finally {

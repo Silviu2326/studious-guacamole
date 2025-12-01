@@ -1,13 +1,63 @@
-import { Reserva, Clase } from '../types';
+import { Reserva, Clase, EstadoReserva, OrigenReserva } from '../types';
 import { generarEnlaceVideollamada, getConfiguracionVideollamada } from './enlacesVideollamada';
 import { validarTiempoMinimoAnticipacion } from './validacionReservas';
 
-export const getReservas = async (fechaInicio: Date, fechaFin: Date, role: 'entrenador' | 'gimnasio'): Promise<Reserva[]> => {
+/**
+ * Filtros para obtener reservas
+ */
+export interface FiltrosReservas {
+  fechaInicio?: Date;
+  fechaFin?: Date;
+  clienteId?: string;
+  entrenadorId?: string;
+  estado?: EstadoReserva | EstadoReserva[];
+  origen?: OrigenReserva | OrigenReserva[];
+  tipo?: 'sesion-1-1' | 'clase-grupal' | 'fisio' | 'nutricion' | 'masaje';
+  tipoSesion?: 'presencial' | 'videollamada';
+}
+
+/**
+ * Obtiene las reservas con filtros opcionales
+ * 
+ * @param filtros - Filtros para buscar reservas (fechas, cliente, entrenador, estado, origen)
+ * @param role - Rol del usuario ('entrenador' o 'gimnasio')
+ * @returns Lista de reservas que cumplen con los filtros
+ * 
+ * @example
+ * ```typescript
+ * // Obtener todas las reservas de un cliente
+ * const reservas = await getReservas({ clienteId: 'cliente1' }, 'entrenador');
+ * 
+ * // Obtener reservas confirmadas en un rango de fechas
+ * const reservas = await getReservas({
+ *   fechaInicio: new Date('2024-01-01'),
+ *   fechaFin: new Date('2024-01-31'),
+ *   estado: 'confirmada'
+ * }, 'entrenador');
+ * ```
+ * 
+ * @remarks
+ * En producción, esta función se conectaría con un backend REST/GraphQL:
+ * - REST: GET /api/reservas?fechaInicio=...&fechaFin=...&clienteId=...
+ * - GraphQL: query { reservas(filtros: {...}) { id, fecha, estado, ... } }
+ * 
+ * Las validaciones de negocio se centralizarían en el backend para garantizar
+ * consistencia y seguridad, mientras que el frontend solo realiza validaciones
+ * básicas de formato antes de enviar la petición.
+ */
+export const getReservas = async (
+  filtros: FiltrosReservas = {},
+  role: 'entrenador' | 'gimnasio' = 'entrenador'
+): Promise<Reserva[]> => {
   await new Promise(resolve => setTimeout(resolve, 300));
   
   const hoy = new Date();
   const addDays = (days: number) => new Date(hoy.getTime() + days * 86400000);
   const addHours = (hours: number) => new Date(hoy.getTime() + hours * 60 * 60 * 1000);
+  
+  // Usar filtros proporcionados o valores por defecto
+  const fechaInicio = filtros.fechaInicio || addDays(-30);
+  const fechaFin = filtros.fechaFin || addDays(30);
   
   // Verificar si estamos buscando reservas en las próximas 24 horas
   // Consideramos que es "próximas 24 horas" si:
@@ -20,361 +70,372 @@ export const getReservas = async (fechaInicio: Date, fechaFin: Date, role: 'entr
     diffDesdeAhora >= -60 * 60 * 1000 && // La fecha de inicio no es más de 1 hora en el pasado
     diffDesdeAhora <= 25 * 60 * 60 * 1000; // Y no es más de 25 horas en el futuro
   
+  // Datos mock de reservas - cubriendo diferentes casos
+  const reservasMock: Reserva[] = [];
+  
   if (role === 'entrenador') {
-    const reservas: Reserva[] = [
+    // ============================================
+    // RESERVAS 1:1 PRESENCIALES
+    // ============================================
+    reservasMock.push(
       {
         id: '1',
         clienteId: 'cliente1',
+        entrenadorId: 'entrenador1',
         clienteNombre: 'Juan Pérez',
         fecha: addDays(1),
+        fechaInicio: addDays(1),
+        fechaFin: addDays(1),
         horaInicio: '10:00',
         horaFin: '11:00',
         tipo: 'sesion-1-1',
         tipoSesion: 'presencial',
         estado: 'confirmada',
+        origen: 'appCliente',
+        esOnline: false,
         precio: 50,
         pagado: true,
         createdAt: addDays(-5),
         updatedAt: addDays(-2),
       },
+      // ============================================
+      // RESERVAS 1:1 ONLINE
+      // ============================================
       {
         id: '2',
         clienteId: 'cliente2',
+        entrenadorId: 'entrenador1',
         clienteNombre: 'María García',
         fecha: addDays(2),
+        fechaInicio: addDays(2),
+        fechaFin: addDays(2),
         horaInicio: '12:00',
         horaFin: '12:45',
         tipo: 'sesion-1-1',
         tipoSesion: 'videollamada',
         estado: 'confirmada',
+        origen: 'appCliente',
+        esOnline: true,
         precio: 45,
         pagado: true,
         enlaceVideollamada: 'https://meet.google.com/abc-defg-hij',
         createdAt: addDays(-4),
         updatedAt: addDays(-1),
       },
-    ];
-
-    // Si estamos buscando en las próximas 24 horas, agregar reservas más próximas
-    if (esProximas24Horas) {
-      const fechaHoy = new Date(hoy);
-      fechaHoy.setHours(0, 0, 0, 0);
-      
-      // Reserva en 2 horas (hoy)
-      const reservaHoy1 = new Date(fechaHoy);
-      reservaHoy1.setHours(hoy.getHours() + 2, 0, 0, 0);
-      if (reservaHoy1.getTime() <= fechaFin.getTime()) {
-        reservas.push({
-          id: '24h-1',
-          clienteId: 'cliente24h1',
-          clienteNombre: 'Laura Martínez',
-          fecha: reservaHoy1,
-          horaInicio: `${String(reservaHoy1.getHours()).padStart(2, '0')}:00`,
-          horaFin: `${String(reservaHoy1.getHours() + 1).padStart(2, '0')}:00`,
-          tipo: 'sesion-1-1',
-          tipoSesion: 'presencial',
-          estado: 'confirmada',
-          precio: 50,
-          pagado: true,
-          createdAt: addDays(-1),
-          updatedAt: addDays(-1),
-          duracionMinutos: 60,
-        });
+      // ============================================
+      // RESERVAS PENDIENTES
+      // ============================================
+      {
+        id: '3',
+        clienteId: 'cliente3',
+        entrenadorId: 'entrenador1',
+        clienteNombre: 'Carlos Ruiz',
+        fecha: addDays(3),
+        fechaInicio: addDays(3),
+        fechaFin: addDays(3),
+        horaInicio: '09:00',
+        horaFin: '10:00',
+        tipo: 'sesion-1-1',
+        tipoSesion: 'presencial',
+        estado: 'pendiente',
+        origen: 'enlacePublico',
+        esOnline: false,
+        precio: 50,
+        pagado: false,
+        createdAt: addDays(-6),
+        updatedAt: addDays(-3),
+      },
+      // ============================================
+      // RESERVAS CANCELADAS
+      // ============================================
+      {
+        id: '4',
+        clienteId: 'cliente4',
+        entrenadorId: 'entrenador1',
+        clienteNombre: 'Ana Martínez',
+        fecha: addDays(4),
+        fechaInicio: addDays(4),
+        fechaFin: addDays(4),
+        horaInicio: '16:00',
+        horaFin: '17:00',
+        tipo: 'sesion-1-1',
+        tipoSesion: 'presencial',
+        estado: 'canceladaCliente',
+        origen: 'appCliente',
+        esOnline: false,
+        precio: 50,
+        pagado: false,
+        observaciones: 'Cliente canceló por motivo personal',
+        createdAt: addDays(-3),
+        updatedAt: addDays(-1),
+      },
+      {
+        id: '5',
+        clienteId: 'cliente5',
+        entrenadorId: 'entrenador1',
+        clienteNombre: 'Luis García',
+        fecha: addDays(2),
+        fechaInicio: addDays(2),
+        fechaFin: addDays(2),
+        horaInicio: '11:00',
+        horaFin: '11:30',
+        tipo: 'sesion-1-1',
+        tipoSesion: 'videollamada',
+        estado: 'canceladaCliente',
+        origen: 'manual',
+        esOnline: true,
+        precio: 45,
+        pagado: false,
+        observaciones: 'Cliente canceló por motivo personal',
+        enlaceVideollamada: 'https://meet.google.com/xyz-wuvt-rst',
+        createdAt: addDays(-8),
+        updatedAt: addDays(-1),
+      },
+      // ============================================
+      // RESERVAS NO-SHOW
+      // ============================================
+      {
+        id: '6',
+        clienteId: 'cliente6',
+        entrenadorId: 'entrenador1',
+        clienteNombre: 'Pedro Sánchez',
+        fecha: addDays(-7),
+        fechaInicio: addDays(-7),
+        fechaFin: addDays(-7),
+        horaInicio: '11:00',
+        horaFin: '11:30',
+        tipo: 'sesion-1-1',
+        tipoSesion: 'videollamada',
+        estado: 'noShow',
+        origen: 'appCliente',
+        esOnline: true,
+        precio: 45,
+        pagado: false,
+        observaciones: 'Cliente no se presentó',
+        createdAt: addDays(-12),
+        updatedAt: addDays(-7),
+      },
+      // ============================================
+      // RESERVAS COMPLETADAS
+      // ============================================
+      {
+        id: '7',
+        clienteId: 'cliente1',
+        entrenadorId: 'entrenador1',
+        clienteNombre: 'Juan Pérez',
+        fecha: addDays(-10),
+        fechaInicio: addDays(-10),
+        fechaFin: addDays(-10),
+        horaInicio: '10:00',
+        horaFin: '11:00',
+        tipo: 'sesion-1-1',
+        tipoSesion: 'presencial',
+        estado: 'completada',
+        origen: 'appCliente',
+        esOnline: false,
+        precio: 50,
+        pagado: true,
+        createdAt: addDays(-15),
+        updatedAt: addDays(-10),
+      },
+      {
+        id: '8',
+        clienteId: 'cliente2',
+        entrenadorId: 'entrenador1',
+        clienteNombre: 'María García',
+        fecha: addDays(-8),
+        fechaInicio: addDays(-8),
+        fechaFin: addDays(-8),
+        horaInicio: '12:00',
+        horaFin: '12:45',
+        tipo: 'sesion-1-1',
+        tipoSesion: 'videollamada',
+        estado: 'completada',
+        origen: 'appCliente',
+        esOnline: true,
+        precio: 45,
+        pagado: true,
+        createdAt: addDays(-13),
+        updatedAt: addDays(-8),
+      },
+      // ============================================
+      // RESERVAS FISIOTERAPIA
+      // ============================================
+      {
+        id: '9',
+        clienteId: 'cliente7',
+        entrenadorId: 'entrenador2',
+        clienteNombre: 'Laura Torres',
+        fecha: addDays(5),
+        fechaInicio: addDays(5),
+        fechaFin: addDays(5),
+        horaInicio: '14:00',
+        horaFin: '15:00',
+        tipo: 'fisio',
+        tipoSesion: 'presencial',
+        estado: 'confirmada',
+        origen: 'manual',
+        esOnline: false,
+        precio: 60,
+        pagado: true,
+        createdAt: addDays(-3),
+        updatedAt: addDays(-2),
+      },
+      // ============================================
+      // RESERVAS NUTRICIÓN
+      // ============================================
+      {
+        id: '10',
+        clienteId: 'cliente8',
+        entrenadorId: 'entrenador3',
+        clienteNombre: 'Miguel Vargas',
+        fecha: addDays(6),
+        fechaInicio: addDays(6),
+        fechaFin: addDays(6),
+        horaInicio: '09:00',
+        horaFin: '10:00',
+        tipo: 'nutricion',
+        tipoSesion: 'presencial',
+        estado: 'confirmada',
+        origen: 'appCliente',
+        esOnline: false,
+        precio: 50,
+        pagado: true,
+        createdAt: addDays(-4),
+        updatedAt: addDays(-1),
+      },
+      // ============================================
+      // RESERVAS CON INTEGRACIÓN EXTERNA
+      // ============================================
+      {
+        id: '11',
+        clienteId: 'cliente9',
+        entrenadorId: 'entrenador1',
+        clienteNombre: 'Patricia Jiménez',
+        fecha: addDays(7),
+        fechaInicio: addDays(7),
+        fechaFin: addDays(7),
+        horaInicio: '11:00',
+        horaFin: '12:00',
+        tipo: 'sesion-1-1',
+        tipoSesion: 'presencial',
+        estado: 'confirmada',
+        origen: 'integracionExterna',
+        esOnline: false,
+        precio: 50,
+        pagado: true,
+        createdAt: addDays(-2),
+        updatedAt: addDays(-1),
       }
+    );
 
-      // Reserva en 5 horas (hoy)
-      const reservaHoy2 = new Date(fechaHoy);
-      reservaHoy2.setHours(hoy.getHours() + 5, 30, 0, 0);
-      if (reservaHoy2.getTime() <= fechaFin.getTime()) {
-        reservas.push({
-          id: '24h-2',
-          clienteId: 'cliente24h2',
-          clienteNombre: 'Pedro Sánchez',
-          fecha: reservaHoy2,
-          horaInicio: `${String(reservaHoy2.getHours()).padStart(2, '0')}:30`,
-          horaFin: `${String(reservaHoy2.getHours() + 1).padStart(2, '0')}:30`,
-          tipo: 'sesion-1-1',
-          tipoSesion: 'videollamada',
-          estado: 'confirmada',
-          precio: 45,
-          pagado: false,
-          enlaceVideollamada: 'https://meet.google.com/xyz-abc-123',
-          createdAt: addDays(-2),
-          updatedAt: addDays(-1),
-          duracionMinutos: 60,
-        });
+
+    // Agregar reservas adicionales para estadísticas históricas
+    reservasMock.push(
+      {
+        id: '12',
+        clienteId: 'cliente1',
+        entrenadorId: 'entrenador1',
+        clienteNombre: 'Juan Pérez',
+        fecha: addDays(-5),
+        fechaInicio: addDays(-5),
+        fechaFin: addDays(-5),
+        horaInicio: '10:00',
+        horaFin: '11:00',
+        tipo: 'sesion-1-1',
+        tipoSesion: 'presencial',
+        estado: 'completada',
+        origen: 'appCliente',
+        esOnline: false,
+        precio: 50,
+        pagado: true,
+        createdAt: addDays(-10),
+        updatedAt: addDays(-5),
+      },
+      {
+        id: '13',
+        clienteId: 'cliente3',
+        entrenadorId: 'entrenador1',
+        clienteNombre: 'Carlos Ruiz',
+        fecha: addDays(-12),
+        fechaInicio: addDays(-12),
+        fechaFin: addDays(-12),
+        horaInicio: '09:00',
+        horaFin: '10:00',
+        tipo: 'sesion-1-1',
+        tipoSesion: 'presencial',
+        estado: 'completada',
+        origen: 'appCliente',
+        esOnline: false,
+        precio: 50,
+        pagado: true,
+        createdAt: addDays(-17),
+        updatedAt: addDays(-12),
       }
-
-      // Reserva mañana temprano
-      const reservaManana = addDays(1);
-      reservaManana.setHours(9, 0, 0, 0);
-      if (reservaManana.getTime() <= fechaFin.getTime() && reservaManana.getTime() >= fechaInicio.getTime()) {
-        reservas.push({
-          id: '24h-3',
-          clienteId: 'cliente24h3',
-          clienteNombre: 'Ana López',
-          fecha: reservaManana,
-          horaInicio: '09:00',
-          horaFin: '10:00',
-          tipo: 'sesion-1-1',
-          tipoSesion: 'presencial',
-          estado: 'pendiente',
-          precio: 50,
-          pagado: false,
-          createdAt: addDays(-1),
-          updatedAt: addDays(-1),
-          duracionMinutos: 60,
-        });
-      }
-
-      // Reserva mañana mediodía
-      const reservaManana2 = addDays(1);
-      reservaManana2.setHours(14, 0, 0, 0);
-      if (reservaManana2.getTime() <= fechaFin.getTime() && reservaManana2.getTime() >= fechaInicio.getTime()) {
-        reservas.push({
-          id: '24h-4',
-          clienteId: 'cliente24h4',
-          clienteNombre: 'Carlos Mendez',
-          fecha: reservaManana2,
-          horaInicio: '14:00',
-          horaFin: '15:00',
-          tipo: 'fisio',
-          tipoSesion: 'presencial',
-          estado: 'confirmada',
-          precio: 60,
-          pagado: true,
-          createdAt: addDays(-3),
-          updatedAt: addDays(-2),
-          duracionMinutos: 60,
-        });
-      }
-    }
-
-    // Agregar reservas adicionales que no están en las próximas 24 horas (para otras consultas)
-    if (!esProximas24Horas) {
-      reservas.push(
-        {
-          id: '3',
-          clienteId: 'cliente3',
-          clienteNombre: 'Carlos Ruiz',
-          fecha: addDays(3),
-          horaInicio: '09:00',
-          horaFin: '10:00',
-          tipo: 'sesion-1-1',
-          tipoSesion: 'presencial',
-          estado: 'confirmada',
-          precio: 50,
-          pagado: false,
-          createdAt: addDays(-6),
-          updatedAt: addDays(-3),
-        },
-        {
-          id: '4',
-          clienteId: 'cliente4',
-          clienteNombre: 'Ana Martínez',
-          fecha: addDays(4),
-          horaInicio: '16:00',
-          horaFin: '17:00',
-          tipo: 'sesion-1-1',
-          tipoSesion: 'presencial',
-          estado: 'pendiente',
-          precio: 50,
-          pagado: false,
-          createdAt: addDays(-3),
-          updatedAt: addDays(-3),
-        },
-        {
-          id: '5',
-          clienteId: 'cliente5',
-          clienteNombre: 'Luis García',
-          fecha: addDays(2),
-          horaInicio: '11:00',
-          horaFin: '11:30',
-          tipo: 'sesion-1-1',
-          tipoSesion: 'videollamada',
-          estado: 'cancelada',
-          precio: 45,
-          pagado: false,
-          observaciones: 'Cliente canceló por motivo personal',
-          enlaceVideollamada: 'https://meet.google.com/xyz-wuvt-rst',
-          createdAt: addDays(-8),
-          updatedAt: addDays(-1),
-        },
-        // Reservas completadas para estadísticas
-        {
-          id: '13',
-          clienteId: 'cliente1',
-          clienteNombre: 'Juan Pérez',
-          fecha: addDays(-10),
-          horaInicio: '10:00',
-          horaFin: '11:00',
-          tipo: 'sesion-1-1',
-          tipoSesion: 'presencial',
-          estado: 'completada',
-          precio: 50,
-          pagado: true,
-          createdAt: addDays(-15),
-          updatedAt: addDays(-10),
-        },
-        {
-          id: '14',
-          clienteId: 'cliente1',
-          clienteNombre: 'Juan Pérez',
-          fecha: addDays(-5),
-          horaInicio: '10:00',
-          horaFin: '11:00',
-          tipo: 'sesion-1-1',
-          tipoSesion: 'presencial',
-          estado: 'completada',
-          precio: 50,
-          pagado: true,
-          createdAt: addDays(-10),
-          updatedAt: addDays(-5),
-        },
-        {
-          id: '15',
-          clienteId: 'cliente2',
-          clienteNombre: 'María García',
-          fecha: addDays(-8),
-          horaInicio: '12:00',
-          horaFin: '12:45',
-          tipo: 'sesion-1-1',
-          tipoSesion: 'videollamada',
-          estado: 'completada',
-          precio: 45,
-          pagado: true,
-          createdAt: addDays(-13),
-          updatedAt: addDays(-8),
-        },
-        {
-          id: '16',
-          clienteId: 'cliente3',
-          clienteNombre: 'Carlos Ruiz',
-          fecha: addDays(-12),
-          horaInicio: '09:00',
-          horaFin: '10:00',
-          tipo: 'sesion-1-1',
-          tipoSesion: 'presencial',
-          estado: 'completada',
-          precio: 50,
-          pagado: true,
-          createdAt: addDays(-17),
-          updatedAt: addDays(-12),
-        },
-        // Reservas no-show para estadísticas
-        {
-          id: '17',
-          clienteId: 'cliente5',
-          clienteNombre: 'Luis García',
-          fecha: addDays(-7),
-          horaInicio: '11:00',
-          horaFin: '11:30',
-          tipo: 'sesion-1-1',
-          tipoSesion: 'videollamada',
-          estado: 'no-show',
-          precio: 45,
-          pagado: false,
-          observaciones: 'Cliente no se presentó',
-          createdAt: addDays(-12),
-          updatedAt: addDays(-7),
-        },
-        {
-          id: '18',
-          clienteId: 'cliente5',
-          clienteNombre: 'Luis García',
-          fecha: addDays(-14),
-          horaInicio: '11:00',
-          horaFin: '11:30',
-          tipo: 'sesion-1-1',
-          tipoSesion: 'presencial',
-          estado: 'no-show',
-          precio: 50,
-          pagado: false,
-          observaciones: 'Cliente no se presentó',
-          createdAt: addDays(-19),
-          updatedAt: addDays(-14),
-        },
-        {
-          id: '19',
-          clienteId: 'cliente5',
-          clienteNombre: 'Luis García',
-          fecha: addDays(-20),
-          horaInicio: '11:00',
-          horaFin: '11:30',
-          tipo: 'sesion-1-1',
-          tipoSesion: 'videollamada',
-          estado: 'no-show',
-          precio: 45,
-          pagado: false,
-          observaciones: 'Cliente no se presentó',
-          createdAt: addDays(-25),
-          updatedAt: addDays(-20),
-        },
-        {
-          id: '20',
-          clienteId: 'cliente6',
-          clienteNombre: 'Pedro Sánchez',
-          fecha: addDays(-6),
-          horaInicio: '14:00',
-          horaFin: '15:00',
-          tipo: 'sesion-1-1',
-          tipoSesion: 'presencial',
-          estado: 'no-show',
-          precio: 50,
-          pagado: false,
-          observaciones: 'Cliente no se presentó',
-          createdAt: addDays(-11),
-          updatedAt: addDays(-6),
-        },
-        {
-          id: '21',
-          clienteId: 'cliente6',
-          clienteNombre: 'Pedro Sánchez',
-          fecha: addDays(-15),
-          horaInicio: '14:00',
-          horaFin: '15:00',
-          tipo: 'sesion-1-1',
-          tipoSesion: 'presencial',
-          estado: 'completada',
-          precio: 50,
-          pagado: true,
-          createdAt: addDays(-20),
-          updatedAt: addDays(-15),
-        },
-        {
-          id: '22',
-          clienteId: 'cliente6',
-          clienteNombre: 'Pedro Sánchez',
-          fecha: addDays(-22),
-          horaInicio: '14:00',
-          horaFin: '15:00',
-          tipo: 'sesion-1-1',
-          tipoSesion: 'presencial',
-          estado: 'completada',
-          precio: 50,
-          pagado: true,
-          createdAt: addDays(-27),
-          updatedAt: addDays(-22),
-        }
-      );
+    );
+    
+    // Aplicar filtros
+    let reservasFiltradas = reservasMock;
+    
+    // Filtrar por rango de fechas
+    reservasFiltradas = reservasFiltradas.filter(r => {
+      const fechaReserva = r.fecha || r.fechaInicio;
+      return fechaReserva >= fechaInicio && fechaReserva <= fechaFin;
+    });
+    
+    // Filtrar por cliente
+    if (filtros.clienteId) {
+      reservasFiltradas = reservasFiltradas.filter(r => r.clienteId === filtros.clienteId);
     }
     
-    return reservas;
+    // Filtrar por entrenador
+    if (filtros.entrenadorId) {
+      reservasFiltradas = reservasFiltradas.filter(r => r.entrenadorId === filtros.entrenadorId);
+    }
+    
+    // Filtrar por estado
+    if (filtros.estado) {
+      const estados = Array.isArray(filtros.estado) ? filtros.estado : [filtros.estado];
+      reservasFiltradas = reservasFiltradas.filter(r => estados.includes(r.estado));
+    }
+    
+    // Filtrar por origen
+    if (filtros.origen) {
+      const origenes = Array.isArray(filtros.origen) ? filtros.origen : [filtros.origen];
+      reservasFiltradas = reservasFiltradas.filter(r => origenes.includes(r.origen));
+    }
+    
+    // Filtrar por tipo
+    if (filtros.tipo) {
+      reservasFiltradas = reservasFiltradas.filter(r => r.tipo === filtros.tipo);
+    }
+    
+    // Filtrar por tipo de sesión
+    if (filtros.tipoSesion) {
+      reservasFiltradas = reservasFiltradas.filter(r => r.tipoSesion === filtros.tipoSesion);
+    }
+    
+    return reservasFiltradas;
   }
   
   // Para gimnasio - clases grupales
-  return [
+  const reservasGimnasio: Reserva[] = [
     {
-      id: '6',
-      clienteId: 'cliente6',
+      id: 'g1',
+      clienteId: 'cliente10',
+      entrenadorId: 'entrenador1',
       clienteNombre: 'Ana López',
       fecha: hoy,
+      fechaInicio: hoy,
+      fechaFin: hoy,
       horaInicio: '10:00',
       horaFin: '11:00',
       tipo: 'clase-grupal',
       claseId: 'clase1',
       claseNombre: 'Spinning',
       estado: 'confirmada',
+      origen: 'appCliente',
+      esOnline: false,
       precio: 15,
       pagado: true,
       capacidad: 20,
@@ -383,16 +444,21 @@ export const getReservas = async (fechaInicio: Date, fechaFin: Date, role: 'entr
       updatedAt: addDays(-1),
     },
     {
-      id: '7',
-      clienteId: 'cliente7',
+      id: 'g2',
+      clienteId: 'cliente11',
+      entrenadorId: 'entrenador2',
       clienteNombre: 'Diego Fernández',
       fecha: hoy,
+      fechaInicio: hoy,
+      fechaFin: hoy,
       horaInicio: '12:00',
       horaFin: '13:00',
       tipo: 'boxeo',
       claseId: 'clase2',
       claseNombre: 'Boxeo',
       estado: 'confirmada',
+      origen: 'appCliente',
+      esOnline: false,
       precio: 20,
       pagado: true,
       capacidad: 15,
@@ -401,16 +467,21 @@ export const getReservas = async (fechaInicio: Date, fechaFin: Date, role: 'entr
       updatedAt: addDays(-1),
     },
     {
-      id: '8',
-      clienteId: 'cliente8',
+      id: 'g3',
+      clienteId: 'cliente12',
+      entrenadorId: 'entrenador1',
       clienteNombre: 'Elena Sánchez',
       fecha: addDays(1),
+      fechaInicio: addDays(1),
+      fechaFin: addDays(1),
       horaInicio: '08:00',
       horaFin: '09:00',
       tipo: 'clase-grupal',
       claseId: 'clase3',
       claseNombre: 'Spinning',
       estado: 'confirmada',
+      origen: 'appCliente',
+      esOnline: false,
       precio: 15,
       pagado: true,
       capacidad: 30,
@@ -419,16 +490,21 @@ export const getReservas = async (fechaInicio: Date, fechaFin: Date, role: 'entr
       updatedAt: addDays(-2),
     },
     {
-      id: '9',
-      clienteId: 'cliente9',
+      id: 'g4',
+      clienteId: 'cliente13',
+      entrenadorId: 'entrenador3',
       clienteNombre: 'Roberto Martín',
       fecha: addDays(1),
+      fechaInicio: addDays(1),
+      fechaFin: addDays(1),
       horaInicio: '18:30',
       horaFin: '19:30',
       tipo: 'clase-grupal',
       claseId: 'clase4',
       claseNombre: 'Pilates',
       estado: 'pendiente',
+      origen: 'enlacePublico',
+      esOnline: false,
       precio: 18,
       pagado: false,
       capacidad: 15,
@@ -437,16 +513,21 @@ export const getReservas = async (fechaInicio: Date, fechaFin: Date, role: 'entr
       updatedAt: addDays(-2),
     },
     {
-      id: '10',
-      clienteId: 'cliente10',
+      id: 'g5',
+      clienteId: 'cliente14',
+      entrenadorId: 'entrenador2',
       clienteNombre: 'Laura Torres',
       fecha: addDays(2),
+      fechaInicio: addDays(2),
+      fechaFin: addDays(2),
       horaInicio: '19:00',
       horaFin: '20:00',
       tipo: 'hiit',
       claseId: 'clase5',
       claseNombre: 'HIIT',
       estado: 'confirmada',
+      origen: 'appCliente',
+      esOnline: false,
       precio: 20,
       pagado: true,
       capacidad: 20,
@@ -455,16 +536,21 @@ export const getReservas = async (fechaInicio: Date, fechaFin: Date, role: 'entr
       updatedAt: addDays(-3),
     },
     {
-      id: '11',
-      clienteId: 'cliente11',
+      id: 'g6',
+      clienteId: 'cliente15',
+      entrenadorId: 'entrenador4',
       clienteNombre: 'Miguel Vargas',
       fecha: addDays(3),
+      fechaInicio: addDays(3),
+      fechaFin: addDays(3),
       horaInicio: '09:00',
       horaFin: '10:00',
       tipo: 'clase-grupal',
       claseId: 'clase6',
       claseNombre: 'Stretching',
-      estado: 'cancelada',
+      estado: 'canceladaCentro',
+      origen: 'manual',
+      esOnline: false,
       precio: 15,
       pagado: false,
       capacidad: 18,
@@ -473,64 +559,136 @@ export const getReservas = async (fechaInicio: Date, fechaFin: Date, role: 'entr
       createdAt: addDays(-7),
       updatedAt: addDays(-1),
     },
-    {
-      id: '12',
-      clienteId: 'cliente12',
-      clienteNombre: 'Patricia Jiménez',
-      fecha: addDays(3),
-      horaInicio: '11:00',
-      horaFin: '12:00',
-      tipo: 'fisio',
-      claseId: 'clase7',
-      claseNombre: 'Fisioterapia',
-      estado: 'confirmada',
-      precio: 40,
-      pagado: true,
-      capacidad: 1,
-      ocupacion: 1,
-      createdAt: addDays(-4),
-      updatedAt: addDays(-2),
-    },
-    {
-      id: '13',
-      clienteId: 'cliente13',
-      clienteNombre: 'Javier Ramos',
-      fecha: addDays(4),
-      horaInicio: '14:00',
-      horaFin: '15:00',
-      tipo: 'nutricion',
-      claseId: 'clase8',
-      claseNombre: 'Consulta Nutricional',
-      estado: 'confirmada',
-      precio: 50,
-      pagado: true,
-      capacidad: 1,
-      ocupacion: 1,
-      createdAt: addDays(-3),
-      updatedAt: addDays(-1),
-    },
   ];
+  
+  // Aplicar filtros a reservas de gimnasio
+  let reservasGimnasioFiltradas = reservasGimnasio;
+  
+  // Filtrar por rango de fechas
+  reservasGimnasioFiltradas = reservasGimnasioFiltradas.filter(r => {
+    const fechaReserva = r.fecha || r.fechaInicio;
+    return fechaReserva >= fechaInicio && fechaReserva <= fechaFin;
+  });
+  
+  // Filtrar por cliente
+  if (filtros.clienteId) {
+    reservasGimnasioFiltradas = reservasGimnasioFiltradas.filter(r => r.clienteId === filtros.clienteId);
+  }
+  
+  // Filtrar por entrenador
+  if (filtros.entrenadorId) {
+    reservasGimnasioFiltradas = reservasGimnasioFiltradas.filter(r => r.entrenadorId === filtros.entrenadorId);
+  }
+  
+  // Filtrar por estado
+  if (filtros.estado) {
+    const estados = Array.isArray(filtros.estado) ? filtros.estado : [filtros.estado];
+    reservasGimnasioFiltradas = reservasGimnasioFiltradas.filter(r => estados.includes(r.estado));
+  }
+  
+  // Filtrar por origen
+  if (filtros.origen) {
+    const origenes = Array.isArray(filtros.origen) ? filtros.origen : [filtros.origen];
+    reservasGimnasioFiltradas = reservasGimnasioFiltradas.filter(r => origenes.includes(r.origen));
+  }
+  
+  // Filtrar por tipo
+  if (filtros.tipo) {
+    reservasGimnasioFiltradas = reservasGimnasioFiltradas.filter(r => r.tipo === filtros.tipo);
+  }
+  
+  // Filtrar por tipo de sesión
+  if (filtros.tipoSesion) {
+    reservasGimnasioFiltradas = reservasGimnasioFiltradas.filter(r => r.tipoSesion === filtros.tipoSesion);
+  }
+  
+  return reservasGimnasioFiltradas;
 };
 
-export const crearReserva = async (reserva: Omit<Reserva, 'id' | 'createdAt' | 'updatedAt' | 'enlaceVideollamada'>, entrenadorId?: string): Promise<Reserva> => {
+/**
+ * Crea una nueva reserva después de validar las reglas de negocio
+ * 
+ * @param data - Datos de la reserva a crear (sin id, createdAt, updatedAt, enlaceVideollamada)
+ * @param entrenadorId - ID del entrenador (opcional, para validaciones específicas)
+ * @returns La reserva creada con todos sus campos
+ * 
+ * @throws Error si las validaciones fallan
+ * 
+ * @example
+ * ```typescript
+ * const nuevaReserva = await createReserva({
+ *   clienteId: 'cliente1',
+ *   entrenadorId: 'entrenador1',
+ *   fechaInicio: new Date('2024-01-15T10:00:00'),
+ *   fechaFin: new Date('2024-01-15T11:00:00'),
+ *   estado: 'pendiente',
+ *   origen: 'appCliente',
+ *   esOnline: false,
+ *   precio: 50
+ * }, 'entrenador1');
+ * ```
+ * 
+ * @remarks
+ * En producción, esta función se conectaría con un backend REST/GraphQL:
+ * - REST: POST /api/reservas { body: datosReserva }
+ * - GraphQL: mutation { createReserva(input: {...}) { id, fecha, estado, ... } }
+ * 
+ * Las validaciones de negocio se centralizarían en el backend:
+ * - Validación de disponibilidad de slots
+ * - Validación de políticas de cancelación
+ * - Validación de tiempo mínimo de anticipación
+ * - Validación de capacidad (para clases grupales)
+ * - Validación de permisos y autorización
+ * 
+ * El frontend solo realiza validaciones básicas de formato antes de enviar.
+ */
+export const createReserva = async (
+  data: Omit<Reserva, 'id' | 'createdAt' | 'updatedAt' | 'enlaceVideollamada'>,
+  entrenadorId?: string
+): Promise<Reserva> => {
   await new Promise(resolve => setTimeout(resolve, 500));
   
-  // Validar tiempo mínimo de anticipación si hay entrenadorId
-  if (entrenadorId) {
-    const validacion = await validarTiempoMinimoAnticipacion(
-      reserva.fecha,
-      reserva.horaInicio,
-      entrenadorId
+  // Importar funciones de validación
+  const { validarSlotDisponible, validarAnticipacion } = await import('./validacionReservas');
+  
+  // Validar tiempo mínimo de anticipación
+  if (entrenadorId && data.fechaInicio && data.horaInicio) {
+    const fechaReserva = data.fecha || data.fechaInicio;
+    const validacionAnticipacion = await validarAnticipacion(
+      fechaReserva,
+      data.horaInicio || '',
+      { horasMinimas: 24 } // Configuración por defecto
     );
     
-    if (!validacion.valido) {
-      throw new Error(validacion.mensaje || 'La reserva no cumple con el tiempo mínimo de anticipación requerido');
+    if (!validacionAnticipacion.valido) {
+      throw new Error(validacionAnticipacion.mensaje || 'La reserva no cumple con el tiempo mínimo de anticipación requerido');
+    }
+  }
+  
+  // Validar disponibilidad del slot
+  if (entrenadorId && data.fechaInicio && data.horaInicio && data.horaFin) {
+    const fechaReserva = data.fecha || data.fechaInicio;
+    const validacionSlot = await validarSlotDisponible(
+      {
+        fecha: fechaReserva,
+        horaInicio: data.horaInicio,
+        horaFin: data.horaFin,
+        tipo: data.tipo || 'sesion-1-1',
+        entrenadorId,
+      },
+      {
+        reservasExistentes: await getReservas({ entrenadorId }, 'entrenador'),
+      }
+    );
+    
+    if (!validacionSlot.valido) {
+      throw new Error(validacionSlot.mensaje || 'El slot seleccionado no está disponible');
     }
   }
   
   // Si es una sesión de videollamada, generar el enlace automáticamente
   let enlaceVideollamada: string | undefined;
-  if (reserva.tipoSesion === 'videollamada') {
+  if (data.tipoSesion === 'videollamada' || data.esOnline) {
     try {
       // Obtener configuración de videollamada del entrenador
       const configuracion = entrenadorId 
@@ -539,12 +697,13 @@ export const crearReserva = async (reserva: Omit<Reserva, 'id' | 'createdAt' | '
       
       // Generar enlace de videollamada
       const reservaId = Date.now().toString(); // ID temporal, se generará el real después
+      const fechaReserva = data.fecha || data.fechaInicio;
       enlaceVideollamada = await generarEnlaceVideollamada(
         reservaId,
-        reserva.fecha,
-        reserva.horaInicio,
-        reserva.horaFin,
-        reserva.clienteNombre,
+        fechaReserva,
+        data.horaInicio || '',
+        data.horaFin || '',
+        data.clienteNombre || '',
         entrenadorId,
         configuracion.plataforma
       );
@@ -554,9 +713,16 @@ export const crearReserva = async (reserva: Omit<Reserva, 'id' | 'createdAt' | '
     }
   }
   
+  // Preparar fechas si no están en el formato correcto
+  const fechaInicio = data.fechaInicio || data.fecha || new Date();
+  const fechaFin = data.fechaFin || data.fecha || new Date();
+  
   const nuevaReserva: Reserva = {
-    ...reserva,
+    ...data,
     id: Date.now().toString(),
+    fecha: fechaInicio, // Mantener compatibilidad
+    fechaInicio,
+    fechaFin,
     enlaceVideollamada,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -576,57 +742,190 @@ export const crearReserva = async (reserva: Omit<Reserva, 'id' | 'createdAt' | '
   return nuevaReserva;
 };
 
-export const actualizarReserva = async (id: string, reserva: Partial<Reserva>): Promise<Reserva> => {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  return {
-    id,
-    clienteId: 'cliente1',
-    clienteNombre: 'Juan Pérez',
-    fecha: new Date(),
-    horaInicio: '10:00',
-    horaFin: '11:00',
-    tipo: 'sesion-1-1',
-    estado: 'confirmada',
-    precio: 50,
-    pagado: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    ...reserva,
-  };
-};
+/**
+ * @deprecated Usar createReserva en su lugar
+ */
+export const crearReserva = createReserva;
 
-export const cancelarReserva = async (
-  id: string, 
-  motivo?: string,
-  entrenadorId?: string,
-  reservaAnterior?: Reserva
+/**
+ * Actualiza una reserva existente después de validar las reglas de negocio
+ * 
+ * @param id - ID de la reserva a actualizar
+ * @param changes - Campos a actualizar (parcial)
+ * @param entrenadorId - ID del entrenador (opcional, para validaciones)
+ * @returns La reserva actualizada
+ * 
+ * @throws Error si la reserva no existe o las validaciones fallan
+ * 
+ * @example
+ * ```typescript
+ * const reservaActualizada = await updateReserva('reserva1', {
+ *   estado: 'confirmada',
+ *   precio: 60
+ * }, 'entrenador1');
+ * ```
+ * 
+ * @remarks
+ * En producción, esta función se conectaría con un backend REST/GraphQL:
+ * - REST: PATCH /api/reservas/:id { body: cambios }
+ * - GraphQL: mutation { updateReserva(id: "...", input: {...}) { id, estado, ... } }
+ * 
+ * Las validaciones de negocio se centralizarían en el backend:
+ * - Verificar que la reserva existe y pertenece al usuario
+ * - Validar cambios de fecha/hora (disponibilidad, anticipación)
+ * - Validar cambios de estado (transiciones permitidas)
+ * - Validar permisos para modificar la reserva
+ */
+export const updateReserva = async (
+  id: string,
+  changes: Partial<Reserva>,
+  entrenadorId?: string
 ): Promise<Reserva> => {
   await new Promise(resolve => setTimeout(resolve, 500));
   
-  // Obtener la reserva actual si no se proporciona
-  let reserva: Reserva;
-  if (reservaAnterior) {
-    reserva = reservaAnterior;
-  } else {
-    // Intentar obtener de la lista de reservas (simulado)
-    const fechaInicio = new Date();
-    fechaInicio.setMonth(fechaInicio.getMonth() - 1);
-    const fechaFin = new Date();
-    fechaFin.setMonth(fechaFin.getMonth() + 1);
-    const reservas = await getReservas(fechaInicio, fechaFin, entrenadorId ? 'entrenador' : 'gimnasio');
-    const reservaEncontrada = reservas.find(r => r.id === id);
-    
-    if (!reservaEncontrada) {
-      throw new Error('Reserva no encontrada');
-    }
-    reserva = reservaEncontrada;
+  // Obtener la reserva actual
+  const fechaInicio = new Date();
+  fechaInicio.setMonth(fechaInicio.getMonth() - 1);
+  const fechaFin = new Date();
+  fechaFin.setMonth(fechaFin.getMonth() + 1);
+  const reservas = await getReservas({ fechaInicio, fechaFin }, 'entrenador');
+  const reservaExistente = reservas.find(r => r.id === id);
+  
+  if (!reservaExistente) {
+    throw new Error('Reserva no encontrada');
   }
+  
+  // Importar funciones de validación
+  const { validarSlotDisponible, validarAnticipacion } = await import('./validacionReservas');
+  
+  // Si se cambia la fecha/hora, validar disponibilidad y anticipación
+  if ((changes.fechaInicio || changes.fecha || changes.horaInicio || changes.horaFin) && entrenadorId) {
+    const nuevaFecha = changes.fechaInicio || changes.fecha || reservaExistente.fechaInicio || reservaExistente.fecha;
+    const nuevaHoraInicio = changes.horaInicio || reservaExistente.horaInicio || '';
+    const nuevaHoraFin = changes.horaFin || reservaExistente.horaFin || '';
+    
+    // Validar anticipación
+    const validacionAnticipacion = await validarAnticipacion(
+      nuevaFecha,
+      nuevaHoraInicio,
+      { horasMinimas: 24 }
+    );
+    
+    if (!validacionAnticipacion.valido) {
+      throw new Error(validacionAnticipacion.mensaje || 'La nueva fecha/hora no cumple con el tiempo mínimo de anticipación');
+    }
+    
+    // Validar disponibilidad (excluyendo la reserva actual)
+    const reservasExistentes = reservas.filter(r => r.id !== id);
+    const validacionSlot = await validarSlotDisponible(
+      {
+        fecha: nuevaFecha,
+        horaInicio: nuevaHoraInicio,
+        horaFin: nuevaHoraFin,
+        tipo: changes.tipo || reservaExistente.tipo || 'sesion-1-1',
+        entrenadorId,
+      },
+      { reservasExistentes }
+    );
+    
+    if (!validacionSlot.valido) {
+      throw new Error(validacionSlot.mensaje || 'El nuevo slot no está disponible');
+    }
+  }
+  
+  // Actualizar la reserva
+  const reservaActualizada: Reserva = {
+    ...reservaExistente,
+    ...changes,
+    id, // Asegurar que el ID no cambie
+    updatedAt: new Date(),
+  };
+  
+  return reservaActualizada;
+};
+
+/**
+ * @deprecated Usar updateReserva en su lugar
+ */
+export const actualizarReserva = updateReserva;
+
+/**
+ * Cancela una reserva después de validar las políticas de cancelación
+ * 
+ * @param id - ID de la reserva a cancelar
+ * @param motivo - Motivo de la cancelación (opcional)
+ * @param entrenadorId - ID del entrenador (opcional, para validar políticas)
+ * @returns La reserva cancelada
+ * 
+ * @throws Error si la reserva no existe, ya está cancelada o no se puede cancelar según las políticas
+ * 
+ * @example
+ * ```typescript
+ * const reservaCancelada = await cancelarReserva('reserva1', 'Motivo personal', 'entrenador1');
+ * ```
+ * 
+ * @remarks
+ * En producción, esta función se conectaría con un backend REST/GraphQL:
+ * - REST: POST /api/reservas/:id/cancelar { body: { motivo } }
+ * - GraphQL: mutation { cancelarReserva(id: "...", motivo: "...") { id, estado, ... } }
+ * 
+ * Las validaciones de negocio se centralizarían en el backend:
+ * - Verificar que la reserva existe y puede ser cancelada
+ * - Validar políticas de cancelación (tiempo mínimo, penalizaciones)
+ * - Aplicar penalizaciones si corresponde (multas, descuento de bonos)
+ * - Notificar a las partes involucradas
+ * - Actualizar estadísticas y métricas
+ */
+export const cancelarReserva = async (
+  id: string,
+  motivo?: string,
+  entrenadorId?: string
+): Promise<Reserva> => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  // Obtener la reserva actual
+  const fechaInicio = new Date();
+  fechaInicio.setMonth(fechaInicio.getMonth() - 1);
+  const fechaFin = new Date();
+  fechaFin.setMonth(fechaFin.getMonth() + 1);
+  const reservas = await getReservas({ fechaInicio, fechaFin }, entrenadorId ? 'entrenador' : 'gimnasio');
+  const reserva = reservas.find(r => r.id === id);
+  
+  if (!reserva) {
+    throw new Error('Reserva no encontrada');
+  }
+  
+  // Verificar que la reserva no esté ya cancelada o completada
+  if (reserva.estado === 'canceladaCliente' || reserva.estado === 'canceladaCentro' || reserva.estado === 'completada') {
+    throw new Error(`No se puede cancelar una reserva en estado: ${reserva.estado}`);
+  }
+  
+  // Importar y validar políticas de cancelación
+  const { validarPoliticasCancelacion } = await import('./validacionReservas');
+  
+  if (entrenadorId) {
+    const fechaReserva = reserva.fecha || reserva.fechaInicio;
+    const validacionCancelacion = await validarPoliticasCancelacion(
+      reserva,
+      new Date()
+    );
+    
+    if (!validacionCancelacion.valido) {
+      throw new Error(validacionCancelacion.mensaje || 'No se puede cancelar la reserva según las políticas configuradas');
+    }
+  }
+  
+  // Determinar el estado de cancelación según quién cancela
+  // En producción, esto se determinaría por el contexto del usuario
+  const estadoCancelacion: 'canceladaCliente' | 'canceladaCentro' = 
+    motivo?.toLowerCase().includes('cliente') || motivo?.toLowerCase().includes('personal')
+      ? 'canceladaCliente'
+      : 'canceladaCentro';
   
   // Actualizar la reserva como cancelada
   const reservaCancelada: Reserva = {
     ...reserva,
-    estado: 'cancelada',
+    estado: estadoCancelacion,
     observaciones: motivo 
       ? `${reserva.observaciones || ''}\n[${new Date().toLocaleString('es-ES')}] Cancelada: ${motivo}`.trim()
       : reserva.observaciones || `[${new Date().toLocaleString('es-ES')}] Cancelada`,
@@ -701,7 +1000,7 @@ export const reprogramarReserva = async (
     fechaInicio.setMonth(fechaInicio.getMonth() - 1);
     const fechaFin = new Date();
     fechaFin.setMonth(fechaFin.getMonth() + 1);
-    const reservas = await getReservas(fechaInicio, fechaFin, 'entrenador');
+    const reservas = await getReservas({ fechaInicio, fechaFin }, 'entrenador');
     const reservaEncontrada = reservas.find(r => r.id === id);
     
     if (!reservaEncontrada) {
@@ -765,18 +1064,30 @@ export const reprogramarReserva = async (
     }
   }
   
-  // Actualizar la reserva con los nuevos datos
-  const reservaActualizada: Reserva = {
-    ...reserva,
-    fecha: reprogramacion.fecha,
-    horaInicio: reprogramacion.horaInicio,
-    horaFin: reprogramacion.horaFin,
-    enlaceVideollamada,
-    updatedAt: new Date(),
-    observaciones: reprogramacion.motivo 
-      ? `${reserva.observaciones || ''}\n[${new Date().toLocaleString('es-ES')}] Reprogramada: ${reprogramacion.motivo}`.trim()
-      : reserva.observaciones,
-  };
+  // Actualizar la reserva usando updateReserva (requisito explícito)
+  const fechaInicioCompleta = new Date(reprogramacion.fecha);
+  const [horaInicio, minutoInicio] = reprogramacion.horaInicio.split(':').map(Number);
+  fechaInicioCompleta.setHours(horaInicio, minutoInicio, 0, 0);
+  
+  const [horaFin, minutoFin] = reprogramacion.horaFin.split(':').map(Number);
+  const fechaFinCompleta = new Date(fechaInicioCompleta);
+  fechaFinCompleta.setHours(horaFin, minutoFin, 0, 0);
+  
+  const reservaActualizada = await updateReserva(
+    reserva.id,
+    {
+      fecha: reprogramacion.fecha,
+      fechaInicio: fechaInicioCompleta,
+      fechaFin: fechaFinCompleta,
+      horaInicio: reprogramacion.horaInicio,
+      horaFin: reprogramacion.horaFin,
+      enlaceVideollamada,
+      observaciones: reprogramacion.motivo 
+        ? `${reserva.observaciones || ''}\n[${new Date().toLocaleString('es-ES')}] Reprogramada: ${reprogramacion.motivo}`.trim()
+        : reserva.observaciones,
+    },
+    entrenadorId
+  );
   
   return reservaActualizada;
 };
@@ -935,7 +1246,7 @@ export const marcarReservaComoPagada = async (
   fechaInicio.setMonth(fechaInicio.getMonth() - 1);
   const fechaFin = new Date();
   fechaFin.setMonth(fechaFin.getMonth() + 1);
-  const reservas = await getReservas(fechaInicio, fechaFin, 'entrenador');
+  const reservas = await getReservas({ fechaInicio, fechaFin }, 'entrenador');
   const reserva = reservas.find(r => r.id === reservaId);
   
   if (!reserva) {
@@ -980,7 +1291,7 @@ export const marcarReservaComoNoShow = async (
   fechaInicio.setMonth(fechaInicio.getMonth() - 1);
   const fechaFin = new Date();
   fechaFin.setMonth(fechaFin.getMonth() + 1);
-  const reservas = await getReservas(fechaInicio, fechaFin, 'entrenador');
+  const reservas = await getReservas({ fechaInicio, fechaFin }, 'entrenador');
   const reserva = reservas.find(r => r.id === reservaId);
   
   if (!reserva) {
@@ -1034,7 +1345,7 @@ export const getReservasConPagosPendientes = async (
   const fin = fechaFin || new Date();
   fin.setMonth(fin.getMonth() + 1);
   
-  const reservas = await getReservas(inicio, fin, 'entrenador');
+  const reservas = await getReservas({ fechaInicio: inicio, fechaFin: fin, entrenadorId }, 'entrenador');
   
   // Filtrar solo reservas con pagos pendientes y que no estén canceladas
   return reservas.filter(
@@ -1058,7 +1369,7 @@ export const marcarReservaComoCompletada = async (
   fechaInicio.setMonth(fechaInicio.getMonth() - 1);
   const fechaFin = new Date();
   fechaFin.setMonth(fechaFin.getMonth() + 1);
-  const reservas = await getReservas(fechaInicio, fechaFin, 'entrenador');
+  const reservas = await getReservas({ fechaInicio, fechaFin }, 'entrenador');
   const reserva = reservas.find(r => r.id === reservaId);
   
   if (!reserva) {
@@ -1156,7 +1467,7 @@ export const getReservasProximas24Horas = async (
   const en24Horas = new Date(ahora.getTime() + 24 * 60 * 60 * 1000);
   
   // Obtener todas las reservas en el rango
-  const reservas = await getReservas(ahora, en24Horas, 'entrenador');
+  const reservas = await getReservas({ fechaInicio: ahora, fechaFin: en24Horas }, 'entrenador');
   
   // Filtrar solo reservas confirmadas o pendientes que estén en las próximas 24 horas
   const reservasFiltradas = reservas.filter(reserva => {

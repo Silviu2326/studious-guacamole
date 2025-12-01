@@ -22,11 +22,15 @@ const mockRecordatorios: RecordatorioRenovacion[] = [
     clienteEmail: 'juan@example.com',
     clienteTelefono: '+34600123456',
     fechaRenovacion: addDays(9),
+    diasAntes: 7,
     diasAnticipacion: 7,
+    canal: 'email',
+    canalesEnvio: ['email'],
+    plantillaId: 'plantilla-email-1',
+    ultimoEnvio: addDays(-1),
+    fechaEnvio: addDays(-1),
     monto: 280,
     estado: 'enviado',
-    fechaEnvio: addDays(-1),
-    canalesEnvio: ['email'],
     entrenadorId: 'trainer1',
     fechaCreacion: addDays(-1),
   },
@@ -38,10 +42,13 @@ const mockRecordatorios: RecordatorioRenovacion[] = [
     clienteEmail: 'maria@example.com',
     clienteTelefono: '+34600234567',
     fechaRenovacion: addDays(4),
+    diasAntes: 3,
     diasAnticipacion: 3,
-    monto: 195,
-    estado: 'pendiente',
+    canal: 'whatsapp',
     canalesEnvio: ['email', 'whatsapp'],
+    plantillaId: 'plantilla-whatsapp-1',
+    estado: 'pendiente',
+    monto: 195,
     entrenadorId: 'trainer1',
     fechaCreacion: addDays(-1),
   },
@@ -53,10 +60,13 @@ const mockRecordatorios: RecordatorioRenovacion[] = [
     clienteEmail: 'elena@example.com',
     clienteTelefono: '+34600345678',
     fechaRenovacion: addDays(14),
+    diasAntes: 5,
     diasAnticipacion: 5,
-    monto: 520,
-    estado: 'pendiente',
+    canal: 'email',
     canalesEnvio: ['email'],
+    plantillaId: 'plantilla-email-1',
+    estado: 'pendiente',
+    monto: 520,
     entrenadorId: 'trainer1',
     fechaCreacion: addDays(-2),
   },
@@ -67,11 +77,15 @@ const mockRecordatorios: RecordatorioRenovacion[] = [
     clienteNombre: 'Equipo Elite',
     clienteEmail: 'grupo@example.com',
     fechaRenovacion: addDays(11),
+    diasAntes: 10,
     diasAnticipacion: 10,
+    canal: 'email',
+    canalesEnvio: ['email'],
+    plantillaId: 'plantilla-email-1',
+    ultimoEnvio: addDays(-10),
+    fechaEnvio: addDays(-10),
     monto: 540,
     estado: 'enviado',
-    fechaEnvio: addDays(-10),
-    canalesEnvio: ['email'],
     entrenadorId: 'trainer1',
     fechaCreacion: addDays(-10),
   },
@@ -83,10 +97,13 @@ const mockRecordatorios: RecordatorioRenovacion[] = [
     clienteEmail: 'ana@example.com',
     clienteTelefono: '+34600567890',
     fechaRenovacion: addDays(20),
+    diasAntes: 1,
     diasAnticipacion: 1,
-    monto: 55,
-    estado: 'fallido',
+    canal: 'sms',
     canalesEnvio: ['sms'],
+    plantillaId: 'plantilla-sms-1',
+    estado: 'fallido',
+    monto: 55,
     fechaCreacion: addDays(-1),
   },
 ];
@@ -99,6 +116,7 @@ const mockConfiguraciones: Map<string, ConfiguracionRecordatorios> = new Map([
       activo: true,
       diasAnticipacion: [7, 3, 1],
       canalesEnvio: ['email'],
+      plantillaId: 'plantilla-email-1',
     },
   ],
   [
@@ -109,19 +127,31 @@ const mockConfiguraciones: Map<string, ConfiguracionRecordatorios> = new Map([
       diasAnticipacion: [5, 2],
       canalesEnvio: ['email', 'whatsapp'],
       plantillaEmail: 'Hola {{cliente}}, recuerda tu renovación en {{fechaRenovacion}}.',
+      plantillaId: 'plantilla-whatsapp-1',
+    },
+  ],
+  [
+    'global',
+    {
+      activo: true,
+      diasAnticipacion: [7, 3, 1],
+      canalesEnvio: ['email'],
+      plantillaId: 'plantilla-email-default',
     },
   ],
 ]);
 
 /**
- * Obtiene las configuraciones de recordatorios para una suscripción
+ * Obtiene las configuraciones de recordatorios para una suscripción o plan
  */
 export const getConfiguracionRecordatorios = async (
-  suscripcionId: string
+  suscripcionId?: string,
+  planId?: string
 ): Promise<ConfiguracionRecordatorios | null> => {
   await new Promise(resolve => setTimeout(resolve, 200));
   
-  const config = mockConfiguraciones.get(suscripcionId);
+  const key = suscripcionId || planId || 'global';
+  const config = mockConfiguraciones.get(key);
   if (config) {
     return config;
   }
@@ -129,9 +159,11 @@ export const getConfiguracionRecordatorios = async (
   // Configuración por defecto
   return {
     suscripcionId,
+    planId,
     activo: true,
     diasAnticipacion: [7, 3, 1], // Recordatorios 7, 3 y 1 día antes
     canalesEnvio: ['email'],
+    plantillaId: 'plantilla-email-default',
   };
 };
 
@@ -143,8 +175,18 @@ export const actualizarConfiguracionRecordatorios = async (
 ): Promise<ConfiguracionRecordatorios> => {
   await new Promise(resolve => setTimeout(resolve, 300));
   
-  mockConfiguraciones.set(config.suscripcionId, config);
+  const key = config.suscripcionId || config.planId || 'global';
+  mockConfiguraciones.set(key, config);
   return config;
+};
+
+/**
+ * Guarda la configuración de recordatorios (alias de actualizarConfiguracionRecordatorios)
+ */
+export const guardarConfiguracionRecordatorios = async (
+  config: ConfiguracionRecordatorios
+): Promise<ConfiguracionRecordatorios> => {
+  return actualizarConfiguracionRecordatorios(config);
 };
 
 /**
@@ -233,10 +275,13 @@ export const enviarRecordatorioRenovacion = async (
     clienteEmail: suscripcion.clienteEmail,
     clienteTelefono: suscripcion.clienteTelefono,
     fechaRenovacion: suscripcion.proximaRenovacion,
+    diasAntes: data.diasAnticipacion,
     diasAnticipacion: data.diasAnticipacion,
+    canal: canales[0] || 'email',
+    canalesEnvio: canales,
+    plantillaId: config?.plantillaId || 'plantilla-email-default',
     monto: suscripcion.precio,
     estado: 'pendiente',
-    canalesEnvio: canales,
     entrenadorId: suscripcion.entrenadorId,
     fechaCreacion: new Date().toISOString(),
   };
@@ -246,6 +291,7 @@ export const enviarRecordatorioRenovacion = async (
     await enviarNotificaciones(recordatorio, suscripcion);
     recordatorio.estado = 'enviado';
     recordatorio.fechaEnvio = new Date().toISOString();
+    recordatorio.ultimoEnvio = new Date().toISOString();
   } catch (error) {
     recordatorio.estado = 'fallido';
     console.error('Error enviando recordatorio:', error);
@@ -253,6 +299,26 @@ export const enviarRecordatorioRenovacion = async (
   
   mockRecordatorios.push(recordatorio);
   return recordatorio;
+};
+
+/**
+ * Registra el envío de un recordatorio de renovación
+ */
+export const registrarEnvioRecordatorioRenovacion = async (
+  recordatorio: Omit<RecordatorioRenovacion, 'id' | 'estado' | 'ultimoEnvio' | 'fechaEnvio'>
+): Promise<RecordatorioRenovacion> => {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  const nuevoRecordatorio: RecordatorioRenovacion = {
+    ...recordatorio,
+    id: `rec-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    estado: 'enviado',
+    ultimoEnvio: new Date().toISOString(),
+    fechaEnvio: new Date().toISOString(),
+  };
+  
+  mockRecordatorios.push(nuevoRecordatorio);
+  return nuevoRecordatorio;
 };
 
 /**

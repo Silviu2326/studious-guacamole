@@ -1,5 +1,73 @@
 // Tipos para el módulo de Impuestos & Export Contable
 
+/**
+ * ============================================================================
+ * TIPOS DE ALTO NIVEL DEL MÓDULO DE IMPUESTOS Y EXPORT CONTABLE
+ * ============================================================================
+ * Estos tipos son utilizados principalmente en:
+ * - TaxCalculator: Para cálculos fiscales y de impuestos
+ * - FinancialDashboard: Para visualización de datos fiscales
+ * - FiscalProfileForm: Para gestión del perfil fiscal
+ * - AnnualSummary: Para resúmenes fiscales anuales
+ * ============================================================================
+ */
+
+/**
+ * Régimen fiscal aplicable
+ * Utilizado en: PerfilFiscal, TaxCalculator
+ */
+export type RegimenFiscal = 
+  | 'general'              // Régimen general
+  | 'simplificado'        // Régimen simplificado
+  | 'estimacion_objetiva' // Estimación objetiva (módulos)
+  | 'exento';             // Exento de IVA
+
+/**
+ * Tipo de actividad económica
+ * Utilizado en: PerfilFiscal, TaxCalculator
+ */
+export type TipoActividad = 
+  | 'autonomo'            // Autónomo
+  | 'sociedad_limitada'   // Sociedad Limitada
+  | 'sociedad_anonima'    // Sociedad Anónima
+  | 'comunidad_bienes'    // Comunidad de Bienes
+  | 'sociedad_civil';     // Sociedad Civil
+
+/**
+ * Tipo de IVA aplicable
+ * Utilizado en: PerfilFiscal, TaxCalculator
+ */
+export type TipoIVAFiscal = 
+  | 'general'      // 21%
+  | 'reducido'     // 10%
+  | 'superreducido' // 4%
+  | 'exento'       // Exento
+  | 'no_sujeto';   // No sujeto
+
+/**
+ * Perfil fiscal del contribuyente
+ * Utilizado en: FiscalProfileForm, TaxCalculator, FinancialDashboard
+ */
+export interface PerfilFiscal {
+  regimenFiscal: RegimenFiscal; // Régimen fiscal aplicable
+  tipoActividad: TipoActividad; // Tipo de actividad económica
+  tipoIVA: TipoIVAFiscal; // Tipo de IVA aplicable
+  retencionIRPF: number; // Porcentaje de retención de IRPF (ej: 15 para 15%)
+  pais: string; // País (ej: "España")
+  comunidadAutonomaOpcional?: string; // Comunidad autónoma (opcional, para España)
+  observaciones?: string; // Observaciones adicionales sobre el perfil fiscal
+  // Campos adicionales para compatibilidad
+  legalName?: string; // Nombre legal (legacy)
+  taxId?: string; // NIF/CIF (legacy)
+  address?: string; // Dirección (legacy)
+  country?: string; // País (legacy, usar pais)
+  taxRegime?: string; // Régimen fiscal (legacy, usar regimenFiscal)
+}
+
+/**
+ * Alias legacy para mantener compatibilidad
+ * @deprecated Usar PerfilFiscal en nuevo código
+ */
 export interface FiscalProfile {
   legalName: string;
   taxId: string;
@@ -44,7 +112,31 @@ export interface ExportJob {
 
 export type UserType = 'trainer' | 'gym';
 
-// Tipos para la calculadora de impuestos
+/**
+ * Tramo de IRPF para cálculo progresivo
+ * Utilizado en: ParametrosCalculoImpuestos, TaxCalculator
+ */
+export interface TramoIRPF {
+  desde: number; // Base imponible desde (en euros)
+  hasta?: number; // Base imponible hasta (en euros, undefined = sin límite)
+  porcentaje: number; // Porcentaje de IRPF para este tramo (ej: 19 para 19%)
+}
+
+/**
+ * Parámetros para el cálculo de impuestos
+ * Utilizado en: TaxCalculator, FinancialDashboard
+ */
+export interface ParametrosCalculoImpuestos {
+  anio: number; // Año fiscal
+  trimestreOpcional?: number; // Trimestre (1-4) si es cálculo trimestral, opcional
+  ingresos: number; // Total de ingresos del período
+  gastos: number; // Total de gastos del período
+  regimen: RegimenFiscal; // Régimen fiscal aplicable
+  tipoIVA: TipoIVAFiscal; // Tipo de IVA aplicable
+  tramosIRPF: TramoIRPF[]; // Tramos de IRPF para cálculo progresivo
+}
+
+// Tipos para la calculadora de impuestos (legacy)
 export interface TaxCalculationSettings {
   // Configuración de IVA
   vatRate: number; // Porcentaje de IVA (ej: 21 para 21%)
@@ -82,17 +174,25 @@ export interface TaxCalculation {
 }
 
 // Tipos para el calendario fiscal y recordatorios
+export type TaxObligationType = 
+  | 'iva_trimestral'      // IVA trimestral (Modelo 303)
+  | 'irpf_trimestral'     // IRPF trimestral (Modelo 130)
+  | 'declaracion_anual'   // Declaración anual (Modelo 100/390)
+  | 'pago_fraccionado';   // Pagos fraccionados
+
 export interface TaxDeadline {
   id: string;
-  model: '130' | '303' | '390' | '347' | 'other';
+  model: '130' | '303' | '390' | '347' | '100' | 'other';
   modelName: string;
   description: string;
-  quarter: 1 | 2 | 3 | 4;
+  obligationType: TaxObligationType;
+  quarter?: 1 | 2 | 3 | 4; // Solo para obligaciones trimestrales
   year: number;
   deadline: Date;
   reminderDate: Date; // 15 días antes del vencimiento
   status: 'pending' | 'completed' | 'overdue';
   isReminderSent?: boolean;
+  isSubmitted?: boolean; // Estado de cumplimiento (presentado/no presentado)
 }
 
 export interface FiscalCalendar {
@@ -110,11 +210,29 @@ export interface TaxReminder {
   reminderDate: Date;
   isRead: boolean;
   createdAt: Date;
-  type: 'quarterly_deadline';
+  type: 'quarterly_deadline' | 'annual_declaration' | 'installment_payment';
   priority: 'high' | 'medium' | 'low';
+  obligationType: TaxObligationType;
+  daysUntilDeadline: number;
 }
 
-// Tipos para el resumen anual
+/**
+ * Resumen fiscal anual completo
+ * Utilizado en: AnnualSummary, TaxCalculator, FinancialDashboard
+ */
+export interface ResumenFiscalAnual {
+  anio: number; // Año fiscal
+  ingresosTotales: number; // Total de ingresos del año
+  gastosTotales: number; // Total de gastos del año
+  baseImponible: number; // Base imponible para IRPF (ingresos - gastos deducibles)
+  ivaSoportado: number; // IVA soportado (de gastos)
+  ivaRepercutido: number; // IVA repercutido (de ingresos)
+  irpfEstimado: number; // IRPF estimado a pagar
+  beneficio: number; // Beneficio neto (ingresos - gastos - impuestos)
+  ratioDeducibilidad: number; // Ratio de deducibilidad (gastos deducibles / gastos totales) en porcentaje
+}
+
+// Tipos para el resumen anual (legacy)
 export interface QuarterlySummary {
   quarter: 1 | 2 | 3 | 4;
   year: number;
@@ -127,6 +245,10 @@ export interface QuarterlySummary {
   currency: string;
 }
 
+/**
+ * Alias legacy para mantener compatibilidad
+ * @deprecated Usar ResumenFiscalAnual en nuevo código
+ */
 export interface AnnualSummary {
   year: number;
   totalGross: number;

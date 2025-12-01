@@ -135,6 +135,14 @@ export const ConfiguracionBufferTimeYTiempoMinimo: React.FC<ConfiguracionBufferT
 
   return (
     <div className="space-y-6">
+      {/* Bloque: Horarios Base y Restricciones */}
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Restricciones de Tiempo</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Configura restricciones de tiempo para optimizar tu agenda y evitar conflictos entre sesiones
+        </p>
+      </div>
+
       {/* Configuración de Buffer Time */}
       <Card className="bg-white shadow-sm">
         <div className="p-6">
@@ -293,17 +301,20 @@ export const ConfiguracionBufferTimeYTiempoMinimo: React.FC<ConfiguracionBufferT
         </div>
       </Card>
 
+      {/* Botón de guardar */}
       {haCambiado && (
-        <div className="flex justify-end">
-          <Button
-            variant="primary"
-            onClick={guardarConfiguraciones}
-            disabled={guardando}
-            loading={guardando}
-            iconLeft={Save}
-          >
-            Guardar Configuraciones
-          </Button>
+        <div className="pt-4 border-t border-gray-200">
+          <div className="flex justify-end">
+            <Button
+              variant="primary"
+              onClick={guardarConfiguraciones}
+              disabled={guardando}
+              loading={guardando}
+              iconLeft={Save}
+            >
+              Guardar Configuraciones
+            </Button>
+          </div>
         </div>
       )}
     </div>

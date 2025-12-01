@@ -2,6 +2,7 @@
 
 import { Evento, TipoEvento, EstadoEvento } from '../api/events';
 import { cargarEventos } from '../api/events';
+import { MetricasFilters } from '../types';
 
 export interface MetricasGeneralesEventos {
   // KPIs principales
@@ -488,6 +489,175 @@ const calcularIngresosPorMes = (eventos: Evento[], periodoMeses: number): Ingres
     ...i,
     ingresos: Math.round(i.ingresos * 100) / 100,
   }));
+};
+
+// ============================================================================
+// NUEVAS FUNCIONES PARA SERVICIO MOCK
+// ============================================================================
+
+/**
+ * Obtiene métricas generales de eventos con filtros
+ * 
+ * Consumido desde:
+ * - DashboardMetricasGenerales.tsx para mostrar resumen global
+ * - eventos-retosPage.tsx para métricas en la página principal
+ * 
+ * @param filtros Filtros para aplicar a las métricas
+ * @returns Métricas generales de eventos
+ */
+export const obtenerMetricasGenerales = (
+  filtros?: MetricasFilters
+): MetricasGeneralesEventos => {
+  const periodoMeses = filtros?.periodoMeses || 12;
+  const entrenadorId = filtros?.entrenadorId;
+  
+  return obtenerMetricasGeneralesEventos(entrenadorId, periodoMeses);
+};
+
+/**
+ * Obtiene métricas de retos activos
+ * 
+ * Consumido desde:
+ * - DashboardProgresoRetos.tsx para mostrar métricas de retos
+ * - eventos-retosPage.tsx para resumen de retos activos
+ * 
+ * @param filtros Filtros para aplicar a las métricas
+ * @returns Datos agregados de retos activos
+ */
+export const obtenerMetricasRetosActivos = (
+  filtros?: MetricasFilters
+): {
+  totalRetos: number;
+  retosActivos: number;
+  retosFinalizados: number;
+  totalParticipantes: number;
+  participantesActivos: number;
+  promedioProgreso: number;
+  retosPorEstado: {
+    borrador: number;
+    programado: number;
+    enCurso: number;
+    finalizado: number;
+    cancelado: number;
+  };
+  retosRecientes: Array<{
+    id: string;
+    nombre: string;
+    fechaInicio: Date;
+    fechaFin?: Date;
+    participantes: number;
+    progresoPromedio: number;
+    estado: EstadoEvento;
+  }>;
+} => {
+  let eventos = cargarEventos();
+
+  // Filtrar solo retos
+  eventos = eventos.filter(e => e.tipo === 'reto');
+
+  // Aplicar filtros adicionales
+  if (filtros) {
+    if (filtros.fechaDesde) {
+      eventos = eventos.filter(e => e.fechaInicio >= filtros.fechaDesde!);
+    }
+    if (filtros.fechaHasta) {
+      eventos = eventos.filter(e => e.fechaInicio <= filtros.fechaHasta!);
+    }
+    if (filtros.estado) {
+      const estados = Array.isArray(filtros.estado) ? filtros.estado : [filtros.estado];
+      eventos = eventos.filter(e => estados.includes(e.estado));
+    }
+    if (filtros.entrenadorId) {
+      eventos = eventos.filter(e => e.creadoPor === filtros.entrenadorId);
+    }
+  }
+
+  const totalRetos = eventos.length;
+  const retosActivos = eventos.filter(e => e.estado === 'en-curso' || e.estado === 'programado').length;
+  const retosFinalizados = eventos.filter(e => e.estado === 'finalizado').length;
+
+  // Calcular participantes
+  let totalParticipantes = 0;
+  let participantesActivos = 0;
+  let sumaProgreso = 0;
+  let retosConProgreso = 0;
+
+  eventos.forEach(evento => {
+    const participantes = evento.participantesDetalle || [];
+    const participantesActivosEvento = participantes.filter(p => !p.fechaCancelacion);
+    totalParticipantes += participantesActivosEvento.length;
+    
+    if (evento.estado === 'en-curso' || evento.estado === 'programado') {
+      participantesActivos += participantesActivosEvento.length;
+    }
+
+    // Calcular progreso promedio del reto
+    if (participantesActivosEvento.length > 0) {
+      let progresoTotal = 0;
+      participantesActivosEvento.forEach(p => {
+        if (p.progresoReto) {
+          progresoTotal += p.progresoReto.porcentajeCompletado;
+        }
+      });
+      const progresoPromedio = progresoTotal / participantesActivosEvento.length;
+      sumaProgreso += progresoPromedio;
+      retosConProgreso++;
+    }
+  });
+
+  const promedioProgreso = retosConProgreso > 0
+    ? Math.round((sumaProgreso / retosConProgreso) * 10) / 10
+    : 0;
+
+  // Retos por estado
+  const retosPorEstado = {
+    borrador: eventos.filter(e => e.estado === 'borrador').length,
+    programado: eventos.filter(e => e.estado === 'programado').length,
+    enCurso: eventos.filter(e => e.estado === 'en-curso').length,
+    finalizado: eventos.filter(e => e.estado === 'finalizado').length,
+    cancelado: eventos.filter(e => e.estado === 'cancelado').length,
+  };
+
+  // Retos recientes
+  const retosRecientes = eventos
+    .sort((a, b) => b.fechaInicio.getTime() - a.fechaInicio.getTime())
+    .slice(0, 10)
+    .map(evento => {
+      const participantes = evento.participantesDetalle || [];
+      const participantesActivos = participantes.filter(p => !p.fechaCancelacion);
+      
+      let progresoPromedio = 0;
+      if (participantesActivos.length > 0) {
+        let progresoTotal = 0;
+        participantesActivos.forEach(p => {
+          if (p.progresoReto) {
+            progresoTotal += p.progresoReto.porcentajeCompletado;
+          }
+        });
+        progresoPromedio = Math.round((progresoTotal / participantesActivos.length) * 10) / 10;
+      }
+
+      return {
+        id: evento.id,
+        nombre: evento.nombre,
+        fechaInicio: evento.fechaInicio,
+        fechaFin: evento.fechaFin,
+        participantes: participantesActivos.length,
+        progresoPromedio,
+        estado: evento.estado,
+      };
+    });
+
+  return {
+    totalRetos,
+    retosActivos,
+    retosFinalizados,
+    totalParticipantes,
+    participantesActivos,
+    promedioProgreso,
+    retosPorEstado,
+    retosRecientes,
+  };
 };
 
 

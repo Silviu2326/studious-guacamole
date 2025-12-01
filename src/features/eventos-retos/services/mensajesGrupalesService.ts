@@ -109,6 +109,17 @@ export const obtenerPlantillas = (): PlantillaMensajeGrupal[] => {
 };
 
 /**
+ * Obtiene todas las plantillas de mensajes disponibles
+ * 
+ * Alias de obtenerPlantillas() para mantener consistencia con la API requerida
+ * 
+ * @returns Array de plantillas de mensajes grupales
+ */
+export const obtenerPlantillasMensajes = (): PlantillaMensajeGrupal[] => {
+  return PLANTILLAS_PREDEFINIDAS;
+};
+
+/**
  * Obtiene una plantilla por ID
  */
 export const obtenerPlantillaPorId = (plantillaId: string): PlantillaMensajeGrupal | null => {
@@ -125,22 +136,121 @@ export const obtenerPlantillasPorCategoria = (
 };
 
 /**
- * Envía un mensaje grupal a todos los participantes del evento
+ * Filtros para seleccionar participantes en mensajes grupales
+ */
+export interface FiltrosParticipantes {
+  confirmados?: boolean; // Solo participantes confirmados
+  noConfirmados?: boolean; // Solo participantes no confirmados
+  asistieron?: boolean; // Solo participantes que asistieron
+  noAsistieron?: boolean; // Solo participantes que no asistieron
+  participantesIds?: string[]; // IDs específicos de participantes
+  excluirParticipantesIds?: string[]; // IDs de participantes a excluir
+}
+
+/**
+ * Envía un mensaje grupal a participantes del evento con filtros opcionales
+ * 
+ * NOTA: En producción, esto se conectaría a proveedores de email (SendGrid, Mailgun, etc.)
+ * o WhatsApp API (Twilio, WhatsApp Business API) para el envío real de mensajes.
+ * 
+ * @param eventId ID del evento
+ * @param tipoPlantilla Tipo de plantilla a usar (opcional, si no se proporciona mensaje personalizado)
+ * @param filtrosParticipantes Filtros para seleccionar qué participantes recibirán el mensaje
+ * @param mensaje Mensaje personalizado (opcional, si no se usa plantilla)
+ * @param canal Canal de comunicación
+ * @param enviadoPor ID del usuario que envía
+ * @param enviadoPorNombre Nombre del usuario que envía
+ * @param titulo Título del mensaje (opcional)
+ * @param variablesAdicionales Variables adicionales para personalizar el mensaje
+ * @returns Mensaje grupal enviado
  */
 export const enviarMensajeGrupal = async (
-  evento: Evento,
-  mensaje: string,
-  canal: 'email' | 'whatsapp' | 'ambos',
-  enviadoPor: string,
-  enviadoPorNombre: string,
-  plantillaId?: string,
+  eventId: string,
+  tipoPlantilla?: 'general' | 'cambio' | 'instrucciones' | 'motivacion' | 'recordatorio',
+  filtrosParticipantes?: FiltrosParticipantes,
+  mensaje?: string,
+  canal: 'email' | 'whatsapp' | 'ambos' = 'ambos',
+  enviadoPor?: string,
+  enviadoPorNombre?: string,
   titulo?: string,
   variablesAdicionales?: Record<string, string>
 ): Promise<MensajeGrupal> => {
   await new Promise(resolve => setTimeout(resolve, 500));
 
-  const participantes = evento.participantesDetalle || [];
-  const participantesActivos = participantes.filter(p => !p.fechaCancelacion);
+  // Obtener el evento
+  const eventosStorage = localStorage.getItem('eventos');
+  if (!eventosStorage) {
+    throw new Error('No se encontraron eventos');
+  }
+
+  const eventos: Evento[] = JSON.parse(eventosStorage).map((e: any) => ({
+    ...e,
+    fechaInicio: new Date(e.fechaInicio),
+    fechaFin: e.fechaFin ? new Date(e.fechaFin) : undefined,
+    createdAt: new Date(e.createdAt),
+    participantesDetalle: e.participantesDetalle?.map((p: any) => ({
+      ...p,
+      fechaInscripcion: new Date(p.fechaInscripcion),
+      fechaCancelacion: p.fechaCancelacion ? new Date(p.fechaCancelacion) : undefined,
+    })) || [],
+  }));
+
+  const evento = eventos.find(e => e.id === eventId);
+  if (!evento) {
+    throw new Error('Evento no encontrado');
+  }
+
+  // Obtener plantilla si se especificó tipoPlantilla
+  let plantillaId: string | undefined;
+  let mensajeFinal: string;
+  let plantillaNombre: string | undefined;
+
+  if (tipoPlantilla && !mensaje) {
+    const plantilla = obtenerPlantillasPorCategoria(tipoPlantilla)[0];
+    if (plantilla) {
+      plantillaId = plantilla.id;
+      plantillaNombre = plantilla.nombre;
+      mensajeFinal = plantilla.mensaje;
+    } else {
+      throw new Error(`No se encontró plantilla de tipo: ${tipoPlantilla}`);
+    }
+  } else if (mensaje) {
+    mensajeFinal = mensaje;
+  } else {
+    throw new Error('Debe proporcionar tipoPlantilla o mensaje');
+  }
+
+  // Filtrar participantes según filtros
+  let participantes = evento.participantesDetalle || [];
+  participantes = participantes.filter(p => !p.fechaCancelacion);
+
+  if (filtrosParticipantes) {
+    if (filtrosParticipantes.confirmados !== undefined) {
+      participantes = participantes.filter(p => 
+        filtrosParticipantes.confirmados ? p.confirmado : !p.confirmado
+      );
+    }
+
+    if (filtrosParticipantes.asistieron !== undefined) {
+      participantes = participantes.filter(p => 
+        filtrosParticipantes.asistieron ? p.asistencia : !p.asistencia
+      );
+    }
+
+    if (filtrosParticipantes.participantesIds && filtrosParticipantes.participantesIds.length > 0) {
+      participantes = participantes.filter(p => 
+        filtrosParticipantes.participantesIds!.includes(p.id)
+      );
+    }
+
+    if (filtrosParticipantes.excluirParticipantesIds && filtrosParticipantes.excluirParticipantesIds.length > 0) {
+      participantes = participantes.filter(p => 
+        !filtrosParticipantes.excluirParticipantesIds!.includes(p.id)
+      );
+    }
+  }
+
+  const participantesActivos = participantes;
 
   const destinatarios: DestinatarioMensajeGrupal[] = [];
   let totalEnviados = 0;
@@ -207,19 +317,17 @@ export const enviarMensajeGrupal = async (
     }
   }
 
-  const plantilla = plantillaId ? obtenerPlantillaPorId(plantillaId) : null;
-
   const mensajeGrupal: MensajeGrupal = {
     id: `msg-grupal-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
     eventoId: evento.id,
     titulo,
-    mensaje,
+    mensaje: mensajeFinal,
     plantillaId,
-    plantillaNombre: plantilla?.nombre,
+    plantillaNombre,
     canal,
     fechaEnvio: new Date(),
-    enviadoPor,
-    enviadoPorNombre,
+    enviadoPor: enviadoPor || 'sistema',
+    enviadoPorNombre: enviadoPorNombre || 'Sistema',
     destinatarios,
     estado: totalFallidos === 0 ? 'enviado' : totalFallidos < destinatarios.length ? 'en-proceso' : 'fallido',
     estadisticas: {
@@ -232,6 +340,11 @@ export const enviarMensajeGrupal = async (
         : 0,
     },
   };
+
+  // Guardar mensaje grupal en el evento
+  evento.mensajesGrupales = [...(evento.mensajesGrupales || []), mensajeGrupal];
+  const eventosActualizados = eventos.map(e => (e.id === eventId ? evento : e));
+  localStorage.setItem('eventos', JSON.stringify(eventosActualizados));
 
   return mensajeGrupal;
 };

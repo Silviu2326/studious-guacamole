@@ -3,7 +3,8 @@ import { Clock, Calendar, Repeat, X, Calendar as CalendarIcon } from 'lucide-rea
 import { Modal, Button, Input, Select, Textarea, Switch } from '../../../components/componentsreutilizables';
 import { ClienteAutocomplete } from './ClienteAutocomplete';
 import { Cita, TipoCita, PlantillaSesion, TipoRecurrencia, Recurrencia } from '../types';
-import { crearCita } from '../api/calendario';
+import { crearCita, createCita } from '../api/calendario';
+import { getTiposSesion } from '../api/sesiones';
 import { getPlantillas } from '../api/plantillas';
 import { useAuth } from '../../../context/AuthContext';
 import { getPrimeraConexionActiva } from '../api/sincronizacionCalendario';
@@ -18,14 +19,7 @@ interface ModalRapidoCrearSesionProps {
   userId?: string;
 }
 
-const TIPOS_SESION: Array<{ value: TipoCita; label: string }> = [
-  { value: 'sesion-1-1', label: 'Sesión 1:1' },
-  { value: 'videollamada', label: 'Videollamada' },
-  { value: 'evaluacion', label: 'Evaluación' },
-  { value: 'fisioterapia', label: 'Fisioterapia' },
-  { value: 'mantenimiento', label: 'Mantenimiento' },
-  { value: 'otro', label: 'Otro' },
-];
+// TIPOS_SESION se cargará desde la API
 
 const DURACIONES = [
   { value: '30', label: '30 min' },
@@ -55,6 +49,7 @@ export const ModalRapidoCrearSesion: React.FC<ModalRapidoCrearSesionProps> = ({
   const [notas, setNotas] = useState('');
   const [plantillas, setPlantillas] = useState<PlantillaSesion[]>([]);
   const [plantillaAplicada, setPlantillaAplicada] = useState<string>('');
+  const [tiposSesion, setTiposSesion] = useState<Array<{ value: TipoCita; label: string }>>([]);
   const [recurrenciaActiva, setRecurrenciaActiva] = useState(false);
   const [tipoRecurrencia, setTipoRecurrencia] = useState<TipoRecurrencia>('semanal');
   const [diasSemana, setDiasSemana] = useState<number[]>([]);
@@ -102,6 +97,9 @@ export const ModalRapidoCrearSesion: React.FC<ModalRapidoCrearSesionProps> = ({
       // Cargar plantillas
       cargarPlantillas();
       
+      // Cargar tipos de sesión desde la API
+      cargarTiposSesion();
+      
       // Verificar si hay conexión de calendario activa
       verificarConexionCalendario();
     }
@@ -125,6 +123,41 @@ export const ModalRapidoCrearSesion: React.FC<ModalRapidoCrearSesionProps> = ({
       setPlantillas(datos);
     } catch (error) {
       console.error('Error cargando plantillas:', error);
+    }
+  };
+
+  const cargarTiposSesion = async () => {
+    try {
+      const tipos = await getTiposSesion();
+      // Convertir tipos de sesión a formato de opciones
+      const opciones = tipos.map(tipo => ({
+        value: tipo.nombre.toLowerCase().replace(/\s+/g, '-') as TipoCita,
+        label: tipo.nombre,
+      }));
+      // Si no hay tipos desde la API, usar valores por defecto
+      if (opciones.length === 0) {
+        setTiposSesion([
+          { value: 'sesion-1-1', label: 'Sesión 1:1' },
+          { value: 'videollamada', label: 'Videollamada' },
+          { value: 'evaluacion', label: 'Evaluación' },
+          { value: 'fisioterapia', label: 'Fisioterapia' },
+          { value: 'mantenimiento', label: 'Mantenimiento' },
+          { value: 'otro', label: 'Otro' },
+        ]);
+      } else {
+        setTiposSesion(opciones);
+      }
+    } catch (error) {
+      console.error('Error cargando tipos de sesión:', error);
+      // En caso de error, usar valores por defecto
+      setTiposSesion([
+        { value: 'sesion-1-1', label: 'Sesión 1:1' },
+        { value: 'videollamada', label: 'Videollamada' },
+        { value: 'evaluacion', label: 'Evaluación' },
+        { value: 'fisioterapia', label: 'Fisioterapia' },
+        { value: 'mantenimiento', label: 'Mantenimiento' },
+        { value: 'otro', label: 'Otro' },
+      ]);
     }
   };
 
@@ -294,7 +327,7 @@ export const ModalRapidoCrearSesion: React.FC<ModalRapidoCrearSesionProps> = ({
         const fechaFinSesion = new Date(fechaSesion);
         fechaFinSesion.setMinutes(fechaFinSesion.getMinutes() + parseInt(duracion));
 
-        const nuevaCita = await crearCita({
+        const nuevaCita = await createCita({
           titulo: `Sesión ${tipo === 'sesion-1-1' ? 'PT' : tipo} - ${clienteNombre}`,
           tipo,
           estado: 'confirmada',
@@ -442,7 +475,14 @@ export const ModalRapidoCrearSesion: React.FC<ModalRapidoCrearSesionProps> = ({
             label="Tipo de sesión *"
             value={tipo}
             onChange={(e) => setTipo(e.target.value as TipoCita)}
-            options={TIPOS_SESION}
+            options={tiposSesion.length > 0 ? tiposSesion : [
+              { value: 'sesion-1-1', label: 'Sesión 1:1' },
+              { value: 'videollamada', label: 'Videollamada' },
+              { value: 'evaluacion', label: 'Evaluación' },
+              { value: 'fisioterapia', label: 'Fisioterapia' },
+              { value: 'mantenimiento', label: 'Mantenimiento' },
+              { value: 'otro', label: 'Otro' },
+            ]}
             error={error && !tipo ? error : undefined}
           />
           <Select

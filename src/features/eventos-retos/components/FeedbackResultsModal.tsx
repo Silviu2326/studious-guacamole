@@ -1,24 +1,85 @@
 // Componente para mostrar resultados de feedback post-evento
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Card, Button } from '../../../components/componentsreutilizables';
-import { X, Star, MessageSquare, TrendingUp, Users, BarChart3, ThumbsUp, ThumbsDown } from 'lucide-react';
-import { EstadisticasFeedback } from '../services/feedbackService';
+import { X, Star, MessageSquare, TrendingUp, Users, BarChart3, ThumbsUp, ThumbsDown, Loader2 } from 'lucide-react';
+import { EstadisticasFeedback, obtenerResultadosFeedback } from '../services/feedbackService';
+import { getEventById } from '../api/events';
 import { Badge } from '../../../components/componentsreutilizables/Badge';
 
 interface FeedbackResultsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  eventoNombre: string;
-  estadisticas: EstadisticasFeedback;
+  eventId: string;
 }
 
 export const FeedbackResultsModal: React.FC<FeedbackResultsModalProps> = ({
   isOpen,
   onClose,
-  eventoNombre,
-  estadisticas,
+  eventId,
 }) => {
+  const [loading, setLoading] = useState(true);
+  const [evento, setEvento] = useState<any>(null);
+  const [estadisticas, setEstadisticas] = useState<EstadisticasFeedback | null>(null);
+  const [resultadosPorPregunta, setResultadosPorPregunta] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (isOpen && eventId) {
+      cargarDatos();
+    }
+  }, [isOpen, eventId]);
+
+  const cargarDatos = async () => {
+    setLoading(true);
+    try {
+      // Cargar evento
+      const eventoData = await getEventById(eventId);
+      setEvento(eventoData);
+
+      if (eventoData) {
+        // Cargar resultados de feedback
+        const resultados = obtenerResultadosFeedback(eventId);
+        setEstadisticas(resultados.estadisticas);
+        setResultadosPorPregunta(resultados.resultadosPorPregunta);
+      }
+    } catch (error) {
+      console.error('Error cargando resultados de feedback:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} size="large">
+        <div className="p-6">
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <span className="ml-3 text-gray-600">Cargando resultados de feedback...</span>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
+
+  if (!evento || !estadisticas) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} size="large">
+        <div className="p-6">
+          <div className="text-center py-12">
+            <p className="text-gray-600">
+              {!evento 
+                ? 'No se pudo cargar el evento.' 
+                : 'No hay resultados de feedback disponibles para este evento.'}
+            </p>
+            <Button onClick={onClose} variant="primary" className="mt-4">
+              Cerrar
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
   const renderStars = (rating: number) => {
     return (
       <div className="flex items-center gap-1">
@@ -51,7 +112,7 @@ export const FeedbackResultsModal: React.FC<FeedbackResultsModalProps> = ({
             <h2 className="text-2xl font-bold text-gray-900">
               Resultados de Feedback
             </h2>
-            <p className="text-sm text-gray-500 mt-1">{eventoNombre}</p>
+            <p className="text-sm text-gray-500 mt-1">{evento.nombre}</p>
           </div>
           <Button
             variant="ghost"

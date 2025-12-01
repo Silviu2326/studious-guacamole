@@ -22,11 +22,13 @@ export const GeneradorEnlacesPago: React.FC<GeneradorEnlacesPagoProps> = ({
   
   // Formulario para nuevo enlace
   const [productoSeleccionado, setProductoSeleccionado] = useState<string>('');
+  const [importe, setImporte] = useState<string>('');
   const [cantidad, setCantidad] = useState<number>(1);
   const [descripcion, setDescripcion] = useState<string>('');
   const [fechaExpiracion, setFechaExpiracion] = useState<string>('');
   const [vecesMaximas, setVecesMaximas] = useState<number | undefined>(undefined);
   const [creando, setCreando] = useState(false);
+  const [enlaceGenerado, setEnlaceGenerado] = useState<EnlacePagoDirecto | null>(null);
 
   useEffect(() => {
     cargarEnlaces();
@@ -55,7 +57,8 @@ export const GeneradorEnlacesPago: React.FC<GeneradorEnlacesPagoProps> = ({
   };
 
   const handleCrearEnlace = async () => {
-    if (!productoSeleccionado) {
+    if (!productoSeleccionado && !importe) {
+      alert('Debes seleccionar un producto o especificar un importe');
       return;
     }
 
@@ -63,6 +66,14 @@ export const GeneradorEnlacesPago: React.FC<GeneradorEnlacesPagoProps> = ({
     try {
       const fechaExp = fechaExpiracion ? new Date(fechaExpiracion) : undefined;
       
+      // Si no hay producto seleccionado pero hay importe, necesitamos crear un producto temporal
+      // Por ahora, requerimos producto, pero permitimos modificar el importe
+      if (!productoSeleccionado) {
+        alert('Por favor, selecciona un producto o servicio');
+        setCreando(false);
+        return;
+      }
+
       const nuevoEnlace = await crearEnlacePago(entrenadorId, productoSeleccionado, {
         cantidad: cantidad > 0 ? cantidad : undefined,
         descripcion: descripcion.trim() || undefined,
@@ -71,9 +82,11 @@ export const GeneradorEnlacesPago: React.FC<GeneradorEnlacesPagoProps> = ({
       });
 
       setEnlaces([nuevoEnlace, ...enlaces]);
+      setEnlaceGenerado(nuevoEnlace);
       setMostrarModal(false);
       // Resetear formulario
       setProductoSeleccionado('');
+      setImporte('');
       setCantidad(1);
       setDescripcion('');
       setFechaExpiracion('');
@@ -258,6 +271,59 @@ export const GeneradorEnlacesPago: React.FC<GeneradorEnlacesPagoProps> = ({
         </Button>
       </div>
 
+      {/* Mostrar enlace generado */}
+      {enlaceGenerado && (
+        <Card className="p-6 bg-green-50 border-2 border-green-200">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-green-900 mb-2">
+                ✓ Enlace de pago generado exitosamente
+              </h3>
+              <p className="text-sm text-green-700 mb-4">
+                Comparte este enlace con tus clientes para que puedan realizar el pago directamente.
+              </p>
+              <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-green-200">
+                <code className="flex-1 text-sm font-mono text-gray-900 break-all">
+                  {enlaceGenerado.url}
+                </code>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => handleCopiarEnlace(enlaceGenerado.url, enlaceGenerado.id)}
+                >
+                  {copiado === enlaceGenerado.id ? (
+                    <>
+                      <Check size={16} className="mr-1" />
+                      Copiado
+                    </>
+                  ) : (
+                    <>
+                      <Copy size={16} className="mr-1" />
+                      Copiar
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => window.open(enlaceGenerado.url, '_blank')}
+                >
+                  <ExternalLink size={16} className="mr-1" />
+                  Abrir
+                </Button>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setEnlaceGenerado(null)}
+            >
+              ✕
+            </Button>
+          </div>
+        </Card>
+      )}
+
       <Card className="p-0 bg-white shadow-sm">
         <Table
           data={enlaces}
@@ -302,6 +368,17 @@ export const GeneradorEnlacesPago: React.FC<GeneradorEnlacesPagoProps> = ({
               </div>
             </Card>
           )}
+
+          <Input
+            label="Importe personalizado (€) - Opcional"
+            type="number"
+            step="0.01"
+            min="0"
+            value={importe}
+            onChange={(e) => setImporte(e.target.value)}
+            helperText="Si especificas un importe, se usará este en lugar del precio del producto"
+            placeholder="Ej: 50.00"
+          />
 
           <Input
             label="Cantidad por defecto"
@@ -349,7 +426,7 @@ export const GeneradorEnlacesPago: React.FC<GeneradorEnlacesPagoProps> = ({
               variant="primary"
               onClick={handleCrearEnlace}
               loading={creando}
-              disabled={!productoSeleccionado}
+              disabled={!productoSeleccionado && !importe}
               fullWidth
             >
               <Link2 size={16} className="mr-2" />

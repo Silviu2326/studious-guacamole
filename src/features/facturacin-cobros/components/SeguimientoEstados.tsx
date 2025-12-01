@@ -27,7 +27,7 @@ export const SeguimientoEstados: React.FC<SeguimientoEstadosProps> = ({ facturas
       vencida: { label: 'Vencida', variant: 'red' },
       cancelada: { label: 'Cancelada', variant: 'gray' }
     };
-    
+
     const estadoInfo = estados[estado];
     return (
       <Badge variant={estadoInfo.variant} size="sm">
@@ -118,32 +118,32 @@ export const SeguimientoEstados: React.FC<SeguimientoEstadosProps> = ({ facturas
     {
       id: 'todas',
       label: 'Todas',
-      icon: <Filter className="w-4 h-4" />
+      icon: Filter
     },
     {
       id: 'pendientes',
       label: 'Pendientes',
-      icon: <Clock className="w-4 h-4" />
+      icon: Clock
     },
     {
       id: 'parciales',
       label: 'Parciales',
-      icon: <TrendingUp className="w-4 h-4" />
+      icon: TrendingUp
     },
     {
       id: 'pagadas',
       label: 'Pagadas',
-      icon: <CheckCircle className="w-4 h-4" />
+      icon: CheckCircle
     },
     {
       id: 'vencidas',
       label: 'Vencidas',
-      icon: <AlertCircle className="w-4 h-4" />
+      icon: AlertCircle
     },
     {
       id: 'canceladas',
       label: 'Canceladas',
-      icon: <XCircle className="w-4 h-4" />
+      icon: XCircle
     }
   ];
 

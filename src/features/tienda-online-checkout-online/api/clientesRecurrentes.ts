@@ -62,3 +62,89 @@ export async function guardarDatosCheckout(
   console.log('Guardando datos de checkout para:', email, datos);
 }
 
+// Mock data para clientes recurrentes
+const CLIENTES_RECURRENTES_MOCK: Array<{
+  clienteId: string;
+  email: string;
+  numeroPedidos: number;
+  ultimoPedido: string;
+  valorTotal: number;
+}> = [
+  {
+    clienteId: 'cliente-1',
+    email: 'juan@example.com',
+    numeroPedidos: 8,
+    ultimoPedido: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    valorTotal: 1250.50,
+  },
+  {
+    clienteId: 'cliente-2',
+    email: 'maria@example.com',
+    numeroPedidos: 5,
+    ultimoPedido: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    valorTotal: 680.25,
+  },
+  {
+    clienteId: 'cliente-3',
+    email: 'carlos@example.com',
+    numeroPedidos: 12,
+    ultimoPedido: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+    valorTotal: 2450.75,
+  },
+  {
+    clienteId: 'cliente-4',
+    email: 'ana@example.com',
+    numeroPedidos: 3,
+    ultimoPedido: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    valorTotal: 320.00,
+  },
+  {
+    clienteId: 'cliente-5',
+    email: 'pedro@example.com',
+    numeroPedidos: 15,
+    ultimoPedido: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    valorTotal: 3890.50,
+  },
+  {
+    clienteId: 'cliente-6',
+    email: 'laura@example.com',
+    numeroPedidos: 6,
+    ultimoPedido: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    valorTotal: 890.00,
+  },
+  {
+    clienteId: 'cliente-7',
+    email: 'miguel@example.com',
+    numeroPedidos: 4,
+    ultimoPedido: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
+    valorTotal: 550.75,
+  },
+  {
+    clienteId: 'cliente-8',
+    email: 'sofia@example.com',
+    numeroPedidos: 9,
+    ultimoPedido: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+    valorTotal: 1520.25,
+  },
+];
+
+/**
+ * Obtiene la lista de clientes recurrentes con sus estadísticas
+ */
+export async function getClientesRecurrentes(): Promise<
+  Array<{
+    clienteId: string;
+    email: string;
+    numeroPedidos: number;
+    ultimoPedido: string;
+    valorTotal: number;
+  }>
+> {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  // Ordenar por valor total descendente (clientes más valiosos primero)
+  return [...CLIENTES_RECURRENTES_MOCK].sort(
+    (a, b) => b.valorTotal - a.valorTotal
+  );
+}
+

@@ -1,4 +1,37 @@
-import { NotaDeSesion } from '../types';
+/**
+ * API para gestionar notas de sesión
+ * 
+ * DOCUMENTACIÓN: Alimentación de datos desde reservas
+ * ===================================================
+ * 
+ * Las notas de sesión están directamente relacionadas con las reservas:
+ * 
+ * 1. RESERVAS COMPLETADAS:
+ *    - Cuando una reserva tiene estado 'completada', se pueden crear notas
+ *      asociadas para documentar lo trabajado, rendimiento y observaciones.
+ *    - Las notas se vinculan a la reserva mediante el campo reservaId.
+ * 
+ * 2. RESERVAS CANCELADAS:
+ *    - Las reservas canceladas normalmente NO tienen notas asociadas, ya que
+ *      no se realizó la sesión.
+ *    - Sin embargo, se pueden crear notas explicativas si es necesario (por ejemplo,
+ *      para documentar el motivo de cancelación o seguimiento).
+ * 
+ * 3. FLUJO DE DATOS:
+ *    - getNotasPorReserva(reservaId) → Busca notas de una reserva específica
+ *      (típicamente reservas completadas)
+ *    - getNotasPorCliente(clienteId) → Busca todas las notas de un cliente,
+ *      basándose en sus reservas completadas
+ *    - crearNotaSesion(data) → Crea una nota asociada a una reserva
+ *      (se recomienda crear después de que la reserva esté completada)
+ * 
+ * 4. DATOS DERIVADOS:
+ *    - La fecha de sesión y horarios se obtienen de la reserva asociada
+ *    - El clienteId y entrenadorId provienen de la reserva
+ *    - El contenido de la nota es independiente pero contextualiza la sesión
+ */
+
+import { NotaDeSesion, NotaSesion } from '../types';
 
 // Simulación de almacenamiento en memoria (en producción sería una llamada a la API)
 let notasStorage: NotaDeSesion[] = [
@@ -53,7 +86,7 @@ export const getNotasPorCliente = async (clienteId: string, entrenadorId?: strin
 };
 
 /**
- * Obtener nota de sesión por ID de reserva
+ * Obtener nota de sesión por ID de reserva (singular)
  */
 export const getNotaPorReserva = async (reservaId: string): Promise<NotaDeSesion | null> => {
   await new Promise(resolve => setTimeout(resolve, 200));
@@ -63,13 +96,97 @@ export const getNotaPorReserva = async (reservaId: string): Promise<NotaDeSesion
 };
 
 /**
- * Crear una nueva nota de sesión
+ * Obtener todas las notas de sesión por ID de reserva (plural)
+ * 
+ * @param reservaId - ID de la reserva para buscar notas
+ * @returns Lista de notas asociadas a la reserva
+ * 
+ * @example
+ * ```typescript
+ * const notas = await getNotasPorReserva('reserva-123');
+ * // Retorna todas las notas asociadas a esta reserva
+ * ```
+ * 
+ * @remarks
+ * Esta función retorna todas las notas asociadas a una reserva específica.
+ * En el contexto actual, típicamente una reserva tiene una sola nota, pero
+ * esta función permite manejar casos donde pueden existir múltiples notas.
+ * Los datos se alimentan de las reservas completadas.
  */
-export const crearNotaSesion = async (nota: Omit<NotaDeSesion, 'id' | 'createdAt' | 'updatedAt'>): Promise<NotaDeSesion> => {
+export const getNotasPorReserva = async (reservaId: string): Promise<NotaDeSesion[]> => {
+  await new Promise(resolve => setTimeout(resolve, 200));
+  
+  const notas = notasStorage.filter(n => n.reservaId === reservaId);
+  
+  // Ordenar por fecha de creación descendente (más recientes primero)
+  return notas.sort((a, b) => {
+    const fechaA = a.createdAt?.getTime() || 0;
+    const fechaB = b.createdAt?.getTime() || 0;
+    return fechaB - fechaA;
+  });
+};
+
+/**
+ * Crear una nueva nota de sesión
+ * 
+ * @param data - Datos de la nota a crear (sin id, createdAt, updatedAt)
+ * @returns La nota creada
+ * 
+ * @example
+ * ```typescript
+ * const nuevaNota = await crearNotaSesion({
+ *   reservaId: 'reserva-123',
+ *   clienteId: 'cliente-456',
+ *   entrenadorId: 'entrenador-789',
+ *   clienteNombre: 'Juan Pérez',
+ *   fechaSesion: new Date(),
+ *   horaInicio: '10:00',
+ *   horaFin: '11:00',
+ *   queTrabajamos: 'Trabajo de fuerza',
+ *   rendimiento: 'Excelente',
+ *   observaciones: 'Notas adicionales'
+ * });
+ * ```
+ * 
+ * @remarks
+ * Esta función crea una nueva nota de sesión asociada a una reserva.
+ * Las notas típicamente se crean después de que una reserva ha sido completada.
+ * Los datos se alimentan de las reservas completadas.
+ * 
+ * En producción, esta función se conectaría con un backend REST/GraphQL:
+ * - REST: POST /api/reservas/:reservaId/notas { body: {...} }
+ * - GraphQL: mutation { crearNotaSesion(reservaId: "...", data: {...}) { id, ... } }
+ */
+export const crearNotaSesion = async (
+  data: Omit<NotaDeSesion, 'id' | 'createdAt' | 'updatedAt'> | Omit<NotaSesion, 'id' | 'fechaCreacion'>
+): Promise<NotaDeSesion> => {
   await new Promise(resolve => setTimeout(resolve, 500));
   
+  // Si es tipo NotaSesion, convertir a NotaDeSesion para compatibilidad
+  let notaData: Omit<NotaDeSesion, 'id' | 'createdAt' | 'updatedAt'>;
+  
+  if ('contenido' in data) {
+    // Es tipo NotaSesion
+    const notaSesion = data as Omit<NotaSesion, 'id' | 'fechaCreacion'>;
+    notaData = {
+      reservaId: notaSesion.reservaId,
+      clienteId: notaSesion.clienteId,
+      entrenadorId: notaSesion.entrenadorId,
+      clienteNombre: '', // Se puede obtener de la reserva
+      fechaSesion: new Date(), // Se puede obtener de la reserva
+      horaInicio: '',
+      horaFin: '',
+      queTrabajamos: notaSesion.contenido,
+      rendimiento: '',
+      observaciones: '',
+    };
+  } else {
+    // Es tipo NotaDeSesion
+    notaData = data as Omit<NotaDeSesion, 'id' | 'createdAt' | 'updatedAt'>;
+  }
+  
   const nuevaNota: NotaDeSesion = {
-    ...nota,
+    ...notaData,
     id: `nota${Date.now()}`,
     createdAt: new Date(),
     updatedAt: new Date(),

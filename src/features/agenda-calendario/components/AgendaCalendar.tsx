@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, AlertCircle, Calendar, ChevronDown, ChevronUp, Plus, Menu, Download, Sun } from 'lucide-react';
 import { Card, Button, ConfirmModal } from '../../../components/componentsreutilizables';
 import { Cita, VistaCalendario, BloqueoAgenda, ConfiguracionTiempoDescanso } from '../types';
-import { getCitas, actualizarCita } from '../api/calendario';
+import { getCitas, updateCita } from '../api/calendario';
 import { getBloqueos } from '../api/disponibilidad';
 import { getHorarioTrabajoActual, esHorarioDisponible } from '../api/horariosTrabajo';
 import { getConfiguracionTiempoDescanso } from '../api/configuracion';
@@ -24,6 +24,12 @@ import { initOfflineStorage, saveCitasOffline, getCitasOffline, isOnline, onOnli
 interface AgendaCalendarProps {
   role: 'entrenador' | 'gimnasio';
   citasAdicionales?: Cita[];
+  /** Callback cuando se selecciona una cita */
+  onSelectCita?: (cita: Cita) => void;
+  /** Callback cuando se selecciona un slot de tiempo */
+  onSelectSlot?: (fecha: Date, hora: number, minuto: number) => void;
+  /** Callback para crear sesión rápida */
+  onCreateSesionRapida?: (fecha?: Date, hora?: number, minuto?: number) => void;
 }
 
 interface DropTarget {
@@ -32,11 +38,27 @@ interface DropTarget {
   minuto: number;
 }
 
-export const AgendaCalendar: React.FC<AgendaCalendarProps> = ({ role, citasAdicionales = [] }) => {
+export const AgendaCalendar: React.FC<AgendaCalendarProps> = ({ 
+  role, 
+  citasAdicionales = [],
+  onSelectCita,
+  onSelectSlot,
+  onCreateSesionRapida,
+}) => {
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const [fechaActual, setFechaActual] = useState(new Date());
   const [vista, setVista] = useState<VistaCalendario>(isMobile ? 'semana' : 'semana'); // Semana por defecto, especialmente en móvil
+  
+  // En móvil, forzar vista semana o día (no mes)
+  const cambiarVista = (nuevaVista: VistaCalendario) => {
+    if (isMobile && nuevaVista === 'mes') {
+      // En móvil, no permitir vista mes, usar semana como alternativa
+      setVista('semana');
+    } else {
+      setVista(nuevaVista);
+    }
+  };
   const [citas, setCitas] = useState<Cita[]>([]);
   const [bloqueos, setBloqueos] = useState<BloqueoAgenda[]>([]);
   const [horarioTrabajo, setHorarioTrabajo] = useState<HorarioTrabajoSemanal | null>(null);
@@ -66,21 +88,31 @@ export const AgendaCalendar: React.FC<AgendaCalendarProps> = ({ role, citasAdici
   const calendarRef = useRef<HTMLDivElement>(null);
   const semanaRef = useRef<HTMLDivElement>(null);
 
-  // Configurar gestos swipe para cambiar semanas en móvil
+  // Configurar gestos swipe para cambiar semanas/días en móvil
+  const diaRef = useRef<HTMLDivElement>(null);
+  
   useSwipe(
     {
       onSwipeLeft: () => {
-        if (isMobile && vista === 'semana') {
-          cambiarSemana('siguiente');
+        if (isMobile) {
+          if (vista === 'semana') {
+            cambiarSemana('siguiente');
+          } else if (vista === 'dia') {
+            cambiarDia('siguiente');
+          }
         }
       },
       onSwipeRight: () => {
-        if (isMobile && vista === 'semana') {
-          cambiarSemana('anterior');
+        if (isMobile) {
+          if (vista === 'semana') {
+            cambiarSemana('anterior');
+          } else if (vista === 'dia') {
+            cambiarDia('anterior');
+          }
         }
       },
     },
-    { threshold: 50, preventDefault: false, elementRef: semanaRef }
+    { threshold: 50, preventDefault: false, elementRef: vista === 'semana' ? semanaRef : vista === 'dia' ? diaRef : undefined }
   );
   
   // Configuración de horas (6:00 a 22:00)
@@ -734,7 +766,7 @@ export const AgendaCalendar: React.FC<AgendaCalendarProps> = ({ role, citasAdici
 
     try {
       // Actualizar cita en el backend (pasando la cita original para preservar todos los datos)
-      const citaActualizada = await actualizarCita(cita.id, {
+      const citaActualizada = await updateCita(cita.id, {
         fechaInicio: nuevaFechaInicio,
         fechaFin: nuevaFechaFin,
       }, cita, user?.id);
@@ -801,15 +833,30 @@ export const AgendaCalendar: React.FC<AgendaCalendarProps> = ({ role, citasAdici
   const handleClickSesion = (cita: Cita) => {
     setCitaSeleccionada(cita);
     setMostrarModalDetalle(true);
+    // Llamar callback externo si existe
+    if (onSelectCita) {
+      onSelectCita(cita);
+    }
   };
 
   const abrirModalRapido = (fecha?: Date, hora?: number, minuto?: number) => {
     if (fecha && hora !== undefined && minuto !== undefined) {
       setSlotSeleccionado({ fecha, hora, minuto });
+      // Llamar callback externo si existe
+      if (onSelectSlot) {
+        onSelectSlot(fecha, hora, minuto);
+      }
     } else {
       setSlotSeleccionado(null);
     }
-    setMostrarModalRapido(true);
+    
+    // Llamar callback externo para crear sesión rápida
+    if (onCreateSesionRapida) {
+      onCreateSesionRapida(fecha, hora, minuto);
+    } else {
+      // Si no hay callback externo, usar el modal interno
+      setMostrarModalRapido(true);
+    }
   };
 
   const cerrarModalRapido = () => {
@@ -852,9 +899,9 @@ export const AgendaCalendar: React.FC<AgendaCalendarProps> = ({ role, citasAdici
     return (minutos / slotMinutos) * 60; // 60px por slot de 30 minutos
   };
 
-  // Efecto para forzar vista semanal en móvil
+  // Efecto para forzar vista semana/día en móvil (no mes)
   useEffect(() => {
-    if (isMobile && vista !== 'semana') {
+    if (isMobile && vista === 'mes') {
       setVista('semana');
     }
   }, [isMobile, vista]);
@@ -920,13 +967,13 @@ export const AgendaCalendar: React.FC<AgendaCalendarProps> = ({ role, citasAdici
                 </>
               )}
               
-              {/* Botones de vista - ocultos en móvil, solo semana visible */}
+              {/* Botones de vista - en móvil solo semana/día, en desktop todas */}
               {!isMobile ? (
                 <>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setVista('mes')}
+                    onClick={() => cambiarVista('mes')}
                     className={vista === 'mes' ? 'bg-slate-100 text-slate-900' : ''}
                   >
                     Mes
@@ -934,7 +981,7 @@ export const AgendaCalendar: React.FC<AgendaCalendarProps> = ({ role, citasAdici
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setVista('semana')}
+                    onClick={() => cambiarVista('semana')}
                     className={vista === 'semana' ? 'bg-slate-100 text-slate-900' : ''}
                   >
                     Semana
@@ -942,7 +989,7 @@ export const AgendaCalendar: React.FC<AgendaCalendarProps> = ({ role, citasAdici
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setVista('dia')}
+                    onClick={() => cambiarVista('dia')}
                     className={vista === 'dia' ? 'bg-slate-100 text-slate-900' : ''}
                   >
                     Día
@@ -971,6 +1018,25 @@ export const AgendaCalendar: React.FC<AgendaCalendarProps> = ({ role, citasAdici
                 </>
               ) : (
                 <div className="flex items-center gap-2">
+                  {/* En móvil, mostrar controles de vista semana/día */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => cambiarVista('semana')}
+                    className={vista === 'semana' ? 'bg-slate-100 text-slate-900' : ''}
+                    title="Vista Semana"
+                  >
+                    Semana
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => cambiarVista('dia')}
+                    className={vista === 'dia' ? 'bg-slate-100 text-slate-900' : ''}
+                    title="Vista Día"
+                  >
+                    Día
+                  </Button>
                   {role === 'entrenador' && (
                     <>
                       <Button
@@ -993,7 +1059,7 @@ export const AgendaCalendar: React.FC<AgendaCalendarProps> = ({ role, citasAdici
                     </>
                   )}
                   <div className="text-xs text-gray-500">
-                    Desliza para cambiar semana
+                    {vista === 'semana' ? 'Desliza para cambiar semana' : 'Desliza para cambiar día'}
                   </div>
                 </div>
               )}
@@ -1290,15 +1356,25 @@ export const AgendaCalendar: React.FC<AgendaCalendarProps> = ({ role, citasAdici
                                   }
                                 }}
                                 onClick={() => {
-                                  if (estadoSlot === 'libre' && role === 'entrenador') {
-                                    abrirModalRapido(fecha, slot.hora, slot.minuto);
+                                  if (estadoSlot === 'libre') {
+                                    if (onSelectSlot) {
+                                      onSelectSlot(fecha, slot.hora, slot.minuto);
+                                    }
+                                    if (role === 'entrenador') {
+                                      abrirModalRapido(fecha, slot.hora, slot.minuto);
+                                    }
                                   }
                                 }}
                                 onTouchStart={(e) => {
-                                  // En móvil, permitir toque para crear sesión
-                                  if (estadoSlot === 'libre' && role === 'entrenador') {
+                                  // En móvil, permitir toque para seleccionar slot
+                                  if (estadoSlot === 'libre') {
                                     e.preventDefault();
-                                    abrirModalRapido(fecha, slot.hora, slot.minuto);
+                                    if (onSelectSlot) {
+                                      onSelectSlot(fecha, slot.hora, slot.minuto);
+                                    }
+                                    if (role === 'entrenador') {
+                                      abrirModalRapido(fecha, slot.hora, slot.minuto);
+                                    }
                                   }
                                 }}
                                 title={
@@ -1460,7 +1536,10 @@ export const AgendaCalendar: React.FC<AgendaCalendarProps> = ({ role, citasAdici
           )}
 
           {vista === 'dia' && (
-            <div className="space-y-4">
+            <div 
+              ref={diaRef}
+              className="space-y-4"
+            >
               {getCitasDelDia(fechaActual).map((cita) => (
                 <div
                   key={cita.id}
@@ -1541,11 +1620,10 @@ export const AgendaCalendar: React.FC<AgendaCalendarProps> = ({ role, citasAdici
             </div>
           )}
 
-          {loading && (
-            <div className="text-center py-8">
-              <div className="text-gray-600">
-                Cargando...
-              </div>
+          {loading && citas.length === 0 && (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+              <p className="text-sm text-gray-600">Cargando citas...</p>
             </div>
           )}
             </>

@@ -69,26 +69,120 @@ export const crearSolicitudConfirmacion = async (
 };
 
 /**
- * Envía la solicitud de confirmación a todos los participantes
+ * Genera un token único para confirmación de asistencia
+ */
+export const generarTokenConfirmacion = (eventoId: string, participanteId: string): string => {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 15);
+  return `${eventoId}-${participanteId}-${timestamp}-${random}`;
+};
+
+/**
+ * Valida un token de confirmación y extrae información
+ */
+export const validarTokenConfirmacion = (token: string): { eventoId: string; participanteId: string } | null => {
+  try {
+    const partes = token.split('-');
+    if (partes.length < 4) {
+      return null;
+    }
+    // El token tiene formato: eventoId-participanteId-timestamp-random
+    const eventoId = partes[0];
+    const participanteId = partes[1];
+    return { eventoId, participanteId };
+  } catch (error) {
+    return null;
+  }
+};
+
+/**
+ * Envía solicitud de confirmación a participantes específicos con tokens únicos
+ * 
+ * NOTA: En producción, esto se conectaría a proveedores de email (SendGrid, Mailgun, etc.)
+ * o WhatsApp API (Twilio, WhatsApp Business API) para el envío real de mensajes.
+ * Los tokens se incluirían en los links de confirmación dentro de los mensajes.
+ * 
+ * @param eventId ID del evento
+ * @param participantes Array de IDs de participantes a notificar
+ * @returns Resultado del envío con tokens generados
  */
 export const enviarSolicitudConfirmacion = async (
-  evento: Evento,
-  solicitud: SolicitudConfirmacion
-): Promise<{ success: boolean; participantesNotificados: number }> => {
+  eventId: string,
+  participantes: string[]
+): Promise<{
+  success: boolean;
+  participantesNotificados: number;
+  tokensGenerados: Array<{ participanteId: string; token: string }>;
+}> => {
   await new Promise(resolve => setTimeout(resolve, 500));
 
-  const participantes = evento.participantesDetalle || [];
-  const participantesActivos = participantes.filter(p => !p.fechaCancelacion);
+  // Obtener el evento
+  const eventosStorage = localStorage.getItem('eventos');
+  if (!eventosStorage) {
+    throw new Error('No se encontraron eventos');
+  }
+
+  const eventos: Evento[] = JSON.parse(eventosStorage).map((e: any) => ({
+    ...e,
+    fechaInicio: new Date(e.fechaInicio),
+    fechaFin: e.fechaFin ? new Date(e.fechaFin) : undefined,
+    createdAt: new Date(e.createdAt),
+    participantesDetalle: e.participantesDetalle?.map((p: any) => ({
+      ...p,
+      fechaInscripcion: new Date(p.fechaInscripcion),
+      fechaCancelacion: p.fechaCancelacion ? new Date(p.fechaCancelacion) : undefined,
+    })) || [],
+  }));
+
+  const evento = eventos.find(e => e.id === eventId);
+  if (!evento) {
+    throw new Error('Evento no encontrado');
+  }
+
+  const participantesDetalle = evento.participantesDetalle || [];
+  const participantesActivos = participantesDetalle.filter(
+    p => participantes.includes(p.id) && !p.fechaCancelacion
+  );
 
   let participantesNotificados = 0;
+  const tokensGenerados: Array<{ participanteId: string; token: string }> = [];
+
+  // Crear o actualizar solicitud de confirmación
+  if (!evento.solicitudConfirmacion) {
+    const fechaEvento = new Date(evento.fechaInicio);
+    const fechaSolicitud = new Date();
+    const fechaLimite = new Date(fechaEvento);
+    fechaLimite.setDate(fechaLimite.getDate() - 1); // Por defecto 1 día antes
+
+    evento.solicitudConfirmacion = {
+      id: `solicitud-conf-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      eventoId: evento.id,
+      diasAnticipacion: 1,
+      fechaSolicitud,
+      fechaLimite,
+      mensaje: 'Por favor, confirma tu asistencia al evento {eventoNombre} el {fecha} a las {hora}.',
+      canal: 'ambos',
+      estado: 'pendiente',
+      participantesNotificados: [],
+      respuestas: [],
+    };
+  }
 
   // Enviar a cada participante
   for (const participante of participantesActivos) {
+    // Generar token único
+    const token = generarTokenConfirmacion(eventoId, participante.id);
+    tokensGenerados.push({ participanteId: participante.id, token });
+
     const mensajePersonalizado = personalizarMensajeConfirmacion(
-      solicitud.mensaje,
+      evento.solicitudConfirmacion.mensaje,
       evento,
       participante
     );
+
+    // Agregar link de confirmación con token al mensaje
+    const linkConfirmacion = `${window.location.origin}/eventos/confirmar/${token}`;
+    const mensajeConLink = `${mensajePersonalizado}\n\nConfirma tu asistencia aquí: ${linkConfirmacion}`;
 
     // Marcar que se envió la solicitud
     participante.solicitudConfirmacionEnviada = true;
@@ -98,31 +192,89 @@ export const enviarSolicitudConfirmacion = async (
     // Simular envío (en producción, aquí se enviaría el mensaje real)
     console.log('[ConfirmacionService] Enviando solicitud de confirmación:', {
       participante: participante.nombre,
-      canal: solicitud.canal,
-      mensaje: mensajePersonalizado.substring(0, 100) + '...',
+      token,
+      linkConfirmacion,
+      mensaje: mensajeConLink.substring(0, 100) + '...',
     });
 
     participantesNotificados++;
   }
 
-  solicitud.estado = 'enviada';
+  // Actualizar solicitud
+  evento.solicitudConfirmacion.participantesNotificados = [
+    ...new Set([...evento.solicitudConfirmacion.participantesNotificados, ...participantesActivos.map(p => p.id)]),
+  ];
+  evento.solicitudConfirmacion.estado = 'enviada';
+
+  // Guardar evento actualizado
+  const eventosActualizados = eventos.map(e => (e.id === eventId ? evento : e));
+  localStorage.setItem('eventos', JSON.stringify(eventosActualizados));
 
   return {
     success: true,
     participantesNotificados,
+    tokensGenerados,
   };
 };
 
 /**
- * Procesa una respuesta de confirmación de un participante
+ * Procesa una respuesta de confirmación usando un token único
+ * 
+ * NOTA: En producción, esto se llamaría desde una página pública donde el participante
+ * hace clic en el link de confirmación que contiene el token. El token se validaría
+ * y se actualizaría el estado de asistencia del participante.
+ * 
+ * @param token Token único de confirmación
+ * @param respuesta Respuesta del participante: 'confirmado' o 'no-puede'
+ * @param motivo Motivo opcional si no puede asistir
+ * @returns Resultado del procesamiento
  */
 export const procesarRespuestaConfirmacion = async (
-  evento: Evento,
-  participanteId: string,
+  token: string,
   respuesta: 'confirmado' | 'no-puede',
   motivo?: string
 ): Promise<{ success: boolean; mensaje: string }> => {
   await new Promise(resolve => setTimeout(resolve, 300));
+
+  // Validar token
+  const tokenInfo = validarTokenConfirmacion(token);
+  if (!tokenInfo) {
+    return { success: false, mensaje: 'Token inválido o expirado' };
+  }
+
+  const { eventoId, participanteId } = tokenInfo;
+
+  // Obtener el evento
+  const eventosStorage = localStorage.getItem('eventos');
+  if (!eventosStorage) {
+    return { success: false, mensaje: 'Evento no encontrado' };
+  }
+
+  const eventos: Evento[] = JSON.parse(eventosStorage).map((e: any) => ({
+    ...e,
+    fechaInicio: new Date(e.fechaInicio),
+    fechaFin: e.fechaFin ? new Date(e.fechaFin) : undefined,
+    createdAt: new Date(e.createdAt),
+    participantesDetalle: e.participantesDetalle?.map((p: any) => ({
+      ...p,
+      fechaInscripcion: new Date(p.fechaInscripcion),
+      fechaCancelacion: p.fechaCancelacion ? new Date(p.fechaCancelacion) : undefined,
+    })) || [],
+    solicitudConfirmacion: e.solicitudConfirmacion ? {
+      ...e.solicitudConfirmacion,
+      fechaSolicitud: new Date(e.solicitudConfirmacion.fechaSolicitud),
+      fechaLimite: new Date(e.solicitudConfirmacion.fechaLimite),
+      respuestas: e.solicitudConfirmacion.respuestas?.map((r: any) => ({
+        ...r,
+        fechaRespuesta: new Date(r.fechaRespuesta),
+      })) || [],
+    } : undefined,
+  }));
+
+  const evento = eventos.find(e => e.id === eventoId);
+  if (!evento) {
+    return { success: false, mensaje: 'Evento no encontrado' };
+  }
 
   const participantes = evento.participantesDetalle || [];
   const participante = participantes.find(p => p.id === participanteId);
@@ -133,6 +285,15 @@ export const procesarRespuestaConfirmacion = async (
 
   if (!evento.solicitudConfirmacion) {
     return { success: false, mensaje: 'No hay una solicitud de confirmación activa' };
+  }
+
+  // Verificar si ya respondió
+  const yaRespondio = evento.solicitudConfirmacion.respuestas.some(
+    r => r.participanteId === participanteId
+  );
+
+  if (yaRespondio) {
+    return { success: false, mensaje: 'Ya has respondido a esta solicitud de confirmación' };
   }
 
   // Actualizar estado del participante
@@ -163,6 +324,10 @@ export const procesarRespuestaConfirmacion = async (
   if (respuestasRecibidas >= totalParticipantes) {
     evento.solicitudConfirmacion.estado = 'finalizada';
   }
+
+  // Guardar evento actualizado
+  const eventosActualizados = eventos.map(e => (e.id === eventoId ? evento : e));
+  localStorage.setItem('eventos', JSON.stringify(eventosActualizados));
 
   return {
     success: true,

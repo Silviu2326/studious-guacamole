@@ -23,6 +23,12 @@ export const RecordatoriosPagoPendiente: React.FC<RecordatoriosPagoPendienteProp
     totalEnviados: number;
     totalFallidos: number;
   } | null>(null);
+  const [resumenPagos, setResumenPagos] = useState<{
+    totalPendiente: number;
+    totalClientes: number;
+    promedioPendiente: number;
+    diasPromedioVencido: number;
+  } | null>(null);
 
   useEffect(() => {
     if (role === 'entrenador') {
@@ -40,6 +46,30 @@ export const RecordatoriosPagoPendiente: React.FC<RecordatoriosPagoPendienteProp
       
       const reservas = await getReservasConPagosPendientes(fechaInicio, fechaFin, user?.id);
       setReservasPendientes(reservas);
+      
+      // Calcular resumen de pagos
+      const totalPendiente = reservas.reduce((sum, r) => sum + (r.precio || 0), 0);
+      const clientesUnicos = new Set(reservas.map(r => r.clienteId));
+      const promedioPendiente = clientesUnicos.size > 0 ? totalPendiente / clientesUnicos.size : 0;
+      
+      // Calcular días promedio vencido (mock simple)
+      const ahora = new Date();
+      const diasVencidos = reservas
+        .map(r => {
+          const diasDiff = Math.floor((ahora.getTime() - r.fecha.getTime()) / (1000 * 60 * 60 * 24));
+          return diasDiff > 0 ? diasDiff : 0;
+        })
+        .filter(d => d > 0);
+      const diasPromedioVencido = diasVencidos.length > 0
+        ? diasVencidos.reduce((sum, d) => sum + d, 0) / diasVencidos.length
+        : 0;
+      
+      setResumenPagos({
+        totalPendiente,
+        totalClientes: clientesUnicos.size,
+        promedioPendiente,
+        diasPromedioVencido: Math.round(diasPromedioVencido),
+      });
     } catch (error) {
       console.error('Error cargando reservas con pagos pendientes:', error);
     } finally {
@@ -211,7 +241,27 @@ export const RecordatoriosPagoPendiente: React.FC<RecordatoriosPagoPendienteProp
             <p className="text-sm text-gray-700 mb-2">
               <strong>Reservas con pagos pendientes:</strong> {reservasPendientes.length}
             </p>
-            <p className="text-sm text-gray-600">
+            {resumenPagos && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3 pt-3 border-t border-red-200">
+                <div>
+                  <p className="text-xs text-gray-600">Total Pendiente</p>
+                  <p className="text-lg font-bold text-red-700">€{resumenPagos.totalPendiente.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-600">Clientes</p>
+                  <p className="text-lg font-bold text-gray-900">{resumenPagos.totalClientes}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-600">Promedio/Cliente</p>
+                  <p className="text-lg font-bold text-gray-900">€{resumenPagos.promedioPendiente.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-600">Días Promedio</p>
+                  <p className="text-lg font-bold text-orange-700">{resumenPagos.diasPromedioVencido} días</p>
+                </div>
+              </div>
+            )}
+            <p className="text-sm text-gray-600 mt-3">
               Envía recordatorios automáticos a los clientes que tienen pagos pendientes para reducir la morosidad y automatizar el cobro.
             </p>
           </div>

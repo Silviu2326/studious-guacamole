@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Suscripcion, CancelarSuscripcionRequest } from '../types';
 import { Modal, Button, Input } from '../../../components/componentsreutilizables';
-import { XCircle, AlertTriangle } from 'lucide-react';
+import { XCircle, AlertTriangle, Calendar, TrendingDown, Users } from 'lucide-react';
 
 interface CancelarSuscripcionProps {
   suscripcion: Suscripcion;
@@ -30,8 +30,33 @@ export const CancelarSuscripcion: React.FC<CancelarSuscripcionProps> = ({
   const [motivo, setMotivo] = useState<string>('');
   const [motivoOtro, setMotivoOtro] = useState<string>('');
   const [comentariosAdicionales, setComentariosAdicionales] = useState<string>('');
+  const [cancelacionInmediata, setCancelacionInmediata] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
+
+  // Calcular impacto de la cancelación
+  const impactoCancelacion = useMemo(() => {
+    const fechaVencimiento = new Date(suscripcion.fechaVencimiento);
+    const hoy = new Date();
+    const diasRestantes = Math.ceil((fechaVencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Calcular sesiones restantes (si aplica)
+    const sesionesRestantes = suscripcion.sesionesDisponibles || 0;
+    
+    // Calcular cuotas futuras que se perderán
+    const cuotasFuturas = cancelacionInmediata ? 0 : 1; // Si no es inmediata, se pierde la cuota actual
+    
+    return {
+      diasRestantes: Math.max(0, diasRestantes),
+      sesionesRestantes,
+      cuotasFuturas,
+      fechaVencimiento: fechaVencimiento.toLocaleDateString('es-ES', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      }),
+    };
+  }, [suscripcion, cancelacionInmediata]);
 
   const handleSubmit = async () => {
     setError('');
@@ -57,12 +82,14 @@ export const CancelarSuscripcion: React.FC<CancelarSuscripcionProps> = ({
         suscripcionId: suscripcion.id,
         motivo: motivoFinal,
         comentariosAdicionales: comentariosAdicionales.trim() || undefined,
+        cancelacionInmediata,
       });
 
       // Reset form
       setMotivo('');
       setMotivoOtro('');
       setComentariosAdicionales('');
+      setCancelacionInmediata(false);
       setError('');
       onClose();
     } catch (err) {
@@ -78,6 +105,7 @@ export const CancelarSuscripcion: React.FC<CancelarSuscripcionProps> = ({
       setMotivo('');
       setMotivoOtro('');
       setComentariosAdicionales('');
+      setCancelacionInmediata(false);
       setError('');
       onClose();
     }
@@ -113,21 +141,138 @@ export const CancelarSuscripcion: React.FC<CancelarSuscripcionProps> = ({
 
         {/* Información de la suscripción */}
         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-          <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+          <h4 className="font-semibold text-gray-900 dark:text-white mb-3">
             Detalles de la suscripción
           </h4>
-          <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
-              <span className="font-medium">Cliente:</span> {suscripcion.clienteNombre}
+              <span className="font-medium text-gray-700 dark:text-gray-300">Cliente:</span>
+              <span className="ml-2 text-gray-900 dark:text-white">{suscripcion.clienteNombre}</span>
             </div>
             <div>
-              <span className="font-medium">Plan:</span> {suscripcion.planNombre}
+              <span className="font-medium text-gray-700 dark:text-gray-300">Plan:</span>
+              <span className="ml-2 text-gray-900 dark:text-white">{suscripcion.planNombre}</span>
             </div>
             <div>
-              <span className="font-medium">Precio:</span> {suscripcion.precio} €
+              <span className="font-medium text-gray-700 dark:text-gray-300">Precio:</span>
+              <span className="ml-2 text-gray-900 dark:text-white">{suscripcion.precio} €</span>
             </div>
             <div>
-              <span className="font-medium">Estado:</span> {suscripcion.estado}
+              <span className="font-medium text-gray-700 dark:text-gray-300">Estado:</span>
+              <span className="ml-2 text-gray-900 dark:text-white capitalize">{suscripcion.estado}</span>
+            </div>
+            {suscripcion.sesionesDisponibles !== undefined && (
+              <div>
+                <span className="font-medium text-gray-700 dark:text-gray-300">Sesiones disponibles:</span>
+                <span className="ml-2 text-gray-900 dark:text-white">{suscripcion.sesionesDisponibles}</span>
+              </div>
+            )}
+            <div>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Vence el:</span>
+              <span className="ml-2 text-gray-900 dark:text-white">{impactoCancelacion.fechaVencimiento}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Tipo de cancelación */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            Tipo de cancelación <span className="text-red-500">*</span>
+          </label>
+          <div className="space-y-2">
+            <label
+              className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                !cancelacionInmediata
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+              }`}
+            >
+              <input
+                type="radio"
+                name="tipoCancelacion"
+                checked={!cancelacionInmediata}
+                onChange={() => setCancelacionInmediata(false)}
+                disabled={loading}
+                className="w-4 h-4 text-blue-600 focus:ring-blue-500 mt-1"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 dark:text-white mb-1">
+                  Al final del período actual
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  La suscripción permanecerá activa hasta {impactoCancelacion.fechaVencimiento}. 
+                  El cliente podrá seguir usando el servicio hasta entonces.
+                </div>
+              </div>
+            </label>
+            <label
+              className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                cancelacionInmediata
+                  ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+              }`}
+            >
+              <input
+                type="radio"
+                name="tipoCancelacion"
+                checked={cancelacionInmediata}
+                onChange={() => setCancelacionInmediata(true)}
+                disabled={loading}
+                className="w-4 h-4 text-red-600 focus:ring-red-500 mt-1"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 dark:text-white mb-1">
+                  Cancelación inmediata
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  La suscripción se cancelará de inmediato. El acceso al servicio se desactivará ahora.
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        {/* Resumen de impacto */}
+        <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <TrendingDown className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="font-semibold text-orange-900 dark:text-orange-300 mb-2">
+                Resumen del Impacto
+              </h4>
+              <div className="space-y-2 text-sm">
+                {suscripcion.sesionesDisponibles !== undefined && impactoCancelacion.sesionesRestantes > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                    <span className="text-orange-700 dark:text-orange-400">
+                      <strong>{impactoCancelacion.sesionesRestantes}</strong> sesión{impactoCancelacion.sesionesRestantes !== 1 ? 'es' : ''} restante{impactoCancelacion.sesionesRestantes !== 1 ? 's' : ''} que se perderán
+                    </span>
+                  </div>
+                )}
+                {!cancelacionInmediata && impactoCancelacion.diasRestantes > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                    <span className="text-orange-700 dark:text-orange-400">
+                      La suscripción permanecerá activa por <strong>{impactoCancelacion.diasRestantes}</strong> día{impactoCancelacion.diasRestantes !== 1 ? 's' : ''} más
+                    </span>
+                  </div>
+                )}
+                {cancelacionInmediata && (
+                  <div className="flex items-center gap-2">
+                    <XCircle className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                    <span className="text-orange-700 dark:text-orange-400">
+                      El acceso se desactivará <strong>inmediatamente</strong>
+                    </span>
+                  </div>
+                )}
+                {impactoCancelacion.cuotasFuturas > 0 && (
+                  <div className="pt-2 border-t border-orange-200 dark:border-orange-700">
+                    <span className="text-orange-700 dark:text-orange-400">
+                      Se perderán <strong>{impactoCancelacion.cuotasFuturas}</strong> cuota{impactoCancelacion.cuotasFuturas !== 1 ? 's' : ''} futura{impactoCancelacion.cuotasFuturas !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -212,7 +357,7 @@ export const CancelarSuscripcion: React.FC<CancelarSuscripcionProps> = ({
             loading={loading}
           >
             <XCircle className="w-4 h-4 mr-2" />
-            Confirmar Cancelación
+            {cancelacionInmediata ? 'Cancelar Inmediatamente' : 'Confirmar Cancelación'}
           </Button>
         </div>
       </div>

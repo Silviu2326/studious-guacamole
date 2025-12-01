@@ -56,26 +56,101 @@ export const PLANTILLAS_PREDEFINIDAS: Omit<PlantillaSesion, 'id' | 'entrenadorId
   },
 ];
 
+// ============================================================================
+// CONEXIÓN CON EL FLUJO DE RESERVA
+// ============================================================================
 /**
- * Obtiene las plantillas de sesión configuradas para un entrenador
+ * CONEXIÓN CON EL FLUJO DE RESERVA:
+ * 
+ * Las plantillas de sesión son la base para crear reservas. Cuando un cliente
+ * o entrenador crea una reserva:
+ * 
+ * 1. SELECCIÓN DE PLANTILLA: Se usa getPlantillasSesion() para mostrar las
+ *    plantillas disponibles al cliente/entrenador en el formulario de reserva.
+ * 
+ * 2. CREACIÓN DE RESERVA: Al crear una reserva (createReserva en reservas.ts),
+ *    se puede especificar tipoSesionId que hace referencia a una PlantillaSesion.
+ *    La plantilla proporciona:
+ *    - duracionMinutos: Para calcular fechaFin desde fechaInicio
+ *    - precio: Precio base de la sesión
+ *    - tipoSesion: Si es presencial o videollamada
+ *    - tipoEntrenamiento: Tipo de servicio
+ * 
+ * 3. CÁLCULO DE PRECIO: Si se usa un bono o paquete, el precio puede ser 0.
+ *    Si no, se usa el precio de la plantilla (ajustado según modalidad).
+ * 
+ * 4. VALIDACIÓN: La plantilla también puede tener límites de plazas (clases grupales)
+ *    y configuraciones de buffer time que afectan la disponibilidad.
+ * 
+ * EJEMPLO DE FLUJO:
+ * ```typescript
+ * // 1. Obtener plantillas disponibles
+ * const plantillas = await getPlantillasSesion(entrenadorId);
+ * 
+ * // 2. Cliente selecciona una plantilla
+ * const plantillaSeleccionada = plantillas[0];
+ * 
+ * // 3. Crear reserva usando la plantilla
+ * const reserva = await createReserva({
+ *   clienteId: 'cliente1',
+ *   entrenadorId: 'entrenador1',
+ *   tipoSesionId: plantillaSeleccionada.id, // Referencia a la plantilla
+ *   fechaInicio: new Date('2024-03-01T10:00'),
+ *   fechaFin: new Date('2024-03-01T11:00'), // Calculado desde duracionMinutos
+ *   estado: 'pendiente',
+ *   origen: 'appCliente',
+ *   esOnline: plantillaSeleccionada.esOnline,
+ *   // Si usa bono: bonoIdOpcional = 'bono1'
+ *   // Si usa paquete: paqueteIdOpcional = 'paquete1'
+ * });
+ * ```
+ * 
+ * Cuando una reserva se completa, el sistema puede:
+ * - Consumir una sesión del bono si bonoIdOpcional está presente
+ * - Actualizar estadísticas de uso de plantillas
+ * - Generar facturas si no se usó bono/paquete
  */
-export const getPlantillasSesion = async (entrenadorId: string): Promise<PlantillaSesion[]> => {
+
+// ============================================================================
+// FUNCIONES PRINCIPALES - API ESTÁNDAR
+// ============================================================================
+
+/**
+ * Obtiene todas las plantillas de sesión configuradas para un entrenador
+ * 
+ * @param entrenadorId - ID del entrenador (opcional, puede ser obtenido del contexto)
+ * @returns Lista de plantillas de sesión del entrenador
+ * 
+ * @remarks
+ * CONEXIÓN CON RESERVAS:
+ * - Se usa al mostrar el selector de tipo de sesión en el formulario de reserva
+ * - Permite al cliente/entrenador elegir qué tipo de sesión quiere reservar
+ * - Las plantillas definen duración, precio y características de las sesiones
+ * 
+ * En producción, esta función se conectaría con un backend REST/GraphQL:
+ * - REST: GET /api/entrenadores/:entrenadorId/plantillas-sesion
+ * - GraphQL: query { entrenador(id: "...") { plantillasSesion { id, nombre, precio, ... } } }
+ */
+export const getPlantillasSesion = async (entrenadorId?: string): Promise<PlantillaSesion[]> => {
   await new Promise(resolve => setTimeout(resolve, 200));
 
-  const storageKey = `plantillas-sesion-${entrenadorId}`;
+  // Si no se proporciona entrenadorId, obtener del contexto o usar un ID por defecto
+  const entrenadorIdFinal = entrenadorId || '1'; // En producción, obtener del contexto de autenticación
+
+  const storageKey = `plantillas-sesion-${entrenadorIdFinal}`;
   const plantillasStorage = localStorage.getItem(storageKey);
 
   if (!plantillasStorage) {
     // Crear plantillas por defecto
     const plantillasPorDefecto: PlantillaSesion[] = PLANTILLAS_PREDEFINIDAS.map((p, index) => ({
       ...p,
-      id: `plantilla-${entrenadorId}-${index}`,
-      entrenadorId,
+      id: `plantilla-${entrenadorIdFinal}-${index}`,
+      entrenadorId: entrenadorIdFinal,
       createdAt: new Date(),
       updatedAt: new Date(),
     }));
 
-    await guardarPlantillasSesion(entrenadorId, plantillasPorDefecto);
+    await guardarPlantillasSesion(entrenadorIdFinal, plantillasPorDefecto);
     return plantillasPorDefecto;
   }
 
@@ -124,6 +199,30 @@ export const getPlantillaSesionPorId = async (
 
 /**
  * Crea una nueva plantilla de sesión
+ * 
+ * @param data - Datos de la plantilla a crear (sin id, entrenadorId, createdAt, updatedAt)
+ * @param entrenadorId - ID del entrenador (opcional, puede obtenerse del contexto)
+ * @returns La plantilla creada
+ * 
+ * @remarks
+ * CONEXIÓN CON RESERVAS:
+ * - Las nuevas plantillas estarán disponibles inmediatamente para crear reservas
+ * - Los cambios afectan todas las reservas futuras que usen esta plantilla
+ * - El precio configurado se usará como precio base para las reservas
+ * 
+ * En producción: POST /api/entrenadores/:entrenadorId/plantillas-sesion
+ */
+export const createPlantillaSesion = async (
+  data: Omit<PlantillaSesion, 'id' | 'entrenadorId' | 'createdAt' | 'updatedAt'> & { entrenadorId?: string }
+): Promise<PlantillaSesion> => {
+  const entrenadorId = data.entrenadorId || '1'; // En producción, obtener del contexto
+  const { entrenadorId: _, ...plantillaData } = data;
+  
+  return crearPlantillaSesion(entrenadorId, plantillaData);
+};
+
+/**
+ * Alias para mantener compatibilidad con código existente
  */
 export const crearPlantillaSesion = async (
   entrenadorId: string,
@@ -149,7 +248,32 @@ export const crearPlantillaSesion = async (
 };
 
 /**
- * Actualiza una plantilla de sesión
+ * Actualiza una plantilla de sesión existente
+ * 
+ * @param id - ID de la plantilla a actualizar
+ * @param changes - Cambios parciales a aplicar
+ * @param entrenadorId - ID del entrenador (opcional)
+ * @returns La plantilla actualizada
+ * 
+ * @remarks
+ * CONEXIÓN CON RESERVAS:
+ * - Los cambios en precio NO afectan reservas ya creadas
+ * - Los cambios en duración/descripción pueden afectar reservas futuras
+ * - Se debe validar que no haya reservas pendientes que dependan de esta plantilla
+ * 
+ * En producción: PATCH /api/plantillas-sesion/:id
+ */
+export const updatePlantillaSesion = async (
+  id: string,
+  changes: Partial<Omit<PlantillaSesion, 'id' | 'entrenadorId' | 'createdAt' | 'updatedAt'>>,
+  entrenadorId?: string
+): Promise<PlantillaSesion> => {
+  const entrenadorIdFinal = entrenadorId || '1'; // En producción, obtener del contexto
+  return actualizarPlantillaSesion(entrenadorIdFinal, id, changes);
+};
+
+/**
+ * Alias para mantener compatibilidad con código existente
  */
 export const actualizarPlantillaSesion = async (
   entrenadorId: string,
@@ -179,6 +303,35 @@ export const actualizarPlantillaSesion = async (
 
 /**
  * Elimina una plantilla de sesión
+ * 
+ * @param id - ID de la plantilla a eliminar
+ * @param entrenadorId - ID del entrenador (opcional)
+ * @returns void
+ * 
+ * @remarks
+ * CONEXIÓN CON RESERVAS:
+ * - Se recomienda hacer soft delete (desactivar) en lugar de eliminar físicamente
+ * - Verificar que no haya reservas pendientes usando esta plantilla
+ * - Las reservas pasadas que usaron esta plantilla NO se ven afectadas
+ * - Las reservas futuras no podrán usar esta plantilla
+ * 
+ * FLUJO RECOMENDADO:
+ * 1. Verificar reservas pendientes con esta plantilla
+ * 2. Si hay reservas pendientes, desactivar en lugar de eliminar
+ * 3. Si no hay reservas, proceder con eliminación
+ * 
+ * En producción: DELETE /api/plantillas-sesion/:id
+ */
+export const deletePlantillaSesion = async (
+  id: string,
+  entrenadorId?: string
+): Promise<void> => {
+  const entrenadorIdFinal = entrenadorId || '1'; // En producción, obtener del contexto
+  return eliminarPlantillaSesion(entrenadorIdFinal, id);
+};
+
+/**
+ * Alias para mantener compatibilidad con código existente
  */
 export const eliminarPlantillaSesion = async (
   entrenadorId: string,

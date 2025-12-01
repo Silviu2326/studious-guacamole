@@ -1,25 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Input, Select, SelectOption, Table, TableColumn, Modal, Textarea, Badge, Tooltip } from '../../../components/componentsreutilizables';
-import { 
-  GastoDeducible, 
-  CategoriaGasto, 
-  FiltroGastos, 
+import {
+  GastoDeducible,
+  CategoriaGasto,
+  FiltroGastos,
   CATEGORIAS_GASTO,
   ResumenGastos,
-  ArchivoAdjunto
+  ArchivoAdjunto,
+  Expense,
+  ExpenseStatus,
+  ExpenseOrigin
 } from '../types/expenses';
-import { expensesAPI } from '../api/expenses';
+import { expensesAPI, getExpenses, validateExpense } from '../api/expenses';
 import { ExpenseFileUpload } from './ExpenseFileUpload';
 import { MonthlyExpenseComparisonTable } from './MonthlyExpenseComparisonTable';
 import { MobileExpenseForm } from './MobileExpenseForm';
 import { ExpenseAlertModal } from './ExpenseAlertModal';
 import { ExpenseEducationSection } from './ExpenseEducationSection';
+import { DateRangePicker } from './DateRangePicker';
 import { useExpenseAlerts } from '../hooks/useExpenseAlerts';
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  DollarSign, 
+import {
+  Plus,
+  Edit,
+  Trash2,
+  DollarSign,
   FileText,
   TrendingDown,
   Download,
@@ -32,7 +36,12 @@ import {
   Camera,
   BookOpen,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  CheckCircle2,
+  XCircle,
+  Eye,
+  Search,
+  Info
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 import * as XLSX from 'xlsx';
@@ -43,9 +52,10 @@ interface GestorGastosDeduciblesProps {
   onExpensesChange?: () => void;
 }
 
-export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({ 
-  onExpensesChange 
+export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
+  onExpensesChange
 }) => {
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [gastos, setGastos] = useState<GastoDeducible[]>([]);
   const [resumen, setResumen] = useState<ResumenGastos | null>(null);
   const [loading, setLoading] = useState(false);
@@ -54,13 +64,19 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
   const [gastoEditando, setGastoEditando] = useState<GastoDeducible | null>(null);
   const [filtros, setFiltros] = useState<FiltroGastos>({});
   const [isMobile, setIsMobile] = useState(false);
-  
+  const [mostrarAdjuntos, setMostrarAdjuntos] = useState<Expense | null>(null);
+  const [textoLibre, setTextoLibre] = useState('');
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
+    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    to: new Date()
+  });
+
   // Sistema de alertas de gastos
   const { verificarAlerta, recalcularEstadisticas } = useExpenseAlerts();
   const [alertaActual, setAlertaActual] = useState<any>(null);
   const [mostrarAlerta, setMostrarAlerta] = useState(false);
   const [gastoPendiente, setGastoPendiente] = useState<any>(null);
-  
+
   // Sección educativa
   const [mostrarSeccionEducativa, setMostrarSeccionEducativa] = useState(false);
 
@@ -73,7 +89,7 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-  
+
   // Estado del formulario
   const [formData, setFormData] = useState({
     fecha: new Date().toISOString().split('T')[0],
@@ -88,11 +104,19 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
   useEffect(() => {
     cargarGastos();
     cargarResumen();
-  }, [filtros]);
+  }, [filtros, textoLibre]);
 
   const cargarGastos = async () => {
     setLoading(true);
     try {
+      // Cargar Expense[] directamente para tener acceso a estado y origen
+      const expensesData = await getExpenses({
+        ...filtros,
+        textoLibre: textoLibre || undefined
+      });
+      setExpenses(expensesData);
+
+      // También cargar GastoDeducible[] para compatibilidad con código existente
       const datos = await expensesAPI.obtenerGastos(filtros);
       setGastos(datos);
     } catch (error) {
@@ -179,7 +203,7 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
           usuarioCreacion: 'current-user'
         };
 
-        const alerta = verificarAlerta(nuevoGasto);
+        const alerta = await verificarAlerta(nuevoGasto);
         if (alerta) {
           // Mostrar modal de alerta
           setAlertaActual(alerta);
@@ -246,7 +270,7 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
 
     // Verificar si es un nuevo gasto (no edición) y si hay alerta
     if (!gastoEditando) {
-      const alerta = verificarAlerta(nuevoGasto);
+      const alerta = await verificarAlerta(nuevoGasto);
       if (alerta) {
         // Mostrar modal de alerta
         setAlertaActual(alerta);
@@ -350,6 +374,54 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
     }
   };
 
+  const handleValidarGasto = async (expense: Expense, nuevoEstado: ExpenseStatus, motivo?: string) => {
+    try {
+      await validateExpense(expense.id, nuevoEstado, motivo);
+      await cargarGastos();
+      await cargarResumen();
+      if (onExpensesChange) {
+        onExpensesChange();
+      }
+    } catch (error) {
+      console.error('Error al validar gasto:', error);
+      alert('Error al validar el gasto');
+    }
+  };
+
+  const handleAprobarGasto = async (expense: Expense) => {
+    const motivo = prompt('Motivo de aprobación (opcional):');
+    await handleValidarGasto(expense, 'aprobado', motivo || undefined);
+  };
+
+  const handleRechazarGasto = async (expense: Expense) => {
+    const motivo = prompt('Motivo del rechazo (requerido):');
+    if (!motivo) {
+      alert('Debes proporcionar un motivo para rechazar el gasto');
+      return;
+    }
+    await handleValidarGasto(expense, 'rechazado', motivo);
+  };
+
+  const getEstadoBadge = (estado: ExpenseStatus) => {
+    const estados: Record<ExpenseStatus, { label: string; variant: 'blue' | 'green' | 'red' | 'yellow' }> = {
+      pendiente_revision: { label: 'Pendiente', variant: 'blue' },
+      aprobado: { label: 'Aprobado', variant: 'green' },
+      rechazado: { label: 'Rechazado', variant: 'red' },
+      observacion: { label: 'Observación', variant: 'yellow' }
+    };
+    const config = estados[estado] || estados.pendiente_revision;
+    return <Badge variant={config.variant}>{config.label}</Badge>;
+  };
+
+  const getOrigenLabel = (origen: ExpenseOrigin) => {
+    const origenes: Record<ExpenseOrigin, string> = {
+      manual: 'Manual',
+      banco: 'Banco',
+      importacionCSV: 'Importación CSV'
+    };
+    return origenes[origen] || origen;
+  };
+
   const handleExportar = () => {
     const datosExportacion = gastos.map(gasto => ({
       'Fecha': formatearFecha(gasto.fecha),
@@ -358,7 +430,7 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
       'Importe': gasto.importe,
       'Deducible': gasto.deducible ? 'Sí' : 'No',
       'Notas': gasto.notas || '',
-      'Archivos Adjuntos': gasto.archivosAdjuntos && gasto.archivosAdjuntos.length > 0 
+      'Archivos Adjuntos': gasto.archivosAdjuntos && gasto.archivosAdjuntos.length > 0
         ? gasto.archivosAdjuntos.map(a => a.nombre).join(', ')
         : ''
     }));
@@ -375,7 +447,7 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
     ];
 
     XLSX.utils.book_append_sheet(wb, ws, 'Gastos Deducibles');
-    
+
     const nombreArchivo = `Gastos_Deducibles_${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(wb, nombreArchivo);
   };
@@ -426,28 +498,37 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
     });
   };
 
-  const columnas: TableColumn<GastoDeducible>[] = [
+  // Convertir Expense a formato de tabla
+  const expensesParaTabla = expenses.map(expense => {
+    const gasto = gastos.find(g => g.id === expense.id);
+    return {
+      expense,
+      gasto: gasto || null
+    };
+  });
+
+  const columnas: TableColumn<{ expense: Expense; gasto: GastoDeducible | null }>[] = [
     {
       key: 'fecha',
       header: 'Fecha',
-      render: (gasto) => formatearFecha(gasto.fecha)
+      render: (row) => formatearFecha(row.expense.fecha)
     },
     {
-      key: 'concepto',
-      header: 'Concepto',
-      render: (gasto) => (
+      key: 'descripcion',
+      header: 'Descripción',
+      render: (row) => (
         <div>
           <div className="font-medium text-gray-900 flex items-center gap-2">
-            {gasto.concepto}
-            {gasto.archivosAdjuntos && gasto.archivosAdjuntos.length > 0 && (
-              <span className="flex items-center gap-1 text-blue-600" title={`${gasto.archivosAdjuntos.length} archivo(s) adjunto(s)`}>
+            {row.expense.descripcion}
+            {row.expense.adjuntos && row.expense.adjuntos.length > 0 && (
+              <span className="flex items-center gap-1 text-blue-600" title={`${row.expense.adjuntos.length} archivo(s) adjunto(s)`}>
                 <Paperclip className="w-4 h-4" />
-                <span className="text-xs">{gasto.archivosAdjuntos.length}</span>
+                <span className="text-xs">{row.expense.adjuntos.length}</span>
               </span>
             )}
           </div>
-          {gasto.notas && (
-            <div className="text-sm text-gray-500">{gasto.notas}</div>
+          {row.expense.notas && (
+            <div className="text-sm text-gray-500">{row.expense.notas}</div>
           )}
         </div>
       )
@@ -455,46 +536,94 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
     {
       key: 'categoria',
       header: 'Categoría',
-      render: (gasto) => (
+      render: (row) => (
         <Badge variant="secondary">
-          {CATEGORIAS_GASTO[gasto.categoria].nombre}
+          {CATEGORIAS_GASTO[row.expense.categoria].nombre}
         </Badge>
       )
     },
     {
       key: 'importe',
       header: 'Importe',
-      render: (gasto) => (
+      render: (row) => (
         <span className="font-semibold text-red-600">
-          {formatearMoneda(gasto.importe)}
+          {formatearMoneda(row.expense.importe)}
         </span>
       )
     },
     {
       key: 'deducible',
       header: 'Deducible',
-      render: (gasto) => (
-        <Badge variant={gasto.deducible ? 'success' : 'warning'}>
-          {gasto.deducible ? 'Sí' : 'No'}
+      render: (row) => (
+        <Badge variant={row.expense.deducible ? 'success' : 'warning'}>
+          {row.expense.deducible ? 'Sí' : 'No'}
         </Badge>
+      )
+    },
+    {
+      key: 'estado',
+      header: 'Estado',
+      render: (row) => getEstadoBadge(row.expense.estado)
+    },
+    {
+      key: 'origen',
+      header: 'Origen',
+      render: (row) => (
+        <span className="text-sm text-gray-600">
+          {getOrigenLabel(row.expense.origen)}
+        </span>
       )
     },
     {
       key: 'acciones',
       header: 'Acciones',
-      render: (gasto) => (
+      render: (row) => (
         <div className="flex gap-2">
+          {row.gasto && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleAbrirFormulario(row.gasto!)}
+              title="Editar"
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+          )}
+          {row.expense.adjuntos && row.expense.adjuntos.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMostrarAdjuntos(row.expense)}
+              title="Ver adjuntos"
+            >
+              <Eye className="w-4 h-4 text-blue-600" />
+            </Button>
+          )}
+          {row.expense.estado === 'pendiente_revision' && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleAprobarGasto(row.expense)}
+                title="Aprobar"
+              >
+                <CheckCircle2 className="w-4 h-4 text-green-600" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleRechazarGasto(row.expense)}
+                title="Rechazar"
+              >
+                <XCircle className="w-4 h-4 text-red-600" />
+              </Button>
+            </>
+          )}
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleAbrirFormulario(gasto)}
-          >
-            <Edit className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleEliminar(gasto.id)}
+            onClick={() => handleEliminar(row.expense.id)}
+            title="Eliminar"
           >
             <Trash2 className="w-4 h-4 text-red-600" />
           </Button>
@@ -564,22 +693,38 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
               </Button>
             </div>
           </div>
-          
+
           {/* Botón para mostrar/ocultar sección educativa */}
           <div className="mt-4 pt-4 border-t border-gray-200">
-            <Button
-              variant="secondary"
-              onClick={() => setMostrarSeccionEducativa(!mostrarSeccionEducativa)}
-              className="w-full sm:w-auto flex items-center justify-center gap-2"
-            >
-              <BookOpen className="w-4 h-4" />
-              {mostrarSeccionEducativa ? 'Ocultar' : 'Mostrar'} Guía de Gastos Deducibles
-              {mostrarSeccionEducativa ? (
-                <ChevronUp className="w-4 h-4" />
-              ) : (
-                <ChevronDown className="w-4 h-4" />
-              )}
-            </Button>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setMostrarSeccionEducativa(!mostrarSeccionEducativa);
+                  if (!mostrarSeccionEducativa) {
+                    setTimeout(() => {
+                      const seccion = document.getElementById('educacion-gastos-deducibles');
+                      if (seccion) {
+                        seccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }
+                    }, 100);
+                  }
+                }}
+                className="w-full sm:w-auto flex items-center justify-center gap-2"
+              >
+                <BookOpen className="w-4 h-4" />
+                {mostrarSeccionEducativa ? 'Ocultar' : 'Ver'} Guía de Gastos Deducibles
+                {mostrarSeccionEducativa ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </Button>
+              <p className="text-xs text-gray-600 flex items-center gap-1">
+                <Info className="w-3 h-3" />
+                <span>Aprende qué gastos son deducibles y cómo maximizar tus deducciones fiscales</span>
+              </p>
+            </div>
           </div>
         </div>
       </Card>
@@ -633,7 +778,7 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
               </div>
             </Card>
           </div>
-          
+
           {/* Totales Separados: Deducibles vs No Deducibles */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card className="border-2 border-green-200 bg-green-50/50">
@@ -645,7 +790,7 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
                       {formatearMoneda(resumen.totalGastosDeducibles)}
                     </div>
                     <div className="text-xs text-gray-600">
-                      {resumen.cantidadGastosDeducibles} {resumen.cantidadGastosDeducibles === 1 ? 'gasto' : 'gastos'} • 
+                      {resumen.cantidadGastosDeducibles} {resumen.cantidadGastosDeducibles === 1 ? 'gasto' : 'gastos'} •
                       {resumen.totalGastos > 0 ? ` ${((resumen.totalGastosDeducibles / resumen.totalGastos) * 100).toFixed(1)}% del total` : ' 0%'}
                     </div>
                   </div>
@@ -664,7 +809,7 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
                       {formatearMoneda(resumen.totalGastosNoDeducibles)}
                     </div>
                     <div className="text-xs text-gray-600">
-                      {resumen.cantidadGastosNoDeducibles} {resumen.cantidadGastosNoDeducibles === 1 ? 'gasto' : 'gastos'} • 
+                      {resumen.cantidadGastosNoDeducibles} {resumen.cantidadGastosNoDeducibles === 1 ? 'gasto' : 'gastos'} •
                       {resumen.totalGastos > 0 ? ` ${((resumen.totalGastosNoDeducibles / resumen.totalGastos) * 100).toFixed(1)}% del total` : ' 0%'}
                     </div>
                   </div>
@@ -726,13 +871,13 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
           const [añoStr, mesStr] = mes.split('-');
           const fechaInicio = new Date(parseInt(añoStr), parseInt(mesStr) - 1, 1);
           const fechaFin = new Date(parseInt(añoStr), parseInt(mesStr), 0);
-          
+
           setFiltros({
             categoria,
             fechaInicio,
             fechaFin
           });
-          
+
           // Scroll to table
           setTimeout(() => {
             const tableElement = document.getElementById('gastos-table');
@@ -744,12 +889,12 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
         initialMonths={6}
       />
 
-      {/* Filtros */}
+      {/* Filtros Avanzados */}
       <Card className="bg-white shadow-sm">
         <div className="p-6">
           <div className="mb-4 flex items-center gap-2">
             <h3 className="text-lg font-semibold text-gray-900">Filtros de Búsqueda</h3>
-            <Tooltip 
+            <Tooltip
               content={
                 <div className="max-w-xs">
                   <p className="font-semibold mb-2">Filtros de Búsqueda:</p>
@@ -758,6 +903,7 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
                   <ul className="text-xs space-y-1 list-disc list-inside">
                     <li>Usa rangos predefinidos para búsquedas rápidas</li>
                     <li>Combina fecha y categoría para análisis específicos</li>
+                    <li>Usa búsqueda de texto libre para encontrar por concepto o notas</li>
                     <li>Deja los filtros vacíos para ver todos los gastos</li>
                   </ul>
                 </div>
@@ -768,91 +914,79 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
               <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
             </Tooltip>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
-                <span>Rango de Fechas</span>
-                <Tooltip 
-                  content={
-                    <div className="max-w-xs">
-                      <p className="font-semibold mb-2">Rango de Fechas Predefinido:</p>
-                      <p className="text-xs mb-2">Selecciona un rango predefinido para filtrar gastos rápidamente. Esto establecerá automáticamente las fechas de inicio y fin.</p>
-                      <p className="text-xs font-semibold mt-2">Opciones:</p>
-                      <ul className="text-xs space-y-1 list-disc list-inside">
-                        <li><strong>Mes Actual:</strong> Desde el primer día del mes hasta hoy</li>
-                        <li><strong>Mes Anterior:</strong> Todo el mes pasado</li>
-                        <li><strong>Último Trimestre:</strong> Últimos 3 meses</li>
-                        <li><strong>Último Semestre:</strong> Últimos 6 meses</li>
-                        <li><strong>Año Actual:</strong> Desde enero hasta hoy</li>
-                      </ul>
-                    </div>
+
+          {/* DateRangePicker */}
+          <div className="mb-4">
+            <DateRangePicker
+              dateRange={dateRange}
+              onDateRangeChange={(range) => {
+                setDateRange(range);
+                setFiltros({
+                  ...filtros,
+                  fechaInicio: range.from,
+                  fechaFin: range.to
+                });
+              }}
+              predefinedRanges={[
+                {
+                  label: 'Mes Actual',
+                  getDates: () => {
+                    const hoy = new Date();
+                    return {
+                      from: new Date(hoy.getFullYear(), hoy.getMonth(), 1),
+                      to: hoy
+                    };
                   }
-                  position="right"
-                  delay={100}
-                >
-                  <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
-                </Tooltip>
-              </label>
-              <Select
-                label=""
-                options={rangosPredefinidos}
-                value=""
-                onChange={(e) => handleRangoChange(e.target.value)}
-                placeholder="Seleccionar rango"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
-                <span>Fecha Inicio</span>
-                <Tooltip 
-                  content={
-                    <div className="max-w-xs">
-                      <p className="font-semibold mb-2">Fecha de Inicio:</p>
-                      <p className="text-xs mb-2">Selecciona la fecha desde la que quieres ver los gastos. Los gastos desde esta fecha (inclusive) serán mostrados.</p>
-                      <p className="text-xs mt-2 italic">Puedes usar un rango predefinido o establecer fechas personalizadas.</p>
-                    </div>
+                },
+                {
+                  label: 'Mes Anterior',
+                  getDates: () => {
+                    const hoy = new Date();
+                    return {
+                      from: new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1),
+                      to: new Date(hoy.getFullYear(), hoy.getMonth(), 0)
+                    };
                   }
-                  position="right"
-                  delay={100}
-                >
-                  <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
-                </Tooltip>
-              </label>
-              <Input
-                label=""
-                type="date"
-                value={filtros.fechaInicio ? new Date(filtros.fechaInicio).toISOString().split('T')[0] : ''}
-                onChange={(e) => setFiltros({ ...filtros, fechaInicio: e.target.value ? new Date(e.target.value) : undefined })}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
-                <span>Fecha Fin</span>
-                <Tooltip 
-                  content={
-                    <div className="max-w-xs">
-                      <p className="font-semibold mb-2">Fecha de Fin:</p>
-                      <p className="text-xs mb-2">Selecciona la fecha hasta la que quieres ver los gastos. Los gastos hasta esta fecha (inclusive) serán mostrados.</p>
-                      <p className="text-xs mt-2 italic">Puedes usar un rango predefinido o establecer fechas personalizadas.</p>
-                    </div>
+                },
+                {
+                  label: 'Último Trimestre',
+                  getDates: () => {
+                    const hoy = new Date();
+                    return {
+                      from: new Date(hoy.getFullYear(), hoy.getMonth() - 3, 1),
+                      to: hoy
+                    };
                   }
-                  position="right"
-                  delay={100}
-                >
-                  <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
-                </Tooltip>
-              </label>
-              <Input
-                label=""
-                type="date"
-                value={filtros.fechaFin ? new Date(filtros.fechaFin).toISOString().split('T')[0] : ''}
-                onChange={(e) => setFiltros({ ...filtros, fechaFin: e.target.value ? new Date(e.target.value) : undefined })}
-              />
-            </div>
+                },
+                {
+                  label: 'Último Semestre',
+                  getDates: () => {
+                    const hoy = new Date();
+                    return {
+                      from: new Date(hoy.getFullYear(), hoy.getMonth() - 6, 1),
+                      to: hoy
+                    };
+                  }
+                },
+                {
+                  label: 'Año Actual',
+                  getDates: () => {
+                    const hoy = new Date();
+                    return {
+                      from: new Date(hoy.getFullYear(), 0, 1),
+                      to: hoy
+                    };
+                  }
+                }
+              ]}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
                 <span>Categoría</span>
-                <Tooltip 
+                <Tooltip
                   content={
                     <div className="max-w-xs">
                       <p className="font-semibold mb-2">Filtrar por Categoría:</p>
@@ -876,10 +1010,72 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
                 onChange={(e) => setFiltros({ ...filtros, categoria: e.target.value as CategoriaGasto || undefined })}
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+                <span>Estado</span>
+                <Tooltip
+                  content={
+                    <div className="max-w-xs">
+                      <p className="font-semibold mb-2">Filtrar por Estado:</p>
+                      <p className="text-xs mb-2">Filtra los gastos según su estado de validación. Útil para ver solo los gastos pendientes de revisión o los ya aprobados.</p>
+                    </div>
+                  }
+                  position="right"
+                  delay={100}
+                >
+                  <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
+                </Tooltip>
+              </label>
+              <Select
+                label=""
+                options={[
+                  { value: '', label: 'Todos los estados' },
+                  { value: 'pendiente_revision', label: 'Pendiente Revisión' },
+                  { value: 'aprobado', label: 'Aprobado' },
+                  { value: 'rechazado', label: 'Rechazado' },
+                  { value: 'observacion', label: 'Observación' }
+                ]}
+                value={filtros.estado || ''}
+                onChange={(e) => setFiltros({ ...filtros, estado: e.target.value as ExpenseStatus || undefined })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+                <Search className="w-4 h-4" />
+                <span>Búsqueda de Texto Libre</span>
+                <Tooltip
+                  content={
+                    <div className="max-w-xs">
+                      <p className="font-semibold mb-2">Búsqueda de Texto Libre:</p>
+                      <p className="text-xs mb-2">Busca en la descripción y notas de los gastos. Útil para encontrar gastos específicos por concepto o detalles.</p>
+                      <p className="text-xs mt-2 italic">Ejemplo: busca "combustible" para encontrar todos los gastos relacionados.</p>
+                    </div>
+                  }
+                  position="right"
+                  delay={100}
+                >
+                  <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
+                </Tooltip>
+              </label>
+              <Input
+                label=""
+                type="text"
+                value={textoLibre}
+                onChange={(e) => setTextoLibre(e.target.value)}
+                placeholder="Buscar en descripción y notas..."
+              />
+            </div>
             <div className="flex items-end gap-2">
               <Button
                 variant="secondary"
-                onClick={() => setFiltros({})}
+                onClick={() => {
+                  setFiltros({});
+                  setTextoLibre('');
+                  setDateRange({
+                    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+                    to: new Date()
+                  });
+                }}
                 fullWidth
               >
                 <X className="w-4 h-4 mr-2" />
@@ -902,13 +1098,72 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
       <Card id="gastos-table" className="bg-white shadow-sm">
         <div className="p-6">
           <Table
-            data={gastos}
+            data={expensesParaTabla}
             columns={columnas}
             loading={loading}
             emptyMessage="No hay gastos registrados"
           />
         </div>
       </Card>
+
+      {/* Modal para Ver Adjuntos */}
+      <Modal
+        isOpen={mostrarAdjuntos !== null}
+        onClose={() => setMostrarAdjuntos(null)}
+        title="Archivos Adjuntos"
+        size="lg"
+      >
+        {mostrarAdjuntos && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 mb-4">
+              <strong>Gasto:</strong> {mostrarAdjuntos.descripcion}
+            </p>
+            {mostrarAdjuntos.adjuntos && mostrarAdjuntos.adjuntos.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {mostrarAdjuntos.adjuntos.map((adjunto) => (
+                  <div
+                    key={adjunto.id}
+                    className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        {adjunto.tipoArchivo.startsWith('image/') ? (
+                          <ImageIcon className="w-5 h-5 text-blue-600" />
+                        ) : (
+                          <FileText className="w-5 h-5 text-red-600" />
+                        )}
+                        <span className="font-medium text-sm">{adjunto.nombreArchivo}</span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => window.open(adjunto.url, '_blank')}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {adjunto.tipoArchivo.startsWith('image/') && (
+                      <img
+                        src={adjunto.url}
+                        alt={adjunto.nombreArchivo}
+                        className="w-full h-48 object-contain rounded border border-gray-200"
+                      />
+                    )}
+                    <p className="text-xs text-gray-500 mt-2">
+                      {new Date(adjunto.fechaSubida).toLocaleDateString('es-ES')}
+                      {adjunto.tamaño && ` • ${(adjunto.tamaño / 1024).toFixed(1)} KB`}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-gray-500 py-8">
+                No hay archivos adjuntos para este gasto
+              </p>
+            )}
+          </div>
+        )}
+      </Modal>
 
       {/* Modal de Formulario */}
       <Modal
@@ -931,7 +1186,7 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
               <span>Fecha</span>
-              <Tooltip 
+              <Tooltip
                 content={
                   <div className="max-w-xs">
                     <p className="font-semibold mb-2">Fecha del Gasto:</p>
@@ -957,7 +1212,7 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
               <span>Concepto</span>
-              <Tooltip 
+              <Tooltip
                 content={
                   <div className="max-w-xs">
                     <p className="font-semibold mb-2">Concepto del Gasto:</p>
@@ -990,7 +1245,7 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
                 <span>Importe</span>
-                <Tooltip 
+                <Tooltip
                   content={
                     <div className="max-w-xs">
                       <p className="font-semibold mb-2">Importe del Gasto:</p>
@@ -1021,7 +1276,7 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
                 <span>Categoría</span>
-                <Tooltip 
+                <Tooltip
                   content={
                     <div className="max-w-xs">
                       <p className="font-semibold mb-2">Categoría del Gasto:</p>
@@ -1053,16 +1308,35 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
           </div>
           {formData.categoria && (
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-900">
-                <strong>{CATEGORIAS_GASTO[formData.categoria].nombre}:</strong>{' '}
-                {CATEGORIAS_GASTO[formData.categoria].descripcion}
-              </p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm text-blue-900 flex-1">
+                  <strong>{CATEGORIAS_GASTO[formData.categoria].nombre}:</strong>{' '}
+                  {CATEGORIAS_GASTO[formData.categoria].descripcion}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMostrarSeccionEducativa(true);
+                    setTimeout(() => {
+                      const seccion = document.getElementById('educacion-gastos-deducibles');
+                      if (seccion) {
+                        seccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }
+                    }, 100);
+                  }}
+                  className="text-xs text-blue-700 hover:text-blue-900 underline flex items-center gap-1 flex-shrink-0"
+                  title="Ver más información sobre esta categoría"
+                >
+                  <BookOpen className="w-3 h-3" />
+                  Ver guía
+                </button>
+              </div>
             </div>
           )}
-          
+
           {/* Campo Deducible con ayuda contextual */}
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <label className="block text-sm font-medium text-gray-700">
                 ¿Es deducible?
               </label>
@@ -1099,6 +1373,22 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
               >
                 <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
               </Tooltip>
+              <button
+                type="button"
+                onClick={() => {
+                  setMostrarSeccionEducativa(true);
+                  setTimeout(() => {
+                    const seccion = document.getElementById('educacion-gastos-deducibles');
+                    if (seccion) {
+                      seccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }, 100);
+                }}
+                className="text-xs text-blue-600 hover:text-blue-800 underline flex items-center gap-1"
+              >
+                <BookOpen className="w-3 h-3" />
+                ¿Qué es deducible?
+              </button>
             </div>
             <div className="flex gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -1128,31 +1418,59 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
                 </span>
               </label>
             </div>
-            <div className={`p-3 rounded-lg border ${
-              formData.deducible 
-                ? 'bg-green-50 border-green-200' 
+            <div className={`p-3 rounded-lg border ${formData.deducible
+                ? 'bg-green-50 border-green-200'
                 : 'bg-orange-50 border-orange-200'
-            }`}>
-              <p className={`text-xs ${
-                formData.deducible ? 'text-green-800' : 'text-orange-800'
               }`}>
+              <p className={`text-xs ${formData.deducible ? 'text-green-800' : 'text-orange-800'
+                }`}>
                 {formData.deducible ? (
                   <>
-                    <strong>✓ Gastos deducibles</strong> pueden incluirse en tu declaración de impuestos y reducir tu base imponible.
+                    <strong>✓ Gastos deducibles</strong> pueden incluirse en tu declaración de impuestos y reducir tu base imponible.{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMostrarSeccionEducativa(true);
+                        setTimeout(() => {
+                          const seccion = document.getElementById('educacion-gastos-deducibles');
+                          if (seccion) {
+                            seccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }
+                        }, 100);
+                      }}
+                      className="underline hover:no-underline font-semibold"
+                    >
+                      Ver guía completa
+                    </button>
                   </>
                 ) : (
                   <>
-                    <strong>⚠ Gastos no deducibles</strong> no pueden incluirse en tu declaración de impuestos. Se mostrarán por separado en los informes.
+                    <strong>⚠ Gastos no deducibles</strong> no pueden incluirse en tu declaración de impuestos. Se mostrarán por separado en los informes.{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMostrarSeccionEducativa(true);
+                        setTimeout(() => {
+                          const seccion = document.getElementById('educacion-gastos-deducibles');
+                          if (seccion) {
+                            seccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }
+                        }, 100);
+                      }}
+                      className="underline hover:no-underline font-semibold"
+                    >
+                      ¿Qué es deducible?
+                    </button>
                   </>
                 )}
               </p>
             </div>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
               <span>Notas (opcional)</span>
-              <Tooltip 
+              <Tooltip
                 content={
                   <div className="max-w-xs">
                     <p className="font-semibold mb-2">Notas Adicionales:</p>
@@ -1184,7 +1502,7 @@ export const GestorGastosDeducibles: React.FC<GestorGastosDeduciblesProps> = ({
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
               <span>Archivos Adjuntos</span>
-              <Tooltip 
+              <Tooltip
                 content={
                   <div className="max-w-xs">
                     <p className="font-semibold mb-2">Archivos Adjuntos:</p>

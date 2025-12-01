@@ -1,18 +1,68 @@
+// ===== TIPOS AUXILIARES Y ENUMS =====
+
+/**
+ * Tipo de cita/sesión disponible en el sistema
+ * Reutilizable desde otros módulos (Clientes, Facturación, etc.)
+ */
 export type TipoCita = 'sesion-1-1' | 'videollamada' | 'evaluacion' | 'clase-colectiva' | 'fisioterapia' | 'mantenimiento' | 'otro';
-export type EstadoCita = 'pendiente' | 'confirmada' | 'en-curso' | 'completada' | 'cancelada' | 'no-show';
+
+/**
+ * Estado de una cita en el sistema
+ * Define el ciclo de vida completo de una cita desde su creación hasta su finalización
+ */
+export type EstadoCita = 'reservada' | 'confirmada' | 'enCurso' | 'completada' | 'cancelada' | 'noShow';
+
+/**
+ * Canal por el cual se envía un recordatorio
+ * Permite múltiples canales para mayor flexibilidad
+ */
+export type CanalRecordatorio = 'email' | 'sms' | 'whatsapp' | 'push';
+
+/**
+ * Tipo de bloqueo de agenda
+ * Define diferentes razones por las que se puede bloquear tiempo en la agenda
+ */
+export type TipoBloqueoAgenda = 'vacaciones' | 'mantenimiento' | 'bloqueoManual' | 'feriado' | 'calendario-externo' | 'otro';
+
+/**
+ * Entidad a la que se aplica un bloqueo o configuración
+ * Permite aplicar reglas a nivel de entrenador o centro/gimnasio
+ */
+export type AplicableA = 'entrenador' | 'centro';
+
 export type VistaCalendario = 'mes' | 'semana' | 'dia';
 export type TipoRecurrencia = 'diaria' | 'semanal' | 'quincenal' | 'mensual' | 'ninguna';
 export type MotivoCancelacion = 'cliente' | 'entrenador' | 'otro';
 export type EstadoConfirmacionCliente = 'pendiente' | 'confirmada' | 'cancelada' | 'reprogramacion-solicitada';
 
+// ===== INTERFACES PRINCIPALES =====
+
+/**
+ * Representa un patrón de recurrencia para citas
+ * Permite definir citas que se repiten automáticamente siguiendo un patrón
+ * Reutilizable desde otros módulos que necesiten manejar eventos recurrentes
+ */
 export interface Recurrencia {
+  /** Tipo de recurrencia: diaria, semanal, quincenal, mensual */
   tipo: TipoRecurrencia;
-  diasSemana?: number[]; // 0 = Domingo, 6 = Sábado (solo para tipo 'semanal')
+  /** Intervalo de repetición (ej: cada 2 semanas, cada 3 meses) */
+  intervalo?: number;
+  /** Días de la semana en que se repite (0 = Domingo, 6 = Sábado) - Solo para tipo 'semanal' */
+  diasSemana?: number[];
+  /** Fecha de inicio de la recurrencia */
   fechaInicio: Date;
-  fechaFin?: Date; // undefined significa "hasta cancelar"
-  serieId?: string; // ID único para todas las sesiones de la misma serie
+  /** Fecha de fin opcional - undefined significa "hasta cancelar" */
+  fechaFinOpcional?: Date;
+  /** ID único para todas las sesiones de la misma serie */
+  serieId?: string;
+  /** Fechas excepcionales donde no se aplica la recurrencia */
+  excepciones?: Date[];
 }
 
+/**
+ * Historial de cambios realizados en una cita
+ * Permite auditar todas las modificaciones realizadas
+ */
 export interface HistorialCambio {
   id: string;
   fecha: Date;
@@ -28,36 +78,107 @@ export interface HistorialCambio {
   usuarioNombre?: string;
 }
 
+/**
+ * Representa una cita o sesión en el sistema de agenda
+ * Interfaz central que puede ser reutilizada desde módulos de Clientes, Facturación, etc.
+ * Contiene toda la información necesaria para gestionar una cita completa
+ */
 export interface Cita {
+  /** Identificador único de la cita */
   id: string;
+  /** Título o nombre de la cita */
   titulo: string;
+  /** Descripción adicional de la cita */
   descripcion?: string;
-  tipo: TipoCita;
-  estado: EstadoCita;
+  /** Cliente asociado a la cita */
+  cliente?: {
+    id: string;
+    nombre: string;
+    email?: string;
+    telefono?: string;
+  };
+  /** Entrenador asignado a la cita */
+  entrenador?: {
+    id: string;
+    nombre: string;
+  };
+  /** Fecha y hora de inicio de la cita */
   fechaInicio: Date;
+  /** Fecha y hora de fin de la cita */
   fechaFin: Date;
-  clienteId?: string;
-  clienteNombre?: string;
-  instructorId?: string;
-  instructorNombre?: string;
-  capacidadMaxima?: number;
-  inscritos?: number;
+  /** 
+   * ID del tipo de sesión (referencia a SesionTipo)
+   * 
+   * VÍNCULO CON SESIONTIPO:
+   * Este campo vincula la cita con un tipo de sesión configurado (SesionTipo).
+   * El tipo de sesión define características como duración, precio, capacidad,
+   * color para el calendario, modalidad (online/presencial) y si permite lista de espera.
+   * 
+   * Al crear una cita, se puede especificar el tipoSesionId para heredar automáticamente
+   * estas configuraciones. Si no se especifica, la cita puede tener valores personalizados.
+   * 
+   * Ejemplo:
+   * ```typescript
+   * const cita: Cita = {
+   *   id: 'c1',
+   *   tipoSesionId: 'tipo-entrenamiento-1-1', // Referencia al SesionTipo
+   *   fechaInicio: new Date('2024-01-15T10:00:00'),
+   *   fechaFin: new Date('2024-01-15T11:00:00'), // 60 min según duración del tipo
+   *   // ... otros campos
+   * };
+   * ```
+   */
+  tipoSesionId?: string;
+  /** Estado actual de la cita */
+  estado: EstadoCita;
+  /** Ubicación donde se realizará la cita */
   ubicacion?: string;
+  /** Notas adicionales sobre la cita */
   notas?: string;
-  recordatorioEnviado?: boolean;
+  /** Tags o etiquetas para categorizar la cita */
+  tags?: string[];
+  /** Fuente de la reserva (manual, enlace público, API, etc.) */
+  fuenteReserva?: 'manual' | 'enlacePublico' | 'api' | 'sincronizacion' | 'otro';
+  /** Recurrencia asociada si la cita es parte de una serie */
   recurrencia?: Recurrencia;
+  /** Historial de cambios realizados en la cita */
   historial?: HistorialCambio[];
+  /** Motivo de cancelación si aplica */
   motivoCancelacion?: MotivoCancelacion;
+  /** Detalle del motivo de cancelación */
   motivoCancelacionDetalle?: string;
-  // Nueva funcionalidad de confirmación de cliente
+  /** Confirmación del cliente */
   confirmacionCliente?: EstadoConfirmacionCliente;
+  /** Fecha de confirmación del cliente */
   fechaConfirmacionCliente?: Date;
+  /** Solicitud de reprogramación si existe */
   solicitudReprogramacion?: SolicitudReprogramacion;
-  // Sincronización con calendario externo
-  sincronizarCalendario?: boolean; // Si está activo, se sincronizará automáticamente
-  eventoExternoId?: string; // ID del evento en el calendario externo
-  conexionCalendarioId?: string; // ID de la conexión de calendario usada
-  asistencia?: 'asistio' | 'falto' | 'cancelado'; // Indicador de asistencia para historial
+  /** Si se debe sincronizar con calendario externo */
+  sincronizarCalendario?: boolean;
+  /** ID del evento en calendario externo */
+  eventoExternoId?: string;
+  /** ID de la conexión de calendario usada */
+  conexionCalendarioId?: string;
+  /** Indicador de asistencia para historial */
+  asistencia?: 'asistio' | 'falto' | 'cancelado';
+  /** Capacidad máxima para clases colectivas */
+  capacidadMaxima?: number;
+  /** Número de inscritos en clases colectivas */
+  inscritos?: number;
+  /** Si se ha enviado recordatorio */
+  recordatorioEnviado?: boolean;
+  
+  // Campos legacy para compatibilidad (deprecated - usar cliente y entrenador)
+  /** @deprecated Usar cliente.id */
+  clienteId?: string;
+  /** @deprecated Usar cliente.nombre */
+  clienteNombre?: string;
+  /** @deprecated Usar entrenador.id */
+  instructorId?: string;
+  /** @deprecated Usar entrenador.nombre */
+  instructorNombre?: string;
+  /** @deprecated Usar tipoSesionId */
+  tipo?: TipoCita;
 }
 
 // Solicitud de reprogramación por parte del cliente
@@ -74,20 +195,69 @@ export interface SolicitudReprogramacion {
   fechaRespuesta?: Date;
 }
 
+/**
+ * Representa un bloqueo de tiempo en la agenda
+ * Permite reservar períodos de tiempo que no están disponibles para citas
+ * Reutilizable para gestionar disponibilidad desde otros módulos
+ */
 export interface BloqueoAgenda {
+  /** Identificador único del bloqueo */
   id: string;
+  /** Título del bloqueo */
   titulo: string;
+  /** Descripción adicional del bloqueo */
   descripcion?: string;
-  motivo?: string; // Motivo del bloqueo (opcional)
+  /** Motivo del bloqueo */
+  motivo?: string;
+  /** Fecha y hora de inicio del bloqueo */
   fechaInicio: Date;
+  /** Fecha y hora de fin del bloqueo */
   fechaFin: Date;
-  tipo: 'vacaciones' | 'mantenimiento' | 'feriado' | 'calendario-externo' | 'otro';
+  /** Tipo de bloqueo */
+  tipo: TipoBloqueoAgenda;
+  /** Entidad a la que se aplica el bloqueo (entrenador o centro) */
+  aplicableA: AplicableA;
+  /** ID de la entidad específica (entrenadorId o centroId) */
+  aplicableAId?: string;
+  /** Si el bloqueo es recurrente */
   recurrente?: boolean;
-  bloqueoCompleto: boolean; // true = día completo, false = rango de horas
-  horaInicio?: string; // HH:mm (solo si bloqueoCompleto = false)
-  horaFin?: string; // HH:mm (solo si bloqueoCompleto = false)
-  eventoExternoId?: string; // ID del evento externo si viene de sincronización
-  conexionCalendarioId?: string; // ID de la conexión de calendario
+  /** Si bloquea el día completo o solo un rango de horas */
+  bloqueoCompleto: boolean;
+  /** Hora de inicio en formato HH:mm (solo si bloqueoCompleto = false) */
+  horaInicio?: string;
+  /** Hora de fin en formato HH:mm (solo si bloqueoCompleto = false) */
+  horaFin?: string;
+  /** ID del evento externo si viene de sincronización */
+  eventoExternoId?: string;
+  /** ID de la conexión de calendario */
+  conexionCalendarioId?: string;
+}
+
+/**
+ * Representa el horario de trabajo de un entrenador o centro
+ * Define los períodos de tiempo disponibles para agendar citas
+ * Reutilizable desde módulos de disponibilidad y planificación
+ */
+export interface HorarioTrabajo {
+  /** Identificador único del horario */
+  id: string;
+  /** Día de la semana (0 = Domingo, 6 = Sábado) */
+  diaSemana: number;
+  /** Hora de inicio en formato HH:mm */
+  horaInicio: string;
+  /** Hora de fin en formato HH:mm */
+  horaFin: string;
+  /** Pausas durante el horario (ej: almuerzo) */
+  pausas?: Array<{
+    horaInicio: string;
+    horaFin: string;
+  }>;
+  /** Si el horario está activo */
+  activo: boolean;
+  /** Entidad a la que se aplica el horario */
+  aplicableA: AplicableA;
+  /** ID de la entidad específica (entrenadorId o centroId) */
+  aplicableAId?: string;
 }
 
 export interface HorarioDisponibilidad {
@@ -128,17 +298,46 @@ export interface PlantillaHorario {
   updatedAt: Date;
 }
 
+/**
+ * Representa un recordatorio para una cita
+ * Permite notificar a clientes y entrenadores sobre citas próximas
+ * Reutilizable desde módulos de notificaciones y comunicación
+ * 
+ * ESTADO Y CANAL:
+ * - El recordatorio incluye estado (activo/inactivo) mediante el campo `activo`
+ * - El recordatorio incluye estado del canal mediante el campo `canalActivo`
+ * - El recordatorio incluye el canal de envío mediante el campo `tipo` (CanalRecordatorio)
+ * - Los canales disponibles son: 'email', 'sms', 'whatsapp', 'push'
+ */
 export interface Recordatorio {
+  /** Identificador único del recordatorio */
   id: string;
+  /** ID de la cita asociada */
   citaId: string;
-  tipo: 'email' | 'sms' | 'whatsapp' | 'push';
-  tiempoAnticipacion: number; // minutos antes
+  /** Tipo de canal de recordatorio (email, sms, whatsapp, push) */
+  tipo: CanalRecordatorio;
+  /** Offset en minutos antes de la cita para enviar el recordatorio */
+  offsetMinutos: number;
+  /** Plantilla de mensaje a usar (puede contener variables) */
+  plantilla?: string;
+  /** Si el canal está activo para este recordatorio (estado del canal) */
+  canalActivo: boolean;
+  /** Si el recordatorio está activo (estado general: activo/inactivo) */
   activo: boolean;
+  /** Si el recordatorio ya fue enviado */
   enviado?: boolean;
+  /** Fecha de envío del recordatorio */
   fechaEnvio?: Date;
+  /** Si el recordatorio fue leído */
   leido?: boolean;
+  /** Fecha de lectura del recordatorio */
   fechaLectura?: Date;
+  /** Error en caso de fallo al enviar */
   error?: string;
+  
+  // Campo legacy para compatibilidad
+  /** @deprecated Usar offsetMinutos */
+  tiempoAnticipacion?: number;
 }
 
 // Configuración de recordatorios automáticos
@@ -202,6 +401,52 @@ export interface AnalyticsOcupacion {
     nombre: string;
     ocupacion: number;
   };
+}
+
+/**
+ * Representa un tipo de sesión configurable
+ * Define las características de un tipo de sesión que puede ser reutilizado
+ * Reutilizable desde módulos de servicios, facturación y reservas
+ * 
+ * VÍNCULO CON CITAS:
+ * Las citas (Cita) se vinculan a un tipo de sesión mediante el campo `tipoSesionId`.
+ * Este campo permite que cada cita herede las configuraciones del tipo de sesión
+ * (duración, precio, capacidad, color, etc.) y facilita la gestión centralizada
+ * de los diferentes tipos de servicios ofrecidos.
+ * 
+ * Ejemplo de uso:
+ * ```typescript
+ * const cita: Cita = {
+ *   id: 'c1',
+ *   tipoSesionId: 'tipo-entrenamiento-1-1', // Referencia al SesionTipo
+ *   fechaInicio: new Date(),
+ *   // ... otros campos
+ * };
+ * ```
+ */
+export interface SesionTipo {
+  /** Identificador único del tipo de sesión */
+  id: string;
+  /** Nombre del tipo de sesión */
+  nombre: string;
+  /** Duración estándar en minutos */
+  duracion: number;
+  /** Capacidad máxima de participantes (1 para sesiones 1-1) */
+  capacidad: number;
+  /** Precio estándar del tipo de sesión */
+  precio?: number;
+  /** Color para visualización en calendarios (formato hex: #RRGGBB) */
+  color?: string;
+  /** Si permite lista de espera cuando está lleno */
+  permiteListaEspera: boolean;
+  /** Modalidad de la sesión: online o presencial */
+  modalidad: 'online' | 'presencial';
+  /** Notas adicionales sobre el tipo de sesión */
+  notas?: string;
+  /** Fecha de creación */
+  createdAt: Date;
+  /** Fecha de última actualización */
+  updatedAt: Date;
 }
 
 export interface PlantillaSesion {
@@ -354,7 +599,32 @@ export interface EstadisticasConfirmacionCliente {
 
 export type TipoCalendarioExterno = 'google' | 'outlook';
 
+/**
+ * Proveedor de calendario externo
+ * Alias de TipoCalendarioExterno para mayor claridad semántica
+ * @see TipoCalendarioExterno
+ */
+export type ProveedorCalendario = TipoCalendarioExterno;
+
 export type EstadoSincronizacion = 'conectado' | 'desconectado' | 'error' | 'sincronizando';
+
+/**
+ * Contexto para operaciones de sincronización de calendario
+ * Contiene información del usuario y entorno necesaria para las operaciones
+ */
+export interface ContextoSincronizacion {
+  userId?: string;
+  role?: 'entrenador' | 'gimnasio';
+  entrenadorId?: string;
+  centroId?: string;
+}
+
+/**
+ * Representa un calendario externo conectado
+ * Alias de ConexionCalendario para mayor claridad semántica en funciones de integración
+ * @see ConexionCalendario
+ */
+export type CalendarioExterno = ConexionCalendario;
 
 // Conexión con calendario externo
 export interface ConexionCalendario {
@@ -541,27 +811,46 @@ export interface EstadisticasCumplimientoPolitica {
   }[];
 }
 
-// Configuración de política de cancelación
-export interface ConfiguracionPoliticaCancelacion {
+/**
+ * Política de cancelación para sesiones
+ * Define las reglas de cancelación, penalizaciones y excepciones aplicables
+ * 
+ * Esta interfaz representa la configuración completa de políticas de cancelación
+ * que controla cómo se manejan las cancelaciones tardías y los no-shows.
+ * Incluye:
+ * - Plazo mínimo para cancelar sin coste
+ * - Penalizaciones por no-show
+ * - Penalizaciones por cancelación tardía
+ * - Excepciones a la política general
+ * - Configuraciones de notificación y automatización
+ */
+export interface PoliticaCancelacion {
   id: string;
   userId?: string;
   activo: boolean;
-  tiempoMinimoCancelacionHoras: number; // Horas mínimas antes de la sesión para cancelar sin penalización
+  tiempoMinimoCancelacionHoras: number; // Plazo mínimo para cancelar sin coste (en horas)
   penalizacionNoShow: boolean; // Si se aplica penalización por no-show
-  tipoPenalizacion?: 'advertencia' | 'cobro' | 'bloqueo'; // Tipo de penalización
-  maxNoShowsAntesAlerta: number; // Número máximo de no-shows antes de alertar
-  maxNoShowsAntesPenalizacion: number; // Número máximo de no-shows antes de penalizar
-  autoMarcarNoShow: boolean; // Si se marca automáticamente como no-show después de X minutos
-  minutosEsperaAutoNoShow: number; // Minutos de espera antes de marcar como no-show automáticamente
-  // Nuevos campos para User Story 1
-  notificarPoliticaAlCrear: boolean; // Si se notifica la política al cliente al crear sesión
-  mensajePolitica?: string; // Mensaje predefinido de la política para enviar a clientes
+  tipoPenalizacion?: 'advertencia' | 'cobro' | 'bloqueo'; // Tipo de penalización aplicada
+  maxNoShowsAntesAlerta: number; // Número máximo de no-shows antes de generar alerta
+  maxNoShowsAntesPenalizacion: number; // Número máximo de no-shows antes de aplicar penalización
+  autoMarcarNoShow: boolean; // Si se marca automáticamente como no-show
+  minutosEsperaAutoNoShow: number; // Minutos de espera antes de auto-marcar no-show
+  notificarPoliticaAlCrear: boolean; // Si se notifica la política al crear sesión
+  mensajePolitica?: string; // Mensaje predefinido de la política para clientes
   aplicarPenalizacionCancelacionTardia: boolean; // Si se aplica penalización por cancelación tardía
   tipoPenalizacionCancelacionTardia?: 'advertencia' | 'cobro' | 'bloqueo'; // Tipo de penalización para cancelaciones tardías
-  excepciones: ExcepcionPoliticaCancelacion[]; // Lista de excepciones
+  excepciones: ExcepcionPoliticaCancelacion[]; // Lista de excepciones a la política
   createdAt: Date;
   updatedAt: Date;
 }
+
+/**
+ * Configuración de política de cancelación
+ * Alias de PoliticaCancelacion para compatibilidad con código existente
+ * 
+ * @see PoliticaCancelacion - Interfaz base que define las reglas de cancelación
+ */
+export type ConfiguracionPoliticaCancelacion = PoliticaCancelacion;
 
 // Alerta de no-show para un cliente
 export interface AlertaNoShow {
@@ -608,19 +897,50 @@ export interface EstadisticasNoShowsClienteExtendida extends EstadisticasNoShows
 
 // ===== TIPOS PARA OCUPACIÓN Y ANALYTICS =====
 
-// Métrica de ocupación por período
+/**
+ * Representa métricas de ocupación de la agenda
+ * Proporciona información sobre el uso del tiempo y la eficiencia de la agenda
+ * Reutilizable desde módulos de analytics, reportes y dashboards
+ */
 export interface MetricasOcupacion {
-  periodo: string; // "Semana 1", "Enero 2024", etc.
+  /** Período de análisis (ej: "Semana 1", "Enero 2024") */
+  periodo: string;
+  /** Fecha de inicio del período analizado */
   fechaInicio: Date;
+  /** Fecha de fin del período analizado */
   fechaFin: Date;
-  horasDisponibles: number; // Horas disponibles en el período
-  horasTrabajadas: number; // Horas trabajadas (sesiones completadas)
-  horasReservadas: number; // Horas reservadas (sesiones confirmadas)
-  porcentajeOcupacion: number; // (horasTrabajadas / horasDisponibles) * 100
+  /** Ocupación media del período (porcentaje) */
+  ocupacionMedia: number;
+  /** Ocupación desglosada por día */
+  ocupacionPorDia?: Array<{
+    fecha: Date;
+    ocupacion: number;
+    horasTrabajadas: number;
+    horasDisponibles: number;
+  }>;
+  /** Número de no-shows en el período */
+  noShows: number;
+  /** Número de cancelaciones en el período */
+  cancelaciones: number;
+  /** Ingresos estimados por sesión en el período */
+  ingresosPorSesion?: number;
+  /** Horas disponibles en el período */
+  horasDisponibles: number;
+  /** Horas trabajadas (sesiones completadas) */
+  horasTrabajadas: number;
+  /** Horas reservadas (sesiones confirmadas) */
+  horasReservadas: number;
+  /** Porcentaje de ocupación (horasTrabajadas / horasDisponibles) * 100 */
+  porcentajeOcupacion: number;
+  /** Total de sesiones en el período */
   totalSesiones: number;
+  /** Sesiones completadas */
   sesionesCompletadas: number;
+  /** Sesiones confirmadas */
   sesionesConfirmadas: number;
+  /** Sesiones canceladas */
   sesionesCanceladas: number;
+  /** Ingresos estimados totales */
   ingresosEstimados: number;
 }
 
@@ -744,31 +1064,100 @@ export interface EstadisticasFinancierasCliente {
   deudaTotal?: number;
 }
 
+// Dashboard financiero específico para agenda
+export interface DashboardFinancieroAgenda {
+  periodo: string;
+  fechaInicio: Date;
+  fechaFin: Date;
+  // KPIs principales
+  ingresosTotales: number;
+  ingresosPorSesion: number;
+  ticketMedio: number;
+  totalSesiones: number;
+  sesionesCompletadas: number;
+  sesionesCanceladas: number;
+  tasaCancelacion: number; // Porcentaje (0-100)
+  noShows: number;
+  tasaNoShow: number; // Porcentaje (0-100)
+  // Métricas de rendimiento
+  ingresosPendientes: number;
+  sesionesPendientes: number;
+  ocupacionPromedio: number; // Porcentaje
+  horasTrabajadas: number;
+  horasDisponibles: number;
+  // Comparativas
+  crecimientoIngresos?: number; // Porcentaje vs período anterior
+  crecimientoSesiones?: number; // Porcentaje vs período anterior
+  tendencia: 'subiendo' | 'bajando' | 'estable';
+  // Desglose por tipo de sesión
+  ingresosPorTipoSesion: Array<{
+    tipo: TipoCita;
+    cantidad: number;
+    ingresos: number;
+    porcentaje: number;
+  }>;
+}
+
+// Tipos para funciones de métricas
+export interface RangoFechas {
+  fechaInicio: Date;
+  fechaFin: Date;
+}
+
+export interface ContextoMetricas {
+  userId?: string;
+  role?: 'entrenador' | 'gimnasio';
+  entrenadorId?: string;
+  centroId?: string;
+}
+
 // ===== TIPOS PARA LISTA DE ESPERA =====
 
 // Estado de una entrada en la lista de espera
 export type EstadoListaEspera = 'activa' | 'notificada' | 'asignada' | 'cancelada' | 'expirada';
 
-// Entrada en la lista de espera
+/**
+ * Entrada en la lista de espera de sesiones
+ * 
+ * INTEGRACIÓN CON GESTORLISTAESPERA.TSX:
+ * Este tipo es utilizado por el componente GestorListaEspera.tsx para mostrar
+ * y gestionar las entradas de la lista de espera. El componente llama a las
+ * funciones mock de listaEspera.ts para obtener, agregar, eliminar y asignar
+ * entradas de la lista de espera.
+ * 
+ * INTEGRACIÓN CON CREACIÓN/ACTUALIZACIÓN DE CITA:
+ * Cuando se asigna un hueco desde la lista de espera (mediante asignarHuecoDesdeListaEspera),
+ * se crea una nueva Cita en el sistema. La entrada de lista de espera se marca como
+ * 'asignada' y se vincula con el citaId de la cita creada. Esto permite rastrear
+ * qué citas fueron originadas desde la lista de espera.
+ */
 export interface EntradaListaEspera {
+  /** Identificador único de la entrada */
   id: string;
-  entrenadorId: string;
-  clienteId: string;
-  clienteNombre: string;
-  clienteEmail?: string;
-  clienteTelefono?: string;
-  diaSemana: number; // 0 = Domingo, 6 = Sábado
-  horaInicio: string; // HH:mm
-  horaFin: string; // HH:mm
-  fechaSolicitud: Date; // Fecha en que el cliente se apuntó
+  /** Información del cliente que solicita la sesión */
+  cliente: {
+    id: string;
+    nombre: string;
+    email?: string;
+    telefono?: string;
+  };
+  /** Tipo de sesión solicitada (sesion-1-1, videollamada, evaluacion, etc.) */
+  tipoSesion: TipoCita;
+  /** Fecha deseada por el cliente para la sesión */
+  fechaDeseada: Date;
+  /** Prioridad de la entrada (menor número = mayor prioridad) */
+  prioridad: number;
+  /** Estado actual de la entrada en la lista de espera */
   estado: EstadoListaEspera;
-  prioridad: number; // Orden de prioridad (menor número = mayor prioridad)
-  fechaNotificacion?: Date; // Fecha en que se notificó al cliente
-  fechaAsignacion?: Date; // Fecha en que se asignó el slot
-  citaId?: string; // ID de la cita asignada (si se asignó)
-  fechaExpiracion?: Date; // Fecha de expiración de la solicitud
+  /** Notas adicionales sobre la solicitud */
   notas?: string;
+  /** ID de la cita asignada (si se asignó un hueco) */
+  citaId?: string;
+  /** Fecha en que se asignó el slot (si aplica) */
+  fechaAsignacion?: Date;
+  /** Fecha de creación de la entrada */
   createdAt: Date;
+  /** Fecha de última actualización */
   updatedAt: Date;
 }
 
@@ -824,5 +1213,26 @@ export interface ResumenListaEspera {
   entradasAsignadas: number;
   horariosPopulares: HorarioPopular[];
   proximasNotificaciones: number; // Número de clientes próximos a ser notificados
+}
+
+// ===== TIPOS PARA SLOTS DISPONIBLES =====
+
+/**
+ * Representa un slot de tiempo disponible para agendar
+ * Usado en: calcularSlotsDisponibles, GestorHorarios, ConfiguradorHorariosTrabajo
+ */
+export interface SlotDisponible {
+  /** Fecha del slot */
+  fecha: Date;
+  /** Hora de inicio del slot (HH:mm) */
+  horaInicio: string;
+  /** Hora de fin del slot (HH:mm) */
+  horaFin: string;
+  /** Duración del slot en minutos */
+  duracionMinutos: number;
+  /** Si el slot está disponible */
+  disponible: boolean;
+  /** Motivo por el que no está disponible (si aplica) */
+  motivoNoDisponible?: string;
 }
 

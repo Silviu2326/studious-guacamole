@@ -1,8 +1,8 @@
 import React from 'react';
 import { Card, MetricCards, MetricCardData, Badge } from '../../../components/componentsreutilizables';
-import { TrendingUp, TrendingDown, DollarSign, Percent, Loader2, Package } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Percent, Loader2, Package, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
-import { rentabilidadApi } from '../api';
+import { getAnalisisRentabilidad } from '../api';
 import { AnalisisRentabilidad as AnalisisRentabilidadType } from '../types';
 
 export const AnalisisRentabilidad: React.FC = () => {
@@ -15,7 +15,11 @@ export const AnalisisRentabilidad: React.FC = () => {
       try {
         setLoading(true);
         if (user?.role === 'gimnasio') {
-          const data = await rentabilidadApi.obtenerAnalisisRentabilidad();
+          const fechaActual = new Date();
+          const data = await getAnalisisRentabilidad({
+            mes: fechaActual.getMonth() + 1,
+            anio: fechaActual.getFullYear()
+          });
           setRentabilidad(data);
         }
       } catch (error) {
@@ -40,13 +44,34 @@ export const AnalisisRentabilidad: React.FC = () => {
     );
   }
 
-  const getEstadoBadge = (estado: string) => {
-    const variants = {
-      saludable: 'green' as const,
-      advertencia: 'yellow' as const,
-      critico: 'red' as const
+  const getEstadoBadge = (estadoSalud: string) => {
+    const config = {
+      saludable: {
+        variant: 'green' as const,
+        label: 'Saludable',
+        icon: CheckCircle2
+      },
+      advertencia: {
+        variant: 'yellow' as const,
+        label: 'Advertencia',
+        icon: AlertCircle
+      },
+      critico: {
+        variant: 'red' as const,
+        label: 'Crítico',
+        icon: AlertCircle
+      }
     };
-    return <Badge variant={variants[estado as keyof typeof variants] || 'gray'}>{estado}</Badge>;
+    
+    const estadoConfig = config[estadoSalud as keyof typeof config] || config.saludable;
+    const Icon = estadoConfig.icon;
+    
+    return (
+      <Badge variant={estadoConfig.variant} size="md">
+        <Icon className="w-3 h-3 mr-1" />
+        {estadoConfig.label}
+      </Badge>
+    );
   };
 
   const metrics: MetricCardData[] = rentabilidad ? [
@@ -71,15 +96,15 @@ export const AnalisisRentabilidad: React.FC = () => {
       title: 'Beneficio Neto',
       value: `€${rentabilidad.beneficioNeto.toLocaleString()}`,
       icon: <DollarSign className="w-5 h-5" />,
-      color: 'primary',
+      color: rentabilidad.beneficioNeto > 0 ? 'success' : 'error',
       loading
     },
     {
       id: 'margen',
-      title: 'Margen Rentabilidad',
-      value: `${rentabilidad.margenRentabilidad.toFixed(1)}%`,
+      title: 'Margen Porcentual',
+      value: `${rentabilidad.margenPorcentual.toFixed(1)}%`,
       icon: <Percent className="w-5 h-5" />,
-      color: rentabilidad.margenRentabilidad > 70 ? 'success' : rentabilidad.margenRentabilidad > 40 ? 'warning' : 'error',
+      color: rentabilidad.margenPorcentual > 25 ? 'success' : rentabilidad.margenPorcentual >= 10 ? 'warning' : 'error',
       loading
     }
   ] : [];
@@ -99,22 +124,65 @@ export const AnalisisRentabilidad: React.FC = () => {
               <p className="text-gray-600">Cargando...</p>
             </Card>
           ) : rentabilidad ? (
-            <div className="space-y-4">
-              <div className="rounded-xl bg-white ring-1 ring-slate-200 p-6">
+            <div className="space-y-6">
+              {/* Estado de Salud Financiera */}
+              <div className="rounded-xl bg-gradient-to-br from-white to-gray-50 ring-1 ring-slate-200 p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-lg font-semibold text-gray-900">
-                    Estado Actual
-                  </p>
-                  {getEstadoBadge(rentabilidad.estado)}
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Estado de Salud Financiera
+                  </h3>
+                  {getEstadoBadge(rentabilidad.estadoSalud)}
                 </div>
-                <p className="text-gray-600 mb-4">
-                  El margen de rentabilidad del centro es del {rentabilidad.margenRentabilidad.toFixed(1)}%, 
-                  lo que indica un estado {rentabilidad.estado === 'saludable' ? 'saludable' : rentabilidad.estado === 'advertencia' ? 'de advertencia' : 'crítico'}.
-                </p>
+                
+                {/* Comentario Resumen */}
+                <div className="mb-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {rentabilidad.comentarioResumen}
+                  </p>
+                </div>
+
+                {/* Métricas Principales */}
                 <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-200">
                   <div>
                     <p className="text-sm font-medium text-slate-700 mb-1">
-                      Ingresos
+                      Beneficio Neto
+                    </p>
+                    <p className={`text-lg font-semibold ${rentabilidad.beneficioNeto > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      €{rentabilidad.beneficioNeto.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-700 mb-1">
+                      Margen Porcentual
+                    </p>
+                    <p className={`text-lg font-semibold ${
+                      rentabilidad.margenPorcentual > 25 ? 'text-green-600' : 
+                      rentabilidad.margenPorcentual >= 10 ? 'text-yellow-600' : 
+                      'text-red-600'
+                    }`}>
+                      {rentabilidad.margenPorcentual.toFixed(1)}%
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-700 mb-1">
+                      Ingresos Totales
+                    </p>
+                    <p className="text-lg font-semibold text-blue-600">
+                      €{rentabilidad.ingresosTotales.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Desglose Adicional */}
+              <div className="rounded-xl bg-white ring-1 ring-slate-200 p-6">
+                <h3 className="text-md font-semibold text-gray-900 mb-4">
+                  Desglose Financiero
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-slate-700 mb-1">
+                      Ingresos Totales
                     </p>
                     <p className="text-lg font-semibold text-green-600">
                       €{rentabilidad.ingresosTotales.toLocaleString()}
@@ -122,18 +190,10 @@ export const AnalisisRentabilidad: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-slate-700 mb-1">
-                      Costes
+                      Costes Totales
                     </p>
                     <p className="text-lg font-semibold text-red-600">
                       €{rentabilidad.costesTotales.toLocaleString()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-700 mb-1">
-                      Beneficio
-                    </p>
-                    <p className="text-lg font-semibold text-blue-600">
-                      €{rentabilidad.beneficioNeto.toLocaleString()}
                     </p>
                   </div>
                 </div>

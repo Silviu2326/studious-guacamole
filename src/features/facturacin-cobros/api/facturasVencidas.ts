@@ -1,4 +1,4 @@
-import { Factura } from '../types';
+import { Factura, FiltroFacturas } from '../types';
 import { facturasAPI } from './facturas';
 import { notificacionesAPI } from './notificaciones';
 
@@ -248,5 +248,179 @@ export async function obtenerEstadisticasFacturasVencidas(): Promise<{
     promedioDiasVencidos: Math.round(promedioDias * 10) / 10,
     facturaMasVencida
   };
+}
+
+// ============================================================================
+// FUNCIONES MOCK PARA FACTURAS VENCIDAS E IMPAGOS
+// ============================================================================
+// Estas funciones proporcionan datos mock para el componente FacturasVencidas.tsx
+// y para la generación de reportes de facturas vencidas e impagos.
+// En producción, estas funciones se conectarán con la API real del backend.
+
+/**
+ * Obtiene las facturas vencidas aplicando los filtros especificados.
+ * 
+ * Esta función es utilizada por:
+ * - El componente FacturasVencidas.tsx para mostrar el listado de facturas vencidas
+ * - Los reportes de facturas vencidas para generar análisis y exportaciones
+ * 
+ * @param filtros - Filtros opcionales para refinar la búsqueda de facturas vencidas
+ * @returns Promise con un array de facturas vencidas que cumplen los criterios
+ */
+export async function getFacturasVencidas(
+  filtros?: FiltroFacturas
+): Promise<Factura[]> {
+  // Simular delay de red
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  // Obtener todas las facturas
+  let facturas = await facturasAPI.obtenerFacturas();
+  
+  // Filtrar solo facturas vencidas (fecha de vencimiento pasada y con saldo pendiente)
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  
+  facturas = facturas.filter(factura => {
+    const fechaVencimiento = new Date(factura.fechaVencimiento);
+    fechaVencimiento.setHours(0, 0, 0, 0);
+    
+    // Debe estar vencida (fecha de vencimiento pasada)
+    const estaVencida = fechaVencimiento < hoy;
+    
+    // Debe tener saldo pendiente
+    const tieneSaldoPendiente = factura.montoPendiente > 0;
+    
+    // Debe estar en estado pendiente, parcial o vencida
+    const estadoValido = factura.estado === 'pendiente' || 
+                        factura.estado === 'parcial' || 
+                        factura.estado === 'vencida';
+    
+    return estaVencida && tieneSaldoPendiente && estadoValido;
+  });
+  
+  // Aplicar filtros adicionales si se proporcionan
+  if (filtros) {
+    if (filtros.clienteId) {
+      facturas = facturas.filter(f => f.cliente.id === filtros.clienteId);
+    }
+    
+    if (filtros.estado) {
+      facturas = facturas.filter(f => f.estado === filtros.estado);
+    }
+    
+    if (filtros.tipo) {
+      facturas = facturas.filter(f => f.tipo === filtros.tipo);
+    }
+    
+    if (filtros.fechaInicio) {
+      facturas = facturas.filter(f => f.fechaEmision >= filtros.fechaInicio!);
+    }
+    
+    if (filtros.fechaFin) {
+      facturas = facturas.filter(f => f.fechaEmision <= filtros.fechaFin!);
+    }
+    
+    if (filtros.montoMin) {
+      facturas = facturas.filter(f => f.montoPendiente >= filtros.montoMin!);
+    }
+    
+    if (filtros.montoMax) {
+      facturas = facturas.filter(f => f.montoPendiente <= filtros.montoMax!);
+    }
+    
+    if (filtros.numeroFactura) {
+      facturas = facturas.filter(f => 
+        f.numeroFactura.toLowerCase().includes(filtros.numeroFactura!.toLowerCase())
+      );
+    }
+  }
+  
+  // Ordenar por fecha de vencimiento (más antiguas primero) y luego por monto pendiente (mayor a menor)
+  return facturas.sort((a, b) => {
+    const fechaA = new Date(a.fechaVencimiento).getTime();
+    const fechaB = new Date(b.fechaVencimiento).getTime();
+    
+    if (fechaA !== fechaB) {
+      return fechaA - fechaB; // Más antiguas primero
+    }
+    
+    return b.montoPendiente - a.montoPendiente; // Mayor monto primero
+  });
+}
+
+/**
+ * Obtiene un resumen consolidado de impagos y facturas vencidas.
+ * 
+ * Esta función es utilizada por:
+ * - El componente FacturasVencidas.tsx para mostrar métricas y resúmenes
+ * - Los reportes ejecutivos de facturación y cobros
+ * - Los dashboards de gestión de cartera de clientes
+ * 
+ * @param filtros - Filtros opcionales para calcular el resumen sobre un subconjunto de facturas
+ * @returns Promise con el resumen de impagos incluyendo número de facturas, importe total y clientes afectados
+ */
+export async function getResumenImpagos(
+  filtros?: FiltroFacturas
+): Promise<{
+  numeroFacturasVencidas: number;
+  importeTotalVencido: number;
+  clientesConImpagos: number;
+}> {
+  // Simular delay de red
+  await new Promise(resolve => setTimeout(resolve, 400));
+  
+  // Obtener facturas vencidas con los filtros aplicados
+  const facturasVencidas = await getFacturasVencidas(filtros);
+  
+  // Calcular métricas
+  const numeroFacturasVencidas = facturasVencidas.length;
+  const importeTotalVencido = facturasVencidas.reduce(
+    (suma, factura) => suma + factura.montoPendiente,
+    0
+  );
+  
+  // Contar clientes únicos con impagos
+  const clientesUnicos = new Set(
+    facturasVencidas.map(factura => factura.cliente.id)
+  );
+  const clientesConImpagos = clientesUnicos.size;
+  
+  return {
+    numeroFacturasVencidas,
+    importeTotalVencido,
+    clientesConImpagos
+  };
+}
+
+/**
+ * Marca una factura como en seguimiento activo para cobro.
+ * 
+ * Esta función es utilizada por:
+ * - El componente FacturasVencidas.tsx para permitir a los usuarios marcar facturas en seguimiento
+ * - Los reportes de seguimiento de cobros para identificar facturas prioritarias
+ * - Los workflows de gestión de cartera para priorizar acciones de cobro
+ * 
+ * @param facturaId - ID de la factura a marcar como en seguimiento
+ * @returns Promise con la factura actualizada incluyendo el campo enSeguimiento en true
+ */
+export async function marcarComoEnSeguimiento(
+  facturaId: string
+): Promise<Factura> {
+  // Simular delay de red
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  // Obtener la factura actual
+  const factura = await facturasAPI.obtenerFactura(facturaId);
+  
+  if (!factura) {
+    throw new Error(`Factura con ID ${facturaId} no encontrada`);
+  }
+  
+  // Actualizar la factura marcándola como en seguimiento
+  const facturaActualizada = await facturasAPI.actualizarFactura(facturaId, {
+    enSeguimiento: true
+  });
+  
+  return facturaActualizada;
 }
 

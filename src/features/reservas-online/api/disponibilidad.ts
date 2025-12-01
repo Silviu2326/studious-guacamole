@@ -18,7 +18,7 @@ export const getDisponibilidad = async (
       
       if (role === 'entrenador' && entrenadorId) {
         // Verificar si la fecha está marcada como no disponible
-        const fechaNoDisponible = await esFechaNoDisponible(entrenadorId, fecha);
+        const fechaNoDisponible = await esFechaNoDisponible(fecha, entrenadorId);
         if (fechaNoDisponible) {
           // Si la fecha está marcada como no disponible, no generar slots
           resolve(disponibilidad);
@@ -31,7 +31,7 @@ export const getDisponibilidad = async (
           const hoy = new Date();
           hoy.setHours(0, 0, 0, 0);
           const fechaMaxima = new Date(hoy);
-          fechaMaxima.setDate(fechaMaxima.getDate() + configDiasMaximos.diasMaximos);
+          fechaMaxima.setDate(fechaMaxima.getDate() + (configDiasMaximos.diasMaximos ?? configDiasMaximos.maxDiasEnFuturo ?? 30));
           
           const fechaNormalizada = new Date(fecha);
           fechaNormalizada.setHours(0, 0, 0, 0);
@@ -84,7 +84,10 @@ export const getDisponibilidad = async (
         
         // Calcular la fecha/hora mínima permitida para reservas
         const ahora = new Date();
-        const fechaHoraMinima = new Date(ahora.getTime() + (configTiempoMinimo.activo ? configTiempoMinimo.horasMinimasAnticipacion * 60 * 60 * 1000 : 0));
+        const minutosMinimos = configTiempoMinimo.activo 
+          ? (configTiempoMinimo.minutosMinimos ?? (configTiempoMinimo.horasMinimasAnticipacion ?? 0) * 60)
+          : 0;
+        const fechaHoraMinima = new Date(ahora.getTime() + minutosMinimos * 60 * 1000);
         
         if (horarioSemanal && horarioSemanal.activo) {
           // Obtener bloques horarios disponibles para este día
@@ -111,7 +114,12 @@ export const getDisponibilidad = async (
                     horaInicio, 
                     horaFin, 
                     reservasDelEntrenador,
-                    configBufferTime
+                    {
+                      activo: configBufferTime.activo ?? false,
+                      minutosAntes: configBufferTime.minutosAntes ?? 0,
+                      minutosDespues: configBufferTime.minutosDespues ?? configBufferTime.minutosBuffer ?? 0,
+                      minutosBuffer: configBufferTime.minutosDespues ?? configBufferTime.minutosBuffer ?? 0, // Alias para compatibilidad
+                    }
                   );
                   
                   // Verificar tiempo mínimo de anticipación
@@ -154,15 +162,13 @@ export const getDisponibilidad = async (
             configBufferTime = await getConfiguracionBufferTime(entrenadorId);
             const configTiempoMinimo = await getConfiguracionTiempoMinimoAnticipacion(entrenadorId);
             const ahora = new Date();
-            fechaHoraMinima = new Date(
-              ahora.getTime() +
-                (configTiempoMinimo.activo
-                  ? configTiempoMinimo.horasMinimasAnticipacion * 60 * 60 * 1000
-                  : 0)
-            );
+            const minutosMinimos = configTiempoMinimo.activo 
+              ? (configTiempoMinimo.minutosMinimos ?? (configTiempoMinimo.horasMinimasAnticipacion ?? 0) * 60)
+              : 0;
+            fechaHoraMinima = new Date(ahora.getTime() + minutosMinimos * 60 * 1000);
           } catch {
             // Si no hay entrenadorId, usar configuración por defecto (sin buffer, sin tiempo mínimo)
-            configBufferTime = { activo: false, minutosBuffer: 0 };
+            configBufferTime = { activo: false, minutosBuffer: 0, minutosDespues: 0, minutosAntes: 0 };
           }
 
           for (const [index, hora] of horasInicio.entries()) {
@@ -178,7 +184,12 @@ export const getDisponibilidad = async (
                 hora,
                 horaFin,
                 reservasDelEntrenador,
-                configBufferTime
+                {
+                  activo: configBufferTime.activo ?? false,
+                  minutosAntes: configBufferTime.minutosAntes ?? 0,
+                  minutosDespues: configBufferTime.minutosDespues ?? configBufferTime.minutosBuffer ?? 0,
+                  minutosBuffer: configBufferTime.minutosDespues ?? configBufferTime.minutosBuffer ?? 0, // Alias para compatibilidad
+                }
               );
 
               // Verificar tiempo mínimo de anticipación
@@ -257,13 +268,17 @@ const minutosAHora = (minutos: number): string => {
 /**
  * Verifica si un slot de disponibilidad se solapa con alguna reserva existente
  * Incluye verificación de buffer time si está configurado
+ * 
+ * @remarks
+ * Esta función considera los buffers antes y después de cada reserva.
+ * En producción, se optimizaría para manejar múltiples reservas de forma eficiente.
  */
 const seSolapaConReserva = (
   slotFecha: Date,
   slotHoraInicio: string,
   slotHoraFin: string,
   reservas: Reserva[],
-  configBufferTime?: { activo: boolean; minutosBuffer: number }
+  configBufferTime?: { activo: boolean; minutosBuffer?: number; minutosAntes?: number; minutosDespues?: number }
 ): boolean => {
   const slotFechaNormalizada = new Date(slotFecha);
   slotFechaNormalizada.setHours(0, 0, 0, 0);
@@ -271,8 +286,10 @@ const seSolapaConReserva = (
   const slotInicioMinutos = convertirHoraAMinutos(slotHoraInicio);
   const slotFinMinutos = convertirHoraAMinutos(slotHoraFin);
 
-  // Obtener minutos de buffer (0 si no está activo)
-  const minutosBuffer = (configBufferTime?.activo && configBufferTime.minutosBuffer) || 0;
+  // Obtener minutos de buffer (usar minutosDespues/minutosAntes si están disponibles, sino usar minutosBuffer)
+  const minutosAntes = (configBufferTime?.activo && configBufferTime.minutosAntes) || 0;
+  const minutosDespues = (configBufferTime?.activo && configBufferTime.minutosDespues) || 
+                        (configBufferTime?.activo && configBufferTime.minutosBuffer) || 0;
 
   return reservas.some(reserva => {
     // Solo considerar reservas confirmadas o pendientes
@@ -294,13 +311,13 @@ const seSolapaConReserva = (
     const reservaFinMinutos = convertirHoraAMinutos(reserva.horaFin);
 
     // Si hay buffer time activo, aplicarlo:
-    // - Después de cada reserva (reservaFinMinutos + minutosBuffer)
-    // - Antes de cada reserva (reservaInicioMinutos - minutosBuffer)
+    // - Antes de cada reserva (reservaInicioMinutos - minutosAntes)
+    // - Después de cada reserva (reservaFinMinutos + minutosDespues)
     // El buffer time crea una zona no disponible alrededor de cada reserva
-    if (minutosBuffer > 0) {
-      // Calcular el rango completo incluyendo buffer: [inicio - buffer, fin + buffer]
-      const reservaInicioConBuffer = reservaInicioMinutos - minutosBuffer;
-      const reservaFinConBuffer = reservaFinMinutos + minutosBuffer;
+    if (configBufferTime?.activo && (minutosAntes > 0 || minutosDespues > 0)) {
+      // Calcular el rango completo incluyendo buffer: [inicio - bufferAntes, fin + bufferDespues]
+      const reservaInicioConBuffer = reservaInicioMinutos - minutosAntes;
+      const reservaFinConBuffer = reservaFinMinutos + minutosDespues;
       
       // Verificar si el slot se solapa con el rango completo (reserva + buffer)
       // Hay conflicto si el slot se intersecta con el rango [reservaInicioConBuffer, reservaFinConBuffer]
@@ -361,4 +378,58 @@ export const verificarDisponibilidad = async (
       resolve(true);
     }, 200);
   });
+};
+
+/**
+ * Parámetros para calcular disponibilidad
+ */
+export interface ParametrosCalculoDisponibilidad {
+  fecha: Date;
+  role: 'entrenador' | 'gimnasio';
+  entrenadorId?: string;
+  centroId?: string;
+  tipoSesionId?: string; // Opcional: para filtrar por tipo de sesión
+  duracionMinutos?: number; // Opcional: duración específica a buscar
+}
+
+/**
+ * Calcula la disponibilidad respetando todas las configuraciones y restricciones
+ * 
+ * @param params - Parámetros para el cálculo de disponibilidad
+ * @returns Lista de disponibilidades (slots) disponibles
+ * 
+ * @remarks
+ * Esta función consolida toda la lógica de cálculo de disponibilidad:
+ * - Respeta los horarios configurados (schedules)
+ * - Aplica buffers entre sesiones
+ * - Verifica tiempo mínimo de anticipación
+ * - Respeta días máximos en el futuro
+ * - Excluye fechas no disponibles
+ * - Considera reservas existentes
+ * 
+ * Esta es una función mock que simplifica el cálculo. En producción, se conectaría
+ * con un backend que optimiza el cálculo y maneja múltiples contextos de forma eficiente.
+ */
+export const calcularDisponibilidad = async (
+  params: ParametrosCalculoDisponibilidad
+): Promise<Disponibilidad[]> => {
+  const { fecha, role, entrenadorId, centroId, tipoSesionId, duracionMinutos } = params;
+  
+  // Usar la función existente getDisponibilidad como base
+  // y aplicar filtros adicionales si es necesario
+  const disponibilidad = await getDisponibilidad(fecha, role, entrenadorId);
+  
+  // Si se especifica un tipoSesionId, filtrar por ese tipo (si la disponibilidad lo soporta)
+  // Esto es una simplificación del mock - en producción se consultaría la configuración
+  // específica del tipo de sesión
+  
+  // Si se especifica una duración específica, filtrar slots que coincidan
+  if (duracionMinutos) {
+    return disponibilidad.filter(d => 
+      d.duracionMinutos === duracionMinutos || 
+      !d.duracionMinutos // Si no tiene duración definida, incluir
+    );
+  }
+  
+  return disponibilidad;
 };

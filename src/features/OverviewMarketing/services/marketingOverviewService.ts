@@ -192,6 +192,30 @@ export function generateContextualNarrative(
       }
       break;
 
+    case 'estimatedROI':
+      if (trend === 'up') {
+        narratives.push(`Tu ROI estimado es del ${value.toFixed(1)}%, mejorando ${Math.abs(change)} puntos porcentuales.`);
+        narratives.push('Esto significa que por cada euro invertido en marketing, estás generando un retorno positivo significativo.');
+        if (objectives?.objectives.includes('vender_packs')) {
+          narratives.push('Excelente para tu objetivo de ventas. Tu inversión en marketing está siendo muy rentable.');
+        }
+        narratives.push('Siguiente paso: Considera aumentar el presupuesto en las estrategias que mejor ROI están generando.');
+      } else if (trend === 'down') {
+        narratives.push(`Tu ROI estimado es del ${value.toFixed(1)}%, bajando ${Math.abs(change)} puntos porcentuales.`);
+        narratives.push('Revisa tus campañas y optimiza aquellas que tienen menor retorno. Puede que necesites ajustar el targeting o las ofertas.');
+        narratives.push('Siguiente paso: Analiza qué canales y estrategias están generando mejor ROI y reasigna presupuesto hacia ellos.');
+      } else {
+        narratives.push(`Tu ROI estimado es del ${value.toFixed(1)}%.`);
+        if (value > 100) {
+          narratives.push('Estás generando un retorno positivo. Por cada euro invertido, recuperas más de lo que gastas.');
+        } else if (value > 0) {
+          narratives.push('Tu ROI es positivo pero hay margen de mejora. Optimiza tus campañas para aumentar el retorno.');
+        } else {
+          narratives.push('Tu ROI necesita atención. Revisa tus estrategias de marketing y optimiza las que no están generando retorno.');
+        }
+      }
+      break;
+
     default:
       narratives.push(`Este KPI muestra ${kpi.label}.`);
       if (trend === 'up') {
@@ -287,10 +311,10 @@ async function getSnapshot(
   buyerPersona?: DefaultBuyerPersonaType,
   tone?: ToneType
 ): Promise<MarketingOverviewSnapshot> {
-  const [kpis, campaigns, funnels, socialGrowth, events, aiSuggestions, salesAttribution] = await Promise.all([
+  // Para Overview, no incluimos funnels - se reservan para la página "Funnels & Adquisición"
+  const [kpis, campaigns, socialGrowth, events, aiSuggestions, salesAttribution] = await Promise.all([
     getKPIs(period, buyerPersona),
     getCampaigns(),
-    getFunnels(period),
     getSocial(period),
     getEvents(),
     getSuggestions(tone),
@@ -301,7 +325,7 @@ async function getSnapshot(
     period,
     kpis,
     campaigns,
-    funnels,
+    funnels: [], // Funnels no se cargan para Overview - usar getFunnels() en la página dedicada
     socialGrowth,
     events,
     aiSuggestions,

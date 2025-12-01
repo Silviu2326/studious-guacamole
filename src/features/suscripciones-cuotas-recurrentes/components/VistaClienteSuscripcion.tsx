@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Suscripcion } from '../types';
 import { Card, Button, Badge, Modal } from '../../../components/componentsreutilizables';
+import { GestorCuotas } from './GestorCuotas';
+import { UpgradeDowngrade } from './UpgradeDowngrade';
+import { CambioPlanPT } from './CambioPlanPT';
 import {
   Eye,
   CreditCard,
@@ -368,6 +371,42 @@ export const VistaClienteSuscripcion: React.FC<VistaClienteSuscripcionProps> = (
             </div>
           </Card>
         )}
+
+        {/* Cambio de Plan / Entrenador */}
+        {suscripcion.estado === 'activa' && (
+          <div className="mt-6">
+            {suscripcion.tipo === 'pt-mensual' ? (
+              <CambioPlanPT
+                suscripcion={suscripcion}
+                onSuccess={() => {
+                  // Recargar datos si es necesario
+                  window.location.reload();
+                }}
+              />
+            ) : suscripcion.tipo === 'membresia-gimnasio' ? (
+              <UpgradeDowngrade
+                suscripcion={suscripcion}
+                onSuccess={() => {
+                  // Recargar datos si es necesario
+                  window.location.reload();
+                }}
+              />
+            ) : null}
+          </div>
+        )}
+
+        {/* Historial de Cuotas */}
+        <Card className="bg-white border border-gray-200 p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <CreditCard className="w-5 h-5 text-gray-600" />
+            <h3 className="text-lg font-semibold text-gray-900">Historial de Cuotas</h3>
+          </div>
+          <GestorCuotas 
+            suscripcionId={suscripcion.id}
+            compacto={true}
+            mostrarFiltros={false}
+          />
+        </Card>
 
         {/* Contacto */}
         <Card className="bg-gray-50 border border-gray-200 p-4">

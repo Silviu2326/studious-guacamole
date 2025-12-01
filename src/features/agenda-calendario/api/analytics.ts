@@ -1,4 +1,4 @@
-import { AnalyticsOcupacion, MetricasOcupacion, ComparativaOcupacion, ConfiguracionMetaOcupacion, ProyeccionIngresos } from '../types';
+import { AnalyticsOcupacion, MetricasOcupacion, ComparativaOcupacion, ConfiguracionMetaOcupacion, ProyeccionIngresos, DashboardFinancieroAgenda, RangoFechas, ContextoMetricas, TipoCita } from '../types';
 import { getCitas } from './calendario';
 import { getHorarioTrabajoActual } from './horariosTrabajo';
 import { Cita } from '../types';
@@ -57,7 +57,7 @@ export const actualizarConfiguracionMetaOcupacion = async (
 /**
  * Calcula las horas disponibles en un período basado en el horario de trabajo
  */
-const calcularHorasDisponibles = async (
+export const calcularHorasDisponibles = async (
   fechaInicio: Date,
   fechaFin: Date,
   userId?: string
@@ -98,7 +98,7 @@ const calcularHorasDisponibles = async (
 /**
  * Calcula las horas trabajadas en un período (sesiones completadas)
  */
-const calcularHorasTrabajadas = (citas: Cita[]): number => {
+export const calcularHorasTrabajadas = (citas: Cita[]): number => {
   return citas
     .filter(c => c.estado === 'completada')
     .reduce((total, cita) => {
@@ -110,7 +110,7 @@ const calcularHorasTrabajadas = (citas: Cita[]): number => {
 /**
  * Calcula las horas reservadas en un período (sesiones confirmadas)
  */
-const calcularHorasReservadas = (citas: Cita[]): number => {
+export const calcularHorasReservadas = (citas: Cita[]): number => {
   return citas
     .filter(c => c.estado === 'confirmada' || c.estado === 'completada')
     .reduce((total, cita) => {
@@ -398,6 +398,254 @@ export const getAnalyticsOcupacion = async (
     } catch (error) {
       console.error('Error obteniendo analytics de ocupación:', error);
       resolve([]);
+    }
+  });
+};
+
+// ============================================================================
+// DASHBOARD FINANCIERO DE AGENDA
+// ============================================================================
+
+/**
+ * Obtiene el dashboard financiero completo de la agenda
+ * 
+ * Esta función consolida múltiples métricas financieras relacionadas con las sesiones:
+ * - Ingresos totales, por sesión y ticket medio
+ * - Cancelaciones y no-shows
+ * - Ocupación y rendimiento
+ * - Comparativas con períodos anteriores
+ * 
+ * @param rangoFechas - Rango de fechas para el análisis
+ * @param contexto - Contexto con userId, role, entrenadorId, etc.
+ * @returns Dashboard financiero completo con todos los KPIs
+ * 
+ * @remarks
+ * VÍNCULOS CON OTROS MÓDULOS EN UN BACKEND REAL:
+ * 
+ * 1. MÓDULO DE FINANZAS:
+ *    - Obtener ingresos reales desde facturas/pagos registrados
+ *    - Consultar saldos pendientes y deudas de clientes
+ *    - Calcular impuestos y comisiones
+ *    - Endpoint: GET /api/finanzas/ingresos-agenda?rangoFechas=...&userId=...
+ * 
+ * 2. MÓDULO DE CLIENTES:
+ *    - Obtener historial de pagos por cliente
+ *    - Consultar planes y suscripciones activas
+ *    - Calcular LTV (Lifetime Value) de clientes
+ *    - Endpoint: GET /api/clientes/{id}/historial-financiero
+ * 
+ * 3. MÓDULO DE FACTURACIÓN:
+ *    - Obtener facturas emitidas por sesiones
+ *    - Consultar estado de pagos (pagado, pendiente, vencido)
+ *    - Calcular proyecciones de ingresos
+ *    - Endpoint: GET /api/facturacion/sesiones?rangoFechas=...
+ * 
+ * 4. BASE DE DATOS:
+ *    - Consultas optimizadas con índices en fechas, estados, tipos de sesión
+ *    - Agregaciones SQL para cálculo eficiente de métricas
+ *    - Cache de resultados para períodos frecuentemente consultados
+ * 
+ * EJEMPLO DE INTEGRACIÓN BACKEND:
+ * ```typescript
+ * // Backend (Node.js + Express + PostgreSQL)
+ * app.get('/api/agenda/dashboard-financiero', async (req, res) => {
+ *   const { fechaInicio, fechaFin, userId } = req.query;
+ *   
+ *   // Consultar múltiples fuentes en paralelo
+ *   const [citas, pagos, facturas, clientes] = await Promise.all([
+ *     db.query('SELECT * FROM citas WHERE fecha_inicio BETWEEN $1 AND $2 AND user_id = $3', 
+ *              [fechaInicio, fechaFin, userId]),
+ *     db.query('SELECT * FROM pagos WHERE fecha BETWEEN $1 AND $2 AND user_id = $3',
+ *              [fechaInicio, fechaFin, userId]),
+ *     db.query('SELECT * FROM facturas WHERE fecha_emision BETWEEN $1 AND $2 AND user_id = $3',
+ *              [fechaInicio, fechaFin, userId]),
+ *     db.query('SELECT * FROM clientes WHERE user_id = $1', [userId])
+ *   ]);
+ *   
+ *   // Calcular métricas agregadas
+ *   const dashboard = calcularDashboardFinanciero(citas, pagos, facturas, clientes);
+ *   res.json(dashboard);
+ * });
+ * ```
+ */
+export const getDashboardFinancieroAgenda = async (
+  rangoFechas: RangoFechas,
+  contexto: ContextoMetricas = {}
+): Promise<DashboardFinancieroAgenda> => {
+  return new Promise(async (resolve) => {
+    try {
+      const { fechaInicio, fechaFin } = rangoFechas;
+      const { userId, role = 'entrenador', entrenadorId, centroId } = contexto;
+      
+      // Obtener citas del período
+      const citas = await getCitas(fechaInicio, fechaFin, role);
+      
+      // Filtrar por entrenador o centro si se especifica
+      let citasFiltradas = citas;
+      if (entrenadorId) {
+        citasFiltradas = citas.filter(c => c.entrenador?.id === entrenadorId);
+      }
+      if (centroId) {
+        citasFiltradas = citasFiltradas;
+      }
+      
+      // Calcular métricas de ocupación
+      const horasDisponibles = await calcularHorasDisponibles(fechaInicio, fechaFin, userId || entrenadorId);
+      const horasTrabajadas = calcularHorasTrabajadas(citasFiltradas);
+      
+      // Obtener configuración para precios
+      const config = await getConfiguracionMetaOcupacion(userId);
+      
+      // Calcular estadísticas básicas
+      const totalSesiones = citasFiltradas.length;
+      const sesionesCompletadas = citasFiltradas.filter(c => c.estado === 'completada').length;
+      const sesionesCanceladas = citasFiltradas.filter(c => c.estado === 'cancelada').length;
+      const sesionesPendientes = citasFiltradas.filter(c => 
+        c.estado === 'confirmada' || c.estado === 'reservada'
+      ).length;
+      const noShows = citasFiltradas.filter(c => c.estado === 'noShow').length;
+      
+      // Calcular tasas
+      const tasaCancelacion = totalSesiones > 0
+        ? Math.round((sesionesCanceladas / totalSesiones) * 100 * 10) / 10
+        : 0;
+      
+      const tasaNoShow = totalSesiones > 0
+        ? Math.round((noShows / totalSesiones) * 100 * 10) / 10
+        : 0;
+      
+      // Calcular ingresos (usando precio promedio de configuración o datos mock)
+      const ingresosTotales = sesionesCompletadas * config.precioPromedioSesion;
+      const ingresosPorSesion = sesionesCompletadas > 0
+        ? ingresosTotales / sesionesCompletadas
+        : config.precioPromedioSesion;
+      
+      // Ticket medio = ingresos totales / número de sesiones completadas
+      const ticketMedio = sesionesCompletadas > 0
+        ? ingresosTotales / sesionesCompletadas
+        : config.precioPromedioSesion;
+      
+      // Calcular ingresos pendientes (sesiones confirmadas pero no completadas)
+      const ingresosPendientes = sesionesPendientes * config.precioPromedioSesion;
+      
+      // Calcular ocupación promedio
+      const ocupacionPromedio = horasDisponibles > 0
+        ? Math.round((horasTrabajadas / horasDisponibles) * 100 * 10) / 10
+        : 0;
+      
+      // Calcular ingresos por tipo de sesión
+      const ingresosPorTipoMap = new Map<TipoCita, { cantidad: number; ingresos: number }>();
+      
+      citasFiltradas
+        .filter(c => c.estado === 'completada')
+        .forEach(cita => {
+          const tipo = cita.tipo || 'sesion-1-1';
+          const actual = ingresosPorTipoMap.get(tipo) || { cantidad: 0, ingresos: 0 };
+          ingresosPorTipoMap.set(tipo, {
+            cantidad: actual.cantidad + 1,
+            ingresos: actual.ingresos + config.precioPromedioSesion,
+          });
+        });
+      
+      const ingresosPorTipoSesion = Array.from(ingresosPorTipoMap.entries())
+        .map(([tipo, datos]) => ({
+          tipo,
+          cantidad: datos.cantidad,
+          ingresos: datos.ingresos,
+          porcentaje: sesionesCompletadas > 0
+            ? Math.round((datos.cantidad / sesionesCompletadas) * 100 * 10) / 10
+            : 0,
+        }))
+        .sort((a, b) => b.ingresos - a.ingresos);
+      
+      // Calcular comparativa con período anterior
+      const diasDiferencia = Math.ceil((fechaFin.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24));
+      const fechaInicioAnterior = new Date(fechaInicio);
+      fechaInicioAnterior.setDate(fechaInicioAnterior.getDate() - diasDiferencia);
+      const fechaFinAnterior = new Date(fechaInicioAnterior);
+      fechaFinAnterior.setDate(fechaFinAnterior.getDate() + diasDiferencia - 1);
+      
+      const citasAnteriores = await getCitas(fechaInicioAnterior, fechaFinAnterior, role);
+      const sesionesCompletadasAnteriores = citasAnteriores.filter(c => c.estado === 'completada').length;
+      const ingresosAnteriores = sesionesCompletadasAnteriores * config.precioPromedioSesion;
+      
+      const crecimientoIngresos = ingresosAnteriores > 0
+        ? Math.round(((ingresosTotales - ingresosAnteriores) / ingresosAnteriores) * 100 * 10) / 10
+        : sesionesCompletadas > 0 ? 100 : 0;
+      
+      const crecimientoSesiones = sesionesCompletadasAnteriores > 0
+        ? Math.round(((sesionesCompletadas - sesionesCompletadasAnteriores) / sesionesCompletadasAnteriores) * 100 * 10) / 10
+        : sesionesCompletadas > 0 ? 100 : 0;
+      
+      // Determinar tendencia
+      let tendencia: 'subiendo' | 'bajando' | 'estable';
+      if (crecimientoIngresos > 5) {
+        tendencia = 'subiendo';
+      } else if (crecimientoIngresos < -5) {
+        tendencia = 'bajando';
+      } else {
+        tendencia = 'estable';
+      }
+      
+      // Formatear período
+      const esSemana = diasDiferencia <= 7;
+      const periodo = esSemana
+        ? `Semana del ${fechaInicio.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })}`
+        : fechaInicio.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+      
+      const dashboard: DashboardFinancieroAgenda = {
+        periodo,
+        fechaInicio,
+        fechaFin,
+        ingresosTotales,
+        ingresosPorSesion,
+        ticketMedio,
+        totalSesiones,
+        sesionesCompletadas,
+        sesionesCanceladas,
+        tasaCancelacion,
+        noShows,
+        tasaNoShow,
+        ingresosPendientes,
+        sesionesPendientes,
+        ocupacionPromedio,
+        horasTrabajadas,
+        horasDisponibles,
+        crecimientoIngresos,
+        crecimientoSesiones,
+        tendencia,
+        ingresosPorTipoSesion,
+      };
+      
+      setTimeout(() => {
+        resolve(dashboard);
+      }, 300);
+    } catch (error) {
+      console.error('Error obteniendo dashboard financiero de agenda:', error);
+      // Retornar dashboard vacío en caso de error
+      setTimeout(() => {
+        resolve({
+          periodo: '',
+          fechaInicio: rangoFechas.fechaInicio,
+          fechaFin: rangoFechas.fechaFin,
+          ingresosTotales: 0,
+          ingresosPorSesion: 0,
+          ticketMedio: 0,
+          totalSesiones: 0,
+          sesionesCompletadas: 0,
+          sesionesCanceladas: 0,
+          tasaCancelacion: 0,
+          noShows: 0,
+          tasaNoShow: 0,
+          ingresosPendientes: 0,
+          sesionesPendientes: 0,
+          ocupacionPromedio: 0,
+          horasTrabajadas: 0,
+          horasDisponibles: 0,
+          tendencia: 'estable',
+          ingresosPorTipoSesion: [],
+        });
+      }, 300);
     }
   });
 };

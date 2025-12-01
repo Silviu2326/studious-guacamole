@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../../../components/componentsreutilizables';
 import { Disponibilidad } from '../types';
-import { getDisponibilidad } from '../api';
+import { getDisponibilidad, calcularDisponibilidad } from '../api';
 import { Calendar, Clock, Users, Check, Loader2 } from 'lucide-react';
 
 interface SelectorHuecosProps {
@@ -25,7 +25,19 @@ export const SelectorHuecos: React.FC<SelectorHuecosProps> = ({
   useEffect(() => {
     const cargarDisponibilidad = async () => {
       setLoading(true);
-      const disp = await getDisponibilidad(fecha, role, entrenadorId);
+      // Usar calcularDisponibilidad cuando hay entrenadorId (requisito explícito)
+      // calcularDisponibilidad es un wrapper que añade filtros adicionales
+      let disp: Disponibilidad[];
+      if (entrenadorId && role === 'entrenador') {
+        disp = await calcularDisponibilidad({
+          fecha,
+          role,
+          entrenadorId,
+        });
+      } else {
+        // Para gimnasios o cuando no hay entrenadorId, usar getDisponibilidad
+        disp = await getDisponibilidad(fecha, role, entrenadorId);
+      }
       setDisponibilidad(disp);
       setLoading(false);
     };

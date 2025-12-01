@@ -1,210 +1,291 @@
+/**
+ * PanelFinanciero - Componente principal de overview financiero
+ * 
+ * Este componente actúa como cabecera visual del módulo financiero, mostrando
+ * un resumen ejecutivo de métricas financieras y alertas de pagos adaptadas al rol.
+ * 
+ * @remarks
+ * Este componente es reutilizable y puede ser utilizado desde:
+ * - El tab "Overview" de la página principal del módulo financiero
+ * - Otros módulos que requieran mostrar un resumen financiero compacto
+ * - Dashboards personalizados o widgets financieros
+ * 
+ * El componente gestiona sus propios estados de carga y error para las llamadas
+ * de API, proporcionando una experiencia de usuario fluida y resiliente.
+ */
+
 import React from 'react';
 import { Card, MetricCards, MetricCardData } from '../../../components/componentsreutilizables';
-import { DollarSign, TrendingUp, TrendingDown, Loader2, Package, Calendar, Wallet, Target, ArrowUpCircle } from 'lucide-react';
-import { useAuth } from '../../../context/AuthContext';
-import { overviewApi } from '../api';
-import { MetricasFinancieras } from '../types';
+import { 
+  DollarSign, 
+  TrendingUp, 
+  TrendingDown, 
+  Loader2, 
+  AlertCircle, 
+  AlertTriangle,
+  RefreshCw,
+  Clock
+} from 'lucide-react';
+import { getResumenFinancieroGeneral, getResumenAlertasPagos } from '../api';
+import { RolFinanciero, MetricasFinancieras } from '../types';
 
-export const PanelFinanciero: React.FC = () => {
-  const { user } = useAuth();
-  const [overview, setOverview] = React.useState<MetricasFinancieras | null>(null);
-  const [loading, setLoading] = React.useState(true);
+export interface PanelFinancieroProps {
+  /** Rol financiero del usuario que determina qué métricas y alertas mostrar */
+  rol: RolFinanciero;
+}
 
+export const PanelFinanciero: React.FC<PanelFinancieroProps> = ({ rol }) => {
+  // Estados locales para el resumen financiero general
+  const [resumenFinanciero, setResumenFinanciero] = React.useState<MetricasFinancieras[]>([]);
+  const [loadingResumen, setLoadingResumen] = React.useState(true);
+  const [errorResumen, setErrorResumen] = React.useState<string | null>(null);
+
+  // Estados locales para las alertas de pagos
+  const [alertasPagos, setAlertasPagos] = React.useState<{
+    totalPendiente: number;
+    numeroClientesRiesgoAlto: number;
+    proximosVencimientos: number;
+  } | null>(null);
+  const [loadingAlertas, setLoadingAlertas] = React.useState(true);
+  const [errorAlertas, setErrorAlertas] = React.useState<string | null>(null);
+
+  // Cargar resumen financiero general
   React.useEffect(() => {
-    const cargarOverview = async () => {
+    const cargarResumenFinanciero = async () => {
       try {
-        setLoading(true);
-        const data = await overviewApi.obtenerOverview(user?.role || 'entrenador');
-        setOverview(data);
+        setLoadingResumen(true);
+        setErrorResumen(null);
+        const data = await getResumenFinancieroGeneral(rol);
+        setResumenFinanciero(data);
       } catch (error) {
-        console.error('Error cargando overview:', error);
+        console.error('Error cargando resumen financiero general:', error);
+        setErrorResumen('No se pudo cargar el resumen financiero. Por favor, intenta de nuevo.');
       } finally {
-        setLoading(false);
+        setLoadingResumen(false);
       }
     };
 
-    cargarOverview();
-  }, [user?.role]);
+    cargarResumenFinanciero();
+  }, [rol]);
 
-  const getTrendIcon = (tendencia: 'up' | 'down' | 'neutral') => {
-    switch (tendencia) {
-      case 'up':
-        return <TrendingUp className="w-5 h-5" />;
-      case 'down':
-        return <TrendingDown className="w-5 h-5" />;
-      default:
-        return null;
-    }
+  // Cargar resumen de alertas de pagos
+  React.useEffect(() => {
+    const cargarAlertasPagos = async () => {
+      try {
+        setLoadingAlertas(true);
+        setErrorAlertas(null);
+        const data = await getResumenAlertasPagos(rol);
+        setAlertasPagos(data);
+      } catch (error) {
+        console.error('Error cargando alertas de pagos:', error);
+        setErrorAlertas('No se pudieron cargar las alertas de pagos.');
+      } finally {
+        setLoadingAlertas(false);
+      }
+    };
+
+    cargarAlertasPagos();
+  }, [rol]);
+
+  // Función para reintentar carga en caso de error
+  const handleRetryResumen = () => {
+    setErrorResumen(null);
+    setLoadingResumen(true);
+    getResumenFinancieroGeneral(rol)
+      .then(data => {
+        setResumenFinanciero(data);
+        setErrorResumen(null);
+      })
+      .catch(error => {
+        console.error('Error en reintento:', error);
+        setErrorResumen('No se pudo cargar el resumen financiero. Por favor, intenta de nuevo.');
+      })
+      .finally(() => setLoadingResumen(false));
   };
 
-  const isEntrenador = user?.role === 'entrenador';
+  const handleRetryAlertas = () => {
+    setErrorAlertas(null);
+    setLoadingAlertas(true);
+    getResumenAlertasPagos(rol)
+      .then(data => {
+        setAlertasPagos(data);
+        setErrorAlertas(null);
+      })
+      .catch(error => {
+        console.error('Error en reintento:', error);
+        setErrorAlertas('No se pudieron cargar las alertas de pagos.');
+      })
+      .finally(() => setLoadingAlertas(false));
+  };
 
-  const metrics: MetricCardData[] = overview ? [
-    {
-      id: 'total',
-      title: isEntrenador ? 'Ingresos Totales' : 'Facturación Total',
-      value: `€${overview.total.toLocaleString()}`,
-      subtitle: overview.periodoActual,
-      trend: overview.variacion ? {
-        value: Math.abs(overview.variacion),
-        direction: overview.tendencia,
-        label: 'vs mes anterior'
-      } : undefined,
-      icon: getTrendIcon(overview.tendencia),
-      color: overview.tendencia === 'up' ? 'success' : overview.tendencia === 'down' ? 'error' : 'info',
-      loading
-    },
-    {
-      id: 'promedio',
-      title: 'Promedio Diario',
-      value: isEntrenador ? `€${(overview.total / 30).toFixed(0)}` : `€${(overview.total / 30).toLocaleString('es-ES', { maximumFractionDigits: 0 })}`,
-      subtitle: 'Estimado mensual',
-      icon: <Calendar className="w-5 h-5" />,
-      color: 'info',
-      loading
-    },
-    {
-      id: 'proyeccion',
-      title: 'Proyección Anual',
-      value: isEntrenador ? `€${(overview.total * 12).toLocaleString('es-ES', { maximumFractionDigits: 0 })}` : `€${(overview.total * 12).toLocaleString('es-ES', { maximumFractionDigits: 0 })}`,
-      subtitle: 'Basado en mes actual',
-      icon: <Target className="w-5 h-5" />,
-      color: 'primary',
-      loading
-    },
-    {
-      id: 'meta',
-      title: 'Objetivo Mensual',
-      value: overview.total >= (isEntrenador ? 5000 : 130000) ? 'Cumplido' : 'En progreso',
-      subtitle: `Meta: €${isEntrenador ? '5000' : '130000'}`,
-      icon: <ArrowUpCircle className="w-5 h-5" />,
-      color: overview.total >= (isEntrenador ? 5000 : 130000) ? 'success' : 'warning',
-      loading
-    }
-  ] : [];
+  // Convertir métricas financieras a formato de tarjetas
+  const metricasCards: MetricCardData[] = resumenFinanciero.slice(0, 4).map((metrica, index) => {
+    const formatearValor = (valor: number, esPorcentaje: boolean = false): string => {
+      if (esPorcentaje) {
+        return `${valor.toFixed(1)}%`;
+      }
+      return `€${valor.toLocaleString('es-ES', { maximumFractionDigits: 0 })}`;
+    };
+
+    const esPorcentaje = metrica.etiqueta.toLowerCase().includes('margen') || 
+                        metrica.etiqueta.toLowerCase().includes('porcentaje');
+
+    return {
+      id: `metrica-${index}`,
+      title: metrica.etiqueta,
+      value: formatearValor(metrica.valorActual, esPorcentaje),
+      subtitle: metrica.descripcionOpcional || `${metrica.periodoActual || 'Período actual'}`,
+      trend: {
+        value: Math.abs(metrica.variacionPorcentual),
+        direction: metrica.tendencia,
+        label: 'vs período anterior'
+      },
+      icon: metrica.tendencia === 'up' ? <TrendingUp className="w-5 h-5" /> : 
+            metrica.tendencia === 'down' ? <TrendingDown className="w-5 h-5" /> : 
+            <DollarSign className="w-5 h-5" />,
+      color: metrica.tendencia === 'up' ? 'success' : 
+             metrica.tendencia === 'down' ? 'error' : 
+             'info',
+      loading: loadingResumen
+    };
+  });
+
+  const isEntrenador = rol === 'entrenador';
 
   return (
     <div className="space-y-6">
-      <MetricCards data={metrics} columns={4} />
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-white shadow-sm">
-          <div className="p-4">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                <DollarSign className="w-5 h-5 text-white" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">
-                Resumen Financiero
-              </h2>
-            </div>
-            
-            {loading ? (
-              <Card className="p-8 text-center bg-white shadow-sm">
-                <Loader2 size={48} className="mx-auto text-blue-500 animate-spin mb-4" />
-                <p className="text-gray-600">Cargando...</p>
-              </Card>
-            ) : overview ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="rounded-xl bg-white ring-1 ring-slate-200 p-4">
-                    <p className="text-sm font-medium text-slate-700 mb-1">
-                      Período Actual
-                    </p>
-                    <p className="text-lg font-semibold text-gray-900">
-                      {overview.periodoActual}
-                    </p>
-                  </div>
-                  {overview.periodoAnterior && (
-                    <div className="rounded-xl bg-white ring-1 ring-slate-200 p-4">
-                      <p className="text-sm font-medium text-slate-700 mb-1">
-                        Período Anterior
-                      </p>
-                      <p className="text-lg font-semibold text-gray-900">
-                        {overview.periodoAnterior}
-                      </p>
-                    </div>
-                  )}
-                  {overview.variacion !== undefined && (
-                    <div className="rounded-xl bg-white ring-1 ring-slate-200 p-4">
-                      <p className="text-sm font-medium text-slate-700 mb-1">
-                        Variación
-                      </p>
-                      <div className="flex items-center gap-2">
-                        {getTrendIcon(overview.tendencia)}
-                        <p className={`text-lg font-semibold ${
-                          overview.tendencia === 'up' ? 'text-green-600' :
-                          overview.tendencia === 'down' ? 'text-red-600' :
-                          'text-gray-900'
-                        }`}>
-                          {overview.variacion > 0 ? '+' : ''}{overview.variacion}%
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <Card className="p-8 text-center bg-white shadow-sm">
-                <Package size={48} className="mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Sin datos disponibles</h3>
-                <p className="text-gray-600">No hay información financiera para mostrar en este momento.</p>
-              </Card>
-            )}
-          </div>
-        </Card>
+      {/* Resumen Ejecutivo - Métricas Financieras Principales */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <DollarSign className="w-5 h-5 text-gray-700" />
+          <h2 className="text-lg font-semibold text-gray-900">
+            Resumen Ejecutivo
+          </h2>
+        </div>
 
-        <Card className="bg-white shadow-sm">
-          <div className="p-4">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-600 to-emerald-600 rounded-lg flex items-center justify-center">
-                <Wallet className="w-5 h-5 text-white" />
+        {errorResumen ? (
+          <Card className="p-6 bg-white shadow-sm">
+            <div className="flex flex-col items-center justify-center py-6">
+              <div className="p-3 bg-red-100 rounded-full mb-4">
+                <AlertCircle className="w-6 h-6 text-red-600" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">
-                Análisis Rápido
-              </h2>
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                Error al cargar el resumen financiero
+              </h3>
+              <p className="text-sm text-gray-600 text-center mb-4 max-w-xs">
+                {errorResumen}
+              </p>
+              <button
+                onClick={handleRetryResumen}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Reintentar
+              </button>
             </div>
-            {loading ? (
-              <div className="animate-pulse space-y-3">
-                <div className="h-20 bg-gray-200 rounded-lg"></div>
-                <div className="h-20 bg-gray-200 rounded-lg"></div>
+          </Card>
+        ) : (
+          <MetricCards data={metricasCards} columns={4} />
+        )}
+      </div>
+
+      {/* Resumen de Alertas de Pagos */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <AlertTriangle className="w-5 h-5 text-amber-600" />
+          <h2 className="text-lg font-semibold text-gray-900">
+            Alertas de Pagos
+          </h2>
+        </div>
+
+        {errorAlertas ? (
+          <Card className="p-6 bg-white shadow-sm">
+            <div className="flex flex-col items-center justify-center py-4">
+              <div className="p-2 bg-amber-100 rounded-full mb-3">
+                <AlertCircle className="w-5 h-5 text-amber-600" />
               </div>
-            ) : overview ? (
-              <div className="space-y-4">
-                <div className="rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 ring-1 ring-green-200 p-6">
-                  <p className="text-sm font-medium text-green-700 mb-2">Estado Financiero</p>
-                  <div className="flex items-center gap-2 mb-2">
-                    {overview.tendencia === 'up' && <TrendingUp className="w-6 h-6 text-green-900" />}
-                    {overview.tendencia === 'down' && <TrendingDown className="w-6 h-6 text-green-900" />}
-                    {overview.tendencia === 'neutral' && <Target className="w-6 h-6 text-green-900" />}
-                    <p className="text-2xl font-bold text-green-900">
-                      {overview.tendencia === 'up' ? 'Saludable' : overview.tendencia === 'down' ? 'En observación' : 'Estable'}
-                    </p>
-                  </div>
-                  <p className="text-sm text-green-700">
-                    {overview.tendencia === 'up' ? 
-                      'Tu negocio está en crecimiento constante.' :
-                      overview.tendencia === 'down' ? 
-                      'Es momento de revisar estrategias de crecimiento.' :
-                      'Mantienes un rendimiento estable.'}
+              <p className="text-sm text-gray-600 text-center mb-3">
+                {errorAlertas}
+              </p>
+              <button
+                onClick={handleRetryAlertas}
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors"
+              >
+                <RefreshCw className="w-3 h-3" />
+                Reintentar
+              </button>
+            </div>
+          </Card>
+        ) : loadingAlertas ? (
+          <Card className="p-6 bg-white shadow-sm">
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+              <span className="ml-2 text-sm text-gray-600">Cargando alertas...</span>
+            </div>
+          </Card>
+        ) : alertasPagos ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Total Pendiente */}
+            <Card className="p-4 bg-white shadow-sm">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-gray-600 mb-1">
+                    Total Pendiente
+                  </p>
+                  <p className="text-xl font-bold text-gray-900">
+                    €{alertasPagos.totalPendiente.toLocaleString('es-ES')}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {isEntrenador ? 'Pagos de clientes' : 'Cuotas y pagos pendientes'}
                   </p>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-lg bg-blue-50 p-4 ring-1 ring-blue-200">
-                    <p className="text-xs text-blue-700 mb-1">Crecimiento</p>
-                    <p className="text-2xl font-bold text-blue-900">
-                      {overview.variacion || 0 > 0 ? '+' : ''}{overview.variacion || 0}%
-                    </p>
-                  </div>
-                  <div className="rounded-lg bg-purple-50 p-4 ring-1 ring-purple-200">
-                    <p className="text-xs text-purple-700 mb-1">Actualización</p>
-                    <p className="text-sm font-bold text-purple-900">Hace 5 min</p>
-                  </div>
+                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                  <DollarSign className="w-5 h-5 text-red-600" />
                 </div>
               </div>
-            ) : null}
+            </Card>
+
+            {/* Clientes en Riesgo Alto */}
+            <Card className="p-4 bg-white shadow-sm">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-gray-600 mb-1">
+                    {isEntrenador ? 'Clientes' : 'Socios'} en Riesgo
+                  </p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {alertasPagos.numeroClientesRiesgoAlto}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Pagos vencidos &gt; 15 días
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                </div>
+              </div>
+            </Card>
+
+            {/* Próximos Vencimientos */}
+            <Card className="p-4 bg-white shadow-sm">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-gray-600 mb-1">
+                    Próximos Vencimientos
+                  </p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {alertasPagos.proximosVencimientos}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    En los próximos 7 días
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-blue-600" />
+                </div>
+              </div>
+            </Card>
           </div>
-        </Card>
+        ) : null}
       </div>
     </div>
   );

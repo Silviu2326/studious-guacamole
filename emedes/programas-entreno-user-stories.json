@@ -1,0 +1,207 @@
+{
+  "user_stories": [
+    {
+      "feature": "src\\features\\programas-de-entreno\\pages\\ProgramasDeEntrenoEditorPage.tsx",
+      "persona": "Coach",
+      "description": "Como coach quiero abrir la ficha del cliente desde un botón de información situado en la topbar del editor para que al pulsarlo se despliegue un panel o modal con los datos, objetivos y restricciones del cliente seleccionado."
+    },
+    {
+      "feature": "src\\features\\programas-de-entreno\\pages\\ProgramasDeEntrenoEditorPage.tsx",
+      "persona": "Coach",
+      "description": "Como coach quiero lanzar un asistente Fit Coach desde la topbar que abra un pop-up con recomendaciones generadas por IA enfocadas en optimizar el plan diario que estoy editando."
+    },
+    {
+      "feature": "src\\features\\programas-de-entreno\\pages\\ProgramasDeEntrenoEditorPage.tsx",
+      "persona": "Coach",
+      "description": "Como coach quiero disponer de un botón de sustituciones de ejercicios en la topbar que abra un pop-up donde seleccionar bloques y reemplazarlos en lote sin tener que recorrer manualmente la biblioteca."
+    },
+    {
+      "feature": "src\\features\\programas-de-entreno\\pages\\ProgramasDeEntrenoEditorPage.tsx",
+      "persona": "Coach",
+      "description": "Como coach quiero usar la acción Batch Training accesible desde la topbar para configurar reglas y aplicar ediciones masivas automáticas al plan semanal."
+    },
+    {
+        "feature": "src/features/check-ins-de-entreno",
+        "persona": "Entrenador Personal",
+        "description": "Como Entrenador Personal quiero filtrar el historial de check-ins por rango de fechas y color de semáforo desde la pestaña Historial para revisar periodos específicos y detectar fácilmente las sesiones que requieren seguimiento."
+      },
+      {
+        "feature": "src/features/check-ins-de-entreno",
+        "persona": "Entrenador Personal",
+        "description": "Como Entrenador Personal quiero exportar los check-ins registrados a un archivo Excel o PDF desde la vista de historial para compartir reportes con el cliente o mi equipo de trabajo sin depender de la plataforma."
+      },
+      {
+        "feature": "src/features/check-ins-de-entreno",
+        "persona": "Entrenador Personal",
+        "description": "Como Entrenador Personal quiero programar recordatorios automáticos para que el cliente complete su check-in antes de cada sesión para asegurar que recibo feedback puntual incluso cuando el cliente olvida registrar sus sensaciones."
+      },
+      {
+        "feature": "src/features/check-ins-de-entreno",
+        "persona": "Entrenador Personal",
+        "description": "Como Entrenador Personal quiero crear plantillas con preguntas adicionales y campos personalizados para los check-ins para adaptar el seguimiento a las necesidades específicas de cada cliente o tipo de programa."
+      },
+      {
+        "feature": "src/features/check-ins-de-entreno",
+        "persona": "Entrenador Personal",
+        "description": "Como Entrenador Personal quiero permitir que el cliente adjunte fotos o videos al check-in para revisar la técnica del ejercicio o documentar molestias físicas con mayor contexto."
+      },
+      {
+        "feature": "src/features/check-ins-de-entreno",
+        "persona": "Entrenador Personal",
+        "description": "Como Entrenador Personal quiero ver en la pestaña Analytics una comparación entre los check-ins y los objetivos del plan de entrenamiento asignado para identificar desviaciones y ajustar la planificación semanal con datos objetivos."
+      },
+      {
+        "feature": "src/features/check-ins-de-entreno",
+        "persona": "Coordinador de Entrenadores",
+        "description": "Como Coordinador de Entrenadores quiero comparar en una vista agregada las métricas de check-ins de varios clientes para detectar patrones comunes y priorizar intervenciones en mi cartera de clientes."
+      },
+      {
+        "feature": "src/features/check-ins-de-entreno",
+        "persona": "Entrenador Personal",
+        "description": "Como Entrenador Personal quiero configurar mis propios criterios para asignar semáforos, por ejemplo qué RPE se considera rojo, para ajustar la sensibilidad del sistema según el perfil del cliente y mi metodología de entrenamiento."
+      },
+      {
+        "feature": "src/features/check-ins-de-entreno",
+        "persona": "Entrenador Personal",
+        "description": "Como Entrenador Personal quiero sincronizar métricas de dispositivos wearables, como frecuencia cardíaca y variabilidad, con los check-ins para correlacionar datos objetivos con las sensaciones reportadas y obtener una visión más completa."
+      },
+      {
+        "feature": "src/features/check-ins-de-entreno",
+        "persona": "Entrenador Personal",
+        "description": "Como Entrenador Personal quiero configurar reglas automáticas que apliquen ajustes en el plan cuando se disparen ciertas alertas de check-ins para responder de manera proactiva a los patrones negativos sin tener que intervenir manualmente cada vez."
+      },  
+    {
+      "feature": "src\\features\\programas-de-entreno\\pages\\ProgramasDeEntrenoEditorPage.tsx",
+      "persona": "Coach",
+      "description": "Como coach quiero anclar plantillas favoritas en la parte superior de la biblioteca del panel lateral izquierdo para reutilizarlas en cualquier programa con un solo clic."
+    },
+    {
+      "feature": "src\\features\\programas-de-entreno\\pages\\ProgramasDeEntrenoEditorPage.tsx",
+      "persona": "Coach",
+      "description": "Como coach quiero filtrar la biblioteca del panel lateral izquierdo por el equipamiento disponible en la sede del cliente para evitar ejercicios inviables."
+    },
+    {
+      "feature": "src\\features\\programas-de-entreno\\pages\\ProgramasDeEntrenoEditorPage.tsx",
+      "persona": "Coach",
+      "description": "Como coach quiero ver etiquetas de dificultad en cada tarjeta de la biblioteca para identificar rápidamente el nivel de cada bloque antes de arrastrarlo al plan."
+    },
+    {
+      "feature": "src\\features\\programas-de-entreno\\pages\\ProgramasDeEntrenoEditorPage.tsx",
+      "persona": "Coach",
+      "description": "Como coach quiero reorganizar bloques en la vista semanal del canvas central mediante drag and drop para ajustar el orden de las sesiones de forma visual."
+    },
+    {
+      "feature": "src\\features\\programas-de-entreno\\pages\\ProgramasDeEntrenoEditorPage.tsx",
+      "persona": "Coach",
+      "description": "Como coach quiero ajustar objetivos de duración y calorías por día desde la vista Excel del canvas para que los totales se recalculen al instante mientras edito."
+    },
+    {
+      "feature": "src\\features\\programas-de-entreno\\pages\\ProgramasDeEntrenoEditorPage.tsx",
+      "persona": "Coach",
+      "description": "Como coach quiero recibir indicadores visuales en el canvas central cuando un día excede los objetivos semanales definidos, para tomar decisiones informadas."
+    },
+    {
+      "feature": "src\\features\\programas-de-entreno\\pages\\ProgramasDeEntrenoEditorPage.tsx",
+      "persona": "Coach",
+      "description": "Como coach quiero ver sugerencias contextuales distintas en el panel lateral derecho según la vista activa (semanal, diaria o Excel) para obtener insights adaptados."
+    },
+    {
+      "feature": "src\\features\\programas-de-entreno\\pages\\ProgramasDeEntrenoEditorPage.tsx",
+      "persona": "Coach",
+      "description": "Como coach quiero registrar pequeñas notas de seguimiento en el panel lateral derecho para recordar ajustes acordados con el cliente durante la planificación."
+    },
+    {
+      "feature": "src\\features\\programas-de-entreno\\pages\\ProgramasDeEntrenoEditorPage.tsx",
+      "persona": "Coach",
+      "description": "Como coach quiero establecer objetivos semanales manualmente desde el panel lateral derecho y que el resumen recalculé el progreso en función de esos valores."
+    },
+    {
+      "feature": "src\\features\\programas-de-entreno\\pages\\ProgramasDeEntrenoEditorPage.tsx",
+      "persona": "Coach",
+      "description": "Como coach quiero que los paneles laterales recuerden su estado, colapsado o expandido, cuando vuelva a la página para continuar donde lo dejé."
+    },
+    {
+      "feature": "src\\features\\programas-de-entreno\\pages\\ProgramasDeEntrenoEditorPage.tsx",
+      "persona": "Coach",
+      "description": "Como coach quiero que los atajos de teclado permitan cambiar de vista y colapsar paneles laterales para trabajar más rápido sin usar el ratón."
+    },
+    {
+        "feature": "src/features/adherencia-cumplimiento-de-entreno",
+        "persona": "Entrenador Personal",
+        "description": "Como entrenador personal quiero configurar mis propios umbrales de adherencia y banderas de riesgo dentro de la pestaña Resumen para que el tablero destaque automáticamente a los clientes críticos según mi metodología de trabajo."
+      },
+      {
+        "feature": "src/features/adherencia-cumplimiento-de-entreno",
+        "persona": "Coordinador de Entrenadores",
+        "description": "Como coordinador de entrenadores quiero seleccionar dos rangos de fechas personalizados en la pestaña Métricas y ver la comparación lado a lado para evaluar si las acciones tomadas mejoran realmente la adherencia frente a períodos anteriores."
+      },
+      {
+        "feature": "src/features/adherencia-cumplimiento-de-entreno",
+        "persona": "Entrenador Personal",
+        "description": "Como entrenador personal quiero añadir anotaciones sobre el gráfico del Analizador de Tendencias para contextualizar cambios bruscos en la adherencia y compartir esa información con mi equipo."
+      },
+      {
+        "feature": "src/features/adherencia-cumplimiento-de-entreno",
+        "persona": "Entrenador Personal",
+        "description": "Como entrenador personal quiero convertir una recomendación del Optimizador de Adherencia en un ajuste real del plan con un solo clic, por ejemplo reprogramar sesiones o cambiar objetivos, para aplicar acciones sugeridas sin navegar a otros módulos."
+      },
+      {
+        "feature": "src/features/adherencia-cumplimiento-de-entreno",
+        "persona": "Entrenador Personal",
+        "description": "Como entrenador personal quiero guardar notas rápidas o compromisos acordados durante una revisión en la pestaña Cumplimiento Individual para mantener historial cualitativo junto a los datos cuantitativos de adherencia."
+      },
+      {
+        "feature": "src/features/adherencia-cumplimiento-de-entreno",
+        "persona": "Entrenador Personal",
+        "description": "Como entrenador personal quiero programar un resumen semanal automático con los cambios de adherencia y las alertas más críticas para revisarlo desde el correo sin tener que entrar diariamente al panel."
+      },
+      {
+        "feature": "src/features/adherencia-cumplimiento-de-entreno",
+        "persona": "Entrenador Personal",
+        "description": "Como entrenador personal quiero sincronizar la adherencia con datos de frecuencia cardíaca y recuperación procedentes de wearables en la pestaña Métricas para correlacionar el esfuerzo real con el cumplimiento de entrenamientos y detectar sobrecargas."
+      },
+      {
+        "feature": "src/features/check-ins-nutricionales",
+        "persona": "Entrenador Personal",
+        "description": "Como entrenador personal quiero definir plantillas con preguntas o campos adicionales para el formulario de nuevo check-in en la pestaña Check-ins para adaptar el seguimiento nutricional a las necesidades de cada cliente."
+      },
+      {
+        "feature": "src/features/check-ins-nutricionales",
+        "persona": "Entrenador Personal",
+        "description": "Como entrenador personal quiero activar recordatorios automáticos según el horario de cada comida para que el cliente envíe sus check-ins y mantener la consistencia del seguimiento diario."
+      },
+      {
+        "feature": "src/features/check-ins-nutricionales",
+        "persona": "Entrenador Personal",
+        "description": "Como entrenador personal quiero filtrar el historial nutricional por tipo de comida, rango de fechas o niveles de hambre y saciedad para analizar patrones específicos sin revisar registro por registro."
+      },
+      {
+        "feature": "src/features/check-ins-nutricionales",
+        "persona": "Entrenador Personal",
+        "description": "Como entrenador personal quiero comparar fotos anteriores y actuales dentro del modal de detalle del check-in para evaluar visualmente la evolución del cliente y comentar mejoras concretas."
+      },
+      {
+        "feature": "src/features/check-ins-nutricionales",
+        "persona": "Entrenador Personal",
+        "description": "Como entrenador personal quiero ver en la pestaña Adherencia un gráfico que compare el consumo real de proteínas, carbohidratos y grasas frente a los objetivos diarios para detectar qué macronutriente necesita ajustes."
+      },
+      {
+        "feature": "src/features/check-ins-nutricionales",
+        "persona": "Entrenador Personal",
+        "description": "Como entrenador personal quiero configurar alertas automáticas cuando un cliente acumule varios días sin check-ins o caiga por debajo de un umbral de adherencia para intervenir antes de que abandone el plan nutricional."
+      },
+      {
+        "feature": "src/features/check-ins-nutricionales",
+        "persona": "Entrenador Personal",
+        "description": "Como entrenador personal quiero exportar a PDF o Excel un reporte con métricas, gráficos y observaciones de todas las pestañas para compartir resultados con el cliente o su equipo médico."
+      },
+      {
+        "feature": "src/features/check-ins-nutricionales",
+        "persona": "Entrenador Personal",
+        "description": "Como entrenador personal quiero ver en la pestaña Tendencias un gráfico combinado que muestre la evolución del peso junto a la adherencia nutricional para identificar si los cambios de peso siguen el plan alimentario."
+      }
+  
+  
+  ]
+}
+

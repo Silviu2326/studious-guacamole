@@ -1,0 +1,2144 @@
+{
+  "user_stories": [
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero regresar al listado general desde un botón visible, para alternar rápidamente entre diferentes dietas asignadas."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero ver en la topbar la semana, el objetivo calórico y el estado del plan, para confirmar que edito la versión correcta antes de aplicar cambios."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero un botón de guardado que muestre la hora del último autosave y permita “Guardar como borrador” o “Publicar”, para gestionar versiones con tranquilidad."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero lanzar un asistente IA desde la topbar que analice instantáneamente la semana y sugiera ajustes, para tomar decisiones sin abandonar el flujo de trabajo."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero duplicar la dieta actual desde el encabezado, para crear rápidamente variaciones (leve déficit, mantenimiento, superávit)."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero recibir alertas en la topbar cuando existan inconsistencias (día sin comidas, macros fuera de rango), para detectarlas antes de cerrar la semana."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero disponer de un historial de cambios accesible desde la topbar, para revisar rápidamente qué modificaciones se hicieron y revertir si es necesario."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero fijar atajos rápidos (p. ej. “Duplicar semana”, “Generar lista compra”) en el encabezado, para acceder a mis acciones favoritas sin abrir menús adicionales."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero visualizar tarjetas con métricas clave (kcal objetivo, macronutrientes, ratio proteína/kg, vasos de agua, fibra), para validar que los ejes principales están cubiertos."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero personalizar qué tarjetas aparecen y su orden, para centrarme en los indicadores más relevantes para cada cliente."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero que cada tarjeta muestre la desviación respecto al plan anterior y un indicador de tendencia, para identificar si vamos en la dirección correcta."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero que las métricas integren datos externos (actividad real, sueño, estrés), para contextualizar el plan con el estilo de vida del cliente."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero poder añadir notas o mini objetivos a cada métrica (p. ej. “subir a 2000 ml de agua”), para recordar micro metas al revisar el panel."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero disponer de un buscador unificado que filtre plantillas, recetas, alimentos, bloques y snacks, para encontrar cualquier recurso con una sola búsqueda."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero arrastrar y soltar cualquier recurso sobre el calendario o la vista diaria, para construir menús sin diálogos intermedios."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero filtrar la biblioteca por valores nutricionales (kcal, macros, fibra, sodio), estilo culinario, restricciones o tiempo de preparación, para encontrar opciones que encajen."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero anclar plantillas o recetas favoritas y agruparlas en colecciones, para reutilizarlas con un clic."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero guardar filtros personalizados (p. ej. “Recetas altas en proteína veganas < 20 min”), para reutilizar criterios frecuentes."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero previsualizar cada recurso con macros detallados, alérgenos, coste estimado y nivel de adherencia histórica del cliente, para elegir con criterio."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero crear bloques personalizados con múltiples recetas y guardarlos en la biblioteca, para volver a emplearlos en otras dietas."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero ver sugerencias inteligentes en la parte superior (p. ej. “recetas con ingredientes que el cliente ya compró”), para reducir tiempo de búsqueda."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero importar recursos propios (CSV, enlaces, fotos) y que queden disponibles en la biblioteca, para ampliar el repertorio más allá del catálogo base."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero conectar la biblioteca con proveedores externos o marketplaces, para añadir recetas certificadas o ingredientes de temporada con un clic."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero ver la huella de carbono estimada y coste aproximado de cada recurso, para ofrecer opciones sostenibles y ajustadas al presupuesto del cliente."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero etiquetar recursos con niveles de adherencia o satisfacción histórica del cliente, para priorizar aquellos que sabemos que funcionarán mejor."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero alternar entre un tablero de siete columnas y una vista agenda expandible, para adaptarme al volumen de comidas de la semana."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero colorear sesiones y mostrar iconos según tipo (desayuno, snack, comida principal) y objetivo (hipertrofia, déficit), para identificar desequilibrios al instante."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero editar inline las porciones, macros o notas de cada bloque al hacer doble clic, para ajustar sin abrir modales."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero seleccionar múltiples bloques (por día, tipo o etiqueta) y aplicar acciones en lote (duplicar, desplazar, reducir kcal, etiquetar), para agilizar cambios masivos."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero ver líneas objetivo y barras acumuladas por día que cambien de color si superan/tocan el rango establecido, para controlar fácilmente el balance."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero comparar la semana actual con otra (anterior, objetivo, versión histórica) en modo fantasma, para evaluar progresión y variedad."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero recibir sugerencias contextuales para huecos libres (p. ej. “añadir snack proteico”), y añadirlas arrastrando desde el panel derecho, para cerrar gaps sin buscar manualmente."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero poder cambiar la distribución de comidas por día (añadir/quitar bloques) y que se ajusten las macros automáticamente, para personalizar según el ritmo del cliente."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero visualizar indicadores de adherencia prevista (según feedback histórico) directamente en cada día, para prever dónde habrá más riesgo de incumplimiento."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero añadir tags y comentarios visibles por día (p. ej. “día pre-competición”, “viaje”), para contextualizar la planificación sin abrir cada bloque."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero bloquear ciertos bloques para evitar que automatizaciones o IA los modifiquen (p. ej. comida cultural importante), para preservar elementos no negociables."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero programar variaciones automáticas (p. ej. “lunes rotar snack A, miércoles snack B”) y visualizarlas en la vista semanal, para mantener variedad sin trabajo manual."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero ver las comidas en un timeline vertical con control de zoom, para inspeccionar rápidamente el detalle o un resumen por bloque."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero mostrar comparativas con la sesión equivalente anterior (misma comida el día anterior o semana pasada) resaltando mejoras o desviaciones, para ajustar la progresión."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero alternar entre modo edición rápida (cambios pequeños) y modo avanzado (tempo culinario, sustitutos, instrucciones detalladas), para trabajar acorde a la complejidad del ajuste."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero registrar notas de texto, audio o vídeo para cada bloque, para entregar instrucciones personalizadas que el cliente pueda revisar antes de cocinar."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero iniciar temporizadores o cronómetros desde cada receta y almacenar el tiempo real invertido, para ajustar próximas recomendaciones según disponibilidad real."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero ver el feedback del cliente (sensación, saciedad, tiempo real consumido) tras cada comida, para que el asistente IA proponga ajustes automáticos."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero recibir alertas cuando la IA detecte potenciales sobrecargas (p. ej. demasiada fibra dos días seguidos, baja hidratación) y añadir bloques preventivos con un clic."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero duplicar comidas a otros días arrastrando entre columnas o usando atajos, para acelerar la planificación cuando un cliente repite menús."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero asignar sustitutos sugeridos (p. ej. “sin lactosa”, “versión rápida”) visibles dentro de cada bloque, para que el cliente adapte la comida si surge un imprevisto."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero integrar recordatorios de suplementos o hidratación en la vista diaria, para que aparezcan junto a las comidas correspondientes."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero visualizar el impacto estimado en calorías/hora cuando el cliente realiza ejercicio adicional, para ajustar ingestas dentro del mismo timeline."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero iniciar un cuestionario que pregunte sobre mi metodología (métricas, nivel de detalle, foco del cliente), para que la vista Excel se configure automáticamente a mi estilo."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero reabrir el cuestionario cuando cambien las necesidades y regenerar el layout con nuevas columnas y fórmulas, para mantener la vista alineada con mis prioridades."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero que, según mis respuestas, el sistema sugiera plantillas (p. ej. entrenador de fuerza, nutricionista endurance) que adapten las columnas y resúmenes, para ahorrar setup manual."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero añadir fórmulas personalizadas (tonelaje, densidad energética, % vegetariano) que se recalculen automáticamente, para analizar datos avanzados sin salir del editor."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero utilizar formato condicional que resalte celdas fuera de rango (exceso de sodio, déficit de proteína) para centrarme en las anomalías."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero generar tablas dinámicas o resúmenes automáticos al seleccionar un rango (volumen por grupo muscular, promedio de saciedad), para obtener insights inmediatos."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero visualizar gráficos (histogramas, líneas de progresión, circular de macros) sin exportar, para compartir la evolución con el cliente desde la plataforma."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero copiar y pegar columnas desde/hacia Excel u otras hojas manteniendo la estructura, para colaborar con otros profesionales que usan herramientas externas."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero que la IA analice las columnas seleccionadas y proponga ajustes (p. ej. “sube la proteína en cenas”), para detectar mejoras sin revisar todas las celdas manualmente."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero crear plantillas propias con fórmulas y formatos guardados, para reutilizarlas en otros clientes con un clic."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero exportar la vista Excel con filtros activos o sin ellos, para compartir únicamente la información relevante con stakeholders."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero incorporar columnas de coste, tiempo de preparación y satisfacción prevista, para evaluar el plan desde una perspectiva holística."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero que el panel derecho actúe como un asistente inteligente que interprete adherencia, feedback y datos externos (sueño, estrés) para ofrecer insights accionables."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero ver un dashboard compacto con macros diarias, tendencia semanal, % de días en rango y objetivos de micronutrientes, para comprobar el estado general."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero recibir alertas proactivas cuando detecte riesgos (deficiencia de fibra, baja ingesta de agua, exceso de procesados) junto a soluciones concretas."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero que el panel muestre la próxima comida relevante con tips de preparación e ingredientes pendientes, para que el cliente llegue preparado."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero registrar notas, acuerdos y recordatorios etiquetados (p. ej. “Revisar suplementación”, “Coordinar con entrenador”), para tener contexto cuando vuelva al editor."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero conversar en lenguaje natural con el asistente (“¿Qué comidas tienen más sodio?”) y recibir respuestas basadas en los datos del plan."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero aceptar o descartar sugerencias y que el asistente aprenda mis preferencias, para que las recomendaciones futuras estén alineadas con mi estilo."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero obtener accesos rápidos a acciones frecuentes (generar lista de compra, duplicar semana, enviar resumen al cliente) en función del momento del plan."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero ver un timeline de hitos (controles médicos, competiciones, sesiones clave) y tareas pendientes, para alinear la nutrición con eventos importantes."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero que el panel sugiera planes de contingencia cuando detecte condiciones externas (viajes, eventos sociales, lesiones), para adaptar el plan sin empezar de cero."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero visualizar insights de coste total, variedad nutricional y grado de procesamiento de los alimentos, para ajustar el plan a objetivos de salud global."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero que el asistente proponga contenido educativo (artículos, vídeos cortos) acorde a los retos del cliente, para reforzar la adherencia con información relevante."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero que la IA equilibre automáticamente macros por día o semana respetando mis reglas (p. ej. proteína mínima, límite de azúcares), para ajustar en segundos."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero definir reglas personalizadas (condiciones + acciones) que se ejecuten bajo demanda o de forma recurrente (p. ej. “si día libre, añadir postre libre”), para automatizar ajustes comunes."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero que la IA analice el historial del cliente (adherencia, preferencias, feedback) para priorizar recetas con mayor probabilidad de cumplimiento."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero simular el impacto de recomendaciones IA antes de aplicarlas (variación de kcal, coste, tiempo de preparación), para decidir con información completa."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero conectar la IA con mi inventario de ingredientes o con apps externas (MyFitnessPal, Cronometer), para actualizar valores con datos reales."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero que la IA pueda generar planes alternativos (p. ej. “versión vegetariana”, “plan con presupuesto reducido”) partiendo del actual, para personalizar rápidamente."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero recibir explicaciones claras de por qué la IA propone cada ajuste, para evaluar la recomendación con criterio profesional."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero programar automatizaciones activadas por eventos (feedback negativo, ingesta registrada fuera de rango), para que el sistema responda sin mi intervención constante."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero generar listas de la compra por cliente, semana o tipo de comida, agrupadas por categorías (frutas, proteínas, despensa), para facilitar la compra."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero ajustar la lista según el número de raciones o personas, para que el cliente reciba cantidades adaptadas."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero detectar ingredientes que se repiten y consolidar unidades, para evitar duplicados y optimizar el gasto."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero exportar o enviar la lista de compra por email, WhatsApp o PDF, para que el cliente la reciba en su canal favorito."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero añadir sugerencias de meal prep (p. ej. “prepara 3 raciones de pollo el lunes”) asociadas a la lista de compra, para mejorar la organización semanal."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero calcular automáticamente el coste estimado semanal y comparar con el presupuesto del cliente, para ajustar el plan si excede el límite."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero etiquetar ingredientes como prioritarios o opcionales en la lista, para que el cliente priorice compras si el presupuesto es limitado."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero sincronizar la lista de compra con servicios de delivery o supermercados, para que el cliente pueda encargar los alimentos desde la plataforma."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero dejar comentarios o menciones para otros profesionales (entrenadores, médicos), para coordinar ajustes interdisciplinares."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero ver el feedback del cliente (saciedad, gusto, digestión) y responder directamente desde el editor, para cerrar el ciclo de comunicación."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero generar reportes semanales o mensuales con evolución de métricas y hábitos, para compartir con el cliente o el equipo."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero gestionar versiones del plan y recuperar versiones anteriores, para comparar cambios y revertir si algo no funciona."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero ofrecer encuestas rápidas al cliente (p. ej. satisfacción semanal, facilidad de preparación), para recoger insights cualitativos que mejoren el plan."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero asignar permisos específicos a colaboradores (solo lectura, sugerencias, edición completa), para controlar quién puede modificar la dieta."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero ver un historial cronológico de comentarios y decisiones asociadas a cada bloque, para entender el contexto de cambios pasados."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero configurar temas de color y tamaño de fuente, para trabajar cómodamente durante largos periodos."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero atajos de teclado para cambiar de día, duplicar bloques o abrir el panel IA, para ganar velocidad."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero que el editor sea responsive y funcione en tablets, para revisar o ajustar dietas sobre la marcha."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero recibir entrenamiento contextual (tooltips, vídeos cortos) sobre nuevas funciones, para aprender sin salir del editor."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero activar modo contraste alto y soporte para lectores de pantalla, para garantizar la accesibilidad del editor."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero personalizar la densidad del layout (compacto, estándar, amplio), para elegir cuánto contenido ver a la vez."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero configurar notificaciones (email, push, in-app) para eventos clave (feedback recibido, IA detecta riesgo), para enterarme incluso si no estoy en el editor."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero importar datos de apps de seguimiento (calorías consumidas, síntomas digestivos) para comparar plan vs. realidad."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero vincular el editor con el calendario del cliente, para que reciba recordatorios de preparación o compra con antelación."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero sincronizar el plan con wearables (pasos, gasto calórico estimado), para ajustar el aporte energético según actividad real."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero integrar el editor con plataformas de recetas populares y blogs especializados, para enriquecer el catálogo con contenido actualizado."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero exportar datos del plan (macro, coste, adherencia) hacia dashboards externos (Power BI, Looker), para realizar análisis avanzados."
+    },
+    {
+      "feature": "src/features/dietas-asignadas",
+      "persona": "dietista",
+      "description": "Como dietista quiero recibir avisos cuando el cliente sincronice nuevos datos (peso, medidas, análisis clínicos) y linkearlos al plan, para ajustar la dieta en base a resultados objetivos."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero que el header me muestre mi rol, sede y periodo activo (semana, mes, trimestre), para saber en qué contexto estoy evaluando los objetivos."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero ver un resumen rápido (objetivos cumplidos, desviaciones críticas, progreso global) en el encabezado, para detectar de inmediato si estamos on-track."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero acceder desde el header a accesos rápidos (crear objetivo, generar plan de acción IA, exportar reporte, actualizar datos), para actuar al instante sin navegar."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero activar desde el header filtros globales (sede, equipo, línea de negocio) que persistan en todas las tabs, para analizar indicadores con el mismo criterio."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero que el header integre alertas críticas relacionadas a objetivos (p. ej. “Retención < 80%”), y permita saltar directamente a gestionarlas, para intervenir rápido."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero alternar entre tabs (`Dashboard`, `Objetivos`, `Métricas`, `Seguimiento`, `Reportes`, `Alertas`, `Comparación`, `KPIs`) sin perder filtros ni periodos seleccionados, para mantener continuidad."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero reordenar tabs y ocultar las que no uso, para personalizar el módulo a mis prioridades."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero que cada tab muestre un badge con indicador de progreso (p. ej. % objetivos cumplidos en `Seguimiento`), para comprender el estado antes de entrar."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero que al cambiar de tab la navegación anote la ruta en el historial, para poder volver rápido a vistas frecuentes."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero que cada tab disponga de tooltips explicativos y vídeos cortos, para capacitar a nuevos usuarios en el uso del módulo."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero ver indicadores clave (ingresos, retención, NPS, adherencia, ocupación) resumidos en tarjetas con tendencias, metas y variaciones, para tener una visión panorámica."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero poder configurar qué KPIs aparecen y en qué orden, para alinear el panel con mis OKRs del trimestre."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero comparar los datos actuales con periodos anteriores y con objetivos automáticos sugeridos por IA, para evaluar progreso y contexto."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero que el dashboard muestre insights destacados (p. ej. “Las sesiones martes contribuyen al 40% del objetivo semanal”) con explicaciones de IA, para identificar oportunidades."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero sincronizar widgets del dashboard con otras áreas del ERP (finanzas, adherencia, campañas) para mantener datos en tiempo real."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero crear objetivos SMART con campos avanzados (período, responsable, métricas asociadas, peso relativo, plan de acción sugerido), para garantizar claridad y medición."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero definir diferentes tipos de objetivos (cuantitativos, cualitativos, OKRs, objetivos de proyecto) y agruparlos por horizontes (trimestral, mensual), para ajustarme a mi metodología."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero asignar objetivos a individuos, equipos o unidades de negocio, con permisos específicos (quién puede ver, editar, aprobar), para proteger información sensible."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero vincular cada objetivo con KPIs del `KPIConfigurator`, tareas del módulo `Tareas & Alertas` y planes de acción, para asegurar que la ejecución esté alineada."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero clonar objetivos existentes y generar versiones adaptadas (p. ej. “Plan A vs Plan B”), para comparar enfoques y elegir el mejor."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero fijar umbrales de color (verde/amarillo/rojo) y alertas automáticas cuando un objetivo se desvía, para intervenir antes de que fracase."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero que la IA proponga objetivos sugeridos en base a datos históricos y benchmarks del sector, para inspirar nuevos desafíos."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero disponer de gráficos interactivos que permitan visualizar métricas a lo largo del tiempo, con filtros por segmento, responsable y origen, para analizar tendencias."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero comparar múltiples KPIs en la misma gráfica, para detectar correlaciones (ej. “cuando sube la adherencia, baja la morosidad”)."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero activar highlight automáticos de IA que destaquen anomalías o cambios importantes en las métricas, para enfocar mi atención."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero exportar los datos y gráficos en distintos formatos (CSV, imagen, embed) para compartir en reportes o presentaciones."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero integrar fuentes externas (CRM, wearables, campañas) y que se reflejen en los gráficos con etiquetas, para contextualizar variaciones."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero guardar vistas personalizadas de métricas para consultarlas después o compartir con stakeholders."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero ver el listado de objetivos activos con barras de progreso, responsables visibles y estado actual (on track, at risk, off track), para priorizar intervenciones."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero registrar actualizaciones de progreso (check-ins), añadir notas, evidencias y comentarios, para mantener trazabilidad de avances."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero asignar tareas o ajustes directamente desde cada objetivo cuando detecto bloqueos, para pasar de la observación a la acción sin fricción."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero visualizar dependencias entre objetivos (ej. objetivos secundarios que alimentan uno principal) y ver cómo el progreso de uno impacta al otro."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero configurar recordatorios automáticos para actualizar objetivos según la cadencia definida (semanal, quincenal), para mantener el seguimiento al día."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero que la IA sugiera micro-acciones o ajustes de plan cuando un objetivo está en riesgo, para reencarrilarlo rápidamente."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero mapear objetivos a los planes de acción generados automáticamente, para ver qué tareas están contribuyendo a cada meta."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero generar reportes personalizados (PDF, presentación) con métricas, gráficos y comentarios sobre objetivos, para informar a dirección o inversores."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero programar envíos automáticos de reportes (semanales, mensuales) con resúmenes narrativos generados por IA, para ahorrar tiempo."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero incluir comparativas entre objetivos vs. targets, lista de riesgos detectados y acciones propuestas, para dar una visión clara del estado del negocio."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero permitir que otros miembros (con permiso) personalicen sus propios reportes basados en plantillas comunes, para empoderar a los responsables."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero exportar data en bruto con etiquetas de objetivo, equipo, responsable, para análisis más detallados en herramientas externas."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero recibir alertas cuando un objetivo se desvía más allá de un umbral, cuando un KPI crítico cae o cuando no se actualiza un objetivo, para reaccionar a tiempo."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero que las alertas se clasifiquen por prioridad y sugieran planes de mitigación (IA) asociados a las causas detectadas."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero convertir una alerta en un ajuste de objetivo, tarea o plan de acción, para asegurar respuesta inmediata."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero ver el historial de alertas por objetivo y su resultado, para entender qué funcionó y qué no en mitigaciones anteriores."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero personalizar reglas de alerta (condiciones múltiples, periodos, responsables) y probarlas antes de activarlas, para evitar ruido."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero comparar rendimientos entre periodos (mes vs mes, trimestre vs trimestre) y entre unidades (equipo A vs B, sede 1 vs 2), para detectar oportunidades."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero ver comparativas en formato tabla, gráfico y heatmap, para captar rápidamente patrones."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero que la IA me indique diferencias significativas y posibles causas, para evitar interpretaciones erróneas."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero simular escenarios hipotéticos (¿qué pasa si aumento objetivo de ventas 10%?) y ver el impacto proyectado, para planificar con datos."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero exportar las comparativas o integrarlas en dashboards ejecutivos, para compartir con stakeholders."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero definir KPIs personalizados con fórmulas, fuentes de datos, umbrales y responsables, para que el sistema calcule automáticamente los indicadores relevantes."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero organizar KPIs en familias o marcos (finanzas, operaciones, satisfacción, salud), para mantener orden y claridad."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero mapear cada KPI a objetivos concretos y ver qué indicadores sustentan cada meta, para asegurar alineación."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero versionar definiciones de KPIs y mantener un historial de cambios, para auditar su evolución."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero importar KPIs desde hojas de cálculo o conectores externos y validarlos antes de integrarlos, para garantizar consistencia."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero generar un plan de acción inteligente desde la vista de objetivos en base a metas seleccionadas, para que el sistema proponga pasos (tareas, responsables, fechas) alineados con el ERP."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero que al modificar objetivos el plan de acción IA actualice tareas y prioridades en `Tareas & Alertas`, para mantener coherencia operativa."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero analizar el impacto previsto de un plan de acción en los objetivos (simulación IA) antes de aprobarlo, para tomar decisiones informadas."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero que la IA aprenda de planes anteriores (éxitos y fallos) y sugiera ajustes a los nuevos objetivos, para mejorar iterativamente nuestra estrategia."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero recibir resúmenes inteligentes (narrativa + métricas + alertas) sobre el avance de objetivos y planes, para compartir con stakeholders sin esfuerzo."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero ver el estado de mis objetivos en la Sidebar con indicadores (on track, riesgo), para ser consciente del progreso desde cualquier módulo."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero que al navegar desde objetivos a otros módulos (finanzas, marketing, suite de entreno) se mantengan filtros de sede y periodo, para trabajar en coherencia."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero que los objetivos se alimenten automáticamente de datos en otras áreas (ventas, adherencia, nutrición), para evitar carga manual."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero incrustar widgets de objetivos en `Resumen General`, `Tareas & Alertas` y `Plan de Acción`, para tener visibilidad transversal."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero gestionar permisos desde el panel de configuración global del ERP, para controlar quién puede ver o editar objetivos y KPIs."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero comentar y mencionar a miembros del equipo en cada objetivo o KPI, para coordinar acciones sin salir del módulo."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero adjuntar documentación (presentaciones, briefs) a los objetivos, para que los responsables tengan la información contextual."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero que se registre un historial auditado de cambios en objetivos, KPIs y planes, para cumplir requisitos de gobernanza."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero solicitar aprobaciones (workflow) cuando un objetivo es crítico o requiere cambios significativos, para tener control ejecutivo."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero modo oscuro, control de densidad y soporte para lectores de pantalla, para trabajar cómodamente."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero recibir notificaciones en móvil o correo cuando se haya logrado un objetivo relevante o cuando haya desviaciones críticas, para mantenerme informado."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero atajos de teclado para navegar, crear objetivos, alternar vistas, para ganar velocidad."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero recibir formación in-app (tutoriales, casos de uso) y acceso a librerías de objetivos predefinidos, para inspirarme y aprender mejores prácticas."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero consolidar métricas de objetivos en dashboards globales del ERP (Finanzas, Marketing, Operaciones), para ofrecer reportes 360º."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero ver el impacto económico y operativo de cada objetivo (ingreso incremental, clientes retenidos), para justificar inversiones."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero identificar patrones de éxito (objetivos alcanzados en menos tiempo, planes más efectivos) y que la IA recomiende replicarlos."
+    },
+    {
+      "feature": "src/features/objetivos-rendimiento",
+      "persona": "manager",
+      "description": "Como manager quiero detectar objetivos obsoletos o con baja contribución al negocio y archivarlos, para mantener foco en lo que importa."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero abrir la ficha del cliente en un modal con varias pestañas (perfil, objetivos, historial, alertas, notas), para tener una vista completa sin salir del editor."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero visualizar los datos biométricos, lesiones, hábitos, disponibilidad de material y cronotipo, para planificar sesiones acordes a su contexto real."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero revisar objetivos a corto, medio y largo plazo junto con métricas de progreso, para ajustar el plan según los avances y expectativas actuales."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero ver alertas activas (dolores, contraindicaciones, incidencias recientes) con su nivel de prioridad, para reaccionar antes de prescribir ejercicios riesgosos."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero acceder al timeline de sesiones, feedback y resultados anteriores, para detectar patrones de adherencia o fatiga acumulada."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero registrar notas colaborativas y mencionables por entrenador, para coordinar al equipo que da seguimiento al cliente."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero exportar la ficha en PDF o CSV, para compartir la información con el propio cliente o con especialistas externos."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero abrir un asistente con IA en formato chat dentro del modal, para conversar sobre ajustes y recibir sugerencias contextualizadas al programa actual."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero poder elegir entre un modo “Asistente” (resumen estructurado) y un modo “Chat” (interacción libre), para adaptar la experiencia a mi forma de trabajar."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero que la IA conozca los datos de la ficha del cliente y el plan semanal, para que sus respuestas consideren lesiones, objetivos y sesiones ya programadas."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero solicitar recomendaciones específicas (p. ej. “añade calentamiento de 10 min”) y recibir bloques listos para arrastrar al plan."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero ver el razonamiento o métricas clave detrás de cada sugerencia, para confiar en la propuesta antes de aplicarla."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero guardar conversaciones importantes del chat como plantillas o notas asociadas al cliente, para revisarlas en futuras sesiones."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero compartir rápidamente los extractos del chat con el cliente (email, mensaje, exportación) para mantenerlo informado del plan."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero buscar y sustituir cualquier entidad del programa (ejercicios individuales, bloques, sesiones completas, tags, notas) desde un único modal, para responder rápido ante cambios."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero seleccionar múltiples elementos en distintos días y reemplazarlos simultáneamente, para evitar acciones repetitivas cuando aparece una restricción nueva."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero aplicar filtros avanzados (modalidad, intensidad, duración, equipamiento, tags personalizados) antes de elegir la sustitución, para mantener coherencia en el plan."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero previsualizar el impacto de la sustitución (volumen, calorías, densidad) antes de confirmar, para asegurar que el ajuste no rompe el balance semanal."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero disponer de reglas inteligentes (p. ej. “si el cliente está lesionado del hombro, reemplazar presses por variantes en máquina”), para automatizar reemplazos recurrentes."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero revisar un historial con posibilidad de deshacer/rehacer sustituciones recientes, para regresar rápidamente a una versión anterior si el cambio no funciona."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero guardar combinaciones de sustituciones frecuentes como presets (“modo deload”, “semana de competición”), para ejecutarlas con un clic cuando sea necesario."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero crear flujos de automatización complejos sobre el plan semanal (añadir, editar, mover, duplicar, eliminar), para ajustar en masa sin salir del editor."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero asignar tags a días, sesiones y ejercicios (p. ej. “heavy lower”, “metcon corto”, “sin equipamiento”), para activar reglas basadas en condiciones dinámicas."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero definir reglas encadenadas con condicionales (si/entonces, y/o, limite), para modificar duración, intensidad, modalidad o notas según múltiples factores."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero programar automatizaciones recurrentes (p. ej. cada lunes recalcular objetivos, cada semana refrescar finisher), para mantener el plan actualizado automáticamente."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero simular el resultado de un conjunto de reglas y ver métricas antes de aplicarlas, para anticipar cambios en volumen total, calorías o balance de intensidades."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero guardar, versionar y compartir presets de automatizaciones con otros entrenadores, para reutilizar procesos validados por el equipo."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero disponer de un log detallado de cada automatización aplicada, indicando qué elementos cambió y bajo qué condiciones, para auditar ediciones en caso de duda."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero guardar un borrador del programa sin publicarlo, para retomar ediciones más tarde sin perder el trabajo hecho."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero añadir un mensaje opcional al guardar el borrador, para dejar notas al siguiente entrenador que revise el plan."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero que el botón muestre la fecha y hora del último guardado, para confirmar que los cambios recientes están respaldados."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero recibir una confirmación visual discreta tras guardar, para continuar editando sin salir de la pantalla."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero arrastrar y soltar cualquier elemento de la biblioteca (bloques, ejercicios, plantillas completas) directamente sobre el lienzo central, para construir sesiones sin pasos adicionales."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero visualizar zonas de drop destacadas en el lienzo según el tipo de elemento que arrastre, para saber con claridad dónde se insertará."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero que al pasar el ratón sobre un ejercicio se muestre una previsualización rápida (músculos, duración, equipamiento), para decidir si lo arrastro sin abrir otra vista."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero una barra de búsqueda unificada que filtre simultáneamente plantillas, bloques y ejercicios, para encontrar lo que necesito con una sola consulta."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero aplicar filtros combinados (equipamiento, intensidad, duración, modalidad, tags personalizados) y guardar mis combinaciones favoritas, para reutilizar criterios habituales."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero anclar plantillas o bloques frecuentes en un área destacada, para arrastrarlos al lienzo sin necesidad de buscarlos cada vez."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero que el panel recuerde la última categoría y filtros utilizados, para retomar donde lo dejé cuando vuelva al editor."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero arrastrar múltiples elementos en lote (selección múltiple + drag) y soltarlos manteniendo su orden, para poblar un día completo en segundos."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero recibir sugerencias inteligentes en la parte superior del panel según el día que esté editando, para tener atajos contextuales listos para arrastrar."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero alternar entre una vista híbrida (tablero semanal de siete columnas y tarjetas expandibles tipo agenda), para elegir el formato que mejor encaje con la carga de sesiones de la semana."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero que cada sesión adopte colores e iconos dinámicos según tipo de entrenamiento y grupo muscular, para detectar de un vistazo excesos o carencias de estímulos."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero editar inline series, repeticiones, duración o intensidad haciendo doble clic sobre un bloque, para ajustar la carga sin abrir menús modales."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero seleccionar múltiples bloques (por modalidad, día o tag) y aplicar acciones masivas como duplicar, desplazar o reducir volumen, para ahorrar tiempo en ajustes grandes."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero ver líneas de referencia que marquen los objetivos de carga diaria/semanal y que cambien el color de las barras cuando se excedan, para actuar antes de que haya sobrecarga."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero recibir accesos rápidos desde el panel derecho con bloques recomendados y poder arrastrarlos directamente a huecos libres del calendario, para rellenar vacíos en segundos."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero superponer la semana actual con otra (anterior, próxima o de referencia) en modo fantasma, para comparar tendencias y mantener progresiones equilibradas."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero visualizar las sesiones en un timeline vertical con control de zoom, para alternar entre un resumen compacto y un detalle completo de cada ejercicio."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero comparar cualquier ejercicio con su versión en la sesión anterior y ver mejoras o retrocesos destacados, para tomar decisiones de progresión informadas."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero cambiar entre un modo de edición rápida y uno completo, para alternar correcciones pequeñas con configuración avanzada (tempo, descansos, material alternativo)."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero que la IA detecte riesgos (p. ej. dos días seguidos de piernas) y proponga planes de movilidad o descarga insertables con un clic, para prevenir lesiones."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero completar un cuestionario inicial sobre mi forma de trabajar (metrías clave, frecuencia de revisión, nivel de detalle), para que la vista Excel se configure automáticamente según mis necesidades."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero poder reabrir el cuestionario cuando cambie mi rol o prioridades, para regenerar el layout con nuevas columnas, cálculos y resúmenes."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero que el cuestionario sugiera plantillas recomendadas basadas en mis respuestas (p. ej. más columnas de tonelaje, menos columnas de movilidad), para personalizar la vista en segundos."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero acceder a plantillas prediseñadas según mi rol (fuerza, maratón, HIIT) que configuren columnas, fórmulas y resúmenes, para empezar con la estructura adecuada."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero añadir fórmulas personalizadas tipo Excel (volumen, tonelaje, densidad) que se recalculen automáticamente cuando cambian los datos, para mantener métricas consistentes."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero aplicar formato condicional que resalte en verde los objetivos cumplidos y en rojo las desviaciones, para detectar anomalías sin analizar celda por celda."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero generar tablas dinámicas y resúmenes rápidos desde el panel derecho al seleccionar un rango, para obtener estadísticas (volumen por grupo muscular, RPE medio) sin salir de la vista."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero desplegar gráficos (histogramas, líneas de tendencia) desde la barra superior sin exportar, para visualizar la evolución de cargas directamente en el editor."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero copiar y pegar datos entre la vista Excel y hojas de cálculo externas conservando la estructura, para trabajar de forma híbrida con herramientas que ya uso."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero que la IA analice las celdas seleccionadas y sugiera cambios (p. ej. aumentar series de piernas si son insuficientes para hipertrofia), para ajustar el plan basándose en datos."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero que el panel actúe como un asistente que interpreta los datos del plan y del cliente, para recibir insights relevantes sin buscarlos manualmente."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero ver resúmenes dinámicos (tendencias de volumen, intensidad, adherencia, calorías) con comparación respecto a semanas anteriores, para detectar cambios significativos."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero recibir alertas proactivas cuando detecte riesgos (sobrecarga en un grupo muscular, baja frecuencia de movilidad, feedback negativo del cliente), junto con recomendaciones accionables."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero que las sugerencias se adapten a la vista activa (semanal, diaria, Excel) mostrando bloques o fórmulas listos para arrastrar, aplicar o descartar, para agilizar decisiones."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero que el panel muestre una línea de tiempo de los próximos hitos (sesiones críticas, revisiones, competiciones) y tareas pendientes, para no olvidar acciones clave."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero poder registrar notas, acuerdos y recordatorios directamente en el panel y etiquetarlos (p. ej. “Revisar fatiga”, “Enviar vídeo”), para tener contexto al volver al plan."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero que el asistente combine feedback del cliente, métricas de rendimiento, datos externos (p. ej. sueño, meteorología) y los fusione en insights concretos, para ajustar el plan con información completa."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero disponer de accesos rápidos a acciones frecuentes (duplicar semana, generar plan de movilidad, enviar resumen al cliente) sugeridos por el asistente según el momento, para ahorrar clics."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero poder conversar con el panel en lenguaje natural (“¿Cuál es el ejercicio más cargado esta semana?”) y recibir respuestas contextualizadas apoyadas en datos, para resolver dudas al instante."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero aceptar o descartar recomendaciones y que el asistente aprenda de mis decisiones, para que futuras sugerencias se alineen mejor con mi estilo de programación."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero que los paneles recuerden su estado (colapsado/expandido) cuando vuelva a la página para continuar donde lo dejé."
+    },
+    {
+      "feature": "src/features/programas-de-entreno",
+      "persona": "coach",
+      "description": "Como coach quiero que los atajos de teclado permitan cambiar de vista y colapsar paneles para trabajar más rápido sin usar el ratón."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero ver en el encabezado el nombre del panel, mi rol y la fecha actual, para tener contexto inmediato antes de revisar los datos."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero un botón de actualización que indique la hora del último refresco y permita refresco manual o programado, para asegurarme de trabajar con la información más reciente."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero disponer de accesos rápidos configurables en la topbar (p. ej. crear tarea, exportar reporte, abrir chat del equipo), para saltar directamente a las acciones que más uso."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero que el encabezado muestre alertas críticas resaltadas (p. ej. caída de ingresos >10%, alertas de cumplimiento) con enlaces directos, para reaccionar sin buscar."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero cambiar fácilmente entre diferentes entornos/perfiles (entrenador, gimnasio, franquicia) desde el header, para gestionar múltiples unidades sin salir del panel."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero visualizar métricas clave agrupadas por objetivo (crecimiento, retención, finanzas, satisfacción), para tener una lectura rápida del negocio."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero personalizar qué métricas aparecen y su orden, para centrarme en los indicadores que se alinean con mis OKRs actuales."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero que cada métrica muestre tendencia, meta y desviación, para detectar rápidamente si necesito intervenir."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero poder desglosar cada métrica (tooltip, modal) y ver el detalle (segmento, responsable, periodo), para entender la causa detrás del número."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero poder fijar métricas favoritas que permanezcan siempre visibles aun cuando cambie de pestaña, para no perder de vista los KPI críticos."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero comparar métricas actuales con periodos anteriores (semana, mes, año) y con benchmarks del sector, para contextualizar el desempeño."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero ver accesos rápidos personalizados por rol (entrenador: crear sesión, gimnasio: lanzar promoción), para ejecutar las tareas más frecuentes en segundos."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero configurar mis propios accesos rápidos (enlace, icono, orden), para adaptar el panel a mi flujo de trabajo personal."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero que los accesos rápidos muestren estados (p. ej. tareas pendientes asociadas, caducidad), para priorizar qué acción tomar primero."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero que algunas acciones disparen playbooks predefinidos (p. ej. “Baja adherencia” → abrir plan de retención), para ejecutar procesos completos sin pensar en los pasos."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero ver sugerencias de acciones inteligentes basadas en datos recientes (IA detecta caída en sesiones → propone “Llamar a clientes inactivos”), para reaccionar de forma proactiva."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero recibir alertas clasificadas por severidad y categoría (finanzas, operaciones, clientes, cumplimiento), para priorizar la atención."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero filtrar las alertas por responsable o unidad de negocio, para asignar rápidamente a la persona adecuada."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero poder convertir una alerta en tarea o plan de acción con un clic, para asegurar seguimiento."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero registrar notas o comentarios en cada alerta y marcar estado (en revisión, resuelta), para mantener el historial colaborativo."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero que el panel muestre alertas predictivas (generadas por IA) antes de que ocurran los problemas (p. ej. riesgo de churn de un cliente VIP), para anticiparme."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero personalizar umbrales y reglas que disparan alertas, para alinearlos con nuestras políticas internas."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero ver en el widget las tareas pendientes clasificadas por prioridad, fecha y área, para organizar el trabajo del equipo."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero crear tareas directamente desde el widget asignando responsables, etiquetas y plazos, para mantener todo centralizado."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero sincronizar las tareas con mi gestor externo (Asana, Trello, Notion), para evitar duplicidad de esfuerzos."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero recibir recordatorios automáticos y resumen diario de tareas críticas, para no dejar pasar ningún compromiso."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero visualizar la carga de trabajo del equipo y redistribuir tareas desde el widget, para balancear recursos cuando alguien está saturado."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero que las tareas se puedan auto-generar a partir de ciertas condiciones (alerta crítica → crear seguimiento en 24h), para automatizar flujos repetitivos."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero visualizar ingresos, gastos, margen y flujo de caja en una vista compacta con tendencias, para tener claridad financiera inmediata."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero ver la contribución por línea de negocio (membresías, entrenamientos, retail) con gráficos comparativos, para identificar qué impulsa el resultado."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero simular escenarios (p. ej. bajar precios, abrir clases extra) y ver el impacto en el resumen financiero, para tomar decisiones informadas."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero recibir alertas de desviaciones presupuestarias y sugerencias de ajustes (IA), para mantener el control del plan financiero."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero exportar el resumen a Excel/PDF con filtros y notas, para compartir con dirección o auditoría."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero conectar el resumen con mi ERP/contabilidad para tener datos en tiempo real, evitando cargas manuales."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero ver un panel de salud de clientes (activos, inactivos, en riesgo, nuevas altas) para monitorear la retención."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero segmentar clientes por programa, responsable, engagement o plan nutricional, para ofrecer respuestas personalizadas."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero recibir recomendaciones de acciones sobre clientes en riesgo (p. ej. “Ofrecer sesión gratuita”, “Enviar mensaje personalizado”), para recuperar adherencia."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero ver indicadores de satisfacción (NPS, feedback, encuestas) y evolución, para alinear las decisiones con la experiencia del cliente."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero activar campañas o listas de seguimiento desde el panel (p. ej. “Contactar clientes sin check-in 7 días”), para ejecutar acciones en masa."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero visualizar información contextual (último contacto, programa activo, notas del entrenador) antes de interactuar, para ofrecer un trato personalizado."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero visualizar gráficos comparativos interactivos (líneas, barras, heatmaps) que se adapten al rol, para analizar tendencias de sesiones, ocupación o ingresos."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero cambiar el periodo analizado (diario, semanal, mensual, YTD) y comparar contra objetivos u otro periodo, para evaluar progresión real."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero seleccionar subconjuntos de datos (por entrenador, por clase, por sede) y ver el gráfico filtrado, para profundizar en áreas clave."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero descargar los gráficos en imagen o CSV y compartirlos, para usarlos en reportes o presentaciones."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero que la IA destaque anomalías o cambios significativos directamente en el gráfico (p. ej. “+25% sesiones martes respecto a media”), para detectar insights sin análisis manual."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero ver una línea de tiempo consolidada de eventos clave (pagos, nuevas altas, incidencias, sesiones completadas), para tener contexto del día a día."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero filtrar la actividad por tipo y relevancia, para enfocar la lectura en lo que me interesa."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero recibir notificaciones cuando ocurran eventos críticos (p. ej. cancelación VIP), para actuar inmediatamente."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero poder comentar o reaccionar en los eventos para coordinarme con el equipo, manteniendo la comunicación dentro del ERP."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero convertir un evento en tarea, alerta o plan de acción con un clic, para garantizar seguimiento."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero adaptar el layout (densidad, tamaño de tarjetas, modo oscuro/alto contraste), para trabajar cómodamente sin fatiga visual."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero guardar vistas personalizadas (Dashboard de Finanzas, Dashboard Operativo) y alternar entre ellas, para enfocarme según el contexto."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero configurar un horario de envíos automáticos de reporte (diario, semanal) por email o Slack, para mantener informados a los stakeholders."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero recibir tutoriales contextuales y tooltips inteligentes, para aprender nuevas funciones sin salir del panel."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero usar atajos de teclado para navegar, refrescar datos o abrir widgets, para ganar velocidad."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero habilitar multilenguaje en el panel, para que equipos internacionales trabajen en su idioma preferido."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero asignar roles y permisos diferenciados en el Dashboard (ver solo métricas, editar tareas, administrar finanzas), para proteger información sensible."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero ver qué usuario realizó cambios o resolvió alertas mediante un historial auditado, para mantener trazabilidad."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero mencionar a compañeros en alertas, tareas o actividades, para coordinar acciones sin salir del ERP."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero integrar el panel con canales de comunicación internos (Slack, Teams) para enviar resúmenes o alertas directas."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero que los permisos se sincronicen con el directorio corporativo (SSO, LDAP), para administrar accesos de forma centralizada."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero conectar el Resumen General con nuestros sistemas de facturación, CRM y control de acceso, para consolidar todo en un solo lugar."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero importar datos externos (planillas Excel, CSV) y que el panel los valide antes de integrarlos, para evitar errores."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero exponer APIs o webhooks que permitan enviar datos a herramientas externas (BI corporativo), para construir reportes avanzados."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero ver indicadores externos relevantes (clima, festivos locales, tendencias del sector) superpuestos a mis métricas, para anticipar fluctuaciones."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero que el Dashboard detecte automáticamente nuevas integraciones disponibles y me guíe en su configuración, para ampliar capacidades sin soporte técnico."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero completar un formulario guiado donde indique mis objetivos estratégicos (p. ej. aumentar ingresos, reducir churn, mejorar satisfacción), para que el sistema entienda mis prioridades."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero especificar en el formulario recursos disponibles, limitaciones (presupuesto, equipos, tiempo) y horizontes temporales, para que el plan de acción sea realista."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero que la IA proponga un plan de acción estructurado (fases, tareas, responsables sugeridos, KPIs) tras enviar el formulario, para empezar a ejecutar de inmediato."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero que el plan se sincronice con los módulos del ERP (tareas, finanzas, clientes) y asigne automáticamente las acciones a los responsables, para evitar trabajo manual."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero poder editar el plan sugerido (aceptar, modificar, descartar acciones) y que la IA aprenda de mis decisiones, para afinar recomendaciones futuras."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero recibir recordatorios y seguimiento automático del plan (progreso, próximos hitos, riesgos detectados), para asegurar la ejecución."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero generar planes alternativos (p. ej. “Plan agresivo”, “Plan conservador”) para comparar enfoques antes de decidir."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero exportar el plan de acción en formatos compartibles (PDF, presentación), para comunicarlo al equipo directivo."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero volver a completar el formulario cuando cambien mis objetivos y mantener un historial de planes anteriores, para evaluar impacto y aprendizajes."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero que el formulario incluya preguntas dinámicas basadas en mis respuestas previas, para profundizar solo en áreas relevantes y ahorrar tiempo."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero adjuntar documentos de soporte (presupuestos, análisis internos) al generar el plan, para que la IA incorpore todo el contexto disponible."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero que el plan proponga hitos medibles con fechas estimadas y alertas automáticas si se retrasan, para mantener la ejecución bajo control."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero visualizar el plan en múltiples formatos (tabla, timeline, kanban) según la fase del proyecto, para facilitar el seguimiento con distintos equipos."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero solicitar simulaciones de impacto (p. ej. si se logra el plan, cómo variarán ingresos, churn, satisfacción), para priorizar iniciativas con mayor ROI."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero que la IA sugiera recursos complementarios (formación, plantillas, playbooks) asociados a cada fase del plan, para acelerar su implementación."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero habilitar notificaciones multicanal (email, Slack, app móvil) para hitos críticos del plan, para asegurar que todos los involucrados estén alineados."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero que el plan contemple dependencias entre acciones y ajuste automáticamente fechas si una fase se retrasa, para mantener un cronograma realista."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero invitar a colaboradores externos o consultores a revisar y comentar el plan dentro del ERP, para consolidar feedback en un solo lugar."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero que el sistema genere resúmenes periódicos del progreso del plan (texto + métricas clave) listas para compartir con dirección o inversores, para ahorrar tiempo en reporting."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero que el panel me muestre insights de IA sobre correlaciones relevantes (p. ej. “Clientes que asisten a 3 clases/semana tienen 20% menos churn”), para descubrir oportunidades de negocio."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero recibir recomendaciones de optimización (p. ej. “Aumenta clases de fuerza los martes”) cuando los datos indiquen demanda no cubierta."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero que la IA identifique posibles anomalías de datos (valores atípicos) y me sugiera verificarlas, para mantener la integridad del dashboard."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero que la IA priorice qué revisar cada mañana según impacto y urgencia, para empezar el día enfocado en lo importante."
+    },
+    {
+      "feature": "src/features/resumen-general",
+      "persona": "manager",
+      "description": "Como manager quiero que el panel resuma automáticamente la semana/mes con un reporte narrativo (texto + visualizaciones) que pueda compartir con stakeholders."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero acceder a `Tareas & Alertas` desde la barra lateral y ver el número de pendientes en un badge, para priorizarlo cuando el volumen aumente."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero que al entrar al módulo el header me recuerde mi rol, sede y semana activa, para entender el contexto antes de actuar."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero que el módulo cargue vistas y filtros predefinidos según mi rol (entrenador vs. gimnasio vs. franquicia), para mostrarme solo la información relevante."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero ver en el encabezado un resumen de métricas clave (tareas nuevas hoy, alertas críticas, SLA medio), para medir la carga de trabajo actual."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero disponer de accesos rápidos en el header (crear tarea, lanzar plan de acción, exportar listado, abrir panel IA), para ejecutar acciones frecuentes sin navegar."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero activar un botón de “Modo foco” desde el header que oculte widgets secundarios, para centrarme cuando necesite resolver tareas urgentes."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero poder filtrar globalmente por sede, responsable o etiqueta desde el header, para que todas las secciones respeten ese contexto."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero alternar entre tabs (`Tareas`, `Alertas`, `Prioridades`, `Notificaciones`, `Historial`, `Configuración`) sin perder el filtro activo, para mantener continuidad."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero reordenar o esconder tabs según mis necesidades, para que el módulo se adapte a mi flujo de trabajo."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero que cada tab muestre un badge con el número de elementos críticos pendientes, para priorizar dónde entrar."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero ver tooltips en cada tab con descripción de su contenido, para formar a nuevos miembros del equipo fácilmente."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero ver mis tareas en vistas múltiples (lista, kanban, calendario) y alternarlas sin perder posición, para gestionarlas como prefiera."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero crear tareas con campos avanzados (tipo, prioridad, vencimiento, cliente asociado, plan de acción, etiquetas IA), para tener contexto completo al asignarlas."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero asignar tareas a responsables individuales o equipos y enviarles notificaciones automáticas, para asegurar que se enteren."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero agrupar tareas por objetivo estratégico o plan de acción al que pertenecen, para ver cómo contribuyen a los OKRs."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero que la IA sugiera tareas basadas en alertas, métricas o hábitos del cliente (p. ej. “contactar a clientes sin check-in 7 días”), para anticiparme a problemas."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero convertir elementos de otras áreas (actividad, alertas, plan de acción IA) en tareas con un clic, para asegurar seguimiento sin duplicar pasos."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero que las tareas se sincronicen con campañas del ERP (marketing, onboarding, retención), para que cada equipo vea sus pendientes en su módulo."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero registrar subtareas, checklist y documentación adjunta, para que el responsable tenga todo lo necesario para ejecutar."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero cruzar cada tarea con indicadores del ERP (impacto en ingresos, clientes afectados, coste estimado) y visualizarlos en la tarjeta, para priorizar con datos."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero marcar tareas como automatizables y generar flujos de automatización (p. ej. crear tarea recurrente cuando haya alerta de aforo), para reducir trabajo manual."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero ver las alertas clasificadas por severidad, área y origen (operaciones, finanzas, clientes), para priorizar la atención."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero activar filtros combinables (periodo, responsable, plan afectado, sede) y guardar vistas personalizadas, para regresar rápido al análisis que necesito."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero que cada alerta muestre el historial de acciones tomadas y el resultado, para entender la evolución sin salir del panel."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero aceptar, snoozear o escalar una alerta con un clic y que el sistema pregunte por el plan de acción asociado, para garantizar seguimiento."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero que las alertas se alimenten de diferentes módulos del ERP (resumen general, finanzas, check-ins, inventario) y lleguen etiquetadas con el origen, para contextualizar el problema."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero recibir alertas predictivas (IA) que estimen futuros riesgos (churn, morosidad, baja asistencia) y que incluyan recomendaciones, para actuar con proactividad."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero poder linkear una alerta al plan de acción inteligente; si el plan tiene tareas en curso relacionadas, deben aparecer como referencia, para evitar duplicidad."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero colaborar en una alerta (comentarios, menciones, adjuntar evidencias) y generar un log auditado, para mantener trazabilidad de decisiones."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero ver una cola de prioridades que combine tareas y alertas con un puntaje global (impacto, urgencia, esfuerzo), para actuar donde más valor aporta."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero ajustar manualmente el peso de criterios (impacto financiero, satisfacción del cliente, cumplimiento legal), para que la cola refleje mi estrategia."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero que la IA explique por qué priorizó cada ítem, para auditar y confiar en su recomendación."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero simular escenarios (¿qué pasa si resuelvo estas tres tareas hoy?) y ver el impacto en métricas clave, para decidir mejor qué atacar primero."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero congelar ítems en la prioridad (bloques críticos) para que no se reordenen cuando se recalcula la cola, para garantizar foco."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero que la cola muestre dependencias entre elementos (esta tarea depende de cerrar aquella alerta) y notifique si hay bloqueos, para evitar cuellos de botella."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero generar automáticamente planes de acción a partir de la cola priorizada (aplica un template IA, asigna responsables), para pasar de la priorización a la ejecución sin fricción."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero ver un timeline consolidado de notificaciones (tareas asignadas, alertas nuevas, planes actualizados, comentarios), para estar al día en un solo lugar."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero filtrar notificaciones por canal (email, in-app, móvil) y estado (leído, no leído, destacado), para gestionar mi bandeja eficientemente."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero responder comentarios o actualizar el estado de una tarea directamente desde la notificación, para ahorrar clics."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero configurar preferencias de notificación por rol, tipo de evento y horario, para evitar ruido fuera de horas críticas."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero recibir resúmenes automáticos diarios o semanales con highlights y planes de acción próximos, para mantenerme informado sin entrar al panel."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero conectar el centro de notificaciones con Slack/Teams y CRM, para recibir avisos donde ya trabajo con mi equipo."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero consultar el historial completo de tareas y alertas resueltas con filtros avanzados, para analizar la evolución del trabajo."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero ver qué acciones del plan de acción se ejecutaron, quién las completó y con qué resultado, para medir efectividad."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero exportar el historial con métricas (tiempo de resolución, re-trabajos, impacto en KPIs) para reportar a dirección."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero identificar patrones (se repite una alerta concreta, tareas que siempre se retrasan) y que la IA proponga soluciones, para mejorar procesos."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero que el historial esté integrado con auditoría (quién cambió prioridades, quién cerró la alerta), para garantizar cumplimiento normativo."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero definir reglas avanzadas para generar alertas (condiciones AND/OR, integraciones externas, umbrales personalizados), para adaptar el sistema a la realidad del negocio."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero crear plantillas de tareas y planes de acción vinculados a cada tipo de alerta, para que al dispararse todo quede pre-cargado."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero configurar SLA y responsables automáticos según categoría, para que el sistema asigne tareas en cuanto llega una alerta."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero conectar fuentes externas (IoT, sistemas contables, apps de clientes) que alimenten las alertas, para centralizar la operación."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero simular una regla antes de activarla y ver qué alertas habría generado, para evitar ruido innecesario."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero programar recordatorios y tareas recurrentes dentro de la configuración (p. ej. checklists de mantenimiento), para que el sistema cree tareas automáticamente."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero abrir el plan de acción IA desde `Tareas & Alertas` y ver qué tareas y alertas están vinculadas a cada objetivo, para entender progreso global."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero que al generar un plan de acción se creen tareas y alertas correspondientes en el módulo, respetando prioridades y responsables, para garantizar ejecución coordinada."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero que el plan de acción se actualice automáticamente cuando una alerta crítica aparece, sugiriendo nuevas fases o ajustes, para mantenerlo vivo."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero que las tareas completadas alimenten los KPIs del plan y actualicen el status en `Resumen General`, para medir impacto real."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero comparar diferentes planes de acción y ver cuántas tareas/alertas generaron y su resolución, para elegir enfoques más efectivos en el futuro."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero que la IA recomiende acciones correctivas en el plan cuando detecte tareas estancadas o alertas sin atención, para evitar que el plan se quede en papel."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero que el plan IA soporte aprobaciones (revisión de director) antes de desplegar tareas masivas, para mantener control."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero ver badges de pendientes en la Sidebar (`Tareas & Alertas`, `Resumen General`, `Suite de Nutrición`, etc.), sincronizados, para saber desde cualquier módulo si hay urgencias."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero convertir una alerta en acción en otros módulos (p. ej. crear campaña en marketing, modificar plan de entreno) directamente desde el panel, para cerrar el ciclo sin salir del ERP."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero que al navegar a módulos relacionados (resumen general, finanzas, CRM) se mantenga el filtro de sede/plan de acción, para trabajar con coherencia."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero poder incrustar resúmenes de tareas o alertas en otras vistas (dashboard, suite de entreno) y que se actualicen en tiempo real, para tener visibilidad transversal."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero que los permisos y roles definidos en el ERP se reflejen en este módulo (quién puede ver alertas financieras, quién puede editar reglas), para mantener seguridad."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero acceder a logs e historial desde el menú de configuración del ERP, para auditar cambios en reglas o tareas a nivel global."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero que la IA sugiera tareas de mejora continua basadas en resultados (p. ej. “revisar experiencia de onboarding”) y las priorice en la cola, para evolucionar procesos."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero recibir recomendaciones de optimización (redistribuir carga del equipo, aplicar playbook de retención) cuando el sistema detecte picos de alertas, para actuar estratégicamente."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero que la IA destaque correlaciones (alertas de mantenimiento aumentan cuando baja limpieza) y proponga acciones a ambos equipos, para resolver causas raíz."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero que el sistema reconozca tareas duplicadas o redundantes y sugiera fusionarlas o automatizarlas, para reducir ruido."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero poder marcar acciones como automatizadas y que el ERP aprenda a ejecutar esas tareas sin intervención humana cuando se repitan las condiciones."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero modo oscuro, soporte a lectores de pantalla y control de densidad de información, para trabajar en jornadas largas sin fatiga."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero atajos de teclado para crear tareas, cambiar de tab, priorizar elementos, para operar más rápido."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero recibir notificaciones en móvil o wearable cuando se dispare una alerta crítica, para reaccionar incluso fuera de la oficina."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero contar con tutoriales interactivos y ejemplos de mejores prácticas dentro del módulo, para entrenar al equipo sin salir del ERP."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero generar reportes personalizados de productividad (tareas creadas vs. completadas, tiempo medio por categoría) y compartirlos en PDF o dashboard, para evaluar desempeño."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero ver el impacto económico de resolver o ignorar alertas (coste evitado, ingreso retenido), para argumentar decisiones."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero integrar métricas de tareas/alertas en el `Resumen General` y otros dashboards, para tener una visión consolidada del negocio."
+    },
+    {
+      "feature": "src/features/tareas-alertas",
+      "persona": "manager",
+      "description": "Como manager quiero que el módulo ofrezca insights sobre carga del equipo (quién está al límite, quién tiene capacidad), para redistribuir responsabilidades."
+    }
+  ]
+}

@@ -1,0 +1,170 @@
+{
+  "modulos": [
+    {
+      "modulo": "AbTestingYExperimentacion",
+      "archivo_md": "ab-testing-&-experimentacion.md"
+    },
+    {
+      "modulo": "AccountBasedMarketingAbm",
+      "archivo_md": "account-based-marketing-(abm).md"
+    },
+    {
+      "modulo": "CommunityYEngagement",
+      "archivo_md": "community-&-engagement.md"
+    },
+    {
+      "modulo": "CompetitiveAnalysisYMarketIntelligence",
+      "archivo_md": "competitive-analysis-&-market-intelligence.md"
+    },
+    {
+      "modulo": "ConstructorDeFunnelsYLandingPages",
+      "archivo_md": "constructor-de-funnels-&-landing-pages.md"
+    },
+    {
+      "modulo": "ContentClipper",
+      "archivo_md": "content-clipper.md"
+    },
+    {
+      "modulo": "CreatorinfluencerContentSyndication",
+      "archivo_md": "creatorinfluencer-content-syndication.md"
+    },
+    {
+      "modulo": "DynamicPricingYOfertasInteligentes",
+      "archivo_md": "dynamic-pricing-&-ofertas-inteligentes.md"
+    },
+    {
+      "modulo": "EmailDeliverabilityYComplianceHub",
+      "archivo_md": "email-deliverability-&-compliance-hub.md"
+    },
+    {
+      "modulo": "EmailMarketingYNewsletters",
+      "archivo_md": "email-marketing-&-newsletters.md"
+    },
+    {
+      "modulo": "EventosYRetos",
+      "archivo_md": "eventos-&-retos.md"
+    },
+    {
+      "modulo": "FeedbackLoopYEncuestasInteligentes",
+      "archivo_md": "feedback-loop-&-encuestas-inteligentes.md"
+    },
+    {
+      "modulo": "GeneradorCreativoConIa",
+      "archivo_md": "generador-creativo-con-ia.md"
+    },
+    {
+      "modulo": "GeneradorDeEstrategiasDeMarketingConIa",
+      "archivo_md": "generador-de-estrategias-de-marketing-con-ia.md"
+    },
+    {
+      "modulo": "GeneradorDeIdeasDeContenidoConIa",
+      "archivo_md": "generador-de-ideas-de-contenido-con-ia.md"
+    },
+    {
+      "modulo": "GestionDeContenidosPremium",
+      "archivo_md": "gestion-de-contenidos-premium.md"
+    },
+    {
+      "modulo": "GestorDeAnuncios",
+      "archivo_md": "gestor-de-anuncios.md"
+    },
+    {
+      "modulo": "GestorDePixelesYConversionApi",
+      "archivo_md": "gestor-de-pixeles-&-conversion-api.md"
+    },
+    {
+      "modulo": "HubDeContenidosYUgc",
+      "archivo_md": "hub-de-contenidos-&-ugc.md"
+    },
+    {
+      "modulo": "LeadInboxUnificadoYSla",
+      "archivo_md": "lead-inbox-unificado-&-sla.md"
+    },
+    {
+      "modulo": "LeadMagnetFactory",
+      "archivo_md": "lead-magnet-factory.md"
+    },
+    {
+      "modulo": "LibreriaDeCampanasPlaybooks",
+      "archivo_md": "libreria-de-campanas-(playbooks).md"
+    },
+    {
+      "modulo": "LifecycleEmailSequences",
+      "archivo_md": "lifecycle-email-sequences.md"
+    },
+    {
+      "modulo": "LoyaltyProgramManager",
+      "archivo_md": "loyalty-program-manager.md"
+    },
+    {
+      "modulo": "MarketingDeReferidos",
+      "archivo_md": "marketing-de-referidos.md"
+    },
+    {
+      "modulo": "PartnershipsYInfluencers",
+      "archivo_md": "partnerships-&-influencers.md"
+    },
+    {
+      "modulo": "PersonalizationEngineIaAvanzada",
+      "archivo_md": "personalization-engine-(ia-avanzada).md"
+    },
+    {
+      "modulo": "PlannerDeRedesSociales",
+      "archivo_md": "planner-de-redes-sociales.md"
+    },
+    {
+      "modulo": "ProgressiveProfiling",
+      "archivo_md": "progressive-profiling.md"
+    },
+    {
+      "modulo": "Promociones,CuponesYPacks",
+      "archivo_md": "promociones,-cupones-&-packs.md"
+    },
+    {
+      "modulo": "ReferidosYAfiliados",
+      "archivo_md": "referidos-&-afiliados.md"
+    },
+    {
+      "modulo": "RetargetingYPixelManager",
+      "archivo_md": "retargeting-&-pixel-manager.md"
+    },
+    {
+      "modulo": "ReviewYTestimonialEngine",
+      "archivo_md": "review-&-testimonial-engine.md"
+    },
+    {
+      "modulo": "SegmentacionDinamicaYAudiencias",
+      "archivo_md": "segmentacion-dinamica-&-audiencias.md"
+    },
+    {
+      "modulo": "SmsemailPreferenceCenter",
+      "archivo_md": "smsemail-preference-center.md"
+    },
+    {
+      "modulo": "SmswhatsappAutomation",
+      "archivo_md": "smswhatsapp-automation.md"
+    },
+    {
+      "modulo": "SmswhatsappMarketing",
+      "archivo_md": "smswhatsapp-marketing.md"
+    },
+    {
+      "modulo": "TrendAnalizer",
+      "archivo_md": "trend-analizer.md"
+    },
+    {
+      "modulo": "VideoMarketingYAutomation",
+      "archivo_md": "video-marketing-&-automation.md"
+    },
+    {
+      "modulo": "WebinarsYVirtualEventsManager",
+      "archivo_md": "webinars-&-virtual-events-manager.md"
+    }
+  ],
+  "configuracion": {
+    "tiempo_espera": 30,
+    "modo": "secuencial",
+    "reintentos": 2
+  },
+  "descripcion": "Archivo con 40 módulos diferentes para el modo MD → Módulo"
+}

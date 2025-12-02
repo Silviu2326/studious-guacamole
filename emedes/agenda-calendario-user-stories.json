@@ -1,0 +1,221 @@
+{
+  "user_stories": [
+ 
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero establecer precios diferentes según el tipo de sesión, duración y modalidad para reflejar correctamente el valor de cada servicio que ofrezco."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero generar un enlace público personalizado que pueda compartir con mis clientes para que ellos puedan ver mi disponibilidad y reservar sesiones directamente sin mi intervención manual."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero elegir si las reservas de clientes se confirman automáticamente o requieren mi aprobación para tener control sobre mi agenda según mi preferencia de trabajo."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero cambiar la fecha y hora de una reserva ya confirmada para adaptarme a imprevistos sin tener que cancelar y crear una nueva reserva."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero que cuando reprograme una sesión el cliente reciba automáticamente una notificación con los nuevos datos para mantener una comunicación clara y evitar confusiones."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver todas mis reservas de la semana en una vista de calendario para tener una visión completa de mi agenda y planificar mejor mi tiempo."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver todas mis reservas del mes en una vista de calendario para planificar a largo plazo y ver patrones de ocupación."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero arrastrar una reserva desde una fecha u hora a otra en el calendario para reprogramar de forma visual y rápida sin formularios."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero que las sesiones marcadas como videollamada generen automáticamente un enlace de reunión para no tener que crear manualmente cada enlace y ahorrar tiempo."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero configurar qué plataforma usar para videollamadas para integrar mi herramienta preferida y que se generen enlaces automáticamente."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero que el recordatorio automático incluya el enlace de videollamada para que el cliente tenga acceso directo y no tenga que buscarlo."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero añadir notas después de cada sesión sobre qué trabajamos, rendimiento del cliente y observaciones para llevar un seguimiento detallado del progreso de cada cliente."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver todas las notas de sesiones anteriores de un cliente específico para revisar su evolución y preparar mejor las próximas sesiones."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero marcar manualmente una reserva como pagada cuando recibo pago en efectivo o transferencia para mantener mi control de pagos actualizado."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero enviar recordatorios automáticos a clientes con pagos pendientes para reducir la morosidad y automatizar el cobro."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero crear paquetes de múltiples sesiones con precio especial para fidelizar clientes y obtener pagos anticipados."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero que al crear una reserva se pueda aplicar un bono activo del cliente para descontar automáticamente del saldo de sesiones disponibles."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero enviar recordatorios y confirmaciones por WhatsApp además de email para asegurar que el cliente reciba la información en su canal preferido."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero que el cliente pueda confirmar su asistencia desde el recordatorio para saber con antelación si va a venir y poder gestionar cancelaciones."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero recibir yo también recordatorios de mis sesiones del día para no olvidar ninguna cita y estar preparado."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero marcar una reserva como no show cuando el cliente no se presenta para llevar un control de asistencia y aplicar políticas de penalización si corresponde."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero marcar automáticamente o manualmente una sesión como completada para diferenciar las sesiones realizadas de las pendientes en el historial."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero configurar una política de cancelación para establecer reglas claras y evitar cancelaciones de último momento."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero que el sistema no permita cancelaciones fuera del plazo establecido para hacer cumplir mi política sin tener que discutir con clientes."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver estadísticas de tasa de asistencia versus no shows por cliente para identificar clientes problemáticos y tomar decisiones."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver qué horarios generan más ingresos para optimizar mi disponibilidad en franjas más demandadas."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver cuánto ingreso genera cada cliente para identificar mis mejores clientes y darles atención especial."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero filtrar el historial de reservas por cliente específico para ver rápidamente todas las sesiones de un cliente en particular."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero filtrar el historial por estado para analizar patrones y problemas específicos."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero filtrar el historial por rango de fechas personalizado para hacer análisis de períodos específicos."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero exportar mi historial de reservas a Excel para hacer análisis personalizados o presentarlos a mi gestoría."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero configurar un tiempo de buffer automático entre sesiones para tener tiempo de descanso, limpieza o desplazamiento entre clientes."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero configurar un tiempo mínimo de anticipación para nuevas reservas para evitar reservas de último momento cuando no puedo prepararme adecuadamente."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero configurar hasta cuántos días en el futuro se puede reservar para no comprometer mi disponibilidad demasiado tiempo por adelantado."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver las notas previas del cliente al crear una nueva reserva para recordar aspectos importantes como lesiones, objetivos o preferencias."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero que los clientes puedan añadir observaciones al reservar para preparar mejor cada sesión según sus necesidades específicas."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero crear reservas recurrentes para agilizar la creación de sesiones regulares con clientes habituales."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero poder cancelar o modificar toda una serie de reservas recurrentes a la vez para hacer cambios masivos sin tener que editar una por una."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver una lista simple de todas las sesiones del día con hora, cliente y tipo para tener una referencia rápida de mi agenda diaria sin abrir calendario."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver un resumen destacado de las sesiones de las próximas 24 horas en la página principal para tener visibilidad inmediata de mi día sin navegar a reservas."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero recibir una notificación instantánea cuando un cliente hace una nueva reserva para estar al tanto de cambios en mi agenda en tiempo real."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero recibir una notificación cuando un cliente cancela una reserva para saber inmediatamente que tengo un hueco libre y poder ofrecerlo."
+    },
+    {
+      "feature": "src/features/reservas-online",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero asignar colores diferentes a cada tipo de sesión en el calendario para identificar visualmente y rápidamente el tipo de entrenamiento."
+    }
+  ]
+}
+

@@ -1,0 +1,45 @@
+{
+  "user_stories": [
+    {
+      "feature": "src/features/check-ins-nutricionales",
+      "persona": "Entrenador Personal",
+      "description": "Como entrenador personal quiero definir plantillas con preguntas o campos adicionales para el formulario de nuevo check-in en la pestaña Check-ins para adaptar el seguimiento nutricional a las necesidades de cada cliente."
+    },
+    {
+      "feature": "src/features/check-ins-nutricionales",
+      "persona": "Entrenador Personal",
+      "description": "Como entrenador personal quiero activar recordatorios automáticos según el horario de cada comida para que el cliente envíe sus check-ins y mantener la consistencia del seguimiento diario."
+    },
+    {
+      "feature": "src/features/check-ins-nutricionales",
+      "persona": "Entrenador Personal",
+      "description": "Como entrenador personal quiero filtrar el historial nutricional por tipo de comida, rango de fechas o niveles de hambre y saciedad para analizar patrones específicos sin revisar registro por registro."
+    },
+    {
+      "feature": "src/features/check-ins-nutricionales",
+      "persona": "Entrenador Personal",
+      "description": "Como entrenador personal quiero comparar fotos anteriores y actuales dentro del modal de detalle del check-in para evaluar visualmente la evolución del cliente y comentar mejoras concretas."
+    },
+    {
+      "feature": "src/features/check-ins-nutricionales",
+      "persona": "Entrenador Personal",
+      "description": "Como entrenador personal quiero ver en la pestaña Adherencia un gráfico que compare el consumo real de proteínas, carbohidratos y grasas frente a los objetivos diarios para detectar qué macronutriente necesita ajustes."
+    },
+    {
+      "feature": "src/features/check-ins-nutricionales",
+      "persona": "Entrenador Personal",
+      "description": "Como entrenador personal quiero configurar alertas automáticas cuando un cliente acumule varios días sin check-ins o caiga por debajo de un umbral de adherencia para intervenir antes de que abandone el plan nutricional."
+    },
+    {
+      "feature": "src/features/check-ins-nutricionales",
+      "persona": "Entrenador Personal",
+      "description": "Como entrenador personal quiero exportar a PDF o Excel un reporte con métricas, gráficos y observaciones de todas las pestañas para compartir resultados con el cliente o su equipo médico."
+    },
+    {
+      "feature": "src/features/check-ins-nutricionales",
+      "persona": "Entrenador Personal",
+      "description": "Como entrenador personal quiero ver en la pestaña Tendencias un gráfico combinado que muestre la evolución del peso junto a la adherencia nutricional para identificar si los cambios de peso siguen el plan alimentario."
+    }
+  ]
+}
+

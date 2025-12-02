@@ -1,0 +1,55 @@
+{
+  "user_stories": [
+    {
+      "feature": "src/features/check-ins-de-entreno",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero filtrar el historial de check-ins por rango de fechas y color de semáforo desde la pestaña Historial para revisar periodos específicos y detectar fácilmente las sesiones que requieren seguimiento."
+    },
+    {
+      "feature": "src/features/check-ins-de-entreno",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero exportar los check-ins registrados a un archivo Excel o PDF desde la vista de historial para compartir reportes con el cliente o mi equipo de trabajo sin depender de la plataforma."
+    },
+    {
+      "feature": "src/features/check-ins-de-entreno",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero programar recordatorios automáticos para que el cliente complete su check-in antes de cada sesión para asegurar que recibo feedback puntual incluso cuando el cliente olvida registrar sus sensaciones."
+    },
+    {
+      "feature": "src/features/check-ins-de-entreno",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero crear plantillas con preguntas adicionales y campos personalizados para los check-ins para adaptar el seguimiento a las necesidades específicas de cada cliente o tipo de programa."
+    },
+    {
+      "feature": "src/features/check-ins-de-entreno",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero permitir que el cliente adjunte fotos o videos al check-in para revisar la técnica del ejercicio o documentar molestias físicas con mayor contexto."
+    },
+    {
+      "feature": "src/features/check-ins-de-entreno",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero ver en la pestaña Analytics una comparación entre los check-ins y los objetivos del plan de entrenamiento asignado para identificar desviaciones y ajustar la planificación semanal con datos objetivos."
+    },
+    {
+      "feature": "src/features/check-ins-de-entreno",
+      "persona": "Coordinador de Entrenadores",
+      "description": "Como Coordinador de Entrenadores quiero comparar en una vista agregada las métricas de check-ins de varios clientes para detectar patrones comunes y priorizar intervenciones en mi cartera de clientes."
+    },
+    {
+      "feature": "src/features/check-ins-de-entreno",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero configurar mis propios criterios para asignar semáforos, por ejemplo qué RPE se considera rojo, para ajustar la sensibilidad del sistema según el perfil del cliente y mi metodología de entrenamiento."
+    },
+    {
+      "feature": "src/features/check-ins-de-entreno",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero sincronizar métricas de dispositivos wearables, como frecuencia cardíaca y variabilidad, con los check-ins para correlacionar datos objetivos con las sensaciones reportadas y obtener una visión más completa."
+    },
+    {
+      "feature": "src/features/check-ins-de-entreno",
+      "persona": "Entrenador Personal",
+      "description": "Como Entrenador Personal quiero configurar reglas automáticas que apliquen ajustes en el plan cuando se disparen ciertas alertas de check-ins para responder de manera proactiva a los patrones negativos sin tener que intervenir manualmente cada vez."
+    }
+  ]
+}
+

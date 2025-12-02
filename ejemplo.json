@@ -1,0 +1,25 @@
+{
+  "modulos": [
+    {
+      "modulo": "ResumenGeneral",
+      "archivo_md": "FLUJO-5-MENSAJES.md",
+      "moduloespecificaciones": "Vista inicial con métricas clave y accesos rápidos."
+    },
+    {
+      "modulo": "GestionClientes",
+      "archivo_md": "pagina2_export/👥 Gestión de Roles Marketing.md",
+      "moduloespecificaciones": "Listado, filtros, detalle de cliente y acciones rápidas; usar componentes de @src/components/componentsreutilizables."
+    },
+    {
+      "modulo": "EditorEntreno",
+      "archivo_md": "pagina2_export/🔄 Workflows por Especialidad.md",
+      "moduloespecificaciones": "Editor con calendario, bloques y validaciones; sin emojis, solo iconos."
+    }
+  ],
+  "configuracion": {
+    "tiempo_espera": 30,
+    "modo": "secuencial",
+    "reintentos": 2
+  },
+  "descripcion": "Ejemplo para modo md-to-module con placeholder moduloespecificaciones."
+}

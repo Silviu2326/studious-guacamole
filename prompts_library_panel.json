@@ -1,0 +1,631 @@
+{
+  "prompts": [
+    {
+      "id": "01_Primary_CTA_Button",
+      "category": "UX/HIERARCHY",
+      "scope": "src/features/EditorEntrenamiento/components/EditorCanvas.tsx",
+      "title": "Establecer un Botón de Acción Principal (CTA) claro",
+      "instructions": [
+        "1. Modifica los botones flotantes en `EditorCanvas.tsx`.",
+        "2. El botón `Agregar Semana` debe tener un estilo primario (ej. color sólido, más grande).",
+        "3. Los botones `BatchTraining` y `Copiar Programa` deben tener un estilo secundario (ej. outline, menor tamaño).",
+        "4. Asegúrate de que la jerarquía visual guíe a Alex hacia la acción más común."
+      ],
+      "reference": "P1.1: Falta de Jerarquía Visual en Acciones"
+    },
+    {
+      "id": "02_Confirmation_Modals",
+      "category": "UX/SAFETY",
+      "scope": "src/features/EditorEntrenamiento/context/UIContext.tsx",
+      "title": "Implementar Modales de Confirmación para Acciones Destructivas",
+      "instructions": [
+        "1. Crea un componente genérico `ConfirmationModal.tsx` que acepte un título, mensaje y un callback `onConfirm`.",
+        "2. En `UIContext.tsx`, añade un estado para este modal.",
+        "3. Antes de ejecutar acciones como `deleteWeek` en `ProgramContext` o `revertToVersion` en `VersionHistoryModal`, abre el modal de confirmación.",
+        "4. Solo ejecuta la acción si el usuario confirma."
+      ],
+      "reference": "P1.5: Falta de Confirmación en Acciones Destructivas"
+    },
+    {
+      "id": "03_Week_Navigator",
+      "category": "UX/NAVIGATION",
+      "scope": "src/features/EditorEntrenamiento/components/EditorCanvas.tsx",
+      "title": "Crear un Navegador Rápido de Semanas",
+      "instructions": [
+        "1. Crea un componente `WeekNavigator.tsx` que se muestre como una barra lateral flotante a la izquierda del `EditorCanvas`.",
+        "2. Lista todas las semanas del programa (ej. 'Semana 1', 'Semana 2').",
+        "3. Al hacer clic, el canvas debe hacer scroll suave hasta esa semana.",
+        "4. Resalta la semana actualmente visible en el viewport usando `IntersectionObserver`."
+      ],
+      "reference": "P1.2: Navegación Difícil en Programas Largos"
+    },
+    {
+      "id": "04_Visible_Keyboard_Shortcuts",
+      "category": "UX/DISCOVERABILITY",
+      "scope": "src/features/EditorEntrenamiento/components/common/Tooltip.tsx",
+      "title": "Hacer Visibles los Atajos de Teclado",
+      "instructions": [
+        "1. Modifica el componente de `Tooltip` para que pueda mostrar un atajo de teclado (ej. `Cmd+Z`).",
+        "2. Actualiza los tooltips de acciones como Deshacer, Rehacer, Abrir Paleta de Comandos para mostrar su atajo.",
+        "3. Crea un modal `KeyboardShortcutsModal.tsx` que liste todos los atajos disponibles, accesible desde el menú de usuario o con `Cmd+?`."
+      ],
+      "reference": "P1.9: Falta de Atajos de Teclado Visibles"
+    },
+    {
+      "id": "05_Debounce_Inputs",
+      "category": "PERFORMANCE/UX",
+      "scope": "src/features/EditorEntrenamiento/components/canvas/ExerciseRow.tsx",
+      "title": "Aplicar Debouncing a los Inputs de Edición",
+      "instructions": [
+        "1. En `ExerciseRow.tsx`, en lugar de llamar a `updateExercise` en el `onChange` de los inputs (series, reps, etc.), usa un hook `useDebounce`.",
+        "2. El estado local del input se actualiza al instante para una respuesta visual rápida.",
+        "3. La llamada al `ProgramContext` para actualizar el estado global solo se ejecuta después de un breve retraso (ej. 300ms) sin que el usuario escriba."
+      ],
+      "reference": "P3.4: Falta de Debouncing en Inputs"
+    },
+    {
+      "id": "06_Timer_Integration",
+      "category": "INTEGRATION/UTILITY",
+      "scope": "src/features/EditorEntrenamiento/components/tools/TimerWidget.tsx",
+      "title": "Integrar el Resultado del Timer con los Bloques",
+      "instructions": [
+        "1. Modifica `TimerWidget.tsx` para que, al finalizar, emita un evento `onComplete` con la duración registrada.",
+        "2. En `TrainingBlock.tsx`, al recibir este evento, muestra una notificación (`Toast`) preguntando a Alex: '¿Guardar 2:35 en la duración del bloque?'.",
+        "3. Si Alex acepta, actualiza la propiedad de duración del bloque en el `ProgramContext`."
+      ],
+      "reference": "P4.1: TimerWidget Está Aislado"
+    },
+    {
+      "id": "07_Contextual_Tooltips",
+      "category": "UX/FEEDBACK",
+      "scope": "src/features/EditorEntrenamiento/components/common/Tooltip.tsx",
+      "title": "Mejorar Tooltips para que sean Contextuales",
+      "instructions": [
+        "1. Modifica el componente de `Tooltip` para que pueda aceptar un `disabledReason?: string`.",
+        "2. Cuando un botón está deshabilitado (ej. `Rehacer` cuando no hay nada que rehacer), el tooltip debe mostrar la razón: 'No hay acciones que rehacer'.",
+        "3. Esto proporciona un feedback mucho más rico que un simple botón gris."
+      ],
+      "reference": "P1.6: Tooltips Estáticos"
+    },
+    {
+      "id": "08_Density_Switch_Preview",
+      "category": "UX/DISCOVERABILITY",
+      "scope": "src/features/EditorEntrenamiento/components/modals/PreferencesModal.tsx",
+      "title": "Mostrar un Preview Visual del Cambio de Densidad",
+      "instructions": [
+        "1. En `PreferencesModal.tsx`, junto al selector de Densidad (Compacta/Cómoda), añade una pequeña visualización.",
+        "2. Esta visualización debe mostrar dos mini-tarjetas de ejercicio, una con padding compacto y otra con padding cómodo.",
+        "3. Esto permite a Alex entender instantáneamente el efecto de la opción antes de aplicarla."
+      ],
+      "reference": "P1.4: Modo Compacto vs Cómodo No Es Obvio"
+    },
+    {
+      "id": "09_Quick_Actions_On_Hover",
+      "category": "UX/EFFICIENCY",
+      "scope": "src/features/EditorEntrenamiento/components/canvas/DayCard.tsx",
+      "title": "Añadir Botones de Acción Rápida al Pasar el Ratón",
+      "instructions": [
+        "1. En `DayCard.tsx` y `TrainingBlock.tsx`, al pasar el ratón por encima, muestra un pequeño grupo de botones de acción rápida (ej. Duplicar, Eliminar, Guardar como Bloque).",
+        "2. Estos botones deben ser discretos para no sobrecargar la UI, pero accesibles.",
+        "3. Esto evita que Alex tenga que abrir un menú contextual para realizar acciones comunes."
+      ],
+      "reference": "P1.10: Falta de Quick Actions en Contexto"
+    },
+    {
+      "id": "10_Lazy_Load_Modals",
+      "category": "PERFORMANCE/LOADING",
+      "scope": "src/features/EditorEntrenamiento/context/UIContext.tsx",
+      "title": "Cargar Modales de Forma Perezosa (Lazy Loading)",
+      "instructions": [
+        "1. En `UIContext.tsx` o donde se rendericen los modales, en lugar de importarlos estáticamente, usa `React.lazy`.",
+        "2. Envuelve cada modal en un componente `<Suspense>` con un fallback (ej. un spinner).",
+        "3. Esto reduce significativamente el tamaño del bundle inicial y mejora el tiempo de carga percibido del editor."
+      ],
+      "reference": "P3.5: Falta de Lazy Loading en Modales"
+    },
+    {
+      "id": "11_SmartFill_Proactive_Suggestion",
+      "category": "FEATURE/AI",
+      "scope": "src/features/EditorEntrenamiento/components/canvas/EmptyDayState.tsx",
+      "title": "Sugerir SmartFill Automáticamente en Días Vacíos",
+      "instructions": [
+        "1. En `EmptyDayState.tsx`, añade un botón prominente: 'Rellenar con IA' que abra directamente `SmartFillModal`.",
+        "2. Opcionalmente, si Alex ha usado SmartFill antes, pre-rellena el modal con sus últimas preferencias (tiempo, material).",
+        "3. Esto hace que SmartFill sea descubierto naturalmente en el flujo de trabajo."
+      ],
+      "reference": "P2.1: SmartFill No Está Integrado en el Flujo Principal"
+    },
+    {
+      "id": "12_FitCoach_Learning",
+      "category": "FEATURE/AI",
+      "scope": "src/features/EditorEntrenamiento/hooks/useFitCoach.ts",
+      "title": "Hacer que FitCoach Aprenda de las Acciones de Alex",
+      "instructions": [
+        "1. En `useFitCoach.ts`, en lugar de respuestas predefinidas, implementa un sistema de 'memoria'.",
+        "2. Almacena en `localStorage` o en el contexto las acciones recientes de Alex (ej. 'Duplicó la Semana 1 3 veces', 'Siempre usa Press Banca').",
+        "3. Cuando Alex hace una pregunta, FitCoach puede decir: 'Veo que usas mucho Press Banca. ¿Quieres añadir variaciones como Incline Press?'.",
+        "4. Esto hace que FitCoach se sienta personal y no genérico."
+      ],
+      "reference": "P2.2: FitCoach No Aprende de las Acciones de Alex"
+    },
+    {
+      "id": "13_Inline_Validation_Alerts",
+      "category": "FEATURE/FEEDBACK",
+      "scope": "src/features/EditorEntrenamiento/components/canvas/DayCard.tsx",
+      "title": "Mostrar Alertas de Validación Inline en el Canvas",
+      "instructions": [
+        "1. Modifica `DayCard.tsx` y `TrainingBlock.tsx` para que, si `validationEngine` detecta un problema en ese día/bloque, muestre un pequeño icono de alerta (ej. triángulo amarillo).",
+        "2. Al pasar el ratón, muestra un tooltip con el mensaje de la alerta.",
+        "3. Al hacer clic, abre el panel de FitCoach en la pestaña de Alertas.",
+        "4. Esto permite a Alex ver problemas sin tener que abrir FitCoach manualmente."
+      ],
+      "reference": "P2.3: Falta de Sugerencias Proactivas en Tiempo Real"
+    },
+    {
+      "id": "14_Smart_Templates_By_Goal",
+      "category": "FEATURE/AI",
+      "scope": "src/features/EditorEntrenamiento/components/LibraryPanel.tsx",
+      "title": "Añadir Plantillas Inteligentes Basadas en Objetivo",
+      "instructions": [
+        "1. En la pestaña 'Plantillas' de `LibraryPanel.tsx`, añade una sección 'Plantillas IA'.",
+        "2. Estas plantillas son pre-generadas por IA basándose en objetivos comunes: 'Hipertrofia 4 días', 'Fuerza 3 días', 'Pérdida de grasa 5 días'.",
+        "3. Al arrastrar una plantilla IA al canvas, se genera un programa completo automáticamente.",
+        "4. Esto reduce drásticamente el tiempo para crear programas desde cero."
+      ],
+      "reference": "P2.4: Falta de Plantillas Inteligentes Basadas en Objetivo"
+    },
+    {
+      "id": "15_Smart_Block_Library",
+      "category": "FEATURE/AI",
+      "scope": "src/features/EditorEntrenamiento/components/LibraryPanel.tsx",
+      "title": "Crear Biblioteca de Bloques Inteligente Contextual",
+      "instructions": [
+        "1. En la pestaña 'Bloques' de `LibraryPanel.tsx`, añade una sección 'Bloques Sugeridos'.",
+        "2. Analiza el contexto del programa actual (ej. si hay muchos ejercicios de pierna, sugiere 'Bloque de Calentamiento para Pierna').",
+        "3. Si Alex busca 'tendinopatía', muestra bloques específicos para esa condición.",
+        "4. Esto hace que la biblioteca sea proactiva y no solo reactiva."
+      ],
+      "reference": "P2.5: Falta de Biblioteca de Bloques Inteligente"
+    },
+    {
+      "id": "16_Client_Progress_Analysis",
+      "category": "FEATURE/ANALYTICS",
+      "scope": "src/features/EditorEntrenamiento/components/FitCoachPanel.tsx",
+      "title": "Añadir Análisis de Progreso del Cliente",
+      "instructions": [
+        "1. Crea una nueva pestaña en `FitCoachPanel.tsx` llamada 'Progreso'.",
+        "2. Esta pestaña debe mostrar gráficos de evolución del cliente: 1RM en ejercicios clave, peso corporal, medidas.",
+        "3. Incluye insights automáticos: 'María ha aumentado su 1RM en Press Banca un 15% en 8 semanas'.",
+        "4. Esto permite a Alex demostrar resultados fácilmente a sus clientes."
+      ],
+      "reference": "P2.6: Falta de Análisis de Progreso del Cliente"
+    },
+    {
+      "id": "17_Program_Comparison",
+      "category": "FEATURE/ANALYTICS",
+      "scope": "src/features/EditorEntrenamiento/components/views/",
+      "title": "Implementar Vista de Comparación de Programas",
+      "instructions": [
+        "1. Crea un nuevo componente `ComparisonView.tsx` que muestre dos programas lado a lado.",
+        "2. Permite a Alex seleccionar dos programas (ej. 'Programa A' vs 'Programa B').",
+        "3. Resalta las diferencias: volumen total, distribución de patrones, intensidad promedio.",
+        "4. Esto ayuda a Alex a evaluar qué programa es mejor para un cliente específico."
+      ],
+      "reference": "P2.7: Falta de Comparación de Programas"
+    },
+    {
+      "id": "18_Program_Variations_Generator",
+      "category": "FEATURE/AI",
+      "scope": "src/features/EditorEntrenamiento/components/EditorCanvas.tsx",
+      "title": "Añadir Generador de Variaciones de Programa",
+      "instructions": [
+        "1. Añade un botón en `EditorCanvas.tsx`: 'Generar Variación'.",
+        "2. Al hacer clic, abre un modal que permite a Alex especificar qué cambiar (ej. 'Reemplazar todos los ejercicios con barra por mancuernas').",
+        "3. El sistema genera una copia del programa con las modificaciones aplicadas.",
+        "4. Esto ahorra tiempo cuando Alex necesita adaptar un programa a diferentes equipos o limitaciones."
+      ],
+      "reference": "P2.8: Falta de Generación de Variaciones"
+    },
+    {
+      "id": "19_White_Label_Export",
+      "category": "FEATURE/PROFESSIONAL",
+      "scope": "src/features/EditorEntrenamiento/components/modals/ExportModal.tsx",
+      "title": "Implementar Exportación con Marca Blanca",
+      "instructions": [
+        "1. En `ExportModal.tsx`, añade una sección 'Personalización'.",
+        "2. Permite a Alex subir su logo, elegir colores primarios/secundarios, y añadir un pie de página personalizado.",
+        "3. Estos ajustes se guardan en `UserPreferencesContext` para reutilizarlos.",
+        "4. Al exportar a PDF, el documento usa la marca blanca de Alex.",
+        "5. Esto hace que los PDFs se vean profesionales y refuerzan la marca de Alex."
+      ],
+      "reference": "P2.9: Falta de Exportación con Marca Blanca"
+    },
+    {
+      "id": "20_Calendar_Integration",
+      "category": "INTEGRATION/EXTERNAL",
+      "scope": "src/features/EditorEntrenamiento/components/modals/ExportModal.tsx",
+      "title": "Integrar con Google Calendar e iCal",
+      "instructions": [
+        "1. En `ExportModal.tsx`, añade una opción 'Sincronizar con Calendario'.",
+        "2. Implementa la generación de archivos `.ics` (iCal) que contengan todos los entrenamientos del programa.",
+        "3. Opcionalmente, integra con la API de Google Calendar para crear eventos directamente.",
+        "4. Cada entrenamiento se convierte en un evento con el título del día, descripción con ejercicios, y duración estimada.",
+        "5. Esto permite a los clientes tener sus entrenamientos en su calendario sin trabajo manual."
+      ],
+      "reference": "P2.10: Falta de Integración con Calendario"
+    },
+    {
+      "id": "21_Adherence_Analytics",
+      "category": "FEATURE/ANALYTICS",
+      "scope": "src/features/EditorEntrenamiento/components/FitCoachPanel.tsx",
+      "title": "Añadir Análisis de Adherencia del Cliente",
+      "instructions": [
+        "1. En la pestaña 'Métricas' de `FitCoachPanel.tsx`, añade una sección 'Adherencia'.",
+        "2. Calcula el porcentaje de entrenamientos completados vs programados.",
+        "3. Muestra un gráfico de tendencia (ej. 'María ha completado 85% de sus entrenamientos en las últimas 4 semanas').",
+        "4. Genera alertas si la adherencia cae por debajo de un umbral (ej. <70%).",
+        "5. Esto permite a Alex identificar clientes en riesgo de abandono y tomar acción proactiva."
+      ],
+      "reference": "P2.12: Falta de Análisis de Adherencia"
+    },
+    {
+      "id": "22_Alternative_Exercises_On_Pain",
+      "category": "FEATURE/AI",
+      "scope": "src/features/EditorEntrenamiento/components/canvas/ExerciseRow.tsx",
+      "title": "Sugerir Ejercicios Alternativos Automáticamente al Reportar Dolor",
+      "instructions": [
+        "1. En `ExerciseRow.tsx`, si el cliente reporta dolor en un ejercicio (ej. RPE de dolor alto), muestra un botón 'Sugerir Alternativas'.",
+        "2. Al hacer clic, abre un modal con ejercicios alternativos biomecánicamente similares pero con menor estrés en la zona afectada.",
+        "3. Alex puede reemplazar el ejercicio con un solo clic.",
+        "4. Esto acelera la adaptación de programas cuando los clientes tienen molestias."
+      ],
+      "reference": "P2.13: Falta de Recomendaciones de Ejercicios Alternativos"
+    },
+    {
+      "id": "23_Professional_Video_Library",
+      "category": "FEATURE/CONTENT",
+      "scope": "src/features/EditorEntrenamiento/components/modals/ExerciseDetailModal.tsx",
+      "title": "Integrar Biblioteca de Videos Profesionales",
+      "instructions": [
+        "1. En `ExerciseDetailModal.tsx`, añade una pestaña 'Videos'.",
+        "2. Integra una biblioteca de videos profesionales de ejercicios (ej. desde una API o almacenados localmente).",
+        "3. Permite a Alex seleccionar un video de la biblioteca o subir el suyo propio.",
+        "4. El video seleccionado se asocia al ejercicio y se muestra en la app del cliente.",
+        "5. Esto elimina la necesidad de que Alex grabe o busque videos en YouTube."
+      ],
+      "reference": "P2.14: Falta de Biblioteca de Videos de Ejercicios"
+    },
+    {
+      "id": "24_Injury_Risk_Alerts",
+      "category": "FEATURE/SAFETY",
+      "scope": "src/features/EditorEntrenamiento/logic/validationEngine.ts",
+      "title": "Implementar Alertas Proactivas de Riesgo de Lesión",
+      "instructions": [
+        "1. En `validationEngine.ts`, añade reglas que detecten patrones de riesgo de lesión.",
+        "2. Ejemplos: 'Volumen de hombro ha aumentado 40% en 2 semanas', 'ACWR > 1.5 (zona de riesgo)'.",
+        "3. Estas alertas deben aparecer en la pestaña 'Alertas' de FitCoach con severidad crítica (rojo).",
+        "4. Ofrece sugerencias automáticas: 'Reducir volumen de hombro en 20%' o 'Añadir semana de descarga'.",
+        "5. Esto ayuda a Alex a prevenir lesiones en sus clientes."
+      ],
+      "reference": "P2.15: Falta de Análisis de Riesgo de Lesión"
+    },
+    {
+      "id": "25_Virtual_Scrolling_Canvas",
+      "category": "PERFORMANCE/RENDERING",
+      "scope": "src/features/EditorEntrenamiento/components/EditorCanvas.tsx",
+      "title": "Implementar Virtualización en el Canvas para Programas Largos",
+      "instructions": [
+        "1. En `EditorCanvas.tsx`, en lugar de renderizar todos los días simultáneamente, usa una librería de virtualización como `react-window` o `react-virtuoso`.",
+        "2. Solo renderiza los días que están visibles en el viewport más un buffer.",
+        "3. Esto reduce drásticamente el número de nodos DOM y mejora el rendimiento en programas de 12+ semanas.",
+        "4. Asegúrate de que el drag & drop siga funcionando correctamente con la virtualización."
+      ],
+      "reference": "P3.1: Renderizado Ineficiente en Programas Largos"
+    },
+    {
+      "id": "26_Virtual_Scrolling_Library",
+      "category": "PERFORMANCE/RENDERING",
+      "scope": "src/features/EditorEntrenamiento/components/LibraryPanel.tsx",
+      "title": "Implementar Virtualización en la Biblioteca de Ejercicios",
+      "instructions": [
+        "1. En `LibraryPanel.tsx`, usa `react-window` para virtualizar la lista de ejercicios/bloques.",
+        "2. Solo renderiza los ítems visibles en el scroll.",
+        "3. Esto es especialmente importante si la biblioteca crece a 500+ ejercicios.",
+        "4. Mantén la funcionalidad de búsqueda y filtrado funcionando correctamente."
+      ],
+      "reference": "P3.2: Falta de Virtualización en Listas"
+    },
+    {
+      "id": "27_Web_Workers_Heavy_Calculations",
+      "category": "PERFORMANCE/THREADING",
+      "scope": "src/features/EditorEntrenamiento/logic/validationEngine.ts",
+      "title": "Mover Cálculos Pesados a Web Workers",
+      "instructions": [
+        "1. Identifica las operaciones pesadas en `validationEngine.ts` y `SmartFill.ts`.",
+        "2. Crea Web Workers que ejecuten estos cálculos en un hilo separado.",
+        "3. El hilo principal envía los datos al worker, y el worker devuelve el resultado.",
+        "4. Esto evita que la UI se congele durante operaciones complejas.",
+        "5. Muestra un indicador de carga mientras el worker está procesando."
+      ],
+      "reference": "P3.3: Cálculos Pesados en el Hilo Principal"
+    },
+    {
+      "id": "28_Empty_States_All_Views",
+      "category": "UX/GUIDANCE",
+      "scope": "src/features/EditorEntrenamiento/components/views/",
+      "title": "Añadir Estados Vacíos Guiados en Todas las Vistas",
+      "instructions": [
+        "1. En `ExcelView.tsx` y `TimelineView.tsx`, añade componentes de estado vacío similares a `EmptyDayState.tsx`.",
+        "2. Estos estados deben explicar qué hace cada vista y ofrecer CTAs claros (ej. 'Añade tu primera semana para ver la timeline').",
+        "3. Esto guía a Alex cuando explora vistas nuevas por primera vez."
+      ],
+      "reference": "P1.7: Falta de Estado Vacío Guiado en Vistas"
+    },
+    {
+      "id": "29_Contextual_Onboarding_Advanced_Features",
+      "category": "UX/ONBOARDING",
+      "scope": "src/features/EditorEntrenamiento/components/modals/",
+      "title": "Crear Onboarding Contextual para Funcionalidades Avanzadas",
+      "instructions": [
+        "1. Cuando Alex abre `BatchTrainingModal` o `SmartFillModal` por primera vez, muestra un mini-tour explicando cómo funciona.",
+        "2. Usa un flag en `localStorage` para no repetir el tour en sesiones futuras.",
+        "3. Incluye un botón 'Saltar' para usuarios experimentados.",
+        "4. Esto reduce la fricción al descubrir funcionalidades complejas."
+      ],
+      "reference": "P1.8: Falta de Onboarding Contextual"
+    },
+    {
+      "id": "30_Progress_Indicators_Async_Operations",
+      "category": "UX/FEEDBACK",
+      "scope": "src/features/EditorEntrenamiento/components/AutoSaveIndicator.tsx",
+      "title": "Mejorar Indicadores de Progreso para Operaciones Largas",
+      "instructions": [
+        "1. Crea un componente `ProgressIndicator.tsx` que muestre una barra de progreso con porcentaje y mensaje descriptivo.",
+        "2. Úsalo en operaciones largas como 'Generando programa con IA' o 'Aplicando progresión a 12 semanas'.",
+        "3. Actualiza el progreso en tiempo real (ej. 'Procesando semana 3 de 12...').",
+        "4. Esto tranquiliza a Alex de que el sistema está trabajando."
+      ],
+      "reference": "P1.3: Feedback Insuficiente en Operaciones Asíncronas"
+    }
+    ,
+    {
+      "id": "31_Comment_Notifications",
+      "category": "INTEGRATION/COLLABORATION",
+      "scope": "src/features/EditorEntrenamiento/components/collaboration/CommentThread.tsx",
+      "title": "Integrar Notificaciones con el Sistema de Comentarios",
+      "instructions": [
+        "1. En `CommentThread.tsx`, cuando Alex deja un comentario en un ejercicio, dispara una notificación al cliente.",
+        "2. Usa un servicio de notificaciones (ej. Firebase Cloud Messaging, OneSignal) para enviar push notifications.",
+        "3. El cliente recibe una notificación: 'Tu entrenador dejó un comentario en Press Banca'.",
+        "4. Esto mejora la comunicación entre entrenador y cliente."
+      ],
+      "reference": "P4.2: CommentThread No Está Integrado con Notificaciones"
+    },
+    {
+      "id": "32_Real_Time_Collaboration",
+      "category": "INTEGRATION/COLLABORATION",
+      "scope": "src/features/EditorEntrenamiento/context/CollaborationContext.tsx",
+      "title": "Implementar Sincronización en Tiempo Real con WebSockets",
+      "instructions": [
+        "1. Reemplaza la simulación en `CollaborationContext.tsx` con una integración real de WebSockets (ej. Socket.io, Pusher).",
+        "2. Cuando Alex edita un ejercicio, el cambio se transmite en tiempo real a otros usuarios conectados.",
+        "3. Muestra los cursores de otros usuarios en tiempo real.",
+        "4. Esto permite colaboración verdadera entre múltiples entrenadores en el mismo programa."
+      ],
+      "reference": "P4.3: Falta de Sincronización en Tiempo Real"
+    },
+    {
+      "id": "33_Real_API_Integration",
+      "category": "INTEGRATION/BACKEND",
+      "scope": "src/features/EditorEntrenamiento/services/MockApiService.ts",
+      "title": "Reemplazar MockApiService con una API Real",
+      "instructions": [
+        "1. Crea un servicio `ApiService.ts` que se conecte a un backend real (REST o GraphQL).",
+        "2. Implementa endpoints para CRUD de programas, clientes, ejercicios, etc.",
+        "3. Reemplaza todas las llamadas a `MockApiService` con llamadas a `ApiService`.",
+        "4. Mantén el manejo de errores y el modo offline funcionando.",
+        "5. Esto es crítico para llevar el editor a producción."
+      ],
+      "reference": "P4.4: Falta de API Real"
+    },
+    {
+      "id": "34_Wearables_Integration",
+      "category": "INTEGRATION/EXTERNAL",
+      "scope": "src/features/EditorEntrenamiento/services/",
+      "title": "Integrar con Dispositivos Wearables (Apple Watch, Garmin, Whoop)",
+      "instructions": [
+        "1. Crea un servicio `WearablesService.ts` que se conecte a las APIs de Apple Health, Garmin Connect, Whoop.",
+        "2. Importa datos de entrenamiento reales: frecuencia cardíaca, calorías quemadas, calidad de sueño.",
+        "3. Muestra estos datos en la pestaña 'Progreso' de FitCoachPanel.",
+        "4. Usa estos datos para ajustar automáticamente la intensidad de los programas (ej. si el cliente está mal recuperado, reduce la carga).",
+        "5. Esto hace que los programas sean adaptativos y basados en datos reales."
+      ],
+      "reference": "P4.5: Falta de Integración con Wearables"
+    },
+    {
+      "id": "35_Payment_Integration",
+      "category": "INTEGRATION/BUSINESS",
+      "scope": "src/features/EditorEntrenamiento/components/",
+      "title": "Integrar Sistema de Pagos (Stripe, PayPal)",
+      "instructions": [
+        "1. Crea un módulo de pagos que permita a Alex cobrar a sus clientes directamente desde la plataforma.",
+        "2. Integra con Stripe o PayPal para procesar pagos.",
+        "3. Permite crear planes de suscripción (ej. 'Entrenamiento mensual - 100€/mes').",
+        "4. Muestra el estado de pago de cada cliente en el dashboard.",
+        "5. Esto convierte el editor en una plataforma de negocio completa."
+      ],
+      "reference": "P4.6: Falta de Integración con Plataformas de Pago"
+    },
+    {
+      "id": "36_Roles_And_Permissions",
+      "category": "PROFESSIONAL/SECURITY",
+      "scope": "src/features/EditorEntrenamiento/context/",
+      "title": "Implementar Sistema de Roles y Permisos",
+      "instructions": [
+        "1. Crea un contexto `AuthContext.tsx` que gestione roles de usuario (Admin, Entrenador, Asistente, Cliente).",
+        "2. Define permisos para cada rol (ej. Asistente puede ver programas pero no editarlos).",
+        "3. Condiciona la visibilidad de botones y acciones basándose en el rol del usuario.",
+        "4. Esto permite a Alex delegar tareas sin perder control."
+      ],
+      "reference": "P5.1: Falta de Roles y Permisos"
+    },
+    {
+      "id": "37_Audit_Log",
+      "category": "PROFESSIONAL/COMPLIANCE",
+      "scope": "src/features/EditorEntrenamiento/services/",
+      "title": "Implementar Log de Auditoría de Cambios",
+      "instructions": [
+        "1. Crea un servicio `AuditService.ts` que registre todos los cambios en programas.",
+        "2. Cada cambio debe incluir: quién, qué, cuándo, y el valor anterior vs nuevo.",
+        "3. Crea una vista `AuditLogView.tsx` donde Alex pueda ver el historial completo de cambios.",
+        "4. Esto es crítico para entornos colaborativos y para cumplir con regulaciones."
+      ],
+      "reference": "P5.2: Falta de Auditoría de Cambios"
+    },
+    {
+      "id": "38_Automated_Reports",
+      "category": "PROFESSIONAL/AUTOMATION",
+      "scope": "src/features/EditorEntrenamiento/services/",
+      "title": "Implementar Generación Automática de Reportes",
+      "instructions": [
+        "1. Crea un servicio `ReportService.ts` que genere reportes mensuales automáticos.",
+        "2. Ejemplo: 'Resumen de progreso de María - Octubre 2025' con gráficos, métricas clave y insights.",
+        "3. Permite a Alex programar el envío automático de estos reportes por email.",
+        "4. Esto ahorra tiempo y mantiene a los clientes informados."
+      ],
+      "reference": "P5.3: Falta de Reportes Automatizados"
+    },
+    {
+      "id": "39_CRM_Integration",
+      "category": "INTEGRATION/BUSINESS",
+      "scope": "src/features/EditorEntrenamiento/services/",
+      "title": "Integrar con CRMs (HubSpot, Salesforce)",
+      "instructions": [
+        "1. Crea un servicio `CRMService.ts` que sincronice clientes con CRMs externos.",
+        "2. Cuando Alex añade un cliente en el editor, se crea automáticamente en el CRM.",
+        "3. Sincroniza datos de adherencia, progreso y pagos.",
+        "4. Esto permite a Alex gestionar su negocio desde una sola plataforma."
+      ],
+      "reference": "P5.4: Falta de Integración con CRM"
+    },
+    {
+      "id": "40_Business_Analytics",
+      "category": "PROFESSIONAL/ANALYTICS",
+      "scope": "src/features/EditorEntrenamiento/components/",
+      "title": "Añadir Dashboard de Análisis de Negocio",
+      "instructions": [
+        "1. Crea un componente `BusinessDashboard.tsx` que muestre métricas de negocio.",
+        "2. Métricas clave: Ingresos mensuales, Tasa de retención de clientes, Clientes activos vs inactivos, Ingresos por cliente.",
+        "3. Muestra gráficos de tendencia y comparaciones mes a mes.",
+        "4. Esto permite a Alex medir el éxito de su negocio."
+      ],
+      "reference": "P5.5: Falta de Análisis de Negocio"
+    },
+    {
+      "id": "41_Template_Marketplace",
+      "category": "PROFESSIONAL/MONETIZATION",
+      "scope": "src/features/EditorEntrenamiento/components/",
+      "title": "Crear Marketplace de Plantillas",
+      "instructions": [
+        "1. Crea un componente `TemplateMarketplace.tsx` donde Alex pueda publicar sus plantillas.",
+        "2. Otros entrenadores pueden comprar estas plantillas.",
+        "3. Implementa un sistema de comisiones (ej. 70% para Alex, 30% para la plataforma).",
+        "4. Esto crea una fuente de ingresos pasivos para Alex."
+      ],
+      "reference": "P5.6: Falta de Marketplace de Plantillas"
+    },
+    {
+      "id": "42_Compliance_GDPR_HIPAA",
+      "category": "PROFESSIONAL/COMPLIANCE",
+      "scope": "src/features/EditorEntrenamiento/services/",
+      "title": "Implementar Herramientas de Compliance (GDPR, HIPAA)",
+      "instructions": [
+        "1. Añade funcionalidades de exportación de datos del cliente (GDPR).",
+        "2. Implementa eliminación completa de datos cuando un cliente lo solicite.",
+        "3. Añade encriptación de datos sensibles (ej. información médica).",
+        "4. Crea un módulo de consentimientos donde los clientes acepten el tratamiento de sus datos.",
+        "5. Esto es crítico para operar legalmente en Europa y EE.UU."
+      ],
+      "reference": "P5.7: Falta de Certificaciones y Compliance"
+    },
+    {
+      "id": "43_Presentation_Mode",
+      "category": "PROFESSIONAL/PRESENTATION",
+      "scope": "src/features/EditorEntrenamiento/components/",
+      "title": "Implementar Modo Presentación",
+      "instructions": [
+        "1. Añade un botón 'Modo Presentación' en la TopBar.",
+        "2. Este modo oculta todos los controles de edición y muestra el programa en pantalla completa.",
+        "3. Permite navegar entre semanas con flechas del teclado.",
+        "4. Opcionalmente, añade un puntero láser virtual para destacar elementos durante la presentación.",
+        "5. Esto es útil cuando Alex presenta programas a clientes en reuniones."
+      ],
+      "reference": "P5.8: Falta de Modo Presentación"
+    },
+    {
+      "id": "44_Educational_Resources",
+      "category": "PROFESSIONAL/EDUCATION",
+      "scope": "src/features/EditorEntrenamiento/components/",
+      "title": "Crear Biblioteca de Recursos Educativos",
+      "instructions": [
+        "1. Crea una sección 'Academia' en el menú principal.",
+        "2. Incluye artículos, videos y cursos sobre periodización, biomecánica, nutrición, etc.",
+        "3. Permite a Alex marcar recursos como favoritos y hacer seguimiento de su progreso.",
+        "4. Esto convierte el editor en una plataforma de aprendizaje continuo."
+      ],
+      "reference": "P5.9: Falta de Biblioteca de Recursos Educativos"
+    },
+    {
+      "id": "45_Trainer_Community",
+      "category": "PROFESSIONAL/COMMUNITY",
+      "scope": "src/features/EditorEntrenamiento/components/",
+      "title": "Crear Comunidad de Entrenadores",
+      "instructions": [
+        "1. Crea un foro o comunidad donde Alex pueda hacer preguntas y compartir experiencias.",
+        "2. Implementa categorías: Periodización, Nutrición, Casos de Estudio, etc.",
+        "3. Permite votar respuestas útiles y destacar expertos.",
+        "4. Esto crea un sentido de pertenencia y acelera el aprendizaje de Alex."
+      ],
+      "reference": "P5.10: Falta de Comunidad de Entrenadores"
+    },
+    {
+      "id": "46_Push_Notifications_Clients",
+      "category": "FEATURE/ENGAGEMENT",
+      "scope": "src/features/EditorEntrenamiento/services/",
+      "title": "Implementar Sistema de Notificaciones Push para Clientes",
+      "instructions": [
+        "1. Integra un servicio de notificaciones push (Firebase, OneSignal).",
+        "2. Envía recordatorios automáticos a los clientes: '¡Es hora de entrenar! Hoy toca Pierna'.",
+        "3. Permite a Alex personalizar el horario y frecuencia de las notificaciones.",
+        "4. Esto aumenta la adherencia de los clientes."
+      ],
+      "reference": "P2.11: Falta de Notificaciones Push para Clientes"
+    },
+    {
+      "id": "47_Exercise_Video_Library_Professional",
+      "category": "FEATURE/CONTENT",
+      "scope": "src/features/EditorEntrenamiento/components/modals/ExerciseDetailModal.tsx",
+      "title": "Integrar Biblioteca Profesional de Videos de Ejercicios",
+      "instructions": [
+        "1. Integra una API de videos de ejercicios profesionales (ej. ExerciseDB, Fitbod API).",
+        "2. En `ExerciseDetailModal.tsx`, muestra videos de alta calidad para cada ejercicio.",
+        "3. Permite a Alex seleccionar qué video mostrar a sus clientes.",
+        "4. Esto elimina la necesidad de que Alex grabe videos propios."
+      ],
+      "reference": "P2.14: Falta de Biblioteca de Videos de Ejercicios"
+    },
+    {
+      "id": "48_Inline_Edit_Excel_View",
+      "category": "UX/EFFICIENCY",
+      "scope": "src/features/EditorEntrenamiento/components/views/ExcelView.tsx",
+      "title": "Implementar Edición Inline en Vista Excel",
+      "instructions": [
+        "1. En `ExcelView.tsx`, convierte las celdas de la tabla en inputs editables.",
+        "2. Permite a Alex hacer clic en una celda y editar directamente (series, reps, peso, RPE).",
+        "3. Los cambios se guardan automáticamente en el `ProgramContext` con debouncing.",
+        "4. Esto hace que la Vista Excel sea una herramienta de edición rápida y no solo de visualización."
+      ],
+      "reference": "Top 10 Mejoras - #1: Edición Inline en Vista Excel"
+    }
+  ]
+}

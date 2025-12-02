@@ -1,0 +1,380 @@
+{
+  "modulos": [
+    {
+      "modulo": "Adherencia",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "AdherenciaCumplimientoDeEntreno",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "AfiliadosReferidos",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "Agenda",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "AgendaCalendario",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "AlertasRestriccionesAlimentarias",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "AnaliticaDeAdquisicion",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "AutomatizacionesReglas",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "BibliotecaDeEjercicios",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "BibliotecaEjercicios",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "CajaBancos",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "CampanasOutreach",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "CatalogoPlanes",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "CatalogoProductos",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "CatalogoYPreciosPorSede",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "CheckInsDeEntreno",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "CheckInsNutricionales",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "ChecklistsOperativosAperturacierrelimpieza",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "Cliente360",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "ClientesEnRiesgoRetencion",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "ClientesPerdidosBajas",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "ComparativaEntreSedes",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "ControlDeAccesoAforoEnTiempoReal",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "DietasAsignadas",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "DisponibilidadTurnosStaff",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "DocumentacionInternaYProtocolos",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "EditorDeDietaMealPlanner",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "EditorDeEntreno",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "EmbudosOfertasLandingPages",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "EmpleadosActivos",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "EmpresasConvenios",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "EncuestasSatisfaccinNpscsat",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "EquipoRoles",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "EvaluacionDeProveedores",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "EventosRetosEspeciales",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "FacturacinCobros",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "FacturacionAEmpresas",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "FeedbackInternoYEvaluacionesDeRendimiento",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "GastosProveedores",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "GeneralDelCentroMarcaPersonal",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "GestiónDeClientes",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "HistoricoDeCostesDeCompra",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "ImportadoresMigraciones",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "ImpuestosExportContable",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "InformeDeVentasRetail",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "InformesFinancierosAvanzados",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "IntegracionesYAutomatizacion",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "InventarioStock",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "Leads",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "ListaDeEsperaAusencias",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "ListaDeLaCompraSupermercado",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "ListasInteligentesSegmentosGuardados",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "MantenimientoIncidencias",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "MembresasActivas",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "MonedaImpuestosSeriesDeFactura",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "NominasVariables",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "NormativaYPlantillasGlobales",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "ObjetivosComisiones",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "ObjetivosRendimiento",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "OrdenesDeCompra",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "PagosPendientesMorosidad",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "PanelFinancieroOverview",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "ParteHorariaFichajes",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "PedidosTickets",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "PipelineDeVentaKanban",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "PlantillasDeDieta",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "PlantillasDeEntrenamiento",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "PlantillasDeMensajesYContratos",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "PoliticasTerminos",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "PortalDelClienteAutoservicio",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "PortalEmpresa",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "PresupuestosForecast",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "ProgramasDeEntreno",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "ProgresoRendimiento",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "PromocionesCupones",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "ProveedoresContratos",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "PuntoDeVentaPos",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "RecepcionesDeMaterial",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "RecetarioComidasGuardadas",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "RecursosSalasMaterial",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "RenovacionesBajas",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "ReservasOnline",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "RestriccionesAlimentarias",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "ResumenGeneral",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "ResumenPorSede",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "RolesPermisos",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "ServiciosTarifas",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "SuscripcionesCuotasRecurrentes",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "TareasAlertas",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "TiendaOnlineCheckoutOnline",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "TransferenciasEntreSedes",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "TurnosHorariosDelStaff",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "UsoResultadosProgramasCorporativos",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    },
+    {
+      "modulo": "WebhooksApiKeys",
+      "archivoestilos": "GUIADEESTILO-CATALOGO-PRODUCTOS.md"
+    }
+  ]
+}

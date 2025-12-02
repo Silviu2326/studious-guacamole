@@ -1,0 +1,384 @@
+# Componentes reutilizables (UI Kit)
+
+Este documento agrupa y estandariza los componentes reutilizables que ya existen en `src/components/componentsreutilizables`. Úsalo como referencia rápida para construir pantallas modernas y consistentes (como el Catálogo de Productos).
+
+Import base:
+
+```tsx
+import { Button, Card, Input, Select, Tabs, Modal, Table, Textarea, Tooltip, MetricCards } from '../../src/components/componentsreutilizables';
+```
+
+## Tokens y principios
+- Tipografía: usa clases utilitarias Tailwind `text-gray-900` para títulos y `text-gray-600` para descripciones.
+- Espaciado: `space-y-4` y `gap-4` como base; `p-4` en contenedores.
+- Sombra: cards con énfasis suave; evita sombras agresivas.
+- Estados vacíos/carga: íconos + copy conciso + CTA.
+
+---
+
+## Card
+Contenedor versátil con padding y sombra.
+
+```tsx
+<Card className="p-4">Contenido</Card>
+<Card variant="hover" className="p-4">Hover</Card>
+```
+
+Props clave:
+- `variant?: 'default' | 'hover'` — añade elevación en hover.
+- `className?: string` — utilidades extra.
+
+---
+
+## Button
+Botón accesible con variantes y loading.
+
+```tsx
+<Button>Primario</Button>
+<Button variant="secondary">Secundario</Button>
+<Button variant="ghost">Ghost</Button>
+<Button loading>Guardando…</Button>
+```
+
+Props clave:
+- `variant?: 'primary' | 'secondary' | 'ghost' | 'destructive'`
+- `size?: 'sm' | 'md' | 'lg'`
+- `loading?: boolean`
+
+---
+
+## Input
+Campo de texto con iconos.
+
+```tsx
+<Input placeholder="Buscar…" leftIcon={<Search size={18} />} />
+<Input type="number" step="0.01" error="Campo requerido" />
+```
+
+Props clave:
+- `label?: string`
+- `leftIcon?: ReactNode` / `rightIcon?: ReactNode`
+- `error?: string`
+
+---
+
+## Select
+Selector simple con opciones `{ value, label }`.
+
+```tsx
+<Select options={[{ value: '', label: 'Todos' }]} value={valor} onChange={setValor} />
+```
+
+---
+
+## Tabs
+Pestañas con icono.
+
+```tsx
+<Tabs items={[{ id:'a', label:'Tab A', icon:<Icon/> }]} activeTab={active} onTabChange={setActive} variant="pills" />
+```
+
+Props clave:
+- `items: { id: string; label: string; icon?: ReactNode }[]`
+- `activeTab: string`
+- `onTabChange: (id:string)=>void`
+- `variant?: 'pills' | 'underline'`
+
+---
+
+## Modal
+Diálogo con título, tamaños y acciones.
+
+```tsx
+<Modal isOpen={open} onClose={close} title="Título" size="xl">…contenido…</Modal>
+```
+
+Props clave:
+- `isOpen: boolean` / `onClose: ()=>void`
+- `title?: string`
+- `size?: 'sm' | 'md' | 'lg' | 'xl'`
+
+---
+
+## Table
+Tabla básica y con acciones.
+
+```tsx
+<Table columns={[{key:'nombre', header:'Nombre'}]} data={[{nombre:'Item'}]} />
+```
+
+Para acciones usa `TableWithActions` cuando necesites menú contextual.
+
+---
+
+## Textarea
+Área de texto multi-línea.
+
+```tsx
+<Textarea label="Descripción" rows={3} />
+```
+
+---
+
+## Tooltip
+Información contextual en hover/focus.
+
+```tsx
+<Tooltip content="Info"><button>?</button></Tooltip>
+```
+
+---
+
+## MetricCards
+Métricas de cabecera.
+
+```tsx
+<MetricCards cards=[
+  { title:'Total', value:'248', trend:'+12%', icon:<Package/> },
+  { title:'En stock', value:'212', trend:'+4%', icon:<Check/> }
+] />
+```
+
+---
+
+## Patrones de uso en Catálogo de Productos
+- Barra superior: `Button` primario a la derecha.
+- Filtros: `Card` + `Input` con `leftIcon`, `Button` secundario para abrir filtros avanzados, `Select` para categoría/subcategoría/estado.
+- Grid/List: `Card` por producto con `variant="hover"`; imagen con hover sutil; badges (stock/destacado) usando fondos suaves y `text-*` contrastados.
+- Paginación: `Button` `ghost` para navegar, `primary` para página activa.
+- Modales: `Modal` tamaño `xl`, formularios con `Input`, `Select`, `Textarea`, `Button loading` al guardar.
+
+---
+
+## Ejemplo mínimo
+
+```tsx
+<Card className="p-4 space-y-4">
+  <div className="flex justify-between items-center">
+    <h2 className="text-lg font-semibold text-gray-900">Listado</h2>
+    <Button><Plus size={18} className="mr-2"/>Nuevo</Button>
+  </div>
+  <div className="flex gap-3">
+    <Input placeholder="Buscar…" leftIcon={<Search size={18}/>} />
+    <Select options={[{value:'',label:'Todos'}]} />
+  </div>
+</Card>
+```
+
+Notas:
+- Mantén la semántica de Tailwind consistente (`text-gray-900` títulos, `text-gray-600` descripciones).
+- Prefiere `Card` para agrupar bloques y `space-y-*` para separación vertical.
+- Usa los mismos tamaños de iconos: 16/18/20 según el contexto del control.
+
+
+import React from 'react';
+
+type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
+  label?: string;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
+  error?: string;
+  tone?: 'light' | 'dark';
+  className?: string;        // wrapper
+  inputClassName?: string;   // input real
+};
+
+export const Input: React.FC<InputProps> = ({
+  label,
+  leftIcon,
+  rightIcon,
+  error,
+  tone = 'dark',
+  className = '',
+  inputClassName = '',
+  ...props
+}) => {
+  const isLight = tone === 'light';
+
+  const base =
+    'w-full rounded-xl placeholder-slate-400 ring-1 focus:outline-none py-2.5';
+  const light =
+    'bg-white text-slate-900 ring-slate-300 focus:ring-2 focus:ring-blue-400';
+  const dark =
+    'bg-slate-900 text-slate-50 ring-slate-700 focus:ring-2 focus:ring-blue-500';
+  const padL = leftIcon ? 'pl-10' : 'pl-3';
+  const padR = rightIcon ? 'pr-10' : 'pr-3';
+
+  return (
+    <div className={className}>
+      {label && (
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          {label}
+        </label>
+      )}
+
+      <div className="relative">
+        {leftIcon && (
+          <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+            <span className={isLight ? 'text-slate-400' : 'text-slate-300'}>
+              {leftIcon}
+            </span>
+          </span>
+        )}
+
+        <input
+          {...props}
+          className={[
+            base,
+            isLight ? light : dark,
+            padL,
+            padR,
+            inputClassName,
+          ].join(' ')}
+        />
+
+        {rightIcon && (
+          <span className="absolute inset-y-0 right-0 flex items-center pr-3">
+            {rightIcon}
+          </span>
+        )}
+      </div>
+
+      {error && (
+        <p className="mt-1 text-xs text-red-600">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
+
+
+import React from 'react';
+import { ChevronDown } from 'lucide-react';
+
+export type Option = { value: string | number; label: string };
+
+type SelectProps = {
+  options: Option[];
+  value: string | number;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  label?: string;
+  tone?: 'light' | 'dark';
+  className?: string;       // wrapper
+  selectClassName?: string; // select real
+};
+
+export const Select: React.FC<SelectProps> = ({
+  options,
+  value,
+  onChange,
+  placeholder,
+  label,
+  tone = 'dark',
+  className = '',
+  selectClassName = '',
+}) => {
+  const isLight = tone === 'light';
+
+  const base =
+    'w-full appearance-none rounded-xl ring-1 focus:outline-none py-2.5 pl-3 pr-9';
+  const light =
+    'bg-white text-slate-900 ring-slate-300 focus:ring-2 focus:ring-blue-400';
+  const dark =
+    'bg-slate-900 text-slate-50 ring-slate-700 focus:ring-2 focus:ring-blue-500';
+
+  return (
+    <div className={className}>
+      {label && (
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          {label}
+        </label>
+      )}
+
+      <div className="relative">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={[base, isLight ? light : dark, selectClassName].join(' ')}
+        >
+          {placeholder && <option value="">{placeholder}</option>}
+          {options.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        <ChevronDown
+          size={16}
+          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+        />
+      </div>
+    </div>
+  );
+};
+
+
+
+import React from 'react';
+
+type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: 'primary' | 'secondary' | 'ghost' | 'destructive';
+  size?: 'sm' | 'md' | 'lg';
+  loading?: boolean;
+  tone?: 'light' | 'dark';
+};
+
+export const Button: React.FC<ButtonProps> = ({
+  variant = 'primary',
+  size = 'md',
+  loading = false,
+  tone = 'dark',
+  className = '',
+  children,
+  ...props
+}) => {
+  const sizes = {
+    sm: 'px-3 py-1.5 text-sm',
+    md: 'px-4 py-2 text-sm',
+    lg: 'px-5 py-2.5 text-base',
+  }[size];
+
+  const palette =
+    tone === 'light'
+      ? {
+          primary:
+            'bg-blue-600 text-white hover:bg-blue-700',
+          secondary:
+            'bg-white text-slate-900 ring-1 ring-slate-300 hover:bg-slate-50',
+          ghost:
+            'text-slate-700 hover:bg-slate-100',
+          destructive:
+            'bg-red-600 text-white hover:bg-red-700',
+        }
+      : {
+          primary:
+            'bg-blue-600 text-white hover:bg-blue-700',
+          secondary:
+            'bg-slate-900 text-slate-50 ring-1 ring-slate-700 hover:bg-slate-800',
+          ghost:
+            'text-slate-200 hover:bg-slate-800',
+          destructive:
+            'bg-red-600 text-white hover:bg-red-700',
+        };
+
+  const variantCls = palette[variant];
+
+  return (
+    <button
+      {...props}
+      className={[
+        'inline-flex items-center gap-2 rounded-xl transition-colors disabled:opacity-60',
+        sizes,
+        variantCls,
+        className,
+      ].join(' ')}
+    >
+      {loading && (
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/60 border-t-transparent" />
+      )}
+      {children}
+    </button>
+  );
+};

@@ -1,0 +1,2 @@
+export { receptionsApi } from './receptionsApi';
+

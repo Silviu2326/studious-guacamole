@@ -1,0 +1,21 @@
+export { ClientsManager } from './ClientsManager';
+export { ActiveClientsList } from './ActiveClientsList';
+export { RiskClientsPanel } from './RiskClientsPanel';
+export { LostClientsManager } from './LostClientsManager';
+export { Client360ProfileComponent } from './Client360Profile';
+export { RetentionAlerts } from './RetentionAlerts';
+export { ChurnAnalyticsComponent } from './ChurnAnalytics';
+export { ClientSegmentation } from './ClientSegmentation';
+export { HabitsPanel } from './HabitsPanel';
+export { SessionSuggestions } from './SessionSuggestions';
+export { PaymentRemindersPanel } from './PaymentRemindersPanel';
+export { HealthIntegrationsPanel } from './HealthIntegrationsPanel';
+export { ChatPanel } from './ChatPanel';
+export { TimelinePanel } from './TimelinePanel';
+export { ReferralLinksPanel } from './ReferralLinksPanel';
+export { NutritionSharingPanel } from './NutritionSharingPanel';
+export { RetentionAssistantPanel } from './RetentionAssistantPanel';
+export { ClientObjectivesPanel } from './ClientObjectivesPanel';
+export { ClientReservationsPanel } from './ClientReservationsPanel';
+export { ClientFeedbackPanel } from './ClientFeedbackPanel';
+
